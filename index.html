@@ -338,7 +338,12 @@
         <div class="modal-content" style="max-width: 8.5in;">
             <div class="flex justify-between items-center mb-4 no-print">
                 <h3 class="text-2xl font-bold">Job File Preview</h3>
-                <button onclick="closeModal('preview-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+                <!-- UPDATED: Wrapper for buttons -->
+                <div>
+                    <!-- NEW: Print button for the preview modal -->
+                    <button onclick="printPreview()" title="Print Preview" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded mr-4">🖨️ Print</button>
+                    <button onclick="closeModal('preview-modal')" class="text-gray-500 hover:text-gray-800 text-3xl align-middle">&times;</button>
+                </div>
             </div>
             <div id="preview-body"></div>
         </div>
@@ -349,7 +354,10 @@
         <div class="modal-content" style="max-width: 1100px;">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-2xl font-bold">Analytics Dashboard</h3>
-                <button onclick="closeModal('analytics-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+                <div>
+                    <button onclick="printAnalytics()" title="Print Analytics" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded mr-4">🖨️ Print</button>
+                    <button onclick="closeModal('analytics-modal')" class="text-gray-500 hover:text-gray-800 text-3xl align-middle">&times;</button>
+                </div>
             </div>
             <div id="analytics-body" class="space-y-6"></div>
         </div>
@@ -401,13 +409,13 @@
             try {
                 // YOUR FIREBASE CONFIGURATION OBJECT
                 const firebaseConfig = {
-                  apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
-                  authDomain: "my-job-file-system.firebaseapp.com",
-                  projectId: "my-job-file-system",
-                  storageBucket: "my-job-file-system.firebasestorage.app",
-                  messagingSenderId: "145307873304",
-                  appId: "1:145307873304:web:d661ea6ec118801b4a136d",
-                  measurementId: "G-8EHX5K7YHL"
+                    apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
+                    authDomain: "my-job-file-system.firebaseapp.com",
+                    projectId: "my-job-file-system",
+                    storageBucket: "my-job-file-system.firebasestorage.app",
+                    messagingSenderId: "145307873304",
+                    appId: "1:145307873304:web:d661ea6ec118801b4a136d",
+                    measurementId: "G-8EHX5K7YHL"
                 };
 
                 const app = initializeApp(firebaseConfig);
@@ -646,7 +654,7 @@
                 }
                 
                 let filesHtml = '';
-                const sortedDocs = [...jobFilesCache].sort((a,b) => (b.updatedAt?.toDate() ? b.updatedAt.toDate() : 0) - (a.updatedAt?.toDate() ? a.updatedAt.toDate() : 0));
+                const sortedDocs = [...jobFilesCache].sort((a,b) => (b.updatedAt?.toDate ? b.updatedAt.toDate() : 0) - (a.updatedAt?.toDate ? a.updatedAt.toDate() : 0));
 
                 sortedDocs.forEach((docData) => {
                     const deleteButton = currentUser.role === 'admin' ? `<button onclick="confirmDelete('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Delete</button>` : '';
@@ -914,7 +922,7 @@
 
             sortedFiles.forEach(job => {
                 const rowData = [job.jfn, job.shipper || 'N/A', job.consignee || 'N/A', (job.profit || 0).toFixed(2), job.status, (job.cost || 0).toFixed(2), job.dsc || 'N/A', job.mawb || 'N/A'];
-                const row = rowData.map(d => `"${d.replace(/"/g, '""')}"`).join(","); // Handle commas in data
+                const row = rowData.map(d => `"${String(d).replace(/"/g, '""')}"`).join(","); // Handle commas in data
                 csvContent += row + "\n";
             });
 
@@ -1209,6 +1217,79 @@
         }
         
         // --- Print and Calculation Logic ---
+        window.printAnalytics = function() {
+            const analyticsBody = document.getElementById('analytics-body');
+            const printContent = analyticsBody.innerHTML;
+
+            // Get all stylesheets from the main document to apply them to the print window
+            let styles = '';
+            document.querySelectorAll('style, link[rel="stylesheet"]').forEach(el => {
+                styles += el.outerHTML;
+            });
+
+            // Create a new window to isolate the print content
+            const printWindow = window.open('', '', 'height=800,width=1200');
+            
+            printWindow.document.write('<html><head><title>Analytics Report</title>');
+            printWindow.document.write(styles); // Apply all existing styles
+            printWindow.document.write(`
+                <style>
+                    /* Add print-specific styles for the new window */
+                    body { padding: 1.5rem; background-color: white !important; }
+                    /* Hide elements we don't want in the printout */
+                    #sort-analytics, button, select { display: none !important; }
+                    .analytics-table td:last-child, .analytics-table th:last-child { display: none !important; }
+                    .modal-content { box-shadow: none; border: none; }
+                </style>
+            `);
+            printWindow.document.write('</head><body>');
+            printWindow.document.write('<h1 class="text-3xl font-bold mb-6 text-center">Analytics Report</h1>');
+            printWindow.document.write(printContent);
+            printWindow.document.write('</body></html>');
+            
+            printWindow.document.close();
+            
+            // Use a timeout to ensure all content and styles are loaded before printing
+            setTimeout(() => {
+                printWindow.focus();
+                printWindow.print();
+                printWindow.close();
+            }, 750);
+        }
+
+        // NEW: Function to print the job file preview
+        window.printPreview = function() {
+            const previewBody = document.getElementById('preview-body');
+            const printContent = previewBody.innerHTML;
+
+            let styles = '';
+            document.querySelectorAll('style, link[rel="stylesheet"]').forEach(el => {
+                styles += el.outerHTML;
+            });
+
+            const printWindow = window.open('', '', 'height=800,width=1200');
+            
+            printWindow.document.write('<html><head><title>Job File Preview</title>');
+            printWindow.document.write(styles);
+            printWindow.document.write(`
+                <style>
+                    body { padding: 0; margin: 0; background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    .no-print { display: none !important; }
+                </style>
+            `);
+            printWindow.document.write('</head><body>');
+            printWindow.document.write(printContent);
+            printWindow.document.write('</body></html>');
+            
+            printWindow.document.close();
+            
+            setTimeout(() => {
+                printWindow.focus();
+                printWindow.print();
+                printWindow.close();
+            }, 750);
+        }
+
         function getPrintViewHtml(data) {
             let totalCost = 0, totalSelling = 0, totalProfit = 0;
             (data.ch || []).forEach(c => {
@@ -1416,9 +1497,9 @@
                 } else {
                     const displayName = document.getElementById('full-name').value;
                      if (!email || !password || !displayName) {
-                        showNotification("Please fill all fields to sign up.", true);
-                        return;
-                    }
+                         showNotification("Please fill all fields to sign up.", true);
+                         return;
+                     }
                     handleSignUp(email, password, displayName);
                 }
             });
@@ -1443,6 +1524,9 @@
             window.previewJobFileById = previewJobFileById;
             window.loadJobFileById = loadJobFileById;
             window.confirmDelete = confirmDelete;
+            window.printAnalytics = printAnalytics;
+            // NEW: Make the new preview print function global
+            window.printPreview = printPreview;
 
             populateTable();
             calculate();
