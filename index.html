@@ -99,24 +99,7 @@
         #analytics-modal .analytics-table th, #analytics-modal .analytics-table td { border: 1px solid #d1d5db; padding: 0.5rem; text-align: left; }
         #analytics-modal .analytics-table th { background-color: #f3f4f6; font-weight: 600; }
         #print-output .print-field, #preview-modal .print-field { border: 1px solid #6b7280; padding: 0.3rem; min-height: 24px; word-break: break-all; }
-        .admin-only, .checker-only, #signup-name-field { display: none; } /* Hide role-specific elements by default */
-        
-        /* Stamp Styles */
-        .stamp {
-            position: absolute;
-            top: -10px; right: -10px;
-            padding: 4px 12px;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: bold;
-            text-transform: uppercase;
-            transform: rotate(15deg);
-            opacity: 0.8;
-            display: none; /* Hidden by default */
-        }
-        .stamp-approved { border: 2px solid #16a34a; color: #16a34a; }
-        .stamp-checked { border: 2px solid #2563eb; color: #2563eb; }
-        .stamp-rejected { border: 2px solid #dc2626; color: #dc2626; }
+        .admin-only, .checker-only { display: none; } /* Hide role-specific elements by default */
     </style>
     <style id="print-styles"></style>
 </head>
@@ -127,20 +110,13 @@
         <div class="max-w-md w-full space-y-8">
             <div>
                 <div class="text-center text-5xl font-extrabold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
-                <h2 id="auth-title" class="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
+                <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
             </div>
             <div class="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-md">
-                <div id="approval-message" class="hidden p-4 text-center text-yellow-800 bg-yellow-100 rounded-lg">
-                    Your account is awaiting admin approval.
-                </div>
                 <div class="rounded-md shadow-sm -space-y-px">
-                    <div id="signup-name-field">
-                        <label for="full-name" class="sr-only">Full Name</label>
-                        <input id="full-name" name="name" type="text" autocomplete="name" required class="input-field rounded-t-md" placeholder="Full Name">
-                    </div>
                     <div>
                         <label for="email-address" class="sr-only">Email address</label>
-                        <input id="email-address" name="email" type="email" autocomplete="email" required class="input-field" placeholder="Email address">
+                        <input id="email-address" name="email" type="email" autocomplete="email" required class="input-field rounded-t-md" placeholder="Email address">
                     </div>
                     <div>
                         <label for="password" class="sr-only">Password</label>
@@ -148,13 +124,14 @@
                     </div>
                 </div>
                 <div>
-                    <button id="auth-btn" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    <button id="login-btn" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         Sign in
                     </button>
                 </div>
                 <p class="mt-2 text-center text-sm text-gray-600">
-                    <a href="#" id="auth-link" class="font-medium text-indigo-600 hover:text-indigo-500">
-                        Create a new account
+                    Or
+                    <a href="#" id="signup-link" class="font-medium text-indigo-600 hover:text-indigo-500">
+                        create a new account
                     </a>
                 </p>
             </div>
@@ -185,16 +162,12 @@
             <!-- User Info and Logout -->
             <div class="flex justify-between items-center mb-4 bg-gray-50 p-2 rounded-md">
                 <div>
-                    Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role" class="capitalize"></span>)
+                    Logged in as: <span id="user-email" class="font-bold"></span> (<span id="user-role" class="capitalize"></span>)
                 </div>
                 <div>
                     <button id="admin-panel-btn" class="admin-only bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Admin Panel</button>
                     <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Logout</button>
                 </div>
-            </div>
-            
-            <div id="rejection-banner" class="hidden p-3 mb-4 text-center text-red-800 bg-red-100 rounded-lg">
-                <strong>This job file was rejected.</strong> Reason: <span id="rejection-reason"></span>
             </div>
 
             <!-- Form Fields -->
@@ -273,22 +246,16 @@
 
             <!-- Footer Section -->
             <footer class="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6 border-t items-end">
-                <div><label class="block mb-2 font-semibold text-gray-700">PREPARED BY</label><input type="text" id="prepared-by" class="input-field bg-gray-100" readonly></div>
-                <div class="relative">
-                    <div id="checked-stamp" class="stamp stamp-checked">Checked</div>
+                <div><label class="block mb-2 font-semibold text-gray-700">PREPARED BY</label><input type="text" id="prepared-by" class="input-field"></div>
+                <div>
                     <label class="block mb-2 font-semibold text-gray-700">CHECKED BY</label>
                     <input type="text" id="checked-by" class="input-field bg-gray-100" readonly>
                     <button id="check-btn" class="checker-only mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Check Job File</button>
                 </div>
-                <div class="relative">
-                    <div id="approved-stamp" class="stamp stamp-approved">Approved</div>
-                    <div id="rejected-stamp" class="stamp stamp-rejected">Rejected</div>
+                <div>
                     <label class="block mb-2 font-semibold text-gray-700">APPROVED BY</label>
                     <input type="text" id="approved-by" class="input-field bg-gray-100" readonly>
-                    <div id="approval-buttons" class="admin-only mt-2 w-full flex gap-2">
-                        <button id="approve-btn" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Approve</button>
-                        <button id="reject-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">Reject</button>
-                    </div>
+                    <button id="approve-btn" class="admin-only mt-2 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Approve Job File</button>
                 </div>
             </footer>
 
@@ -365,20 +332,7 @@
             </div>
             <div id="user-list" class="space-y-2 max-h-[60vh] overflow-y-auto"></div>
             <div class="text-right mt-4">
-                <button onclick="saveUserChanges()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save Changes</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Rejection Reason Modal -->
-    <div id="reject-reason-modal" class="overlay">
-        <div class="modal-content max-w-md">
-            <h3 class="text-lg font-bold mb-4">Rejection Reason</h3>
-            <p class="mb-4">Please provide a reason for rejecting this job file.</p>
-            <textarea id="rejection-reason-input" class="input-field w-full" rows="3"></textarea>
-            <div class="text-right mt-6 space-x-2">
-                <button onclick="closeModal('reject-reason-modal')" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Cancel</button>
-                <button id="confirm-reject-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Confirm Rejection</button>
+                <button onclick="saveUserRoles()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save Changes</button>
             </div>
         </div>
     </div>
@@ -395,7 +349,6 @@
         let db, auth;
         let currentUser = null;
         let jobFilesCache = []; // Cache for analytics
-        let analyticsDataCache = null; // Cache for analytics data to re-sort
 
         // --- Firebase Initialization ---
         async function initializeFirebase() {
@@ -429,9 +382,7 @@
 
                             const newUser = {
                                 email: user.email,
-                                displayName: user.displayName || user.email.split('@')[0],
                                 role: isFirstUser ? 'admin' : 'user',
-                                status: isFirstUser ? 'active' : 'inactive', // First user is active by default
                                 createdAt: serverTimestamp()
                             };
                             await setDoc(userDocRef, newUser);
@@ -439,13 +390,6 @@
                         }
                         
                         currentUser = { uid: user.uid, email: user.email, ...userDoc.data() };
-                        
-                        if (currentUser.status === 'inactive') {
-                            showLogin();
-                            document.getElementById('approval-message').style.display = 'block';
-                            signOut(auth);
-                            return;
-                        }
                         
                         console.log("User logged in:", currentUser);
                         showApp();
@@ -464,28 +408,12 @@
         }
 
         // --- Authentication Logic ---
-        async function handleSignUp(email, password, displayName) {
+        async function handleSignUp(email, password) {
             showLoader();
             try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-
-                // The onAuthStateChanged listener will now handle creating the user doc with the display name
-                const userDocRef = doc(db, 'users', user.uid);
-                const usersCollectionRef = collection(db, 'users');
-                const userQuerySnapshot = await getDocs(usersCollectionRef);
-                const isFirstUser = userQuerySnapshot.size === 1; // It will be 1 after creation
-
-                const newUser = {
-                    email: user.email,
-                    displayName: displayName,
-                    role: isFirstUser ? 'admin' : 'user',
-                    status: isFirstUser ? 'active' : 'inactive',
-                    createdAt: serverTimestamp()
-                };
-                await setDoc(userDocRef, newUser);
-
-                showNotification("Account created! Waiting for admin approval.", false);
+                // Just create the user. The onAuthStateChanged listener will handle creating the user doc.
+                await createUserWithEmailAndPassword(auth, email, password);
+                showNotification("Account created successfully! Logging you in...", false);
             } catch (error) {
                 console.error("Sign up error:", error);
                 showNotification(error.message, true);
@@ -499,7 +427,7 @@
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
                 console.error("Login error:", error);
-                showNotification("Invalid email or password.", true);
+                showNotification(error.message, true);
             }
             hideLoader();
         }
@@ -520,7 +448,7 @@
             data.totalSelling = parseFloat(document.getElementById('total-selling').textContent) || 0;
             data.totalProfit = parseFloat(document.getElementById('total-profit').textContent) || 0;
             data.updatedAt = serverTimestamp();
-            data.lastUpdatedBy = currentUser.displayName;
+            data.lastUpdatedBy = currentUser.email;
 
             try {
                 const docRef = doc(db, 'jobfiles', jobFileNo);
@@ -535,7 +463,7 @@
         }
         
         window.checkJobFile = async function() {
-            if (!currentUser || !['admin', 'checker'].includes(currentUser.role)) {
+            if (!['admin', 'checker'].includes(currentUser.role)) {
                 showNotification("You do not have permission to check job files.", true);
                 return;
             }
@@ -547,16 +475,16 @@
             
             showLoader();
             const checkData = {
-                checkedBy: currentUser.displayName,
-                checkedAt: serverTimestamp(),
-                status: 'checked'
+                checkedBy: currentUser.email,
+                checkedAt: serverTimestamp()
             };
             
             try {
                 const docRef = doc(db, 'jobfiles', jobFileNo);
                 await setDoc(docRef, checkData, { merge: true });
-                const updatedDoc = await getDoc(docRef);
-                populateFormFromData(updatedDoc.data());
+                document.getElementById('checked-by').value = `${currentUser.email} on ${new Date().toLocaleDateString()}`;
+                document.getElementById('check-btn').disabled = true;
+                document.getElementById('check-btn').textContent = "Checked";
                 hideLoader();
                 showNotification("Job File Checked!");
             } catch (error) {
@@ -579,54 +507,22 @@
             
             showLoader();
             const approvalData = {
-                approvedBy: currentUser.displayName,
-                approvedAt: serverTimestamp(),
-                status: 'approved',
-                rejectionReason: null // Clear rejection reason on approval
+                approvedBy: currentUser.email,
+                approvedAt: serverTimestamp()
             };
             
             try {
                 const docRef = doc(db, 'jobfiles', jobFileNo);
                 await setDoc(docRef, approvalData, { merge: true });
-                const updatedDoc = await getDoc(docRef);
-                populateFormFromData(updatedDoc.data());
+                document.getElementById('approved-by').value = `${currentUser.email} on ${new Date().toLocaleDateString()}`;
+                document.getElementById('approve-btn').disabled = true;
+                document.getElementById('approve-btn').textContent = "Approved";
                 hideLoader();
                 showNotification("Job File Approved!");
             } catch (error) {
                 hideLoader();
                 console.error("Error approving document: ", error);
                 showNotification("Error approving job file.", true);
-            }
-        }
-
-        window.rejectJobFile = async function() {
-            const reason = document.getElementById('rejection-reason-input').value.trim();
-            if (!reason) {
-                showNotification("Rejection reason is required.", true);
-                return;
-            }
-
-            const jobFileNo = document.getElementById('job-file-no').value.trim();
-            showLoader();
-            const rejectionData = {
-                rejectedBy: currentUser.displayName,
-                rejectedAt: serverTimestamp(),
-                rejectionReason: reason,
-                status: 'rejected'
-            };
-
-            try {
-                const docRef = doc(db, 'jobfiles', jobFileNo);
-                await setDoc(docRef, rejectionData, { merge: true });
-                const updatedDoc = await getDoc(docRef);
-                populateFormFromData(updatedDoc.data());
-                hideLoader();
-                closeModal('reject-reason-modal');
-                showNotification("Job File Rejected!");
-            } catch (error) {
-                hideLoader();
-                console.error("Error rejecting document: ", error);
-                showNotification("Error rejecting job file.", true);
             }
         }
 
@@ -778,17 +674,12 @@
                 const profit = job.totalProfit || 0;
                 const revenue = job.totalSelling || 0;
                 const cost = job.totalCost || 0;
-                let status = 'Pending Check';
-                if (job.status === 'rejected') status = 'Rejected';
-                else if (job.status === 'approved') status = 'Approved';
-                else if (job.status === 'checked') status = 'Pending Approval';
-
 
                 totalRevenue += revenue;
                 totalCost += cost;
                 totalProfit += profit;
 
-                profitByFile.push({ id: job.id, jfn: job.jfn, shipper: job.sh, consignee: job.co, profit: profit, status: status, date: job.updatedAt?.toDate() || new Date(0) });
+                profitByFile.push({ id: job.id, jfn: job.jfn, shipper: job.sh, consignee: job.co, profit: profit });
 
                 if (job.sh) {
                     profitByShipper[job.sh] = (profitByShipper[job.sh] || 0) + profit;
@@ -802,7 +693,7 @@
                 }
             });
 
-            analyticsDataCache = {
+            const analyticsData = {
                 totalJobs, totalRevenue, totalCost, totalProfit, profitByFile,
                 profitByShipper: Object.entries(profitByShipper).sort((a, b) => b[1] - a[1]),
                 profitByConsignee: Object.entries(profitByConsignee).sort((a, b) => b[1] - a[1]),
@@ -810,24 +701,13 @@
             };
 
             // 2. Display Data
-            displayAnalytics(analyticsDataCache);
+            displayAnalytics(analyticsData);
             openModal('analytics-modal');
         }
 
-        function displayAnalytics(data, sortBy = 'profit-desc') {
+        function displayAnalytics(data) {
             const body = document.getElementById('analytics-body');
             const deleteButtonHtml = (fileId) => currentUser.role === 'admin' ? `<button onclick="confirmDelete('${fileId}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>` : '';
-            
-            // Sorting logic
-            const sortedFiles = [...data.profitByFile];
-            if (sortBy === 'profit-desc') {
-                sortedFiles.sort((a, b) => b.profit - a.profit);
-            } else if (sortBy === 'date-desc') {
-                sortedFiles.sort((a, b) => b.date - a.date);
-            } else if (sortBy === 'status') {
-                const statusOrder = { 'Pending Check': 1, 'Pending Approval': 2, 'Approved': 3, 'Rejected': 4 };
-                sortedFiles.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
-            }
 
             body.innerHTML = `
                 <!-- Overall Summary -->
@@ -863,25 +743,16 @@
                 <div>
                     <div class="flex justify-between items-center mb-2">
                         <h4 class="text-lg font-semibold">Profit by Job File</h4>
-                        <div>
-                            <label for="sort-analytics" class="text-sm mr-2">Sort by:</label>
-                            <select id="sort-analytics" onchange="sortAnalyticsTable(this.value)" class="input-field w-auto inline-block">
-                                <option value="profit-desc" ${sortBy === 'profit-desc' ? 'selected' : ''}>Profit (High to Low)</option>
-                                <option value="date-desc" ${sortBy === 'date-desc' ? 'selected' : ''}>Date (Newest First)</option>
-                                <option value="status" ${sortBy === 'status' ? 'selected' : ''}>Status</option>
-                            </select>
-                            <button onclick="downloadAnalyticsCsv()" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-1 px-3 rounded text-sm ml-2">Download CSV</button>
-                        </div>
+                        <button onclick="downloadAnalyticsCsv()" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-1 px-3 rounded text-sm">Download CSV</button>
                     </div>
                     <div class="max-h-64 overflow-y-auto">
                         <table class="analytics-table">
-                            <thead><tr><th>Job File ID</th><th>Shipper</th><th>Profit</th><th>Status</th><th>Actions</th></tr></thead>
-                            <tbody>${sortedFiles.map(file => `
+                            <thead><tr><th>Job File ID</th><th>Shipper</th><th>Profit</th><th>Actions</th></tr></thead>
+                            <tbody>${data.profitByFile.sort((a,b) => b.profit - a.profit).map(file => `
                                 <tr>
                                     <td>${file.jfn || file.id}</td>
                                     <td>${file.shipper || 'N/A'}</td>
                                     <td>$${file.profit.toFixed(2)}</td>
-                                    <td>${file.status}</td>
                                     <td class="space-x-1">
                                         <button onclick="previewJobFileById('${file.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs">Preview</button>
                                         <button onclick="loadJobFileById('${file.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded text-xs">Load</button>
@@ -895,16 +766,12 @@
             `;
         }
         
-        window.sortAnalyticsTable = function(sortBy) {
-            displayAnalytics(analyticsDataCache, sortBy);
-        }
-        
         window.downloadAnalyticsCsv = function() {
-            let csvContent = "data:text/csv;charset=utf-8,Job File ID,Shipper,Consignee,Profit,Status\n";
-            const sortedFiles = [...analyticsDataCache.profitByFile].sort((a,b) => (b.profit || 0) - (a.profit || 0));
+            let csvContent = "data:text/csv;charset=utf-8,Job File ID,Shipper,Consignee,Profit\n";
+            const sortedFiles = [...jobFilesCache].sort((a,b) => (b.totalProfit || 0) - (a.totalProfit || 0));
 
             sortedFiles.forEach(job => {
-                const row = [job.jfn, job.shipper || 'N/A', job.consignee || 'N/A', (job.profit || 0).toFixed(2), job.status].join(",");
+                const row = [job.jfn, job.sh || 'N/A', job.co || 'N/A', (job.totalProfit || 0).toFixed(2)].join(",");
                 csvContent += row + "\n";
             });
 
@@ -933,16 +800,12 @@
                 const userData = doc.data();
                 const userId = doc.id;
                 userListHtml += `
-                    <div class="grid grid-cols-3 gap-4 items-center p-2 border-b">
-                        <input type="text" data-uid="${userId}" class="display-name-input input-field col-span-1" value="${userData.displayName}">
-                        <select data-uid="${userId}" class="role-select input-field col-span-1">
+                    <div class="flex justify-between items-center p-2 border-b">
+                        <span>${userData.email}</span>
+                        <select data-uid="${userId}" class="role-select input-field w-32">
                             <option value="user" ${userData.role === 'user' ? 'selected' : ''}>User</option>
                             <option value="checker" ${userData.role === 'checker' ? 'selected' : ''}>Checker</option>
                             <option value="admin" ${userData.role === 'admin' ? 'selected' : ''}>Admin</option>
-                        </select>
-                        <select data-uid="${userId}" class="status-select input-field col-span-1">
-                            <option value="active" ${userData.status === 'active' ? 'selected' : ''}>Active</option>
-                            <option value="inactive" ${userData.status === 'inactive' ? 'selected' : ''}>Inactive</option>
                         </select>
                     </div>
                 `;
@@ -952,37 +815,26 @@
             openModal('admin-panel-modal');
         }
 
-        async function saveUserChanges() {
+        async function saveUserRoles() {
             showLoader();
             const batch = writeBatch(db);
-            const userRows = document.querySelectorAll('#user-list > div');
-            
-            userRows.forEach(row => {
-                const nameInput = row.querySelector('.display-name-input');
-                const roleSelect = row.querySelector('.role-select');
-                const statusSelect = row.querySelector('.status-select');
-                const uid = nameInput.dataset.uid;
-                const newName = nameInput.value;
-                const newRole = roleSelect.value;
-                const newStatus = statusSelect.value;
-                
+            const selects = document.querySelectorAll('.role-select');
+            selects.forEach(select => {
+                const uid = select.dataset.uid;
+                const newRole = select.value;
                 const userDocRef = doc(db, 'users', uid);
-                batch.update(userDocRef, { 
-                    displayName: newName,
-                    role: newRole,
-                    status: newStatus
-                });
+                batch.update(userDocRef, { role: newRole });
             });
 
             try {
                 await batch.commit();
                 hideLoader();
-                showNotification("User details updated successfully!");
+                showNotification("User roles updated successfully!");
                 closeModal('admin-panel-modal');
             } catch (error) {
                 hideLoader();
                 console.error("Error updating roles: ", error);
-                showNotification("Failed to update user details.", true);
+                showNotification("Failed to update roles.", true);
             }
         }
 
@@ -991,13 +843,12 @@
         function showLogin() {
             document.getElementById('login-screen').style.display = 'flex';
             document.getElementById('app-container').style.display = 'none';
-            document.getElementById('approval-message').style.display = 'none';
         }
 
         function showApp() {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-container').style.display = 'block';
-            document.getElementById('user-display-name').textContent = currentUser.displayName;
+            document.getElementById('user-email').textContent = currentUser.email;
             document.getElementById('user-role').textContent = currentUser.role;
 
             // Show/hide role-specific elements
@@ -1030,25 +881,15 @@
             populateTable();
             calculate();
             
-            // Set prepared by
-            document.getElementById('prepared-by').value = currentUser.displayName;
-
             // Reset approval and check fields
             const approveBtn = document.getElementById('approve-btn');
             const checkBtn = document.getElementById('check-btn');
             document.getElementById('approved-by').value = '';
             document.getElementById('checked-by').value = '';
             approveBtn.disabled = false;
-            document.getElementById('approval-buttons').style.display = 'flex'; // Show both buttons
+            approveBtn.textContent = 'Approve Job File';
             checkBtn.disabled = false;
             checkBtn.textContent = 'Check Job File';
-
-            // Hide all stamps and banners
-            document.getElementById('checked-stamp').style.display = 'none';
-            document.getElementById('approved-stamp').style.display = 'none';
-            document.getElementById('rejected-stamp').style.display = 'none';
-            document.getElementById('rejection-banner').style.display = 'none';
-
 
             showNotification("Form cleared. Ready for a new job file.");
         }
@@ -1084,54 +925,37 @@
             initializeFirebase();
             
             // Auth Event Listeners
-            const authBtn = document.getElementById('auth-btn');
-            const authLink = document.getElementById('auth-link');
+            const loginBtn = document.getElementById('login-btn');
+            const signupLink = document.getElementById('signup-link');
             const logoutBtn = document.getElementById('logout-btn');
             const approveBtn = document.getElementById('approve-btn');
-            const rejectBtn = document.getElementById('reject-btn');
-            const confirmRejectBtn = document.getElementById('confirm-reject-btn');
             const checkBtn = document.getElementById('check-btn');
             const adminPanelBtn = document.getElementById('admin-panel-btn');
 
-            let isLogin = true;
-
-            authLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                isLogin = !isLogin;
-                const nameField = document.getElementById('signup-name-field');
-                const emailField = document.getElementById('email-address');
-                
-                document.getElementById('auth-title').textContent = isLogin ? 'Sign in to your account' : 'Create a new account';
-                authBtn.textContent = isLogin ? 'Sign in' : 'Sign up';
-                authLink.textContent = isLogin ? 'Create a new account' : 'Already have an account? Sign in';
-                nameField.style.display = isLogin ? 'none' : 'block';
-                emailField.classList.toggle('rounded-t-md', !isLogin);
-            });
-
-            authBtn.addEventListener('click', () => {
+            loginBtn.addEventListener('click', () => {
                 const email = document.getElementById('email-address').value;
                 const password = document.getElementById('password').value;
-                if (isLogin) {
-                    handleLogin(email, password);
-                } else {
-                    const displayName = document.getElementById('full-name').value;
-                     if (!email || !password || !displayName) {
-                        showNotification("Please fill all fields to sign up.", true);
-                        return;
-                    }
-                    handleSignUp(email, password, displayName);
+                handleLogin(email, password);
+            });
+
+            signupLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email-address').value;
+                const password = document.getElementById('password').value;
+                if (!email || !password) {
+                    showNotification("Please enter email and password to sign up.", true);
+                    return;
                 }
+                handleSignUp(email, password);
             });
             
             logoutBtn.addEventListener('click', handleLogout);
             approveBtn.addEventListener('click', approveJobFile);
-            rejectBtn.addEventListener('click', () => openModal('reject-reason-modal'));
-            confirmRejectBtn.addEventListener('click', rejectJobFile);
             checkBtn.addEventListener('click', checkJobFile);
             adminPanelBtn.addEventListener('click', openAdminPanel);
             
             // Make saveUserRoles globally accessible for the button's onclick
-            window.saveUserChanges = saveUserChanges;
+            window.saveUserRoles = saveUserRoles;
         });
     </script>
 
@@ -1188,51 +1012,28 @@
             
             // Handle check status
             const checkBtn = document.getElementById('check-btn');
-            const checkedStamp = document.getElementById('checked-stamp');
             if (data.checkedBy) {
                 const checkedDate = data.checkedAt?.toDate() ? ` on ${data.checkedAt.toDate().toLocaleDateString()}` : '';
                 setVal('checked-by', `${data.checkedBy}${checkedDate}`);
                 checkBtn.disabled = true;
                 checkBtn.textContent = 'Checked';
-                checkedStamp.style.display = 'block';
             } else {
                 setVal('checked-by', 'Pending Check');
                 checkBtn.disabled = false;
                 checkBtn.textContent = 'Check Job File';
-                checkedStamp.style.display = 'none';
             }
             
-            // Handle approval/rejection status
-            const approvalButtons = document.getElementById('approval-buttons');
-            const approvedStamp = document.getElementById('approved-stamp');
-            const rejectedStamp = document.getElementById('rejected-stamp');
-            const rejectionBanner = document.getElementById('rejection-banner');
-
-            approvedStamp.style.display = 'none';
-            rejectedStamp.style.display = 'none';
-            rejectionBanner.style.display = 'none';
-            approvalButtons.style.display = 'none';
-
-            if (currentUser.role === 'admin') {
-                approvalButtons.style.display = 'flex';
-            }
-
-            if (data.status === 'approved') {
+            // Handle approval status
+            const approveBtn = document.getElementById('approve-btn');
+            if (data.approvedBy) {
                 const approvedDate = data.approvedAt?.toDate() ? ` on ${data.approvedAt.toDate().toLocaleDateString()}` : '';
                 setVal('approved-by', `${data.approvedBy}${approvedDate}`);
-                approvalButtons.style.display = 'none';
-                approvedStamp.style.display = 'block';
-            } else if (data.status === 'rejected') {
-                const rejectedDate = data.rejectedAt?.toDate() ? ` on ${data.rejectedAt.toDate().toLocaleDateString()}` : '';
-                setVal('approved-by', `Rejected by ${data.rejectedBy}${rejectedDate}`);
-                if (currentUser.role !== 'admin') {
-                    approvalButtons.style.display = 'none';
-                }
-                rejectedStamp.style.display = 'block';
-                rejectionBanner.style.display = 'block';
-                document.getElementById('rejection-reason').textContent = data.rejectionReason;
+                approveBtn.disabled = true;
+                approveBtn.textContent = 'Approved';
             } else {
                 setVal('approved-by', 'Pending Approval');
+                approveBtn.disabled = false;
+                approveBtn.textContent = 'Approve Job File';
             }
 
 
@@ -1267,20 +1068,7 @@
             });
             
             const checkedByText = data.checkedBy ? `${data.checkedBy} on ${data.checkedAt?.toDate().toLocaleDateString()}` : 'Pending';
-            let approvedByText = 'Pending Approval';
-            if (data.status === 'approved') {
-                approvedByText = `${data.approvedBy} on ${data.approvedAt?.toDate().toLocaleDateString()}`;
-            } else if (data.status === 'rejected') {
-                approvedByText = `REJECTED: ${data.rejectionReason}`;
-            }
-
-            const checkedStampHtml = data.checkedBy ? `<div class="stamp stamp-checked" style="display: block;">Checked</div>` : '';
-            let approvalStampHtml = '';
-            if (data.status === 'approved') {
-                approvalStampHtml = `<div class="stamp stamp-approved" style="display: block;">Approved</div>`;
-            } else if (data.status === 'rejected') {
-                approvalStampHtml = `<div class="stamp stamp-rejected" style="display: block;">Rejected</div>`;
-            }
+            const approvedByText = data.approvedBy ? `${data.approvedBy} on ${data.approvedAt?.toDate().toLocaleDateString()}` : 'Pending';
 
             const checkedSymbol = '☑';
             const uncheckedSymbol = '☐';
@@ -1335,8 +1123,8 @@
                         </div>
                         <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>REMARKS:</strong><div class="print-field h-20">${(data.re || '').replace(/\n/g, '<br>')}</div></div>
                         <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>PREPARED BY:</strong><div class="print-field">${data.pb || ''}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs relative" style="border: 1px solid #374151;">${checkedStampHtml}<strong>CHECKED BY:</strong><div class="print-field">${checkedByText}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs relative" style="border: 1px solid #374151;">${approvalStampHtml}<strong>APPROVED BY:</strong><div class="print-field">${approvedByText}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>CHECKED BY:</strong><div class="print-field">${checkedByText}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>APPROVED BY:</strong><div class="print-field">${approvedByText}</div></div>
                         <div class="col-span-3 bg-white p-1 flex items-center justify-center" style="border: 1px solid #374151;"><div class="qrcode-container"></div></div>
                     </div>
                 </div>`;
