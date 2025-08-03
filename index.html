@@ -99,118 +99,167 @@
         #analytics-modal .analytics-table th, #analytics-modal .analytics-table td { border: 1px solid #d1d5db; padding: 0.5rem; text-align: left; }
         #analytics-modal .analytics-table th { background-color: #f3f4f6; font-weight: 600; }
         #print-output .print-field, #preview-modal .print-field { border: 1px solid #6b7280; padding: 0.3rem; min-height: 24px; word-break: break-all; }
+        .admin-only { display: none; } /* Hide admin elements by default */
     </style>
     <style id="print-styles"></style>
 </head>
 <body class="bg-gray-100">
 
-    <div id="main-container" class="container">
-        <!-- Header Section -->
-        <header class="flex justify-between items-start mb-6">
-            <div class="flex items-center">
-                <div id="logo-container" class="text-3xl font-bold mr-4" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
-                <h1 class="text-4xl font-bold text-gray-800 border-l-4 border-gray-300 pl-4">JOB FILE</h1>
-            </div>
-            <div class="text-right">
-                <div class="flex items-center mb-2">
-                    <label for="date" class="mr-2 font-semibold text-gray-700">Date:</label>
-                    <input type="date" id="date" class="input-field w-40">
-                </div>
-                <div class="flex items-center">
-                    <label for="po-number" class="mr-2 font-semibold text-gray-700">P.O. #:</label>
-                    <input type="text" id="po-number" class="input-field w-40">
-                </div>
-            </div>
-        </header>
-        
-        <!-- Form Fields -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <div class="lg:col-span-2">
-                <label for="job-file-no" class="block mb-1 font-semibold text-gray-700">Job File No.:</label>
-                <input type="text" id="job-file-no" class="input-field" placeholder="Enter a unique ID here...">
-            </div>
+    <!-- Login Screen -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
             <div>
-                <label for="type" class="block mb-1 font-semibold text-gray-700">Type:</label>
-                <input type="text" id="type" class="input-field">
+                <div class="text-center text-5xl font-extrabold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
+                <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
             </div>
-            <div class="flex space-x-6">
-                <div>
-                    <span class="font-semibold text-gray-700">Clearance</span>
-                    <div class="mt-2 space-y-1">
-                        <label class="flex items-center"><input type="checkbox" class="mr-2" data-clearance="Export"> Export</label>
-                        <label class="flex items-center"><input type="checkbox" class="mr-2" data-clearance="Import"> Import</label>
-                        <label class="flex items-center"><input type="checkbox" class="mr-2" data-clearance="Clearance"> Clearance</label>
-                        <label class="flex items-center"><input type="checkbox" class="mr-2" data-clearance="Local Move"> Local Move</label>
+            <div class="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-md">
+                <div class="rounded-md shadow-sm -space-y-px">
+                    <div>
+                        <label for="email-address" class="sr-only">Email address</label>
+                        <input id="email-address" name="email" type="email" autocomplete="email" required class="input-field rounded-t-md" placeholder="Email address">
+                    </div>
+                    <div>
+                        <label for="password" class="sr-only">Password</label>
+                        <input id="password" name="password" type="password" autocomplete="current-password" required class="input-field rounded-b-md" placeholder="Password">
                     </div>
                 </div>
                 <div>
-                    <span class="font-semibold text-gray-700">Product Type</span>
-                    <div class="mt-2 space-y-1">
-                        <label class="flex items-center"><input type="checkbox" class="mr-2" data-product="Air Freight"> Air Freight</label>
-                        <label class="flex items-center"><input type="checkbox" class="mr-2" data-product="Sea Freight"> Sea Freight</label>
-                        <label class="flex items-center"><input type="checkbox" class="mr-2" data-product="Land Freight"> Land Freight</label>
-                        <label class="flex items-center"><input type="checkbox" class="mr-2" data-product="Others"> Others</label>
+                    <button id="login-btn" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Sign in
+                    </button>
+                </div>
+                <p class="mt-2 text-center text-sm text-gray-600">
+                    Or
+                    <a href="#" id="signup-link" class="font-medium text-indigo-600 hover:text-indigo-500">
+                        create a new account
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application Container (Hidden by default) -->
+    <div id="app-container" class="hidden">
+        <div id="main-container" class="container">
+            <!-- Header Section -->
+            <header class="flex justify-between items-start mb-6">
+                <div class="flex items-center">
+                    <div id="logo-container" class="text-3xl font-bold mr-4" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
+                    <h1 class="text-4xl font-bold text-gray-800 border-l-4 border-gray-300 pl-4">JOB FILE</h1>
+                </div>
+                <div class="text-right">
+                    <div class="flex items-center mb-2">
+                        <label for="date" class="mr-2 font-semibold text-gray-700">Date:</label>
+                        <input type="date" id="date" class="input-field w-40">
+                    </div>
+                    <div class="flex items-center">
+                        <label for="po-number" class="mr-2 font-semibold text-gray-700">P.O. #:</label>
+                        <input type="text" id="po-number" class="input-field w-40">
+                    </div>
+                </div>
+            </header>
+            
+            <!-- User Info and Logout -->
+            <div class="flex justify-between items-center mb-4 bg-gray-50 p-2 rounded-md">
+                <div>
+                    Logged in as: <span id="user-email" class="font-bold"></span>
+                </div>
+                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Logout</button>
+            </div>
+
+            <!-- Form Fields -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="lg:col-span-2">
+                    <label for="job-file-no" class="block mb-1 font-semibold text-gray-700">Job File No.:</label>
+                    <input type="text" id="job-file-no" class="input-field" placeholder="Enter a unique ID here...">
+                </div>
+                <div>
+                    <label for="type" class="block mb-1 font-semibold text-gray-700">Type:</label>
+                    <input type="text" id="type" class="input-field">
+                </div>
+                <div class="flex space-x-6">
+                    <div>
+                        <span class="font-semibold text-gray-700">Clearance</span>
+                        <div class="mt-2 space-y-1">
+                            <label class="flex items-center"><input type="checkbox" class="mr-2" data-clearance="Export"> Export</label>
+                            <label class="flex items-center"><input type="checkbox" class="mr-2" data-clearance="Import"> Import</label>
+                            <label class="flex items-center"><input type="checkbox" class="mr-2" data-clearance="Clearance"> Clearance</label>
+                            <label class="flex items-center"><input type="checkbox" class="mr-2" data-clearance="Local Move"> Local Move</label>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-gray-700">Product Type</span>
+                        <div class="mt-2 space-y-1">
+                            <label class="flex items-center"><input type="checkbox" class="mr-2" data-product="Air Freight"> Air Freight</label>
+                            <label class="flex items-center"><input type="checkbox" class="mr-2" data-product="Sea Freight"> Sea Freight</label>
+                            <label class="flex items-center"><input type="checkbox" class="mr-2" data-product="Land Freight"> Land Freight</label>
+                            <label class="flex items-center"><input type="checkbox" class="mr-2" data-product="Others"> Others</label>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div><label for="invoice-no" class="block mb-1 font-semibold text-gray-700">Invoice No.:</label><input type="text" id="invoice-no" class="input-field"></div>
-            <div><label for="billing-date" class="block mb-1 font-semibold text-gray-700">Billing Date:</label><input type="date" id="billing-date" class="input-field"></div>
-            <div><label for="salesman" class="block mb-1 font-semibold text-gray-700">Salesman:</label><input type="text" id="salesman" class="input-field"></div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div><label for="shipper-name" class="block mb-1 font-semibold text-gray-700">Shipper's Name:</label><input type="text" id="shipper-name" class="input-field"></div>
-            <div><label for="consignee-name" class="block mb-1 font-semibold text-gray-700">Consignee's Name:</label><input type="text" id="consignee-name" class="input-field"></div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <div><label for="mawb" class="block mb-1 font-semibold text-gray-700">MAWB / OBL / TCN No.:</label><input type="text" id="mawb" class="input-field"></div>
-            <div><label for="hawb" class="block mb-1 font-semibold text-gray-700">HAWB / HBL:</label><input type="text" id="hawb" class="input-field"></div>
-            <div><label for="teams-of-shipping" class="block mb-1 font-semibold text-gray-700">Teams of Shipping:</label><input type="text" id="teams-of-shipping" class="input-field"></div>
-            <div><label for="origin" class="block mb-1 font-semibold text-gray-700">Origin:</label><input type="text" id="origin" class="input-field"></div>
-            <div><label for="no-of-pieces" class="block mb-1 font-semibold text-gray-700">No. of Pieces:</label><input type="text" id="no-of-pieces" class="input-field"></div>
-            <div><label for="gross-weight" class="block mb-1 font-semibold text-gray-700">Gross Weight:</label><input type="text" id="gross-weight" class="input-field"></div>
-            <div><label for="destination" class="block mb-1 font-semibold text-gray-700">Destination:</label><input type="text" id="destination" class="input-field"></div>
-            <div><label for="volume-weight" class="block mb-1 font-semibold text-gray-700">Volume Weight:</label><input type="text" id="volume-weight" class="input-field"></div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="lg:col-span-2"><label for="description" class="block mb-1 font-semibold text-gray-700">Description:</label><input type="text" id="description" class="input-field"></div>
-            <div><label for="carrier" class="block mb-1 font-semibold text-gray-700">Carrier / Shipping Line / Trucking Co:</label><input type="text" id="carrier" class="input-field"></div>
-            <div><label for="truck-no" class="block mb-1 font-semibold text-gray-700">Truck No. / Driver's Name:</label><input type="text" id="truck-no" class="input-field"></div>
-            <div><label for="vessel-name" class="block mb-1 font-semibold text-gray-700">Vessel's Name:</label><input type="text" id="vessel-name" class="input-field"></div>
-            <div><label for="flight-voyage-no" class="block mb-1 font-semibold text-gray-700">Flight / Voyage No.:</label><input type="text" id="flight-voyage-no" class="input-field"></div>
-            <div><label for="container-no" class="block mb-1 font-semibold text-gray-700">Container No.:</label><input type="text" id="container-no" class="input-field"></div>
-        </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div><label for="invoice-no" class="block mb-1 font-semibold text-gray-700">Invoice No.:</label><input type="text" id="invoice-no" class="input-field"></div>
+                <div><label for="billing-date" class="block mb-1 font-semibold text-gray-700">Billing Date:</label><input type="date" id="billing-date" class="input-field"></div>
+                <div><label for="salesman" class="block mb-1 font-semibold text-gray-700">Salesman:</label><input type="text" id="salesman" class="input-field"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div><label for="shipper-name" class="block mb-1 font-semibold text-gray-700">Shipper's Name:</label><input type="text" id="shipper-name" class="input-field"></div>
+                <div><label for="consignee-name" class="block mb-1 font-semibold text-gray-700">Consignee's Name:</label><input type="text" id="consignee-name" class="input-field"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div><label for="mawb" class="block mb-1 font-semibold text-gray-700">MAWB / OBL / TCN No.:</label><input type="text" id="mawb" class="input-field"></div>
+                <div><label for="hawb" class="block mb-1 font-semibold text-gray-700">HAWB / HBL:</label><input type="text" id="hawb" class="input-field"></div>
+                <div><label for="teams-of-shipping" class="block mb-1 font-semibold text-gray-700">Teams of Shipping:</label><input type="text" id="teams-of-shipping" class="input-field"></div>
+                <div><label for="origin" class="block mb-1 font-semibold text-gray-700">Origin:</label><input type="text" id="origin" class="input-field"></div>
+                <div><label for="no-of-pieces" class="block mb-1 font-semibold text-gray-700">No. of Pieces:</label><input type="text" id="no-of-pieces" class="input-field"></div>
+                <div><label for="gross-weight" class="block mb-1 font-semibold text-gray-700">Gross Weight:</label><input type="text" id="gross-weight" class="input-field"></div>
+                <div><label for="destination" class="block mb-1 font-semibold text-gray-700">Destination:</label><input type="text" id="destination" class="input-field"></div>
+                <div><label for="volume-weight" class="block mb-1 font-semibold text-gray-700">Volume Weight:</label><input type="text" id="volume-weight" class="input-field"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="lg:col-span-2"><label for="description" class="block mb-1 font-semibold text-gray-700">Description:</label><input type="text" id="description" class="input-field"></div>
+                <div><label for="carrier" class="block mb-1 font-semibold text-gray-700">Carrier / Shipping Line / Trucking Co:</label><input type="text" id="carrier" class="input-field"></div>
+                <div><label for="truck-no" class="block mb-1 font-semibold text-gray-700">Truck No. / Driver's Name:</label><input type="text" id="truck-no" class="input-field"></div>
+                <div><label for="vessel-name" class="block mb-1 font-semibold text-gray-700">Vessel's Name:</label><input type="text" id="vessel-name" class="input-field"></div>
+                <div><label for="flight-voyage-no" class="block mb-1 font-semibold text-gray-700">Flight / Voyage No.:</label><input type="text" id="flight-voyage-no" class="input-field"></div>
+                <div><label for="container-no" class="block mb-1 font-semibold text-gray-700">Container No.:</label><input type="text" id="container-no" class="input-field"></div>
+            </div>
 
-        <!-- Charges Table -->
-        <h2 class="text-xl font-semibold text-gray-800 mb-2">Charges</h2>
-        <div class="mb-6 overflow-x-auto">
-            <table class="w-full border-collapse">
-                <thead><tr class="bg-gray-100"><th class="table-cell font-semibold w-2/5">Description</th><th class="table-cell font-semibold">Cost</th><th class="table-cell font-semibold">Selling</th><th class="table-cell font-semibold">Profit</th><th class="table-cell font-semibold">Notes</th></tr></thead>
-                <tbody id="charges-table-body"></tbody>
-            </table>
-        </div>
+            <!-- Charges Table -->
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">Charges</h2>
+            <div class="mb-6 overflow-x-auto">
+                <table class="w-full border-collapse">
+                    <thead><tr class="bg-gray-100"><th class="table-cell font-semibold w-2/5">Description</th><th class="table-cell font-semibold">Cost</th><th class="table-cell font-semibold">Selling</th><th class="table-cell font-semibold">Profit</th><th class="table-cell font-semibold">Notes</th></tr></thead>
+                    <tbody id="charges-table-body"></tbody>
+                </table>
+            </div>
 
-        <!-- Remarks Section -->
-        <div class="mb-8">
-            <label for="remarks" class="block font-semibold text-gray-700 mb-2">REMARKS:</label>
-            <textarea id="remarks" rows="4" class="input-field w-full"></textarea>
-        </div>
+            <!-- Remarks Section -->
+            <div class="mb-8">
+                <label for="remarks" class="block font-semibold text-gray-700 mb-2">REMARKS:</label>
+                <textarea id="remarks" rows="4" class="input-field w-full"></textarea>
+            </div>
 
-        <!-- Footer Section -->
-        <footer class="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6 border-t">
-            <div><label class="block mb-2 font-semibold text-gray-700">PREPARED BY</label><input type="text" id="prepared-by" class="input-field"></div>
-            <div><label class="block mb-2 font-semibold text-gray-700">CHECKED BY</label><input type="text" id="checked-by" class="input-field"></div>
-            <div><label class="block mb-2 font-semibold text-gray-700">APPROVED BY</label><input type="text" id="approved-by" class="input-field"></div>
-        </footer>
+            <!-- Footer Section -->
+            <footer class="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6 border-t items-end">
+                <div><label class="block mb-2 font-semibold text-gray-700">PREPARED BY</label><input type="text" id="prepared-by" class="input-field"></div>
+                <div><label class="block mb-2 font-semibold text-gray-700">CHECKED BY</label><input type="text" id="checked-by" class="input-field"></div>
+                <div>
+                    <label class="block mb-2 font-semibold text-gray-700">APPROVED BY</label>
+                    <input type="text" id="approved-by" class="input-field bg-gray-100" readonly>
+                    <button id="approve-btn" class="admin-only mt-2 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Approve Job File</button>
+                </div>
+            </footer>
 
-        <!-- Action Buttons -->
-        <div class="text-center mt-10 no-print flex flex-wrap justify-center gap-2 sm:gap-4">
-             <button onclick="openAnalyticsDashboard()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">Analytics</button>
-             <button onclick="openFileManager()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">File Manager</button>
-             <button onclick="saveJobFile()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">Save to DB</button>
-             <button onclick="clearForm()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">New Job</button>
-             <button onclick="printPage()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">Print</button>
+            <!-- Action Buttons -->
+            <div class="text-center mt-10 no-print flex flex-wrap justify-center gap-2 sm:gap-4">
+                 <button onclick="openAnalyticsDashboard()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">Analytics</button>
+                 <button onclick="openFileManager()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">File Manager</button>
+                 <button onclick="saveJobFile()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">Save to DB</button>
+                 <button onclick="clearForm()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">New Job</button>
+                 <button onclick="printPage()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">Print</button>
+            </div>
         </div>
     </div>
 
@@ -230,22 +279,6 @@
             </div>
             <input type="text" id="search-bar" class="input-field w-full mb-4" placeholder="Search job files...">
             <div id="job-files-list" class="space-y-2 max-h-[60vh] overflow-y-auto"></div>
-        </div>
-    </div>
-    
-    <!-- Confirmation Modal -->
-    <div id="confirm-modal" class="overlay">
-        <div class="modal-content max-w-sm">
-            <h3 class="text-lg font-bold mb-4" id="confirm-title">Confirm Deletion</h3>
-            <p id="confirm-message" class="mb-4">Are you sure?</p>
-            <div class="space-y-2">
-                <label for="delete-password" class="block text-sm font-medium text-gray-700">Enter Password to Delete:</label>
-                <input type="password" id="delete-password" class="input-field w-full" placeholder="Password is 1234">
-            </div>
-            <div class="text-right mt-6 space-x-2">
-                <button id="confirm-cancel" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Cancel</button>
-                <button id="confirm-ok" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Delete</button>
-            </div>
         </div>
     </div>
 
@@ -276,11 +309,12 @@
     <script type="module">
         // Import Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // Global variables
-        let db, auth, userId;
+        let db, auth;
+        let currentUser = null;
         let jobFilesCache = []; // Cache for analytics
 
         // --- Firebase Initialization ---
@@ -301,17 +335,28 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                try {
-                    await signInAnonymously(auth);
-                    userId = auth.currentUser.uid;
-                    console.log("Signed in anonymously with UID:", userId);
-                    loadJobFiles();
-                } catch (error) {
-                    console.error("Anonymous sign-in failed:", error);
-                    console.warn("Proceeding without authentication. Ensure Firestore rules allow public access and Anonymous Sign-in is enabled in your Firebase project.");
-                    userId = 'anonymous-user'; // Fallback
-                    loadJobFiles(); // Attempt to load files anyway, relying on open security rules
-                }
+                // Auth state listener
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        const userDocRef = doc(db, 'users', user.uid);
+                        const userDoc = await getDoc(userDocRef);
+                        
+                        if (userDoc.exists()) {
+                            currentUser = { uid: user.uid, email: user.email, ...userDoc.data() };
+                        } else {
+                            // This case handles the very first user or a user whose doc is missing
+                            currentUser = { uid: user.uid, email: user.email, role: 'user' }; // Default to user
+                        }
+                        
+                        console.log("User logged in:", currentUser);
+                        showApp();
+                        loadJobFiles();
+                    } else {
+                        currentUser = null;
+                        console.log("User logged out");
+                        showLogin();
+                    }
+                });
 
             } catch (error) {
                 console.error("Firebase initialization failed:", error);
@@ -319,35 +364,106 @@
             }
         }
 
+        // --- Authentication Logic ---
+        async function handleSignUp(email, password) {
+            showLoader();
+            try {
+                // Check if any users exist to determine if this is the first one
+                const usersCollectionRef = collection(db, 'users');
+                const userQuerySnapshot = await getDocs(usersCollectionRef);
+                const isFirstUser = userQuerySnapshot.empty;
+
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Create a user document in Firestore
+                const userDocRef = doc(db, 'users', user.uid);
+                const newUser = {
+                    email: user.email,
+                    role: isFirstUser ? 'admin' : 'user', // First user is admin
+                    createdAt: serverTimestamp()
+                };
+                await setDoc(userDocRef, newUser);
+                console.log(isFirstUser ? "First user created as admin." : "New user created.");
+                showNotification("Account created successfully! Please log in.", false);
+
+            } catch (error) {
+                console.error("Sign up error:", error);
+                showNotification(error.message, true);
+            }
+            hideLoader();
+        }
+
+        async function handleLogin(email, password) {
+            showLoader();
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                console.error("Login error:", error);
+                showNotification(error.message, true);
+            }
+            hideLoader();
+        }
+
+        function handleLogout() {
+            signOut(auth);
+        }
+
         // --- Data Handling (Firestore) ---
         window.saveJobFile = async function() {
-            if (!db) {
-                showNotification("Database not connected.", true);
-                return;
-            }
+            if (!db) { showNotification("Database not connected.", true); return; }
             showLoader();
             const jobFileNo = document.getElementById('job-file-no').value.trim();
-            if (!jobFileNo) {
-                hideLoader();
-                showNotification("Please enter a Job File No. It is required.", true);
-                return;
-            }
+            if (!jobFileNo) { hideLoader(); showNotification("Please enter a Job File No.", true); return; }
 
             const data = getFormData();
             data.totalCost = parseFloat(document.getElementById('total-cost').textContent) || 0;
             data.totalSelling = parseFloat(document.getElementById('total-selling').textContent) || 0;
             data.totalProfit = parseFloat(document.getElementById('total-profit').textContent) || 0;
             data.updatedAt = serverTimestamp();
+            data.lastUpdatedBy = currentUser.email;
 
             try {
                 const docRef = doc(db, 'jobfiles', jobFileNo);
                 await setDoc(docRef, data, { merge: true });
                 hideLoader();
-                showNotification("Job file has been saved to the database!");
+                showNotification("Job file saved successfully!");
             } catch (error) {
                 hideLoader();
                 console.error("Error saving document: ", error);
                 showNotification("Error saving job file.", true);
+            }
+        }
+        
+        window.approveJobFile = async function() {
+            if (currentUser.role !== 'admin') {
+                showNotification("Only admins can approve job files.", true);
+                return;
+            }
+            const jobFileNo = document.getElementById('job-file-no').value.trim();
+            if (!jobFileNo) {
+                showNotification("Please save the job file first.", true);
+                return;
+            }
+            
+            showLoader();
+            const approvalData = {
+                approvedBy: currentUser.email,
+                approvedAt: serverTimestamp()
+            };
+            
+            try {
+                const docRef = doc(db, 'jobfiles', jobFileNo);
+                await setDoc(docRef, approvalData, { merge: true });
+                document.getElementById('approved-by').value = `${currentUser.email} on ${new Date().toLocaleDateString()}`;
+                document.getElementById('approve-btn').disabled = true;
+                document.getElementById('approve-btn').textContent = "Approved";
+                hideLoader();
+                showNotification("Job File Approved!");
+            } catch (error) {
+                hideLoader();
+                console.error("Error approving document: ", error);
+                showNotification("Error approving job file.", true);
             }
         }
 
@@ -369,6 +485,7 @@
                 const sortedDocs = [...jobFilesCache].sort((a,b) => (b.updatedAt?.toDate() || 0) - (a.updatedAt?.toDate() || 0));
 
                 sortedDocs.forEach((docData) => {
+                    const deleteButton = currentUser.role === 'admin' ? `<button onclick="confirmDelete('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Delete</button>` : '';
                     filesHtml += `
                         <div class="job-file-item border p-3 rounded-lg flex justify-between items-center bg-gray-50 hover:bg-gray-100" 
                              data-search-term="${(docData.jfn || '').toLowerCase()} ${(docData.sh || '').toLowerCase()} ${(docData.co || '').toLowerCase()}">
@@ -380,7 +497,7 @@
                             <div class="space-x-2 flex-shrink-0">
                                 <button onclick="previewJobFileById('${docData.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded text-sm">Preview</button>
                                 <button onclick="loadJobFileById('${docData.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm">Load</button>
-                                <button onclick="confirmDelete('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Delete</button>
+                                ${deleteButton}
                             </div>
                         </div>
                     `;
@@ -451,23 +568,20 @@
 
         // --- Confirmation Modal Logic ---
         window.confirmDelete = (docId) => {
+            if (currentUser.role !== 'admin') {
+                showNotification("Only admins can delete files.", true);
+                return;
+            }
             const modal = document.getElementById('confirm-modal');
-            const passwordInput = document.getElementById('delete-password');
-            passwordInput.value = '';
-            
-            modal.querySelector('#confirm-message').textContent = `To delete job file "${docId}", please enter the password.`;
+            modal.querySelector('#confirm-message').textContent = `Are you sure you want to delete job file "${docId}"? This action cannot be undone.`;
             openModal('confirm-modal');
 
             const okButton = modal.querySelector('#confirm-ok');
             const cancelButton = modal.querySelector('#confirm-cancel');
 
             const onOk = () => {
-                if (passwordInput.value === '1234') {
-                    deleteJobFile(docId);
-                    closeConfirm();
-                } else {
-                    showNotification("Incorrect password!", true);
-                }
+                deleteJobFile(docId);
+                closeConfirm();
             };
             const closeConfirm = () => {
                 closeModal('confirm-modal');
@@ -533,6 +647,8 @@
 
         function displayAnalytics(data) {
             const body = document.getElementById('analytics-body');
+            const deleteButtonHtml = (fileId) => currentUser.role === 'admin' ? `<button onclick="confirmDelete('${fileId}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>` : '';
+
             body.innerHTML = `
                 <!-- Overall Summary -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
@@ -580,7 +696,7 @@
                                     <td class="space-x-1">
                                         <button onclick="previewJobFileById('${file.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs">Preview</button>
                                         <button onclick="loadJobFileById('${file.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded text-xs">Load</button>
-                                        <button onclick="confirmDelete('${file.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>
+                                        ${deleteButtonHtml(file.id)}
                                     </td>
                                 </tr>`).join('')}
                             </tbody>
@@ -610,6 +726,27 @@
 
 
         // --- UI Functions ---
+        function showLogin() {
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('app-container').style.display = 'none';
+        }
+
+        function showApp() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-container').style.display = 'block';
+            document.getElementById('user-email').textContent = currentUser.email;
+
+            // Show/hide admin elements based on role
+            const adminElements = document.querySelectorAll('.admin-only');
+            if (currentUser.role === 'admin') {
+                adminElements.forEach(el => el.style.display = 'block');
+                document.querySelector('#confirm-modal .space-y-2').style.display = 'none'; // Hide password for admin delete
+            } else {
+                adminElements.forEach(el => el.style.display = 'none');
+                document.querySelector('#confirm-modal .space-y-2').style.display = 'block'; // Show password for non-admin (though they won't see button)
+            }
+        }
+
         window.openModal = (id) => document.getElementById(id).classList.add('visible');
         window.closeModal = (id) => document.getElementById(id).classList.remove('visible');
         window.openFileManager = () => openModal('file-manager-modal');
@@ -623,6 +760,13 @@
             document.getElementById('date').valueAsDate = new Date();
             populateTable();
             calculate();
+            
+            // Reset approval field
+            const approveBtn = document.getElementById('approve-btn');
+            document.getElementById('approved-by').value = '';
+            approveBtn.disabled = false;
+            approveBtn.textContent = 'Approve Job File';
+
             showNotification("Form cleared. Ready for a new job file.");
         }
 
@@ -653,7 +797,35 @@
         });
 
         // Initialize Firebase on DOMContentLoaded
-        document.addEventListener('DOMContentLoaded', initializeFirebase);
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeFirebase();
+            
+            // Auth Event Listeners
+            const loginBtn = document.getElementById('login-btn');
+            const signupLink = document.getElementById('signup-link');
+            const logoutBtn = document.getElementById('logout-btn');
+            const approveBtn = document.getElementById('approve-btn');
+
+            loginBtn.addEventListener('click', () => {
+                const email = document.getElementById('email-address').value;
+                const password = document.getElementById('password').value;
+                handleLogin(email, password);
+            });
+
+            signupLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email-address').value;
+                const password = document.getElementById('password').value;
+                if (!email || !password) {
+                    showNotification("Please enter email and password to sign up.", true);
+                    return;
+                }
+                handleSignUp(email, password);
+            });
+            
+            logoutBtn.addEventListener('click', handleLogout);
+            approveBtn.addEventListener('click', approveJobFile);
+        });
     </script>
 
     <script>
@@ -684,7 +856,8 @@
                 vn: getVal('vessel-name'), fv: getVal('flight-voyage-no'), cn: getVal('container-no'),
                 ch: charges,
                 re: getVal('remarks'),
-                pb: getVal('prepared-by'), cb: getVal('checked-by'), ab: getVal('approved-by'),
+                pb: getVal('prepared-by'), cb: getVal('checked-by'),
+                // approvedBy is now handled by the approval system
             };
         }
 
@@ -705,7 +878,20 @@
             setVal('carrier', data.ca); setVal('truck-no', data.tn); setVal('vessel-name', data.vn);
             setVal('flight-voyage-no', data.fv); setVal('container-no', data.cn);
             setVal('remarks', data.re); setVal('prepared-by', data.pb); setVal('checked-by', data.cb);
-            setVal('approved-by', data.ab);
+            
+            // Handle approval status
+            const approveBtn = document.getElementById('approve-btn');
+            if (data.approvedBy) {
+                const approvedDate = data.approvedAt ? ` on ${data.approvedAt.toDate().toLocaleDateString()}` : '';
+                setVal('approved-by', `${data.approvedBy}${approvedDate}`);
+                approveBtn.disabled = true;
+                approveBtn.textContent = 'Approved';
+            } else {
+                setVal('approved-by', 'Pending Approval');
+                approveBtn.disabled = false;
+                approveBtn.textContent = 'Approve Job File';
+            }
+
 
             setChecked('clearance', data.cl);
             setChecked('product', data.pt);
@@ -736,6 +922,8 @@
                 totalSelling += selling;
                 totalProfit += (selling - cost);
             });
+            
+            const approvedByText = data.approvedBy ? `${data.approvedBy} on ${data.approvedAt?.toDate().toLocaleDateString()}` : 'Pending Approval';
 
             const checkedSymbol = '☑';
             const uncheckedSymbol = '☐';
@@ -791,7 +979,7 @@
                         <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>REMARKS:</strong><div class="print-field h-20">${(data.re || '').replace(/\n/g, '<br>')}</div></div>
                         <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>PREPARED BY:</strong><div class="print-field">${data.pb || ''}</div></div>
                         <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>CHECKED BY:</strong><div class="print-field">${data.cb || ''}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>APPROVED BY:</strong><div class="print-field">${data.ab || ''}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>APPROVED BY:</strong><div class="print-field">${approvedByText}</div></div>
                         <div class="col-span-3 bg-white p-1 flex items-center justify-center" style="border: 1px solid #374151;"><div class="qrcode-container"></div></div>
                     </div>
                 </div>`;
