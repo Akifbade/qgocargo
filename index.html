@@ -627,20 +627,20 @@
                 const sortedDocs = [...jobFilesCache].sort((a,b) => (b.updatedAt?.toDate() ? b.updatedAt.toDate() : 0) - (a.updatedAt?.toDate() ? a.updatedAt.toDate() : 0));
 
                 sortedDocs.forEach((docData) => {
-                    const deleteButton = currentUser.role === 'admin' ? `<button onclick="confirmDelete('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Delete</button>` : '';
+                    const deleteButton = currentUser.role === 'admin' ? `<button onclick="confirmDelete('KD{docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Delete</button>` : '';
                     const lastUpdated = docData.updatedAt?.toDate ? docData.updatedAt.toDate().toLocaleString() : 'N/A';
                     filesHtml += `
                         <div class="job-file-item border p-3 rounded-lg flex justify-between items-center bg-gray-50 hover:bg-gray-100" 
-                             data-search-term="${(docData.jfn || '').toLowerCase()} ${(docData.sh || '').toLowerCase()} ${(docData.co || '').toLowerCase()}">
+                             data-search-term="KD{(docData.jfn || '').toLowerCase()} KD{(docData.sh || '').toLowerCase()} KD{(docData.co || '').toLowerCase()}">
                             <div>
-                                <p class="font-bold text-indigo-700">${docData.jfn || 'No ID'}</p>
-                                <p class="text-sm text-gray-600">Shipper: ${docData.sh || 'N/A'} | Consignee: ${docData.co || 'N/A'}</p>
-                                <p class="text-xs text-gray-400">Last Updated: ${lastUpdated}</p>
+                                <p class="font-bold text-indigo-700">KD{docData.jfn || 'No ID'}</p>
+                                <p class="text-sm text-gray-600">Shipper: KD{docData.sh || 'N/A'} | Consignee: KD{docData.co || 'N/A'}</p>
+                                <p class="text-xs text-gray-400">Last Updated: KD{lastUpdated}</p>
                             </div>
                             <div class="space-x-2 flex-shrink-0">
-                                <button onclick="previewJobFileById('${docData.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded text-sm">Preview</button>
-                                <button onclick="loadJobFileById('${docData.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm">Load</button>
-                                ${deleteButton}
+                                <button onclick="previewJobFileById('KD{docData.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded text-sm">Preview</button>
+                                <button onclick="loadJobFileById('KD{docData.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm">Load</button>
+                                KD{deleteButton}
                             </div>
                         </div>
                     `;
@@ -716,7 +716,7 @@
                 return;
             }
             const modal = document.getElementById('confirm-modal');
-            modal.querySelector('#confirm-message').textContent = `Are you sure you want to delete job file "${docId}"? This action cannot be undone.`;
+            modal.querySelector('#confirm-message').textContent = `Are you sure you want to delete job file "KD{docId}"? This action cannot be undone.`;
             openModal('confirm-modal');
 
             const okButton = modal.querySelector('#confirm-ok');
@@ -795,7 +795,7 @@
 
         function displayAnalytics(data, sortBy = 'profit-desc') {
             const body = document.getElementById('analytics-body');
-            const deleteButtonHtml = (fileId) => currentUser.role === 'admin' ? `<button onclick="confirmDelete('${fileId}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>` : '';
+            const deleteButtonHtml = (fileId) => currentUser.role === 'admin' ? `<button onclick="confirmDelete('KD{fileId}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>` : '';
             
             // Sorting logic
             const sortedFiles = [...data.profitByFile];
@@ -811,10 +811,10 @@
             body.innerHTML = `
                 <!-- Overall Summary -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                    <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Total Jobs</p><p class="text-2xl font-bold">${data.totalJobs}</p></div>
-                    <div class="bg-blue-100 p-4 rounded-lg"><p class="text-sm text-blue-800">Total Revenue</p><p class="text-2xl font-bold text-blue-900">$${data.totalRevenue.toFixed(2)}</p></div>
-                    <div class="bg-red-100 p-4 rounded-lg"><p class="text-sm text-red-800">Total Cost</p><p class="text-2xl font-bold text-red-900">$${data.totalCost.toFixed(2)}</p></div>
-                    <div class="bg-green-100 p-4 rounded-lg"><p class="text-sm text-green-800">Total Profit</p><p class="text-2xl font-bold text-green-900">$${data.totalProfit.toFixed(2)}</p></div>
+                    <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Total Jobs</p><p class="text-2xl font-bold">KD{data.totalJobs}</p></div>
+                    <div class="bg-blue-100 p-4 rounded-lg"><p class="text-sm text-blue-800">Total Revenue</p><p class="text-2xl font-bold text-blue-900">KDKD{data.totalRevenue.toFixed(2)}</p></div>
+                    <div class="bg-red-100 p-4 rounded-lg"><p class="text-sm text-red-800">Total Cost</p><p class="text-2xl font-bold text-red-900">KDKD{data.totalCost.toFixed(2)}</p></div>
+                    <div class="bg-green-100 p-4 rounded-lg"><p class="text-sm text-green-800">Total Profit</p><p class="text-2xl font-bold text-green-900">KDKD{data.totalProfit.toFixed(2)}</p></div>
                 </div>
 
                 <!-- Detailed Breakdowns -->
@@ -823,18 +823,18 @@
                     <div>
                         <h4 class="text-lg font-semibold mb-2">Top Profitable Shippers</h4>
                         <table class="analytics-table"><thead><tr><th>Shipper</th><th>Total Profit</th></tr></thead>
-                        <tbody>${data.profitByShipper.slice(0, 5).map(([name, profit]) => `<tr><td>${name}</td><td>$${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table>
+                        <tbody>KD{data.profitByShipper.slice(0, 5).map(([name, profit]) => `<tr><td>KD{name}</td><td>KDKD{profit.toFixed(2)}</td></tr>`).join('')}</tbody></table>
                     </div>
                     <div>
                         <h4 class="text-lg font-semibold mb-2">Top Profitable Consignees</h4>
                         <table class="analytics-table"><thead><tr><th>Consignee</th><th>Total Profit</th></tr></thead>
-                        <tbody>${data.profitByConsignee.slice(0, 5).map(([name, profit]) => `<tr><td>${name}</td><td>$${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table>
+                        <tbody>KD{data.profitByConsignee.slice(0, 5).map(([name, profit]) => `<tr><td>KD{name}</td><td>KDKD{profit.toFixed(2)}</td></tr>`).join('')}</tbody></table>
                     </div>
                      <!-- Monthly Profit -->
                     <div class="lg:col-span-2">
                         <h4 class="text-lg font-semibold mb-2">Monthly Profit</h4>
                         <table class="analytics-table"><thead><tr><th>Month</th><th>Total Profit</th></tr></thead>
-                        <tbody>${data.monthlyProfit.map(([month, profit]) => `<tr><td>${month}</td><td>$${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table>
+                        <tbody>KD{data.monthlyProfit.map(([month, profit]) => `<tr><td>KD{month}</td><td>KDKD{profit.toFixed(2)}</td></tr>`).join('')}</tbody></table>
                     </div>
                 </div>
 
@@ -845,9 +845,9 @@
                         <div>
                             <label for="sort-analytics" class="text-sm mr-2">Sort by:</label>
                             <select id="sort-analytics" onchange="sortAnalyticsTable(this.value)" class="input-field w-auto inline-block">
-                                <option value="profit-desc" ${sortBy === 'profit-desc' ? 'selected' : ''}>Profit (High to Low)</option>
-                                <option value="date-desc" ${sortBy === 'date-desc' ? 'selected' : ''}>Date (Newest First)</option>
-                                <option value="status" ${sortBy === 'status' ? 'selected' : ''}>Status</option>
+                                <option value="profit-desc" KD{sortBy === 'profit-desc' ? 'selected' : ''}>Profit (High to Low)</option>
+                                <option value="date-desc" KD{sortBy === 'date-desc' ? 'selected' : ''}>Date (Newest First)</option>
+                                <option value="status" KD{sortBy === 'status' ? 'selected' : ''}>Status</option>
                             </select>
                             <button onclick="downloadAnalyticsCsv()" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-1 px-3 rounded text-sm ml-2">Download CSV</button>
                         </div>
@@ -855,16 +855,16 @@
                     <div class="max-h-64 overflow-y-auto">
                         <table class="analytics-table">
                             <thead><tr><th>Job File ID</th><th>Shipper</th><th>Profit</th><th>Status</th><th>Actions</th></tr></thead>
-                            <tbody>${sortedFiles.map(file => `
+                            <tbody>KD{sortedFiles.map(file => `
                                 <tr>
-                                    <td>${file.jfn || file.id}</td>
-                                    <td>${file.shipper || 'N/A'}</td>
-                                    <td>$${file.profit.toFixed(2)}</td>
-                                    <td>${file.status}</td>
+                                    <td>KD{file.jfn || file.id}</td>
+                                    <td>KD{file.shipper || 'N/A'}</td>
+                                    <td>KDKD{file.profit.toFixed(2)}</td>
+                                    <td>KD{file.status}</td>
                                     <td class="space-x-1">
-                                        <button onclick="previewJobFileById('${file.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs">Preview</button>
-                                        <button onclick="loadJobFileById('${file.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded text-xs">Load</button>
-                                        ${deleteButtonHtml(file.id)}
+                                        <button onclick="previewJobFileById('KD{file.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs">Preview</button>
+                                        <button onclick="loadJobFileById('KD{file.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded text-xs">Load</button>
+                                        KD{deleteButtonHtml(file.id)}
                                     </td>
                                 </tr>`).join('')}
                             </tbody>
@@ -913,15 +913,15 @@
                 const userId = doc.id;
                 userListHtml += `
                     <div class="grid grid-cols-3 gap-4 items-center p-2 border-b">
-                        <input type="text" data-uid="${userId}" class="display-name-input input-field col-span-1" value="${userData.displayName}">
-                        <select data-uid="${userId}" class="role-select input-field col-span-1">
-                            <option value="user" ${userData.role === 'user' ? 'selected' : ''}>User</option>
-                            <option value="checker" ${userData.role === 'checker' ? 'selected' : ''}>Checker</option>
-                            <option value="admin" ${userData.role === 'admin' ? 'selected' : ''}>Admin</option>
+                        <input type="text" data-uid="KD{userId}" class="display-name-input input-field col-span-1" value="KD{userData.displayName}">
+                        <select data-uid="KD{userId}" class="role-select input-field col-span-1">
+                            <option value="user" KD{userData.role === 'user' ? 'selected' : ''}>User</option>
+                            <option value="checker" KD{userData.role === 'checker' ? 'selected' : ''}>Checker</option>
+                            <option value="admin" KD{userData.role === 'admin' ? 'selected' : ''}>Admin</option>
                         </select>
-                        <select data-uid="${userId}" class="status-select input-field col-span-1">
-                            <option value="active" ${userData.status === 'active' ? 'selected' : ''}>Active</option>
-                            <option value="inactive" ${userData.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                        <select data-uid="KD{userId}" class="status-select input-field col-span-1">
+                            <option value="active" KD{userData.status === 'active' ? 'selected' : ''}>Active</option>
+                            <option value="inactive" KD{userData.status === 'inactive' ? 'selected' : ''}>Inactive</option>
                         </select>
                     </div>
                 `;
@@ -1150,7 +1150,7 @@
         function populateFormFromData(data) {
             const setVal = (id, value) => { if (document.getElementById(id)) document.getElementById(id).value = value || ''; };
             const setChecked = (type, values) => {
-                document.querySelectorAll(`[data-${type}]`).forEach(el => {
+                document.querySelectorAll(`[data-KD{type}]`).forEach(el => {
                     el.checked = (values || []).includes(el.dataset[type]);
                 });
             };
@@ -1169,8 +1169,8 @@
             const checkBtn = document.getElementById('check-btn');
             const checkedStamp = document.getElementById('checked-stamp');
             if (data.checkedBy) {
-                const checkedDate = data.checkedAt?.toDate() ? ` on ${data.checkedAt.toDate().toLocaleDateString()}` : '';
-                setVal('checked-by', `${data.checkedBy}${checkedDate}`);
+                const checkedDate = data.checkedAt?.toDate() ? ` on KD{data.checkedAt.toDate().toLocaleDateString()}` : '';
+                setVal('checked-by', `KD{data.checkedBy}KD{checkedDate}`);
                 checkBtn.disabled = true;
                 checkBtn.textContent = 'Checked';
                 checkedStamp.style.display = 'block';
@@ -1194,13 +1194,13 @@
             document.getElementById('approval-buttons').style.display = 'flex';
 
             if (data.status === 'approved') {
-                const approvedDate = data.approvedAt?.toDate() ? ` on ${data.approvedAt.toDate().toLocaleDateString()}` : '';
-                setVal('approved-by', `${data.approvedBy}${approvedDate}`);
+                const approvedDate = data.approvedAt?.toDate() ? ` on KD{data.approvedAt.toDate().toLocaleDateString()}` : '';
+                setVal('approved-by', `KD{data.approvedBy}KD{approvedDate}`);
                 document.getElementById('approval-buttons').style.display = 'none';
                 approvedStamp.style.display = 'block';
             } else if (data.status === 'rejected') {
-                const rejectedDate = data.rejectedAt?.toDate() ? ` on ${data.rejectedAt.toDate().toLocaleDateString()}` : '';
-                setVal('approved-by', `Rejected by ${data.rejectedBy}${rejectedDate}`);
+                const rejectedDate = data.rejectedAt?.toDate() ? ` on KD{data.rejectedAt.toDate().toLocaleDateString()}` : '';
+                setVal('approved-by', `Rejected by KD{data.rejectedBy}KD{rejectedDate}`);
                 document.getElementById('approval-buttons').style.display = 'none';
                 rejectedStamp.style.display = 'block';
                 rejectionBanner.style.display = 'block';
@@ -1240,12 +1240,12 @@
                 totalProfit += (selling - cost);
             });
             
-            const checkedByText = data.checkedBy ? `${data.checkedBy} on ${data.checkedAt?.toDate().toLocaleDateString()}` : 'Pending';
+            const checkedByText = data.checkedBy ? `KD{data.checkedBy} on KD{data.checkedAt?.toDate().toLocaleDateString()}` : 'Pending';
             let approvedByText = 'Pending Approval';
             if (data.status === 'approved') {
-                approvedByText = `${data.approvedBy} on ${data.approvedAt?.toDate().toLocaleDateString()}`;
+                approvedByText = `KD{data.approvedBy} on KD{data.approvedAt?.toDate().toLocaleDateString()}`;
             } else if (data.status === 'rejected') {
-                approvedByText = `REJECTED: ${data.rejectionReason}`;
+                approvedByText = `REJECTED: KD{data.rejectionReason}`;
             }
 
             const checkedSymbol = '☑';
@@ -1257,52 +1257,52 @@
                             <div id="print-logo-container" class="text-xl font-bold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
                         </div>
                         <div class="col-span-6 bg-white flex items-center justify-center text-xl font-bold" style="border: 1px solid #374151;">JOB FILE</div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><div><strong>Date:</strong> ${data.d || ''}</div><div><strong>P.O. #:</strong> ${data.po || ''}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><div><strong>Date:</strong> KD{data.d || ''}</div><div><strong>P.O. #:</strong> KD{data.po || ''}</div></div>
                         
-                        <div class="col-span-8 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Job File No.:</strong> ${data.jfn || ''}</div>
-                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Type:</strong> ${data.t || ''}</div>
+                        <div class="col-span-8 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Job File No.:</strong> KD{data.jfn || ''}</div>
+                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Type:</strong> KD{data.t || ''}</div>
 
                         <div class="col-span-12 bg-white p-1 grid grid-cols-4 gap-2 text-xs" style="border: 1px solid #374151;">
-                            <div><strong>Clearance</strong><br>${(data.cl || []).includes('Export') ? checkedSymbol : uncheckedSymbol} Export<br>${(data.cl || []).includes('Import') ? checkedSymbol : uncheckedSymbol} Import<br>${(data.cl || []).includes('Clearance') ? checkedSymbol : uncheckedSymbol} Clearance<br>${(data.cl || []).includes('Local Move') ? checkedSymbol : uncheckedSymbol} Local Move</div>
-                            <div><strong>Product Type</strong><br>${(data.pt || []).includes('Air Freight') ? checkedSymbol : uncheckedSymbol} Air<br>${(data.pt || []).includes('Sea Freight') ? checkedSymbol : uncheckedSymbol} Sea<br>${(data.pt || []).includes('Land Freight') ? checkedSymbol : uncheckedSymbol} Land<br>${(data.pt || []).includes('Others') ? checkedSymbol : uncheckedSymbol} Others</div>
+                            <div><strong>Clearance</strong><br>KD{(data.cl || []).includes('Export') ? checkedSymbol : uncheckedSymbol} Export<br>KD{(data.cl || []).includes('Import') ? checkedSymbol : uncheckedSymbol} Import<br>KD{(data.cl || []).includes('Clearance') ? checkedSymbol : uncheckedSymbol} Clearance<br>KD{(data.cl || []).includes('Local Move') ? checkedSymbol : uncheckedSymbol} Local Move</div>
+                            <div><strong>Product Type</strong><br>KD{(data.pt || []).includes('Air Freight') ? checkedSymbol : uncheckedSymbol} Air<br>KD{(data.pt || []).includes('Sea Freight') ? checkedSymbol : uncheckedSymbol} Sea<br>KD{(data.pt || []).includes('Land Freight') ? checkedSymbol : uncheckedSymbol} Land<br>KD{(data.pt || []).includes('Others') ? checkedSymbol : uncheckedSymbol} Others</div>
                         </div>
 
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Invoice No.:</strong><div class="print-field">${data.in || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Billing Date:</strong><div class="print-field">${data.bd || ''}</div></div>
-                        <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Salesman:</strong><div class="print-field">${data.sm || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Invoice No.:</strong><div class="print-field">KD{data.in || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Billing Date:</strong><div class="print-field">KD{data.bd || ''}</div></div>
+                        <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Salesman:</strong><div class="print-field">KD{data.sm || ''}</div></div>
 
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Shipper's Name:</strong><div class="print-field">${data.sh || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Consignee's Name:</strong><div class="print-field">${data.co || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Shipper's Name:</strong><div class="print-field">KD{data.sh || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Consignee's Name:</strong><div class="print-field">KD{data.co || ''}</div></div>
                         
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>MAWB/OBL/TCN:</strong><div class="print-field">${data.mawb || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Teams of Shipping:</strong><div class="print-field">${data.ts || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>HAWB/HBL:</strong><div class="print-field">${data.hawb || ''}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Origin:</strong><div class="print-field">${data.or || ''}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Destination:</strong><div class="print-field">${data.de || ''}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>No. of Pieces:</strong><div class="print-field">${data.pc || ''}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Gross Wt:</strong><div class="print-field">${data.gw || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Volume Wt:</strong><div class="print-field">${data.vw || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>MAWB/OBL/TCN:</strong><div class="print-field">KD{data.mawb || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Teams of Shipping:</strong><div class="print-field">KD{data.ts || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>HAWB/HBL:</strong><div class="print-field">KD{data.hawb || ''}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Origin:</strong><div class="print-field">KD{data.or || ''}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Destination:</strong><div class="print-field">KD{data.de || ''}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>No. of Pieces:</strong><div class="print-field">KD{data.pc || ''}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Gross Wt:</strong><div class="print-field">KD{data.gw || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Volume Wt:</strong><div class="print-field">KD{data.vw || ''}</div></div>
                         
-                        <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Description:</strong><div class="print-field">${data.dsc || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Carrier/Line/Trucking:</strong><div class="print-field">${data.ca || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Truck/Driver:</strong><div class="print-field">${data.tn || ''}</div></div>
-                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Vessel:</strong><div class="print-field">${data.vn || ''}</div></div>
-                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Flight/Voyage:</strong><div class="print-field">${data.fv || ''}</div></div>
-                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Container No:</strong><div class="print-field">${data.cn || ''}</div></div>
+                        <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Description:</strong><div class="print-field">KD{data.dsc || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Carrier/Line/Trucking:</strong><div class="print-field">KD{data.ca || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Truck/Driver:</strong><div class="print-field">KD{data.tn || ''}</div></div>
+                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Vessel:</strong><div class="print-field">KD{data.vn || ''}</div></div>
+                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Flight/Voyage:</strong><div class="print-field">KD{data.fv || ''}</div></div>
+                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Container No:</strong><div class="print-field">KD{data.cn || ''}</div></div>
 
                         <div class="col-span-12 bg-white p-0" style="border: 1px solid #374151;">
                             <table class="print-table w-full text-xs">
                                 <thead><tr><th>Description</th><th>Cost</th><th>Selling</th><th>Profit</th><th>Notes</th></tr></thead>
                                 <tbody>
-                                    ${(data.ch || []).map(c => `<tr><td>${c.l}</td><td>${c.c}</td><td>${c.s}</td><td>${(parseFloat(c.s || 0) - parseFloat(c.c || 0)).toFixed(2)}</td><td>${c.n}</td></tr>`).join('')}
-                                    <tr class="font-bold bg-gray-100"><td>TOTAL:</td><td>${totalCost.toFixed(2)}</td><td>${totalSelling.toFixed(2)}</td><td>${totalProfit.toFixed(2)}</td><td></td></tr>
+                                    KD{(data.ch || []).map(c => `<tr><td>KD{c.l}</td><td>KD{c.c}</td><td>KD{c.s}</td><td>KD{(parseFloat(c.s || 0) - parseFloat(c.c || 0)).toFixed(2)}</td><td>KD{c.n}</td></tr>`).join('')}
+                                    <tr class="font-bold bg-gray-100"><td>TOTAL:</td><td>KD{totalCost.toFixed(2)}</td><td>KD{totalSelling.toFixed(2)}</td><td>KD{totalProfit.toFixed(2)}</td><td></td></tr>
                                 </tbody>
                             </table>
                         </div>
-                        <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>REMARKS:</strong><div class="print-field h-20">${(data.re || '').replace(/\n/g, '<br>')}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>PREPARED BY:</strong><div class="print-field">${data.pb || ''}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>CHECKED BY:</strong><div class="print-field">${checkedByText}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>APPROVED BY:</strong><div class="print-field">${approvedByText}</div></div>
+                        <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>REMARKS:</strong><div class="print-field h-20">KD{(data.re || '').replace(/\n/g, '<br>')}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>PREPARED BY:</strong><div class="print-field">KD{data.pb || ''}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>CHECKED BY:</strong><div class="print-field">KD{checkedByText}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>APPROVED BY:</strong><div class="print-field">KD{approvedByText}</div></div>
                         <div class="col-span-3 bg-white p-1 flex items-center justify-center" style="border: 1px solid #374151;"><div class="qrcode-container"></div></div>
                     </div>
                 </div>`;
@@ -1310,7 +1310,7 @@
             // Create a temporary div to generate QR code
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = printHTML;
-            const qrText = `JobFile No: ${data.jfn}\nDate: ${data.d}\nShipper: ${data.sh}\nConsignee: ${data.co}`;
+            const qrText = `JobFile No: KD{data.jfn}\nDate: KD{data.d}\nShipper: KD{data.sh}\nConsignee: KD{data.co}`;
             new QRCode(tempDiv.querySelector('.qrcode-container'), { text: qrText, width: 96, height: 96, correctLevel: QRCode.CorrectLevel.H });
             
             return tempDiv.innerHTML;
@@ -1331,7 +1331,7 @@
             
             const jobFileNo = data.jfn || 'JobFile';
             const date = data.d || new Date().toISOString().slice(0,10);
-            const opt = { margin: 0.2, filename: `${jobFileNo}_${date}.pdf`, image: { type: 'jpeg', quality: 1.0 }, html2canvas:  { scale: 3 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+            const opt = { margin: 0.2, filename: `KD{jobFileNo}_KD{date}.pdf`, image: { type: 'jpeg', quality: 1.0 }, html2canvas:  { scale: 3 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
             setTimeout(() => { html2pdf().from(element).set(opt).save().then(hideLoader); }, 500);
         }
 
@@ -1360,7 +1360,7 @@
         function populateTable() {
             const chargeKeys = ["Ex-works Charges:", "Land/Air / Sea Freight:", "Fuell Security / War Surcharge:", "Formalities:", "Delivery Order Fee:", "Transportation Charges:", "Inspection / Computer Print Charges:", "Handling Charges:", "Labor / Forklift Charges:", "Documentation Charges:", "Clearance Charges:", "Customs Duty:", "Terminal Handling Charges:", "Legalization Charges:", "Demurrage Charges:", "Loading / Offloading Charges:", "Destination Clearance Charges:", "Packing Charges:", "Port Charges:", "Other Charges:", "PAI Approval :", "Insurance Fee :", "EPA Charges :"];
             const tableBody = document.getElementById('charges-table-body');
-            let rowsHtml = chargeKeys.map(key => `<tr><td class="table-cell font-medium text-gray-700">${key}</td><td class="table-cell"><input type="text" class="cost-input input-field"></td><td class="table-cell"><input type="text" class="selling-input input-field"></td><td class="table-cell profit-output bg-gray-50"></td><td class="table-cell"><input type="text" class="notes-input input-field"></td></tr>`).join('');
+            let rowsHtml = chargeKeys.map(key => `<tr><td class="table-cell font-medium text-gray-700">KD{key}</td><td class="table-cell"><input type="text" class="cost-input input-field"></td><td class="table-cell"><input type="text" class="selling-input input-field"></td><td class="table-cell profit-output bg-gray-50"></td><td class="table-cell"><input type="text" class="notes-input input-field"></td></tr>`).join('');
             rowsHtml += `<tr id="total-row" class="bg-gray-100 font-bold"><td class="table-cell text-right">TOTAL:</td><td id="total-cost" class="table-cell"></td><td id="total-selling" class="table-cell"></td><td id="total-profit" class="table-cell"></td><td class="table-cell"></td></tr>`;
             tableBody.innerHTML = rowsHtml;
         }
