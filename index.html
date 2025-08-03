@@ -299,6 +299,12 @@
                 <textarea id="remarks" rows="4" class="input-field w-full"></textarea>
             </div>
 
+            <!-- NEW: Creator/Editor Info -->
+            <div id="file-info" class="text-xs text-gray-500 mb-4 border-t pt-4">
+                <span id="created-by-info"></span>
+                <span id="last-updated-by-info" class="ml-4"></span>
+            </div>
+
             <!-- Footer Section -->
             <footer class="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6 border-t items-end">
                 <div><label class="block mb-2 font-semibold text-gray-700">PREPARED BY</label><input type="text" id="prepared-by" class="input-field bg-gray-100" readonly></div>
@@ -629,6 +635,7 @@
         }
 
         // --- Data Handling (Firestore) ---
+        // UPDATED: saveJobFile function with re-approval logic
         window.saveJobFile = async function() {
             if (!db) { showNotification("Database not connected.", true); return; }
             showLoader();
@@ -639,14 +646,45 @@
             data.totalCost = parseFloat(document.getElementById('total-cost').textContent) || 0;
             data.totalSelling = parseFloat(document.getElementById('total-selling').textContent) || 0;
             data.totalProfit = parseFloat(document.getElementById('total-profit').textContent) || 0;
-            data.updatedAt = serverTimestamp();
-            data.lastUpdatedBy = currentUser.displayName;
-
+            
             try {
                 const docRef = doc(db, 'jobfiles', jobFileNo);
-                await setDoc(docRef, data, { merge: true });
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    // Updating an existing document
+                    const existingData = docSnap.data();
+                    data.lastUpdatedBy = currentUser.displayName;
+                    data.updatedAt = serverTimestamp();
+
+                    // If file was approved or checked, reset status for re-approval
+                    if (existingData.status === 'approved' || existingData.status === 'checked') {
+                        data.status = 'pending'; // Reset status
+                        data.checkedBy = null;
+                        data.checkedAt = null;
+                        data.approvedBy = null;
+                        data.approvedAt = null;
+                        data.rejectionReason = null;
+                        data.rejectedBy = null;
+                        data.rejectedAt = null;
+                        showNotification("File was re-submitted for approval.", false);
+                    }
+                    await setDoc(docRef, data, { merge: true });
+                } else {
+                    // Creating a new document
+                    data.createdBy = currentUser.displayName;
+                    data.createdAt = serverTimestamp();
+                    data.lastUpdatedBy = currentUser.displayName;
+                    data.updatedAt = serverTimestamp();
+                    data.status = 'pending';
+                    await setDoc(docRef, data);
+                }
+                
                 hideLoader();
                 showNotification("Job file saved successfully!");
+                // Reload the saved file to show updated status
+                loadJobFileById(jobFileNo);
+
             } catch (error) {
                 hideLoader();
                 console.error("Error saving document: ", error);
@@ -1167,6 +1205,7 @@
         window.closeModal = (id) => document.getElementById(id).classList.remove('visible');
         window.openFileManager = () => openModal('file-manager-modal');
         
+        // UPDATED: clearForm to reset new info fields
         window.clearForm = () => {
             const form = document.querySelector('#main-container');
             const inputs = form.querySelectorAll('input[type="text"], input[type="date"], textarea');
@@ -1177,8 +1216,15 @@
             populateTable();
             calculate();
             
-            // Set prepared by
+            // Set prepared by for a new file
             document.getElementById('prepared-by').value = currentUser.displayName;
+            
+            // Clear creator/editor info display
+            const createdInfo = document.getElementById('created-by-info');
+            const updatedInfo = document.getElementById('last-updated-by-info');
+            if(createdInfo) createdInfo.textContent = '';
+            if(updatedInfo) updatedInfo.textContent = '';
+
 
             // Reset approval and check fields
             const approveBtn = document.getElementById('approve-btn');
@@ -1257,7 +1303,8 @@
                 // checkedBy and approvedBy are handled by their respective systems
             };
         }
-
+        
+        // UPDATED: populateFormFromData to show creator/editor info
         function populateFormFromData(data) {
             const setVal = (id, value) => { if (document.getElementById(id)) document.getElementById(id).value = value || ''; };
             const setChecked = (type, values) => {
@@ -1274,7 +1321,28 @@
             setVal('destination', data.de); setVal('volume-weight', data.vw); setVal('description', data.dsc);
             setVal('carrier', data.ca); setVal('truck-no', data.tn); setVal('vessel-name', data.vn);
             setVal('flight-voyage-no', data.fv); setVal('container-no', data.cn);
-            setVal('remarks', data.re); setVal('prepared-by', data.pb);
+            setVal('remarks', data.re); 
+            
+            // Set prepared by, but fall back to createdBy if pb is empty
+            setVal('prepared-by', data.pb || data.createdBy || '');
+
+            // Display creator and editor info
+            const createdInfo = document.getElementById('created-by-info');
+            const updatedInfo = document.getElementById('last-updated-by-info');
+            
+            if (data.createdBy) {
+                const createdDate = data.createdAt?.toDate() ? ` on ${data.createdAt.toDate().toLocaleDateString()}` : '';
+                createdInfo.textContent = `Created by: ${data.createdBy}${createdDate}`;
+            } else {
+                createdInfo.textContent = '';
+            }
+
+            if (data.lastUpdatedBy) {
+                const updatedDate = data.updatedAt?.toDate() ? ` on ${data.updatedAt.toDate().toLocaleString()}` : '';
+                updatedInfo.textContent = `Last updated by: ${data.lastUpdatedBy}${updatedDate}`;
+            } else {
+                updatedInfo.textContent = '';
+            }
             
             // Handle check status
             const checkBtn = document.getElementById('check-btn');
@@ -1418,7 +1486,7 @@
             }, 750);
         }
 
-        // UPDATED: This function now only returns the HTML structure. QR generation is handled separately.
+        // UPDATED: getPrintViewHtml to include creator/editor info
         function getPrintViewHtml(data, isPublicView = false) {
             let totalCost = 0, totalSelling = 0, totalProfit = 0;
             (data.ch || []).forEach(c => {
@@ -1436,6 +1504,10 @@
             } else if (data.status === 'rejected') {
                 approvedByText = `REJECTED: ${data.rejectionReason}`;
             }
+            
+            const createdByText = data.createdBy ? `${data.createdBy} on ${data.createdAt?.toDate().toLocaleDateString()}` : (data.pb || 'N/A');
+            const lastUpdatedByText = data.lastUpdatedBy ? `${data.lastUpdatedBy} on ${data.updatedAt?.toDate().toLocaleString()}` : 'N/A';
+
 
             const checkedStampHtml = data.checkedBy ? `<div class="stamp stamp-checked" style="display: block;">Checked</div>` : '';
             let approvalStampHtml = '';
@@ -1500,7 +1572,7 @@
                             </table>
                         </div>
                         <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>REMARKS:</strong><div class="print-field h-20">${(data.re || '').replace(/\n/g, '<br>')}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>PREPARED BY:</strong><div class="print-field">${data.pb || ''}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>PREPARED BY:</strong><div class="print-field">${createdByText}</div></div>
                         <div class="col-span-3 bg-white p-1 text-xs relative" style="border: 1px solid #374151;">${checkedStampHtml}<strong>CHECKED BY:</strong><div class="print-field">${checkedByText}</div></div>
                         <div class="col-span-3 bg-white p-1 text-xs relative" style="border: 1px solid #374151;">${approvalStampHtml}<strong>APPROVED BY:</strong><div class="print-field">${approvedByText}</div></div>
                         ${qrContainerHtml}
