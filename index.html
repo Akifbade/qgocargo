@@ -99,7 +99,7 @@
         #analytics-modal .analytics-table th, #analytics-modal .analytics-table td { border: 1px solid #d1d5db; padding: 0.5rem; text-align: left; }
         #analytics-modal .analytics-table th { background-color: #f3f4f6; font-weight: 600; }
         #print-output .print-field, #preview-modal .print-field { border: 1px solid #6b7280; padding: 0.3rem; min-height: 24px; word-break: break-all; }
-        .admin-only { display: none; } /* Hide admin elements by default */
+        .admin-only, .checker-only { display: none; } /* Hide role-specific elements by default */
     </style>
     <style id="print-styles"></style>
 </head>
@@ -162,9 +162,12 @@
             <!-- User Info and Logout -->
             <div class="flex justify-between items-center mb-4 bg-gray-50 p-2 rounded-md">
                 <div>
-                    Logged in as: <span id="user-email" class="font-bold"></span>
+                    Logged in as: <span id="user-email" class="font-bold"></span> (<span id="user-role" class="capitalize"></span>)
                 </div>
-                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Logout</button>
+                <div>
+                    <button id="admin-panel-btn" class="admin-only bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Admin Panel</button>
+                    <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Logout</button>
+                </div>
             </div>
 
             <!-- Form Fields -->
@@ -244,7 +247,11 @@
             <!-- Footer Section -->
             <footer class="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6 border-t items-end">
                 <div><label class="block mb-2 font-semibold text-gray-700">PREPARED BY</label><input type="text" id="prepared-by" class="input-field"></div>
-                <div><label class="block mb-2 font-semibold text-gray-700">CHECKED BY</label><input type="text" id="checked-by" class="input-field"></div>
+                <div>
+                    <label class="block mb-2 font-semibold text-gray-700">CHECKED BY</label>
+                    <input type="text" id="checked-by" class="input-field bg-gray-100" readonly>
+                    <button id="check-btn" class="checker-only mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Check Job File</button>
+                </div>
                 <div>
                     <label class="block mb-2 font-semibold text-gray-700">APPROVED BY</label>
                     <input type="text" id="approved-by" class="input-field bg-gray-100" readonly>
@@ -313,6 +320,20 @@
                 <button onclick="closeModal('analytics-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
             <div id="analytics-body" class="space-y-6"></div>
+        </div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div id="admin-panel-modal" class="overlay">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">Admin Panel - User Management</h3>
+                <button onclick="closeModal('admin-panel-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div id="user-list" class="space-y-2 max-h-[60vh] overflow-y-auto"></div>
+            <div class="text-right mt-4">
+                <button onclick="saveUserRoles()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save Changes</button>
+            </div>
         </div>
     </div>
 
@@ -441,6 +462,38 @@
             }
         }
         
+        window.checkJobFile = async function() {
+            if (!['admin', 'checker'].includes(currentUser.role)) {
+                showNotification("You do not have permission to check job files.", true);
+                return;
+            }
+            const jobFileNo = document.getElementById('job-file-no').value.trim();
+            if (!jobFileNo) {
+                showNotification("Please save the job file first.", true);
+                return;
+            }
+            
+            showLoader();
+            const checkData = {
+                checkedBy: currentUser.email,
+                checkedAt: serverTimestamp()
+            };
+            
+            try {
+                const docRef = doc(db, 'jobfiles', jobFileNo);
+                await setDoc(docRef, checkData, { merge: true });
+                document.getElementById('checked-by').value = `${currentUser.email} on ${new Date().toLocaleDateString()}`;
+                document.getElementById('check-btn').disabled = true;
+                document.getElementById('check-btn').textContent = "Checked";
+                hideLoader();
+                showNotification("Job File Checked!");
+            } catch (error) {
+                hideLoader();
+                console.error("Error checking document: ", error);
+                showNotification("Error checking job file.", true);
+            }
+        }
+
         window.approveJobFile = async function() {
             if (currentUser.role !== 'admin') {
                 showNotification("Only admins can approve job files.", true);
@@ -731,6 +784,60 @@
             document.body.removeChild(link);
         }
 
+        // --- Admin Panel Logic ---
+        async function openAdminPanel() {
+            if (currentUser.role !== 'admin') {
+                showNotification("Access denied.", true);
+                return;
+            }
+            showLoader();
+            const usersCollectionRef = collection(db, 'users');
+            const userQuerySnapshot = await getDocs(usersCollectionRef);
+            const userListDiv = document.getElementById('user-list');
+            let userListHtml = '';
+
+            userQuerySnapshot.forEach(doc => {
+                const userData = doc.data();
+                const userId = doc.id;
+                userListHtml += `
+                    <div class="flex justify-between items-center p-2 border-b">
+                        <span>${userData.email}</span>
+                        <select data-uid="${userId}" class="role-select input-field w-32">
+                            <option value="user" ${userData.role === 'user' ? 'selected' : ''}>User</option>
+                            <option value="checker" ${userData.role === 'checker' ? 'selected' : ''}>Checker</option>
+                            <option value="admin" ${userData.role === 'admin' ? 'selected' : ''}>Admin</option>
+                        </select>
+                    </div>
+                `;
+            });
+            userListDiv.innerHTML = userListHtml;
+            hideLoader();
+            openModal('admin-panel-modal');
+        }
+
+        async function saveUserRoles() {
+            showLoader();
+            const batch = writeBatch(db);
+            const selects = document.querySelectorAll('.role-select');
+            selects.forEach(select => {
+                const uid = select.dataset.uid;
+                const newRole = select.value;
+                const userDocRef = doc(db, 'users', uid);
+                batch.update(userDocRef, { role: newRole });
+            });
+
+            try {
+                await batch.commit();
+                hideLoader();
+                showNotification("User roles updated successfully!");
+                closeModal('admin-panel-modal');
+            } catch (error) {
+                hideLoader();
+                console.error("Error updating roles: ", error);
+                showNotification("Failed to update roles.", true);
+            }
+        }
+
 
         // --- UI Functions ---
         function showLogin() {
@@ -742,13 +849,21 @@
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-container').style.display = 'block';
             document.getElementById('user-email').textContent = currentUser.email;
+            document.getElementById('user-role').textContent = currentUser.role;
 
-            // Show/hide admin elements based on role
+            // Show/hide role-specific elements
             const adminElements = document.querySelectorAll('.admin-only');
+            const checkerElements = document.querySelectorAll('.checker-only');
+            
             if (currentUser.role === 'admin') {
                 adminElements.forEach(el => el.style.display = 'block');
+                checkerElements.forEach(el => el.style.display = 'block');
+            } else if (currentUser.role === 'checker') {
+                adminElements.forEach(el => el.style.display = 'none');
+                checkerElements.forEach(el => el.style.display = 'block');
             } else {
                 adminElements.forEach(el => el.style.display = 'none');
+                checkerElements.forEach(el => el.style.display = 'none');
             }
         }
 
@@ -766,11 +881,15 @@
             populateTable();
             calculate();
             
-            // Reset approval field
+            // Reset approval and check fields
             const approveBtn = document.getElementById('approve-btn');
+            const checkBtn = document.getElementById('check-btn');
             document.getElementById('approved-by').value = '';
+            document.getElementById('checked-by').value = '';
             approveBtn.disabled = false;
             approveBtn.textContent = 'Approve Job File';
+            checkBtn.disabled = false;
+            checkBtn.textContent = 'Check Job File';
 
             showNotification("Form cleared. Ready for a new job file.");
         }
@@ -810,6 +929,8 @@
             const signupLink = document.getElementById('signup-link');
             const logoutBtn = document.getElementById('logout-btn');
             const approveBtn = document.getElementById('approve-btn');
+            const checkBtn = document.getElementById('check-btn');
+            const adminPanelBtn = document.getElementById('admin-panel-btn');
 
             loginBtn.addEventListener('click', () => {
                 const email = document.getElementById('email-address').value;
@@ -830,6 +951,11 @@
             
             logoutBtn.addEventListener('click', handleLogout);
             approveBtn.addEventListener('click', approveJobFile);
+            checkBtn.addEventListener('click', checkJobFile);
+            adminPanelBtn.addEventListener('click', openAdminPanel);
+            
+            // Make saveUserRoles globally accessible for the button's onclick
+            window.saveUserRoles = saveUserRoles;
         });
     </script>
 
@@ -861,8 +987,8 @@
                 vn: getVal('vessel-name'), fv: getVal('flight-voyage-no'), cn: getVal('container-no'),
                 ch: charges,
                 re: getVal('remarks'),
-                pb: getVal('prepared-by'), cb: getVal('checked-by'),
-                // approvedBy is now handled by the approval system
+                pb: getVal('prepared-by'),
+                // checkedBy and approvedBy are handled by their respective systems
             };
         }
 
@@ -882,7 +1008,20 @@
             setVal('destination', data.de); setVal('volume-weight', data.vw); setVal('description', data.dsc);
             setVal('carrier', data.ca); setVal('truck-no', data.tn); setVal('vessel-name', data.vn);
             setVal('flight-voyage-no', data.fv); setVal('container-no', data.cn);
-            setVal('remarks', data.re); setVal('prepared-by', data.pb); setVal('checked-by', data.cb);
+            setVal('remarks', data.re); setVal('prepared-by', data.pb);
+            
+            // Handle check status
+            const checkBtn = document.getElementById('check-btn');
+            if (data.checkedBy) {
+                const checkedDate = data.checkedAt?.toDate() ? ` on ${data.checkedAt.toDate().toLocaleDateString()}` : '';
+                setVal('checked-by', `${data.checkedBy}${checkedDate}`);
+                checkBtn.disabled = true;
+                checkBtn.textContent = 'Checked';
+            } else {
+                setVal('checked-by', 'Pending Check');
+                checkBtn.disabled = false;
+                checkBtn.textContent = 'Check Job File';
+            }
             
             // Handle approval status
             const approveBtn = document.getElementById('approve-btn');
@@ -928,7 +1067,8 @@
                 totalProfit += (selling - cost);
             });
             
-            const approvedByText = data.approvedBy ? `${data.approvedBy} on ${data.approvedAt?.toDate().toLocaleDateString()}` : 'Pending Approval';
+            const checkedByText = data.checkedBy ? `${data.checkedBy} on ${data.checkedAt?.toDate().toLocaleDateString()}` : 'Pending';
+            const approvedByText = data.approvedBy ? `${data.approvedBy} on ${data.approvedAt?.toDate().toLocaleDateString()}` : 'Pending';
 
             const checkedSymbol = '☑';
             const uncheckedSymbol = '☐';
@@ -983,7 +1123,7 @@
                         </div>
                         <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>REMARKS:</strong><div class="print-field h-20">${(data.re || '').replace(/\n/g, '<br>')}</div></div>
                         <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>PREPARED BY:</strong><div class="print-field">${data.pb || ''}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>CHECKED BY:</strong><div class="print-field">${data.cb || ''}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>CHECKED BY:</strong><div class="print-field">${checkedByText}</div></div>
                         <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>APPROVED BY:</strong><div class="print-field">${approvedByText}</div></div>
                         <div class="col-span-3 bg-white p-1 flex items-center justify-center" style="border: 1px solid #374151;"><div class="qrcode-container"></div></div>
                     </div>
