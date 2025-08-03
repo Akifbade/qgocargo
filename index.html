@@ -335,7 +335,7 @@
             </div>
             <div id="user-list" class="space-y-2 max-h-[60vh] overflow-y-auto"></div>
             <div class="text-right mt-4">
-                <button onclick="saveUserRoles()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save Changes</button>
+                <button onclick="saveUserChanges()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save Changes</button>
             </div>
         </div>
     </div>
@@ -483,7 +483,7 @@
         }
         
         window.checkJobFile = async function() {
-            if (!['admin', 'checker'].includes(currentUser.role)) {
+            if (!currentUser || !['admin', 'checker'].includes(currentUser.role)) {
                 showNotification("You do not have permission to check job files.", true);
                 return;
             }
@@ -851,7 +851,10 @@
                 const userId = doc.id;
                 userListHtml += `
                     <div class="flex justify-between items-center p-2 border-b">
-                        <span>${userData.displayName} (${userData.email})</span>
+                        <div class="flex-grow mr-2">
+                           <input type="text" data-uid="${userId}" class="display-name-input input-field" value="${userData.displayName}">
+                           <small class="text-gray-500">${userData.email}</small>
+                        </div>
                         <select data-uid="${userId}" class="role-select input-field w-32">
                             <option value="user" ${userData.role === 'user' ? 'selected' : ''}>User</option>
                             <option value="checker" ${userData.role === 'checker' ? 'selected' : ''}>Checker</option>
@@ -865,21 +868,29 @@
             openModal('admin-panel-modal');
         }
 
-        async function saveUserRoles() {
+        async function saveUserChanges() {
             showLoader();
             const batch = writeBatch(db);
-            const selects = document.querySelectorAll('.role-select');
-            selects.forEach(select => {
-                const uid = select.dataset.uid;
-                const newRole = select.value;
+            const userRows = document.querySelectorAll('#user-list > div');
+            
+            userRows.forEach(row => {
+                const nameInput = row.querySelector('.display-name-input');
+                const roleSelect = row.querySelector('.role-select');
+                const uid = nameInput.dataset.uid;
+                const newName = nameInput.value;
+                const newRole = roleSelect.value;
+                
                 const userDocRef = doc(db, 'users', uid);
-                batch.update(userDocRef, { role: newRole });
+                batch.update(userDocRef, { 
+                    displayName: newName,
+                    role: newRole 
+                });
             });
 
             try {
                 await batch.commit();
                 hideLoader();
-                showNotification("User roles updated successfully!");
+                showNotification("User roles and names updated successfully!");
                 closeModal('admin-panel-modal');
             } catch (error) {
                 hideLoader();
@@ -1018,7 +1029,7 @@
             adminPanelBtn.addEventListener('click', openAdminPanel);
             
             // Make saveUserRoles globally accessible for the button's onclick
-            window.saveUserRoles = saveUserRoles;
+            window.saveUserChanges = saveUserChanges;
         });
     </script>
 
