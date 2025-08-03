@@ -846,7 +846,7 @@
                     l: row.cells[0].textContent.trim(), // label
                     c: row.querySelector('.cost-input').value || '0', // cost
                     s: row.querySelector('.selling-input').value || '0', // selling
-                    n: row.cells[4].querySelector('input').value || '' // notes
+                    n: row.querySelector('.notes-input').value || '' // notes
                 });
             });
 
@@ -910,7 +910,7 @@
                     if (chargeData) {
                         row.querySelector('.cost-input').value = chargeData.c;
                         row.querySelector('.selling-input').value = chargeData.s;
-                        row.querySelector('input[type="text"]:not([class])').value = chargeData.n;
+                        row.querySelector('.notes-input').value = chargeData.n;
                     }
                 });
             }
@@ -1042,7 +1042,7 @@
         function populateTable() {
             const chargeKeys = ["Ex-works Charges:", "Land/Air / Sea Freight:", "Fuell Security / War Surcharge:", "Formalities:", "Delivery Order Fee:", "Transportation Charges:", "Inspection / Computer Print Charges:", "Handling Charges:", "Labor / Forklift Charges:", "Documentation Charges:", "Clearance Charges:", "Customs Duty:", "Terminal Handling Charges:", "Legalization Charges:", "Demurrage Charges:", "Loading / Offloading Charges:", "Destination Clearance Charges:", "Packing Charges:", "Port Charges:", "Other Charges:", "PAI Approval :", "Insurance Fee :", "EPA Charges :"];
             const tableBody = document.getElementById('charges-table-body');
-            let rowsHtml = chargeKeys.map(key => `<tr><td class="table-cell font-medium text-gray-700">${key}</td><td class="table-cell"><input type="text" class="cost-input input-field"></td><td class="table-cell"><input type="text" class="selling-input input-field"></td><td class="table-cell profit-output bg-gray-50"></td><td class="table-cell"><input type="text" class="input-field"></td></tr>`).join('');
+            let rowsHtml = chargeKeys.map(key => `<tr><td class="table-cell font-medium text-gray-700">${key}</td><td class="table-cell"><input type="text" class="cost-input input-field"></td><td class="table-cell"><input type="text" class="selling-input input-field"></td><td class="table-cell profit-output bg-gray-50"></td><td class="table-cell"><input type="text" class="notes-input input-field"></td></tr>`).join('');
             rowsHtml += `<tr id="total-row" class="bg-gray-100 font-bold"><td class="table-cell text-right">TOTAL:</td><td id="total-cost" class="table-cell"></td><td id="total-selling" class="table-cell"></td><td id="total-profit" class="table-cell"></td><td class="table-cell"></td></tr>`;
             tableBody.innerHTML = rowsHtml;
         }
