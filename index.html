@@ -259,9 +259,8 @@
             <!-- Charges Table -->
             <h2 class="text-xl font-semibold text-gray-800 mb-2">Charges</h2>
             <div class="mb-6 overflow-x-auto">
-                <table class="w-full border-collapse">
-                    <thead><tr class="bg-gray-100"><th class="table-cell font-semibold w-2/5">Description</th><th class="table-cell font-semibold">Cost</th><th class="table-cell font-semibold">Selling</th><th class="table-cell font-semibold">Profit</th><th class="table-cell font-semibold">Notes</th></tr></thead>
-                    <tbody id="charges-table-body"></tbody>
+                <table id="charges-table" class="w-full border-collapse">
+                    <!-- JS will populate this -->
                 </table>
             </div>
 
@@ -347,7 +346,7 @@
 
     <!-- Analytics Modal -->
     <div id="analytics-modal" class="overlay">
-        <div class="modal-content" style="max-width: 950px;">
+        <div class="modal-content" style="max-width: 1100px;">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-2xl font-bold">Analytics Dashboard</h3>
                 <button onclick="closeModal('analytics-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
@@ -384,14 +383,14 @@
     </div>
 
 
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK and App Logic -->
     <script type="module">
         // Import Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // Global variables
+        // --- Global variables ---
         let db, auth;
         let currentUser = null;
         let jobFilesCache = []; // Cache for analytics
@@ -467,7 +466,24 @@
         async function handleSignUp(email, password, displayName) {
             showLoader();
             try {
-                await createUserWithEmailAndPassword(auth, email, password);
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // The onAuthStateChanged listener will now handle creating the user doc with the display name
+                const userDocRef = doc(db, 'users', user.uid);
+                const usersCollectionRef = collection(db, 'users');
+                const userQuerySnapshot = await getDocs(usersCollectionRef);
+                const isFirstUser = userQuerySnapshot.size === 1; // It will be 1 after creation
+
+                const newUser = {
+                    email: user.email,
+                    displayName: displayName,
+                    role: isFirstUser ? 'admin' : 'user',
+                    status: isFirstUser ? 'active' : 'inactive',
+                    createdAt: serverTimestamp()
+                };
+                await setDoc(userDocRef, newUser);
+
                 showNotification("Account created! Waiting for admin approval.", false);
             } catch (error) {
                 console.error("Sign up error:", error);
@@ -538,7 +554,8 @@
             try {
                 const docRef = doc(db, 'jobfiles', jobFileNo);
                 await setDoc(docRef, checkData, { merge: true });
-                populateFormFromData({...(await getDoc(docRef)).data()});
+                const updatedDoc = await getDoc(docRef);
+                populateFormFromData(updatedDoc.data());
                 hideLoader();
                 showNotification("Job File Checked!");
             } catch (error) {
@@ -563,13 +580,17 @@
             const approvalData = {
                 approvedBy: currentUser.displayName,
                 approvedAt: serverTimestamp(),
-                status: 'approved'
+                status: 'approved',
+                rejectionReason: null, // Clear rejection reason on approval
+                rejectedBy: null,
+                rejectedAt: null
             };
             
             try {
                 const docRef = doc(db, 'jobfiles', jobFileNo);
                 await setDoc(docRef, approvalData, { merge: true });
-                populateFormFromData({...(await getDoc(docRef)).data()});
+                const updatedDoc = await getDoc(docRef);
+                populateFormFromData(updatedDoc.data());
                 hideLoader();
                 showNotification("Job File Approved!");
             } catch (error) {
@@ -598,7 +619,8 @@
             try {
                 const docRef = doc(db, 'jobfiles', jobFileNo);
                 await setDoc(docRef, rejectionData, { merge: true });
-                populateFormFromData({...(await getDoc(docRef)).data()});
+                const updatedDoc = await getDoc(docRef);
+                populateFormFromData(updatedDoc.data());
                 hideLoader();
                 closeModal('reject-reason-modal');
                 showNotification("Job File Rejected!");
@@ -627,20 +649,20 @@
                 const sortedDocs = [...jobFilesCache].sort((a,b) => (b.updatedAt?.toDate() ? b.updatedAt.toDate() : 0) - (a.updatedAt?.toDate() ? a.updatedAt.toDate() : 0));
 
                 sortedDocs.forEach((docData) => {
-                    const deleteButton = currentUser.role === 'admin' ? `<button onclick="confirmDelete('KD{docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Delete</button>` : '';
+                    const deleteButton = currentUser.role === 'admin' ? `<button onclick="confirmDelete('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Delete</button>` : '';
                     const lastUpdated = docData.updatedAt?.toDate ? docData.updatedAt.toDate().toLocaleString() : 'N/A';
                     filesHtml += `
                         <div class="job-file-item border p-3 rounded-lg flex justify-between items-center bg-gray-50 hover:bg-gray-100" 
-                             data-search-term="KD{(docData.jfn || '').toLowerCase()} KD{(docData.sh || '').toLowerCase()} KD{(docData.co || '').toLowerCase()}">
+                             data-search-term="${(docData.jfn || '').toLowerCase()} ${(docData.sh || '').toLowerCase()} ${(docData.co || '').toLowerCase()}">
                             <div>
-                                <p class="font-bold text-indigo-700">KD{docData.jfn || 'No ID'}</p>
-                                <p class="text-sm text-gray-600">Shipper: KD{docData.sh || 'N/A'} | Consignee: KD{docData.co || 'N/A'}</p>
-                                <p class="text-xs text-gray-400">Last Updated: KD{lastUpdated}</p>
+                                <p class="font-bold text-indigo-700">${docData.jfn || 'No ID'}</p>
+                                <p class="text-sm text-gray-600">Shipper: ${docData.sh || 'N/A'} | Consignee: ${docData.co || 'N/A'}</p>
+                                <p class="text-xs text-gray-400">Last Updated: ${lastUpdated}</p>
                             </div>
                             <div class="space-x-2 flex-shrink-0">
-                                <button onclick="previewJobFileById('KD{docData.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded text-sm">Preview</button>
-                                <button onclick="loadJobFileById('KD{docData.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm">Load</button>
-                                KD{deleteButton}
+                                <button onclick="previewJobFileById('${docData.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded text-sm">Preview</button>
+                                <button onclick="loadJobFileById('${docData.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm">Load</button>
+                                ${deleteButton}
                             </div>
                         </div>
                     `;
@@ -716,7 +738,7 @@
                 return;
             }
             const modal = document.getElementById('confirm-modal');
-            modal.querySelector('#confirm-message').textContent = `Are you sure you want to delete job file "KD{docId}"? This action cannot be undone.`;
+            modal.querySelector('#confirm-message').textContent = `Are you sure you want to delete job file "${docId}"? This action cannot be undone.`;
             openModal('confirm-modal');
 
             const okButton = modal.querySelector('#confirm-ok');
@@ -767,7 +789,7 @@
                 totalCost += cost;
                 totalProfit += profit;
 
-                profitByFile.push({ id: job.id, jfn: job.jfn, shipper: job.sh, consignee: job.co, profit: profit, status: status, date: job.updatedAt?.toDate() || new Date(0) });
+                profitByFile.push({ id: job.id, jfn: job.jfn, shipper: job.sh, consignee: job.co, profit: profit, status: status, date: job.updatedAt?.toDate() || new Date(0), cost: cost, dsc: job.dsc, mawb: job.mawb });
 
                 if (job.sh) {
                     profitByShipper[job.sh] = (profitByShipper[job.sh] || 0) + profit;
@@ -795,7 +817,7 @@
 
         function displayAnalytics(data, sortBy = 'profit-desc') {
             const body = document.getElementById('analytics-body');
-            const deleteButtonHtml = (fileId) => currentUser.role === 'admin' ? `<button onclick="confirmDelete('KD{fileId}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>` : '';
+            const deleteButtonHtml = (fileId) => currentUser.role === 'admin' ? `<button onclick="confirmDelete('${fileId}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>` : '';
             
             // Sorting logic
             const sortedFiles = [...data.profitByFile];
@@ -811,10 +833,10 @@
             body.innerHTML = `
                 <!-- Overall Summary -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                    <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Total Jobs</p><p class="text-2xl font-bold">KD{data.totalJobs}</p></div>
-                    <div class="bg-blue-100 p-4 rounded-lg"><p class="text-sm text-blue-800">Total Revenue</p><p class="text-2xl font-bold text-blue-900">KDKD{data.totalRevenue.toFixed(2)}</p></div>
-                    <div class="bg-red-100 p-4 rounded-lg"><p class="text-sm text-red-800">Total Cost</p><p class="text-2xl font-bold text-red-900">KDKD{data.totalCost.toFixed(2)}</p></div>
-                    <div class="bg-green-100 p-4 rounded-lg"><p class="text-sm text-green-800">Total Profit</p><p class="text-2xl font-bold text-green-900">KDKD{data.totalProfit.toFixed(2)}</p></div>
+                    <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Total Jobs</p><p class="text-2xl font-bold">${data.totalJobs}</p></div>
+                    <div class="bg-blue-100 p-4 rounded-lg"><p class="text-sm text-blue-800">Total Revenue</p><p class="text-2xl font-bold text-blue-900">$${data.totalRevenue.toFixed(2)}</p></div>
+                    <div class="bg-red-100 p-4 rounded-lg"><p class="text-sm text-red-800">Total Cost</p><p class="text-2xl font-bold text-red-900">$${data.totalCost.toFixed(2)}</p></div>
+                    <div class="bg-green-100 p-4 rounded-lg"><p class="text-sm text-green-800">Total Profit</p><p class="text-2xl font-bold text-green-900">$${data.totalProfit.toFixed(2)}</p></div>
                 </div>
 
                 <!-- Detailed Breakdowns -->
@@ -823,48 +845,56 @@
                     <div>
                         <h4 class="text-lg font-semibold mb-2">Top Profitable Shippers</h4>
                         <table class="analytics-table"><thead><tr><th>Shipper</th><th>Total Profit</th></tr></thead>
-                        <tbody>KD{data.profitByShipper.slice(0, 5).map(([name, profit]) => `<tr><td>KD{name}</td><td>KDKD{profit.toFixed(2)}</td></tr>`).join('')}</tbody></table>
+                        <tbody>${data.profitByShipper.slice(0, 5).map(([name, profit]) => `<tr><td>${name}</td><td>$${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table>
                     </div>
                     <div>
                         <h4 class="text-lg font-semibold mb-2">Top Profitable Consignees</h4>
                         <table class="analytics-table"><thead><tr><th>Consignee</th><th>Total Profit</th></tr></thead>
-                        <tbody>KD{data.profitByConsignee.slice(0, 5).map(([name, profit]) => `<tr><td>KD{name}</td><td>KDKD{profit.toFixed(2)}</td></tr>`).join('')}</tbody></table>
+                        <tbody>${data.profitByConsignee.slice(0, 5).map(([name, profit]) => `<tr><td>${name}</td><td>$${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table>
                     </div>
                      <!-- Monthly Profit -->
                     <div class="lg:col-span-2">
                         <h4 class="text-lg font-semibold mb-2">Monthly Profit</h4>
                         <table class="analytics-table"><thead><tr><th>Month</th><th>Total Profit</th></tr></thead>
-                        <tbody>KD{data.monthlyProfit.map(([month, profit]) => `<tr><td>KD{month}</td><td>KDKD{profit.toFixed(2)}</td></tr>`).join('')}</tbody></table>
+                        <tbody>${data.monthlyProfit.map(([month, profit]) => `<tr><td>${month}</td><td>$${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table>
                     </div>
                 </div>
 
                 <!-- Profit by Job File -->
                 <div>
                     <div class="flex justify-between items-center mb-2">
-                        <h4 class="text-lg font-semibold">Profit by Job File</h4>
+                        <h4 class="text-lg font-semibold">Job File Details</h4>
                         <div>
                             <label for="sort-analytics" class="text-sm mr-2">Sort by:</label>
                             <select id="sort-analytics" onchange="sortAnalyticsTable(this.value)" class="input-field w-auto inline-block">
-                                <option value="profit-desc" KD{sortBy === 'profit-desc' ? 'selected' : ''}>Profit (High to Low)</option>
-                                <option value="date-desc" KD{sortBy === 'date-desc' ? 'selected' : ''}>Date (Newest First)</option>
-                                <option value="status" KD{sortBy === 'status' ? 'selected' : ''}>Status</option>
+                                <option value="profit-desc" ${sortBy === 'profit-desc' ? 'selected' : ''}>Profit (High to Low)</option>
+                                <option value="date-desc" ${sortBy === 'date-desc' ? 'selected' : ''}>Date (Newest First)</option>
+                                <option value="status" ${sortBy === 'status' ? 'selected' : ''}>Status</option>
                             </select>
                             <button onclick="downloadAnalyticsCsv()" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-1 px-3 rounded text-sm ml-2">Download CSV</button>
                         </div>
                     </div>
-                    <div class="max-h-64 overflow-y-auto">
+                    <div class="max-h-96 overflow-y-auto">
                         <table class="analytics-table">
-                            <thead><tr><th>Job File ID</th><th>Shipper</th><th>Profit</th><th>Status</th><th>Actions</th></tr></thead>
-                            <tbody>KD{sortedFiles.map(file => `
+                            <thead><tr><th>Job Details</th><th>Cost / Profit</th><th>Status</th><th>Actions</th></tr></thead>
+                            <tbody>${sortedFiles.map(file => `
                                 <tr>
-                                    <td>KD{file.jfn || file.id}</td>
-                                    <td>KD{file.shipper || 'N/A'}</td>
-                                    <td>KDKD{file.profit.toFixed(2)}</td>
-                                    <td>KD{file.status}</td>
+                                    <td>
+                                        <p class="font-bold">${file.jfn || file.id}</p>
+                                        <p class="text-sm">Shipper: ${file.shipper || 'N/A'}</p>
+                                        <p class="text-sm">Consignee: ${file.consignee || 'N/A'}</p>
+                                        <p class="text-xs text-gray-600">AWB/MAWB: ${file.mawb || 'N/A'}</p>
+                                        <p class="text-xs text-gray-600">Desc: ${file.dsc || 'N/A'}</p>
+                                    </td>
+                                    <td>
+                                        <p class="font-bold text-green-600">$${file.profit.toFixed(2)}</p>
+                                        <p class="text-sm text-red-600">Cost: $${file.cost.toFixed(2)}</p>
+                                    </td>
+                                    <td>${file.status}</td>
                                     <td class="space-x-1">
-                                        <button onclick="previewJobFileById('KD{file.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs">Preview</button>
-                                        <button onclick="loadJobFileById('KD{file.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded text-xs">Load</button>
-                                        KD{deleteButtonHtml(file.id)}
+                                        <button onclick="previewJobFileById('${file.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs">Preview</button>
+                                        <button onclick="loadJobFileById('${file.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded text-xs">Load</button>
+                                        ${deleteButtonHtml(file.id)}
                                     </td>
                                 </tr>`).join('')}
                             </tbody>
@@ -879,11 +909,12 @@
         }
         
         window.downloadAnalyticsCsv = function() {
-            let csvContent = "data:text/csv;charset=utf-8,Job File ID,Shipper,Consignee,Profit,Status\n";
+            let csvContent = "data:text/csv;charset=utf-8,Job File ID,Shipper,Consignee,Profit,Status,Cost,Description,AWB/MAWB\n";
             const sortedFiles = [...analyticsDataCache.profitByFile].sort((a,b) => (b.profit || 0) - (a.profit || 0));
 
             sortedFiles.forEach(job => {
-                const row = [job.jfn, job.shipper || 'N/A', job.consignee || 'N/A', (job.profit || 0).toFixed(2), job.status].join(",");
+                const rowData = [job.jfn, job.shipper || 'N/A', job.consignee || 'N/A', (job.profit || 0).toFixed(2), job.status, (job.cost || 0).toFixed(2), job.dsc || 'N/A', job.mawb || 'N/A'];
+                const row = rowData.map(d => `"${d.replace(/"/g, '""')}"`).join(","); // Handle commas in data
                 csvContent += row + "\n";
             });
 
@@ -913,15 +944,15 @@
                 const userId = doc.id;
                 userListHtml += `
                     <div class="grid grid-cols-3 gap-4 items-center p-2 border-b">
-                        <input type="text" data-uid="KD{userId}" class="display-name-input input-field col-span-1" value="KD{userData.displayName}">
-                        <select data-uid="KD{userId}" class="role-select input-field col-span-1">
-                            <option value="user" KD{userData.role === 'user' ? 'selected' : ''}>User</option>
-                            <option value="checker" KD{userData.role === 'checker' ? 'selected' : ''}>Checker</option>
-                            <option value="admin" KD{userData.role === 'admin' ? 'selected' : ''}>Admin</option>
+                        <input type="text" data-uid="${userId}" class="display-name-input input-field col-span-1" value="${userData.displayName}">
+                        <select data-uid="${userId}" class="role-select input-field col-span-1">
+                            <option value="user" ${userData.role === 'user' ? 'selected' : ''}>User</option>
+                            <option value="checker" ${userData.role === 'checker' ? 'selected' : ''}>Checker</option>
+                            <option value="admin" ${userData.role === 'admin' ? 'selected' : ''}>Admin</option>
                         </select>
-                        <select data-uid="KD{userId}" class="status-select input-field col-span-1">
-                            <option value="active" KD{userData.status === 'active' ? 'selected' : ''}>Active</option>
-                            <option value="inactive" KD{userData.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                        <select data-uid="${userId}" class="status-select input-field col-span-1">
+                            <option value="active" ${userData.status === 'active' ? 'selected' : ''}>Active</option>
+                            <option value="inactive" ${userData.status === 'inactive' ? 'selected' : ''}>Inactive</option>
                         </select>
                     </div>
                 `;
@@ -1058,7 +1089,297 @@
             });
         });
 
-        // Initialize Firebase on DOMContentLoaded
+        // --- Data Handling (Local Form) ---
+        function getFormData() {
+            const getVal = id => document.getElementById(id).value || '';
+            const getChecked = query => Array.from(document.querySelectorAll(query)).filter(el => el.checked).map(el => el.dataset.clearance || el.dataset.product);
+
+            const charges = [];
+            document.querySelectorAll('#charges-table-body tr').forEach(row => {
+                if (row.id === 'total-row') return;
+                charges.push({
+                    l: row.cells[0].textContent.trim(), // label
+                    c: row.querySelector('.cost-input').value || '0', // cost
+                    s: row.querySelector('.selling-input').value || '0', // selling
+                    n: row.querySelector('.notes-input').value || '' // notes
+                });
+            });
+
+            return {
+                d: getVal('date'), po: getVal('po-number'), jfn: getVal('job-file-no'), t: getVal('type'),
+                cl: getChecked('[data-clearance]:checked'), pt: getChecked('[data-product]:checked'),
+                in: getVal('invoice-no'), bd: getVal('billing-date'), sm: getVal('salesman'),
+                sh: getVal('shipper-name'), co: getVal('consignee-name'),
+                mawb: getVal('mawb'), hawb: getVal('hawb'), ts: getVal('teams-of-shipping'), or: getVal('origin'),
+                pc: getVal('no-of-pieces'), gw: getVal('gross-weight'), de: getVal('destination'), vw: getVal('volume-weight'),
+                dsc: getVal('description'), ca: getVal('carrier'), tn: getVal('truck-no'),
+                vn: getVal('vessel-name'), fv: getVal('flight-voyage-no'), cn: getVal('container-no'),
+                ch: charges,
+                re: getVal('remarks'),
+                pb: getVal('prepared-by'),
+                // checkedBy and approvedBy are handled by their respective systems
+            };
+        }
+
+        function populateFormFromData(data) {
+            const setVal = (id, value) => { if (document.getElementById(id)) document.getElementById(id).value = value || ''; };
+            const setChecked = (type, values) => {
+                document.querySelectorAll(`[data-${type}]`).forEach(el => {
+                    el.checked = (values || []).includes(el.dataset[type]);
+                });
+            };
+
+            setVal('date', data.d); setVal('po-number', data.po); setVal('job-file-no', data.jfn);
+            setVal('type', data.t); setVal('invoice-no', data.in); setVal('billing-date', data.bd);
+            setVal('salesman', data.sm); setVal('shipper-name', data.sh); setVal('consignee-name', data.co);
+            setVal('mawb', data.mawb); setVal('hawb', data.hawb); setVal('teams-of-shipping', data.ts);
+            setVal('origin', data.or); setVal('no-of-pieces', data.pc); setVal('gross-weight', data.gw);
+            setVal('destination', data.de); setVal('volume-weight', data.vw); setVal('description', data.dsc);
+            setVal('carrier', data.ca); setVal('truck-no', data.tn); setVal('vessel-name', data.vn);
+            setVal('flight-voyage-no', data.fv); setVal('container-no', data.cn);
+            setVal('remarks', data.re); setVal('prepared-by', data.pb);
+            
+            // Handle check status
+            const checkBtn = document.getElementById('check-btn');
+            const checkedStamp = document.getElementById('checked-stamp');
+            if (data.checkedBy) {
+                const checkedDate = data.checkedAt?.toDate() ? ` on ${data.checkedAt.toDate().toLocaleDateString()}` : '';
+                setVal('checked-by', `${data.checkedBy}${checkedDate}`);
+                checkBtn.disabled = true;
+                checkBtn.textContent = 'Checked';
+                checkedStamp.style.display = 'block';
+            } else {
+                setVal('checked-by', 'Pending Check');
+                checkBtn.disabled = false;
+                checkBtn.textContent = 'Check Job File';
+                checkedStamp.style.display = 'none';
+            }
+            
+            // Handle approval/rejection status
+            const approvalButtons = document.getElementById('approval-buttons');
+            const approvedStamp = document.getElementById('approved-stamp');
+            const rejectedStamp = document.getElementById('rejected-stamp');
+            const rejectionBanner = document.getElementById('rejection-banner');
+
+            approvedStamp.style.display = 'none';
+            rejectedStamp.style.display = 'none';
+            rejectionBanner.style.display = 'none';
+            approvalButtons.style.display = 'none';
+
+            if (currentUser && currentUser.role === 'admin') {
+                approvalButtons.style.display = 'flex';
+            }
+
+            if (data.status === 'approved') {
+                const approvedDate = data.approvedAt?.toDate() ? ` on ${data.approvedAt.toDate().toLocaleDateString()}` : '';
+                setVal('approved-by', `${data.approvedBy}${approvedDate}`);
+                approvalButtons.style.display = 'none';
+                approvedStamp.style.display = 'block';
+            } else if (data.status === 'rejected') {
+                const rejectedDate = data.rejectedAt?.toDate() ? ` on ${data.rejectedAt.toDate().toLocaleDateString()}` : '';
+                setVal('approved-by', `Rejected by ${data.rejectedBy}${rejectedDate}`);
+                if (currentUser && currentUser.role !== 'admin') {
+                    approvalButtons.style.display = 'none';
+                }
+                rejectedStamp.style.display = 'block';
+                rejectionBanner.style.display = 'block';
+                document.getElementById('rejection-reason').textContent = data.rejectionReason;
+            } else {
+                setVal('approved-by', 'Pending Approval');
+            }
+
+
+            setChecked('clearance', data.cl);
+            setChecked('product', data.pt);
+
+            if (data.ch) {
+                populateTable(); // First clear and build the table structure
+                const rows = document.querySelectorAll('#charges-table-body tr:not(#total-row)');
+                rows.forEach((row, index) => {
+                    const chargeKey = row.cells[0].textContent.trim();
+                    const chargeData = data.ch.find(c => c.l === chargeKey);
+                    if (chargeData) {
+                        row.querySelector('.cost-input').value = chargeData.c;
+                        row.querySelector('.selling-input').value = chargeData.s;
+                        row.querySelector('.notes-input').value = chargeData.n;
+                    }
+                });
+            }
+            calculate();
+        }
+        
+        // --- Print and Calculation Logic ---
+        function getPrintViewHtml(data) {
+            let totalCost = 0, totalSelling = 0, totalProfit = 0;
+            (data.ch || []).forEach(c => {
+                const cost = parseFloat(c.c) || 0;
+                const selling = parseFloat(c.s) || 0;
+                totalCost += cost;
+                totalSelling += selling;
+                totalProfit += (selling - cost);
+            });
+            
+            const checkedByText = data.checkedBy ? `${data.checkedBy} on ${data.checkedAt?.toDate().toLocaleDateString()}` : 'Pending';
+            let approvedByText = 'Pending Approval';
+            if (data.status === 'approved') {
+                approvedByText = `${data.approvedBy} on ${data.approvedAt?.toDate().toLocaleDateString()}`;
+            } else if (data.status === 'rejected') {
+                approvedByText = `REJECTED: ${data.rejectionReason}`;
+            }
+
+            const checkedStampHtml = data.checkedBy ? `<div class="stamp stamp-checked" style="display: block;">Checked</div>` : '';
+            let approvalStampHtml = '';
+            if (data.status === 'approved') {
+                approvalStampHtml = `<div class="stamp stamp-approved" style="display: block;">Approved</div>`;
+            } else if (data.status === 'rejected') {
+                approvalStampHtml = `<div class="stamp stamp-rejected" style="display: block;">Rejected</div>`;
+            }
+
+            const checkedSymbol = '☑';
+            const uncheckedSymbol = '☐';
+            const printHTML = `
+                <div class="border border-gray-700 p-2 bg-white">
+                    <div class="grid grid-cols-12 gap-px bg-gray-700" style="border: 1px solid #374151;">
+                         <div class="col-span-3 bg-white p-1 flex items-center" style="border: 1px solid #374151;">
+                            <div id="print-logo-container" class="text-xl font-bold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
+                        </div>
+                        <div class="col-span-6 bg-white flex items-center justify-center text-xl font-bold" style="border: 1px solid #374151;">JOB FILE</div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><div><strong>Date:</strong> ${data.d || ''}</div><div><strong>P.O. #:</strong> ${data.po || ''}</div></div>
+                        
+                        <div class="col-span-8 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Job File No.:</strong> ${data.jfn || ''}</div>
+                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Type:</strong> ${data.t || ''}</div>
+
+                        <div class="col-span-12 bg-white p-1 grid grid-cols-4 gap-2 text-xs" style="border: 1px solid #374151;">
+                            <div><strong>Clearance</strong><br>${(data.cl || []).includes('Export') ? checkedSymbol : uncheckedSymbol} Export<br>${(data.cl || []).includes('Import') ? checkedSymbol : uncheckedSymbol} Import<br>${(data.cl || []).includes('Clearance') ? checkedSymbol : uncheckedSymbol} Clearance<br>${(data.cl || []).includes('Local Move') ? checkedSymbol : uncheckedSymbol} Local Move</div>
+                            <div><strong>Product Type</strong><br>${(data.pt || []).includes('Air Freight') ? checkedSymbol : uncheckedSymbol} Air<br>${(data.pt || []).includes('Sea Freight') ? checkedSymbol : uncheckedSymbol} Sea<br>${(data.pt || []).includes('Land Freight') ? checkedSymbol : uncheckedSymbol} Land<br>${(data.pt || []).includes('Others') ? checkedSymbol : uncheckedSymbol} Others</div>
+                        </div>
+
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Invoice No.:</strong><div class="print-field">${data.in || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Billing Date:</strong><div class="print-field">${data.bd || ''}</div></div>
+                        <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Salesman:</strong><div class="print-field">${data.sm || ''}</div></div>
+
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Shipper's Name:</strong><div class="print-field">${data.sh || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Consignee's Name:</strong><div class="print-field">${data.co || ''}</div></div>
+                        
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>MAWB/OBL/TCN:</strong><div class="print-field">${data.mawb || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Teams of Shipping:</strong><div class="print-field">${data.ts || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>HAWB/HBL:</strong><div class="print-field">${data.hawb || ''}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Origin:</strong><div class="print-field">${data.or || ''}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Destination:</strong><div class="print-field">${data.de || ''}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>No. of Pieces:</strong><div class="print-field">${data.pc || ''}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Gross Wt:</strong><div class="print-field">${data.gw || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Volume Wt:</strong><div class="print-field">${data.vw || ''}</div></div>
+                        
+                        <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Description:</strong><div class="print-field">${data.dsc || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Carrier/Line/Trucking:</strong><div class="print-field">${data.ca || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Truck/Driver:</strong><div class="print-field">${data.tn || ''}</div></div>
+                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Vessel:</strong><div class="print-field">${data.vn || ''}</div></div>
+                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Flight/Voyage:</strong><div class="print-field">${data.fv || ''}</div></div>
+                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Container No:</strong><div class="print-field">${data.cn || ''}</div></div>
+
+                        <div class="col-span-12 bg-white p-0" style="border: 1px solid #374151;">
+                            <table class="print-table w-full text-xs">
+                                <thead><tr><th>Description</th><th>Cost</th><th>Selling</th><th>Profit</th><th>Notes</th></tr></thead>
+                                <tbody>
+                                    ${(data.ch || []).map(c => `<tr><td>${c.l}</td><td>${c.c}</td><td>${c.s}</td><td>${(parseFloat(c.s || 0) - parseFloat(c.c || 0)).toFixed(2)}</td><td>${c.n}</td></tr>`).join('')}
+                                    <tr class="font-bold bg-gray-100"><td>TOTAL:</td><td>${totalCost.toFixed(2)}</td><td>${totalSelling.toFixed(2)}</td><td>${totalProfit.toFixed(2)}</td><td></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>REMARKS:</strong><div class="print-field h-20">${(data.re || '').replace(/\n/g, '<br>')}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>PREPARED BY:</strong><div class="print-field">${data.pb || ''}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs relative" style="border: 1px solid #374151;">${checkedStampHtml}<strong>CHECKED BY:</strong><div class="print-field">${checkedByText}</div></div>
+                        <div class="col-span-3 bg-white p-1 text-xs relative" style="border: 1px solid #374151;">${approvalStampHtml}<strong>APPROVED BY:</strong><div class="print-field">${approvedByText}</div></div>
+                        <div class="col-span-3 bg-white p-1 flex items-center justify-center" style="border: 1px solid #374151;"><div class="qrcode-container"></div></div>
+                    </div>
+                </div>`;
+            
+            // Create a temporary div to generate QR code
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = printHTML;
+            const qrText = `JobFile No: ${data.jfn}\nDate: ${data.d}\nShipper: ${data.sh}\nConsignee: ${data.co}`;
+            new QRCode(tempDiv.querySelector('.qrcode-container'), { text: qrText, width: 96, height: 96, correctLevel: QRCode.CorrectLevel.H });
+            
+            return tempDiv.innerHTML;
+        }
+
+        function generatePrintView() {
+            const data = getFormData();
+            const printHTML = getPrintViewHtml(data);
+            const printContainer = document.getElementById('print-output');
+            printContainer.innerHTML = printHTML;
+        }
+
+        function saveAsPdf() {
+            showLoader();
+            const data = getFormData();
+            const element = document.createElement('div');
+            element.innerHTML = getPrintViewHtml(data);
+            
+            const jobFileNo = data.jfn || 'JobFile';
+            const date = data.d || new Date().toISOString().slice(0,10);
+            const opt = { margin: 0.2, filename: `${jobFileNo}_${date}.pdf`, image: { type: 'jpeg', quality: 1.0 }, html2canvas:  { scale: 3 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+            setTimeout(() => { html2pdf().from(element).set(opt).save().then(hideLoader); }, 500);
+        }
+
+        function printPage() {
+            document.getElementById('main-container').classList.add('hidden');
+            const printContainer = document.getElementById('print-output');
+            printContainer.classList.remove('hidden');
+            generatePrintView();
+            setTimeout(() => { window.print(); }, 500);
+        }
+
+        function calculate() {
+            let totalCost = 0, totalSelling = 0, totalProfit = 0;
+            document.querySelectorAll('#charges-table-body tr:not(#total-row)').forEach(row => {
+                const cost = parseFloat(row.querySelector('.cost-input').value) || 0;
+                const selling = parseFloat(row.querySelector('.selling-input').value) || 0;
+                const profit = selling - cost;
+                row.cells[3].textContent = profit.toFixed(2);
+                totalCost += cost; totalSelling += selling; totalProfit += profit;
+            });
+            document.getElementById('total-cost').textContent = totalCost.toFixed(2);
+            document.getElementById('total-selling').textContent = totalSelling.toFixed(2);
+            document.getElementById('total-profit').textContent = totalProfit.toFixed(2);
+        }
+        
+        function populateTable() {
+            const chargeKeys = ["Ex-works Charges:", "Land/Air / Sea Freight:", "Fuell Security / War Surcharge:", "Formalities:", "Delivery Order Fee:", "Transportation Charges:", "Inspection / Computer Print Charges:", "Handling Charges:", "Labor / Forklift Charges:", "Documentation Charges:", "Clearance Charges:", "Customs Duty:", "Terminal Handling Charges:", "Legalization Charges:", "Demurrage Charges:", "Loading / Offloading Charges:", "Destination Clearance Charges:", "Packing Charges:", "Port Charges:", "Other Charges:", "PAI Approval :", "Insurance Fee :", "EPA Charges :"];
+            const table = document.getElementById('charges-table');
+            let tableHtml = `
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="table-cell font-semibold w-2/5">Description</th>
+                        <th class="table-cell font-semibold">Cost</th>
+                        <th class="table-cell font-semibold">Selling</th>
+                        <th class="table-cell font-semibold">Profit</th>
+                        <th class="table-cell font-semibold">Notes</th>
+                    </tr>
+                </thead>
+                <tbody id="charges-table-body">
+            `;
+            tableHtml += chargeKeys.map(key => `<tr><td class="table-cell font-medium text-gray-700">${key}</td><td class="table-cell"><input type="text" class="cost-input input-field"></td><td class="table-cell"><input type="text" class="selling-input input-field"></td><td class="table-cell profit-output bg-gray-50"></td><td class="table-cell"><input type="text" class="notes-input input-field"></td></tr>`).join('');
+            tableHtml += `
+                    <tr id="total-row" class="bg-gray-100 font-bold">
+                        <td class="table-cell text-right">TOTAL:</td>
+                        <td id="total-cost" class="table-cell"></td>
+                        <td id="total-selling" class="table-cell"></td>
+                        <td id="total-profit" class="table-cell"></td>
+                        <td class="table-cell"></td>
+                    </tr>
+                </tbody>
+            `;
+            table.innerHTML = tableHtml;
+
+            document.getElementById('charges-table-body').addEventListener('input', e => {
+                if (e.target.classList.contains('cost-input') || e.target.classList.contains('selling-input')) {
+                    calculate();
+                }
+            });
+        }
+        
+        // Initialize everything on DOMContentLoaded
         document.addEventListener('DOMContentLoaded', () => {
             initializeFirebase();
             
@@ -1109,273 +1430,21 @@
             checkBtn.addEventListener('click', checkJobFile);
             adminPanelBtn.addEventListener('click', openAdminPanel);
             
-            // Make saveUserRoles globally accessible for the button's onclick
+            // Make functions globally accessible for onclick attributes
+            window.openAnalyticsDashboard = openAnalyticsDashboard;
+            window.openFileManager = openFileManager;
+            window.saveJobFile = saveJobFile;
+            window.clearForm = clearForm;
+            window.printPage = printPage;
+            window.closeModal = closeModal;
             window.saveUserChanges = saveUserChanges;
-        });
-    </script>
+            window.sortAnalyticsTable = sortAnalyticsTable;
+            window.downloadAnalyticsCsv = downloadAnalyticsCsv;
+            window.previewJobFileById = previewJobFileById;
+            window.loadJobFileById = loadJobFileById;
+            window.confirmDelete = confirmDelete;
 
-    <script>
-        // --- Data Handling (Local Form) ---
-        function getFormData() {
-            const getVal = id => document.getElementById(id).value || '';
-            const getChecked = query => Array.from(document.querySelectorAll(query)).filter(el => el.checked).map(el => el.dataset.clearance || el.dataset.product);
-
-            const charges = [];
-            document.querySelectorAll('#charges-table-body tr').forEach(row => {
-                if (row.id === 'total-row') return;
-                charges.push({
-                    l: row.cells[0].textContent.trim(), // label
-                    c: row.querySelector('.cost-input').value || '0', // cost
-                    s: row.querySelector('.selling-input').value || '0', // selling
-                    n: row.querySelector('.notes-input').value || '' // notes
-                });
-            });
-
-            return {
-                d: getVal('date'), po: getVal('po-number'), jfn: getVal('job-file-no'), t: getVal('type'),
-                cl: getChecked('[data-clearance]:checked'), pt: getChecked('[data-product]:checked'),
-                in: getVal('invoice-no'), bd: getVal('billing-date'), sm: getVal('salesman'),
-                sh: getVal('shipper-name'), co: getVal('consignee-name'),
-                mawb: getVal('mawb'), hawb: getVal('hawb'), ts: getVal('teams-of-shipping'), or: getVal('origin'),
-                pc: getVal('no-of-pieces'), gw: getVal('gross-weight'), de: getVal('destination'), vw: getVal('volume-weight'),
-                dsc: getVal('description'), ca: getVal('carrier'), tn: getVal('truck-no'),
-                vn: getVal('vessel-name'), fv: getVal('flight-voyage-no'), cn: getVal('container-no'),
-                ch: charges,
-                re: getVal('remarks'),
-                pb: getVal('prepared-by'),
-                // checkedBy and approvedBy are handled by their respective systems
-            };
-        }
-
-        function populateFormFromData(data) {
-            const setVal = (id, value) => { if (document.getElementById(id)) document.getElementById(id).value = value || ''; };
-            const setChecked = (type, values) => {
-                document.querySelectorAll(`[data-KD{type}]`).forEach(el => {
-                    el.checked = (values || []).includes(el.dataset[type]);
-                });
-            };
-
-            setVal('date', data.d); setVal('po-number', data.po); setVal('job-file-no', data.jfn);
-            setVal('type', data.t); setVal('invoice-no', data.in); setVal('billing-date', data.bd);
-            setVal('salesman', data.sm); setVal('shipper-name', data.sh); setVal('consignee-name', data.co);
-            setVal('mawb', data.mawb); setVal('hawb', data.hawb); setVal('teams-of-shipping', data.ts);
-            setVal('origin', data.or); setVal('no-of-pieces', data.pc); setVal('gross-weight', data.gw);
-            setVal('destination', data.de); setVal('volume-weight', data.vw); setVal('description', data.dsc);
-            setVal('carrier', data.ca); setVal('truck-no', data.tn); setVal('vessel-name', data.vn);
-            setVal('flight-voyage-no', data.fv); setVal('container-no', data.cn);
-            setVal('remarks', data.re); setVal('prepared-by', data.pb);
-            
-            // Handle check status
-            const checkBtn = document.getElementById('check-btn');
-            const checkedStamp = document.getElementById('checked-stamp');
-            if (data.checkedBy) {
-                const checkedDate = data.checkedAt?.toDate() ? ` on KD{data.checkedAt.toDate().toLocaleDateString()}` : '';
-                setVal('checked-by', `KD{data.checkedBy}KD{checkedDate}`);
-                checkBtn.disabled = true;
-                checkBtn.textContent = 'Checked';
-                checkedStamp.style.display = 'block';
-            } else {
-                setVal('checked-by', 'Pending Check');
-                checkBtn.disabled = false;
-                checkBtn.textContent = 'Check Job File';
-                checkedStamp.style.display = 'none';
-            }
-            
-            // Handle approval/rejection status
-            const approveBtn = document.getElementById('approve-btn');
-            const rejectBtn = document.getElementById('reject-btn');
-            const approvedStamp = document.getElementById('approved-stamp');
-            const rejectedStamp = document.getElementById('rejected-stamp');
-            const rejectionBanner = document.getElementById('rejection-banner');
-
-            approvedStamp.style.display = 'none';
-            rejectedStamp.style.display = 'none';
-            rejectionBanner.style.display = 'none';
-            document.getElementById('approval-buttons').style.display = 'flex';
-
-            if (data.status === 'approved') {
-                const approvedDate = data.approvedAt?.toDate() ? ` on KD{data.approvedAt.toDate().toLocaleDateString()}` : '';
-                setVal('approved-by', `KD{data.approvedBy}KD{approvedDate}`);
-                document.getElementById('approval-buttons').style.display = 'none';
-                approvedStamp.style.display = 'block';
-            } else if (data.status === 'rejected') {
-                const rejectedDate = data.rejectedAt?.toDate() ? ` on KD{data.rejectedAt.toDate().toLocaleDateString()}` : '';
-                setVal('approved-by', `Rejected by KD{data.rejectedBy}KD{rejectedDate}`);
-                document.getElementById('approval-buttons').style.display = 'none';
-                rejectedStamp.style.display = 'block';
-                rejectionBanner.style.display = 'block';
-                document.getElementById('rejection-reason').textContent = data.rejectionReason;
-            } else {
-                setVal('approved-by', 'Pending Approval');
-            }
-
-
-            setChecked('clearance', data.cl);
-            setChecked('product', data.pt);
-
-            if (data.ch) {
-                populateTable(); // First clear and build the table structure
-                const rows = document.querySelectorAll('#charges-table-body tr:not(#total-row)');
-                rows.forEach((row, index) => {
-                    const chargeKey = row.cells[0].textContent.trim();
-                    const chargeData = data.ch.find(c => c.l === chargeKey);
-                    if (chargeData) {
-                        row.querySelector('.cost-input').value = chargeData.c;
-                        row.querySelector('.selling-input').value = chargeData.s;
-                        row.querySelector('.notes-input').value = chargeData.n;
-                    }
-                });
-            }
-            calculate();
-        }
-        
-        // --- Print and Calculation Logic ---
-        function getPrintViewHtml(data) {
-            let totalCost = 0, totalSelling = 0, totalProfit = 0;
-            (data.ch || []).forEach(c => {
-                const cost = parseFloat(c.c) || 0;
-                const selling = parseFloat(c.s) || 0;
-                totalCost += cost;
-                totalSelling += selling;
-                totalProfit += (selling - cost);
-            });
-            
-            const checkedByText = data.checkedBy ? `KD{data.checkedBy} on KD{data.checkedAt?.toDate().toLocaleDateString()}` : 'Pending';
-            let approvedByText = 'Pending Approval';
-            if (data.status === 'approved') {
-                approvedByText = `KD{data.approvedBy} on KD{data.approvedAt?.toDate().toLocaleDateString()}`;
-            } else if (data.status === 'rejected') {
-                approvedByText = `REJECTED: KD{data.rejectionReason}`;
-            }
-
-            const checkedSymbol = '☑';
-            const uncheckedSymbol = '☐';
-            const printHTML = `
-                <div class="border border-gray-700 p-2 bg-white">
-                    <div class="grid grid-cols-12 gap-px bg-gray-700" style="border: 1px solid #374151;">
-                         <div class="col-span-3 bg-white p-1 flex items-center" style="border: 1px solid #374151;">
-                            <div id="print-logo-container" class="text-xl font-bold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
-                        </div>
-                        <div class="col-span-6 bg-white flex items-center justify-center text-xl font-bold" style="border: 1px solid #374151;">JOB FILE</div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><div><strong>Date:</strong> KD{data.d || ''}</div><div><strong>P.O. #:</strong> KD{data.po || ''}</div></div>
-                        
-                        <div class="col-span-8 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Job File No.:</strong> KD{data.jfn || ''}</div>
-                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Type:</strong> KD{data.t || ''}</div>
-
-                        <div class="col-span-12 bg-white p-1 grid grid-cols-4 gap-2 text-xs" style="border: 1px solid #374151;">
-                            <div><strong>Clearance</strong><br>KD{(data.cl || []).includes('Export') ? checkedSymbol : uncheckedSymbol} Export<br>KD{(data.cl || []).includes('Import') ? checkedSymbol : uncheckedSymbol} Import<br>KD{(data.cl || []).includes('Clearance') ? checkedSymbol : uncheckedSymbol} Clearance<br>KD{(data.cl || []).includes('Local Move') ? checkedSymbol : uncheckedSymbol} Local Move</div>
-                            <div><strong>Product Type</strong><br>KD{(data.pt || []).includes('Air Freight') ? checkedSymbol : uncheckedSymbol} Air<br>KD{(data.pt || []).includes('Sea Freight') ? checkedSymbol : uncheckedSymbol} Sea<br>KD{(data.pt || []).includes('Land Freight') ? checkedSymbol : uncheckedSymbol} Land<br>KD{(data.pt || []).includes('Others') ? checkedSymbol : uncheckedSymbol} Others</div>
-                        </div>
-
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Invoice No.:</strong><div class="print-field">KD{data.in || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Billing Date:</strong><div class="print-field">KD{data.bd || ''}</div></div>
-                        <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Salesman:</strong><div class="print-field">KD{data.sm || ''}</div></div>
-
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Shipper's Name:</strong><div class="print-field">KD{data.sh || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Consignee's Name:</strong><div class="print-field">KD{data.co || ''}</div></div>
-                        
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>MAWB/OBL/TCN:</strong><div class="print-field">KD{data.mawb || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Teams of Shipping:</strong><div class="print-field">KD{data.ts || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>HAWB/HBL:</strong><div class="print-field">KD{data.hawb || ''}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Origin:</strong><div class="print-field">KD{data.or || ''}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Destination:</strong><div class="print-field">KD{data.de || ''}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>No. of Pieces:</strong><div class="print-field">KD{data.pc || ''}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Gross Wt:</strong><div class="print-field">KD{data.gw || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Volume Wt:</strong><div class="print-field">KD{data.vw || ''}</div></div>
-                        
-                        <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Description:</strong><div class="print-field">KD{data.dsc || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Carrier/Line/Trucking:</strong><div class="print-field">KD{data.ca || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Truck/Driver:</strong><div class="print-field">KD{data.tn || ''}</div></div>
-                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Vessel:</strong><div class="print-field">KD{data.vn || ''}</div></div>
-                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Flight/Voyage:</strong><div class="print-field">KD{data.fv || ''}</div></div>
-                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Container No:</strong><div class="print-field">KD{data.cn || ''}</div></div>
-
-                        <div class="col-span-12 bg-white p-0" style="border: 1px solid #374151;">
-                            <table class="print-table w-full text-xs">
-                                <thead><tr><th>Description</th><th>Cost</th><th>Selling</th><th>Profit</th><th>Notes</th></tr></thead>
-                                <tbody>
-                                    KD{(data.ch || []).map(c => `<tr><td>KD{c.l}</td><td>KD{c.c}</td><td>KD{c.s}</td><td>KD{(parseFloat(c.s || 0) - parseFloat(c.c || 0)).toFixed(2)}</td><td>KD{c.n}</td></tr>`).join('')}
-                                    <tr class="font-bold bg-gray-100"><td>TOTAL:</td><td>KD{totalCost.toFixed(2)}</td><td>KD{totalSelling.toFixed(2)}</td><td>KD{totalProfit.toFixed(2)}</td><td></td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>REMARKS:</strong><div class="print-field h-20">KD{(data.re || '').replace(/\n/g, '<br>')}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>PREPARED BY:</strong><div class="print-field">KD{data.pb || ''}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>CHECKED BY:</strong><div class="print-field">KD{checkedByText}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>APPROVED BY:</strong><div class="print-field">KD{approvedByText}</div></div>
-                        <div class="col-span-3 bg-white p-1 flex items-center justify-center" style="border: 1px solid #374151;"><div class="qrcode-container"></div></div>
-                    </div>
-                </div>`;
-            
-            // Create a temporary div to generate QR code
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = printHTML;
-            const qrText = `JobFile No: KD{data.jfn}\nDate: KD{data.d}\nShipper: KD{data.sh}\nConsignee: KD{data.co}`;
-            new QRCode(tempDiv.querySelector('.qrcode-container'), { text: qrText, width: 96, height: 96, correctLevel: QRCode.CorrectLevel.H });
-            
-            return tempDiv.innerHTML;
-        }
-
-        function generatePrintView() {
-            const data = getFormData();
-            const printHTML = getPrintViewHtml(data);
-            const printContainer = document.getElementById('print-output');
-            printContainer.innerHTML = printHTML;
-        }
-
-        function saveAsPdf() {
-            showLoader();
-            const data = getFormData();
-            const element = document.createElement('div');
-            element.innerHTML = getPrintViewHtml(data);
-            
-            const jobFileNo = data.jfn || 'JobFile';
-            const date = data.d || new Date().toISOString().slice(0,10);
-            const opt = { margin: 0.2, filename: `KD{jobFileNo}_KD{date}.pdf`, image: { type: 'jpeg', quality: 1.0 }, html2canvas:  { scale: 3 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
-            setTimeout(() => { html2pdf().from(element).set(opt).save().then(hideLoader); }, 500);
-        }
-
-        function printPage() {
-            document.getElementById('main-container').classList.add('hidden');
-            const printContainer = document.getElementById('print-output');
-            printContainer.classList.remove('hidden');
-            generatePrintView();
-            setTimeout(() => { window.print(); }, 500);
-        }
-
-        function calculate() {
-            let totalCost = 0, totalSelling = 0, totalProfit = 0;
-            document.querySelectorAll('#charges-table-body tr:not(#total-row)').forEach(row => {
-                const cost = parseFloat(row.querySelector('.cost-input').value) || 0;
-                const selling = parseFloat(row.querySelector('.selling-input').value) || 0;
-                const profit = selling - cost;
-                row.cells[3].textContent = profit.toFixed(2);
-                totalCost += cost; totalSelling += selling; totalProfit += profit;
-            });
-            document.getElementById('total-cost').textContent = totalCost.toFixed(2);
-            document.getElementById('total-selling').textContent = totalSelling.toFixed(2);
-            document.getElementById('total-profit').textContent = totalProfit.toFixed(2);
-        }
-        
-        function populateTable() {
-            const chargeKeys = ["Ex-works Charges:", "Land/Air / Sea Freight:", "Fuell Security / War Surcharge:", "Formalities:", "Delivery Order Fee:", "Transportation Charges:", "Inspection / Computer Print Charges:", "Handling Charges:", "Labor / Forklift Charges:", "Documentation Charges:", "Clearance Charges:", "Customs Duty:", "Terminal Handling Charges:", "Legalization Charges:", "Demurrage Charges:", "Loading / Offloading Charges:", "Destination Clearance Charges:", "Packing Charges:", "Port Charges:", "Other Charges:", "PAI Approval :", "Insurance Fee :", "EPA Charges :"];
-            const tableBody = document.getElementById('charges-table-body');
-            let rowsHtml = chargeKeys.map(key => `<tr><td class="table-cell font-medium text-gray-700">KD{key}</td><td class="table-cell"><input type="text" class="cost-input input-field"></td><td class="table-cell"><input type="text" class="selling-input input-field"></td><td class="table-cell profit-output bg-gray-50"></td><td class="table-cell"><input type="text" class="notes-input input-field"></td></tr>`).join('');
-            rowsHtml += `<tr id="total-row" class="bg-gray-100 font-bold"><td class="table-cell text-right">TOTAL:</td><td id="total-cost" class="table-cell"></td><td id="total-selling" class="table-cell"></td><td id="total-profit" class="table-cell"></td><td class="table-cell"></td></tr>`;
-            tableBody.innerHTML = rowsHtml;
-        }
-        
-        function setupEventListeners() {
-            document.getElementById('charges-table-body').addEventListener('input', e => {
-                if (e.target.classList.contains('cost-input') || e.target.classList.contains('selling-input')) {
-                    calculate();
-                }
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
             populateTable();
-            setupEventListeners();
             calculate();
             document.getElementById('date').valueAsDate = new Date();
         });
