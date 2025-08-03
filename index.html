@@ -276,36 +276,41 @@
     <script type="module">
         // Import Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, addDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // Global variables
         let db, auth, userId;
         let jobFilesCache = []; // Cache for analytics
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         // --- Firebase Initialization ---
         async function initializeFirebase() {
             try {
-                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+                // YOUR FIREBASE CONFIGURATION OBJECT
+                const firebaseConfig = {
+                  apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
+                  authDomain: "my-job-file-system.firebaseapp.com",
+                  projectId: "my-job-file-system",
+                  storageBucket: "my-job-file-system.firebasestorage.app",
+                  messagingSenderId: "145307873304",
+                  appId: "1:145307873304:web:d661ea6ec118801b4a136d",
+                  measurementId: "G-8EHX5K7YHL"
+                };
+
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                onAuthStateChanged(auth, user => {
-                    if (user) {
-                        userId = user.uid;
-                        console.log("User is signed in with UID:", userId);
-                        loadJobFiles();
-                    } else {
-                        console.log("User is signed out.");
-                    }
-                });
-
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
+                try {
                     await signInAnonymously(auth);
+                    userId = auth.currentUser.uid;
+                    console.log("Signed in anonymously with UID:", userId);
+                    loadJobFiles();
+                } catch (error) {
+                    console.error("Anonymous sign-in failed:", error);
+                    console.warn("Proceeding without authentication. Ensure Firestore rules allow public access and Anonymous Sign-in is enabled in your Firebase project.");
+                    userId = 'anonymous-user'; // Fallback
+                    loadJobFiles(); // Attempt to load files anyway, relying on open security rules
                 }
 
             } catch (error) {
@@ -316,6 +321,10 @@
 
         // --- Data Handling (Firestore) ---
         window.saveJobFile = async function() {
+            if (!db) {
+                showNotification("Database not connected.", true);
+                return;
+            }
             showLoader();
             const jobFileNo = document.getElementById('job-file-no').value.trim();
             if (!jobFileNo) {
@@ -325,14 +334,13 @@
             }
 
             const data = getFormData();
-            // Add calculated totals to the data object for analytics
             data.totalCost = parseFloat(document.getElementById('total-cost').textContent) || 0;
             data.totalSelling = parseFloat(document.getElementById('total-selling').textContent) || 0;
             data.totalProfit = parseFloat(document.getElementById('total-profit').textContent) || 0;
             data.updatedAt = serverTimestamp();
 
             try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/jobfiles`, jobFileNo);
+                const docRef = doc(db, 'jobfiles', jobFileNo);
                 await setDoc(docRef, data, { merge: true });
                 hideLoader();
                 showNotification("Job file has been saved to the database!");
@@ -345,7 +353,7 @@
 
         function loadJobFiles() {
             if (!db) return;
-            const jobFilesCollection = collection(db, `artifacts/${appId}/public/data/jobfiles`);
+            const jobFilesCollection = collection(db, 'jobfiles');
             const q = query(jobFilesCollection);
 
             onSnapshot(q, (querySnapshot) => {
@@ -387,7 +395,7 @@
         window.loadJobFileById = async function(docId) {
             showLoader();
             try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/jobfiles`, docId);
+                const docRef = doc(db, 'jobfiles', docId);
                 const docSnap = await getDoc(docRef);
 
                 if (docSnap.exists()) {
@@ -409,7 +417,7 @@
         window.previewJobFileById = async function(docId) {
             showLoader();
             try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/jobfiles`, docId);
+                const docRef = doc(db, 'jobfiles', docId);
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
                     const previewHtml = getPrintViewHtml(docSnap.data());
@@ -430,7 +438,7 @@
         async function deleteJobFile(docId) {
             showLoader();
             try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/jobfiles`, docId);
+                const docRef = doc(db, 'jobfiles', docId);
                 await deleteDoc(docRef);
                 hideLoader();
                 showNotification("Job file has been deleted.");
