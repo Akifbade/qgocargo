@@ -281,6 +281,18 @@
             <div id="job-files-list" class="space-y-2 max-h-[60vh] overflow-y-auto"></div>
         </div>
     </div>
+    
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="overlay">
+        <div class="modal-content max-w-sm">
+            <h3 class="text-lg font-bold mb-4" id="confirm-title">Confirm Deletion</h3>
+            <p id="confirm-message" class="mb-4">Are you sure?</p>
+            <div class="text-right mt-6 space-x-2">
+                <button id="confirm-cancel" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Cancel</button>
+                <button id="confirm-ok" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Delete</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Preview Modal -->
     <div id="preview-modal" class="overlay">
@@ -339,14 +351,24 @@
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         const userDocRef = doc(db, 'users', user.uid);
-                        const userDoc = await getDoc(userDocRef);
+                        let userDoc = await getDoc(userDocRef);
                         
-                        if (userDoc.exists()) {
-                            currentUser = { uid: user.uid, email: user.email, ...userDoc.data() };
-                        } else {
-                            // This case handles the very first user or a user whose doc is missing
-                            currentUser = { uid: user.uid, email: user.email, role: 'user' }; // Default to user
+                        if (!userDoc.exists()) {
+                            // This is a new user that needs a document in Firestore.
+                            const usersCollectionRef = collection(db, 'users');
+                            const userQuerySnapshot = await getDocs(usersCollectionRef);
+                            const isFirstUser = userQuerySnapshot.size === 0;
+
+                            const newUser = {
+                                email: user.email,
+                                role: isFirstUser ? 'admin' : 'user',
+                                createdAt: serverTimestamp()
+                            };
+                            await setDoc(userDocRef, newUser);
+                            userDoc = await getDoc(userDocRef); // Re-fetch the doc
                         }
+                        
+                        currentUser = { uid: user.uid, email: user.email, ...userDoc.data() };
                         
                         console.log("User logged in:", currentUser);
                         showApp();
@@ -368,25 +390,9 @@
         async function handleSignUp(email, password) {
             showLoader();
             try {
-                // Check if any users exist to determine if this is the first one
-                const usersCollectionRef = collection(db, 'users');
-                const userQuerySnapshot = await getDocs(usersCollectionRef);
-                const isFirstUser = userQuerySnapshot.empty;
-
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-
-                // Create a user document in Firestore
-                const userDocRef = doc(db, 'users', user.uid);
-                const newUser = {
-                    email: user.email,
-                    role: isFirstUser ? 'admin' : 'user', // First user is admin
-                    createdAt: serverTimestamp()
-                };
-                await setDoc(userDocRef, newUser);
-                console.log(isFirstUser ? "First user created as admin." : "New user created.");
-                showNotification("Account created successfully! Please log in.", false);
-
+                // Just create the user. The onAuthStateChanged listener will handle creating the user doc.
+                await createUserWithEmailAndPassword(auth, email, password);
+                showNotification("Account created successfully! Logging you in...", false);
             } catch (error) {
                 console.error("Sign up error:", error);
                 showNotification(error.message, true);
@@ -740,10 +746,8 @@
             const adminElements = document.querySelectorAll('.admin-only');
             if (currentUser.role === 'admin') {
                 adminElements.forEach(el => el.style.display = 'block');
-                document.querySelector('#confirm-modal .space-y-2').style.display = 'none'; // Hide password for admin delete
             } else {
                 adminElements.forEach(el => el.style.display = 'none');
-                document.querySelector('#confirm-modal .space-y-2').style.display = 'block'; // Show password for non-admin (though they won't see button)
             }
         }
 
