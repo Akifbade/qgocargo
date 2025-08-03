@@ -99,7 +99,7 @@
         #analytics-modal .analytics-table th, #analytics-modal .analytics-table td { border: 1px solid #d1d5db; padding: 0.5rem; text-align: left; }
         #analytics-modal .analytics-table th { background-color: #f3f4f6; font-weight: 600; }
         #print-output .print-field, #preview-modal .print-field { border: 1px solid #6b7280; padding: 0.3rem; min-height: 24px; word-break: break-all; }
-        .admin-only, .checker-only { display: none; } /* Hide role-specific elements by default */
+        .admin-only, .checker-only, #signup-name-field { display: none; } /* Hide role-specific elements by default */
     </style>
     <style id="print-styles"></style>
 </head>
@@ -110,13 +110,17 @@
         <div class="max-w-md w-full space-y-8">
             <div>
                 <div class="text-center text-5xl font-extrabold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
-                <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
+                <h2 id="auth-title" class="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
             </div>
             <div class="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-md">
                 <div class="rounded-md shadow-sm -space-y-px">
+                    <div id="signup-name-field">
+                        <label for="full-name" class="sr-only">Full Name</label>
+                        <input id="full-name" name="name" type="text" autocomplete="name" required class="input-field rounded-t-md" placeholder="Full Name">
+                    </div>
                     <div>
                         <label for="email-address" class="sr-only">Email address</label>
-                        <input id="email-address" name="email" type="email" autocomplete="email" required class="input-field rounded-t-md" placeholder="Email address">
+                        <input id="email-address" name="email" type="email" autocomplete="email" required class="input-field" placeholder="Email address">
                     </div>
                     <div>
                         <label for="password" class="sr-only">Password</label>
@@ -124,14 +128,13 @@
                     </div>
                 </div>
                 <div>
-                    <button id="login-btn" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    <button id="auth-btn" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         Sign in
                     </button>
                 </div>
                 <p class="mt-2 text-center text-sm text-gray-600">
-                    Or
-                    <a href="#" id="signup-link" class="font-medium text-indigo-600 hover:text-indigo-500">
-                        create a new account
+                    <a href="#" id="auth-link" class="font-medium text-indigo-600 hover:text-indigo-500">
+                        Create a new account
                     </a>
                 </p>
             </div>
@@ -162,7 +165,7 @@
             <!-- User Info and Logout -->
             <div class="flex justify-between items-center mb-4 bg-gray-50 p-2 rounded-md">
                 <div>
-                    Logged in as: <span id="user-email" class="font-bold"></span> (<span id="user-role" class="capitalize"></span>)
+                    Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role" class="capitalize"></span>)
                 </div>
                 <div>
                     <button id="admin-panel-btn" class="admin-only bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Admin Panel</button>
@@ -349,6 +352,7 @@
         let db, auth;
         let currentUser = null;
         let jobFilesCache = []; // Cache for analytics
+        let analyticsDataCache = null; // Cache for analytics data to re-sort
 
         // --- Firebase Initialization ---
         async function initializeFirebase() {
@@ -382,6 +386,7 @@
 
                             const newUser = {
                                 email: user.email,
+                                displayName: user.displayName || user.email.split('@')[0], // Use name from signup or derive from email
                                 role: isFirstUser ? 'admin' : 'user',
                                 createdAt: serverTimestamp()
                             };
@@ -408,11 +413,26 @@
         }
 
         // --- Authentication Logic ---
-        async function handleSignUp(email, password) {
+        async function handleSignUp(email, password, displayName) {
             showLoader();
             try {
-                // Just create the user. The onAuthStateChanged listener will handle creating the user doc.
-                await createUserWithEmailAndPassword(auth, email, password);
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // The onAuthStateChanged listener will now handle creating the user doc with the display name
+                const userDocRef = doc(db, 'users', user.uid);
+                const usersCollectionRef = collection(db, 'users');
+                const userQuerySnapshot = await getDocs(usersCollectionRef);
+                const isFirstUser = userQuerySnapshot.size === 1; // It will be 1 after creation
+
+                const newUser = {
+                    email: user.email,
+                    displayName: displayName,
+                    role: isFirstUser ? 'admin' : 'user',
+                    createdAt: serverTimestamp()
+                };
+                await setDoc(userDocRef, newUser);
+
                 showNotification("Account created successfully! Logging you in...", false);
             } catch (error) {
                 console.error("Sign up error:", error);
@@ -448,7 +468,7 @@
             data.totalSelling = parseFloat(document.getElementById('total-selling').textContent) || 0;
             data.totalProfit = parseFloat(document.getElementById('total-profit').textContent) || 0;
             data.updatedAt = serverTimestamp();
-            data.lastUpdatedBy = currentUser.email;
+            data.lastUpdatedBy = currentUser.displayName;
 
             try {
                 const docRef = doc(db, 'jobfiles', jobFileNo);
@@ -475,14 +495,14 @@
             
             showLoader();
             const checkData = {
-                checkedBy: currentUser.email,
+                checkedBy: currentUser.displayName,
                 checkedAt: serverTimestamp()
             };
             
             try {
                 const docRef = doc(db, 'jobfiles', jobFileNo);
                 await setDoc(docRef, checkData, { merge: true });
-                document.getElementById('checked-by').value = `${currentUser.email} on ${new Date().toLocaleDateString()}`;
+                document.getElementById('checked-by').value = `${currentUser.displayName} on ${new Date().toLocaleDateString()}`;
                 document.getElementById('check-btn').disabled = true;
                 document.getElementById('check-btn').textContent = "Checked";
                 hideLoader();
@@ -507,14 +527,14 @@
             
             showLoader();
             const approvalData = {
-                approvedBy: currentUser.email,
+                approvedBy: currentUser.displayName,
                 approvedAt: serverTimestamp()
             };
             
             try {
                 const docRef = doc(db, 'jobfiles', jobFileNo);
                 await setDoc(docRef, approvalData, { merge: true });
-                document.getElementById('approved-by').value = `${currentUser.email} on ${new Date().toLocaleDateString()}`;
+                document.getElementById('approved-by').value = `${currentUser.displayName} on ${new Date().toLocaleDateString()}`;
                 document.getElementById('approve-btn').disabled = true;
                 document.getElementById('approve-btn').textContent = "Approved";
                 hideLoader();
@@ -674,12 +694,18 @@
                 const profit = job.totalProfit || 0;
                 const revenue = job.totalSelling || 0;
                 const cost = job.totalCost || 0;
+                let status = 'Pending Check';
+                if (job.approvedBy) {
+                    status = 'Approved';
+                } else if (job.checkedBy) {
+                    status = 'Pending Approval';
+                }
 
                 totalRevenue += revenue;
                 totalCost += cost;
                 totalProfit += profit;
 
-                profitByFile.push({ id: job.id, jfn: job.jfn, shipper: job.sh, consignee: job.co, profit: profit });
+                profitByFile.push({ id: job.id, jfn: job.jfn, shipper: job.sh, consignee: job.co, profit: profit, status: status, date: job.updatedAt?.toDate() || new Date(0) });
 
                 if (job.sh) {
                     profitByShipper[job.sh] = (profitByShipper[job.sh] || 0) + profit;
@@ -693,7 +719,7 @@
                 }
             });
 
-            const analyticsData = {
+            analyticsDataCache = {
                 totalJobs, totalRevenue, totalCost, totalProfit, profitByFile,
                 profitByShipper: Object.entries(profitByShipper).sort((a, b) => b[1] - a[1]),
                 profitByConsignee: Object.entries(profitByConsignee).sort((a, b) => b[1] - a[1]),
@@ -701,13 +727,24 @@
             };
 
             // 2. Display Data
-            displayAnalytics(analyticsData);
+            displayAnalytics(analyticsDataCache);
             openModal('analytics-modal');
         }
 
-        function displayAnalytics(data) {
+        function displayAnalytics(data, sortBy = 'profit-desc') {
             const body = document.getElementById('analytics-body');
             const deleteButtonHtml = (fileId) => currentUser.role === 'admin' ? `<button onclick="confirmDelete('${fileId}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>` : '';
+            
+            // Sorting logic
+            const sortedFiles = [...data.profitByFile];
+            if (sortBy === 'profit-desc') {
+                sortedFiles.sort((a, b) => b.profit - a.profit);
+            } else if (sortBy === 'date-desc') {
+                sortedFiles.sort((a, b) => b.date - a.date);
+            } else if (sortBy === 'status') {
+                const statusOrder = { 'Pending Check': 1, 'Pending Approval': 2, 'Approved': 3 };
+                sortedFiles.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
+            }
 
             body.innerHTML = `
                 <!-- Overall Summary -->
@@ -743,16 +780,25 @@
                 <div>
                     <div class="flex justify-between items-center mb-2">
                         <h4 class="text-lg font-semibold">Profit by Job File</h4>
-                        <button onclick="downloadAnalyticsCsv()" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-1 px-3 rounded text-sm">Download CSV</button>
+                        <div>
+                            <label for="sort-analytics" class="text-sm mr-2">Sort by:</label>
+                            <select id="sort-analytics" onchange="sortAnalyticsTable(this.value)" class="input-field w-auto inline-block">
+                                <option value="profit-desc" ${sortBy === 'profit-desc' ? 'selected' : ''}>Profit (High to Low)</option>
+                                <option value="date-desc" ${sortBy === 'date-desc' ? 'selected' : ''}>Date (Newest First)</option>
+                                <option value="status" ${sortBy === 'status' ? 'selected' : ''}>Status</option>
+                            </select>
+                            <button onclick="downloadAnalyticsCsv()" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-1 px-3 rounded text-sm ml-2">Download CSV</button>
+                        </div>
                     </div>
                     <div class="max-h-64 overflow-y-auto">
                         <table class="analytics-table">
-                            <thead><tr><th>Job File ID</th><th>Shipper</th><th>Profit</th><th>Actions</th></tr></thead>
-                            <tbody>${data.profitByFile.sort((a,b) => b.profit - a.profit).map(file => `
+                            <thead><tr><th>Job File ID</th><th>Shipper</th><th>Profit</th><th>Status</th><th>Actions</th></tr></thead>
+                            <tbody>${sortedFiles.map(file => `
                                 <tr>
                                     <td>${file.jfn || file.id}</td>
                                     <td>${file.shipper || 'N/A'}</td>
                                     <td>$${file.profit.toFixed(2)}</td>
+                                    <td>${file.status}</td>
                                     <td class="space-x-1">
                                         <button onclick="previewJobFileById('${file.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs">Preview</button>
                                         <button onclick="loadJobFileById('${file.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded text-xs">Load</button>
@@ -766,12 +812,16 @@
             `;
         }
         
+        window.sortAnalyticsTable = function(sortBy) {
+            displayAnalytics(analyticsDataCache, sortBy);
+        }
+        
         window.downloadAnalyticsCsv = function() {
-            let csvContent = "data:text/csv;charset=utf-8,Job File ID,Shipper,Consignee,Profit\n";
-            const sortedFiles = [...jobFilesCache].sort((a,b) => (b.totalProfit || 0) - (a.totalProfit || 0));
+            let csvContent = "data:text/csv;charset=utf-8,Job File ID,Shipper,Consignee,Profit,Status\n";
+            const sortedFiles = [...analyticsDataCache.profitByFile].sort((a,b) => (b.profit || 0) - (a.profit || 0));
 
             sortedFiles.forEach(job => {
-                const row = [job.jfn, job.sh || 'N/A', job.co || 'N/A', (job.totalProfit || 0).toFixed(2)].join(",");
+                const row = [job.jfn, job.shipper || 'N/A', job.consignee || 'N/A', (job.profit || 0).toFixed(2), job.status].join(",");
                 csvContent += row + "\n";
             });
 
@@ -801,7 +851,7 @@
                 const userId = doc.id;
                 userListHtml += `
                     <div class="flex justify-between items-center p-2 border-b">
-                        <span>${userData.email}</span>
+                        <span>${userData.displayName} (${userData.email})</span>
                         <select data-uid="${userId}" class="role-select input-field w-32">
                             <option value="user" ${userData.role === 'user' ? 'selected' : ''}>User</option>
                             <option value="checker" ${userData.role === 'checker' ? 'selected' : ''}>Checker</option>
@@ -848,7 +898,7 @@
         function showApp() {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-container').style.display = 'block';
-            document.getElementById('user-email').textContent = currentUser.email;
+            document.getElementById('user-display-name').textContent = currentUser.displayName;
             document.getElementById('user-role').textContent = currentUser.role;
 
             // Show/hide role-specific elements
@@ -925,28 +975,41 @@
             initializeFirebase();
             
             // Auth Event Listeners
-            const loginBtn = document.getElementById('login-btn');
-            const signupLink = document.getElementById('signup-link');
+            const authBtn = document.getElementById('auth-btn');
+            const authLink = document.getElementById('auth-link');
             const logoutBtn = document.getElementById('logout-btn');
             const approveBtn = document.getElementById('approve-btn');
             const checkBtn = document.getElementById('check-btn');
             const adminPanelBtn = document.getElementById('admin-panel-btn');
 
-            loginBtn.addEventListener('click', () => {
-                const email = document.getElementById('email-address').value;
-                const password = document.getElementById('password').value;
-                handleLogin(email, password);
+            let isLogin = true;
+
+            authLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                isLogin = !isLogin;
+                const nameField = document.getElementById('signup-name-field');
+                const emailField = document.getElementById('email-address');
+                
+                document.getElementById('auth-title').textContent = isLogin ? 'Sign in to your account' : 'Create a new account';
+                authBtn.textContent = isLogin ? 'Sign in' : 'Sign up';
+                authLink.textContent = isLogin ? 'Create a new account' : 'Already have an account? Sign in';
+                nameField.style.display = isLogin ? 'none' : 'block';
+                emailField.classList.toggle('rounded-t-md', !isLogin);
             });
 
-            signupLink.addEventListener('click', (e) => {
-                e.preventDefault();
+            authBtn.addEventListener('click', () => {
                 const email = document.getElementById('email-address').value;
                 const password = document.getElementById('password').value;
-                if (!email || !password) {
-                    showNotification("Please enter email and password to sign up.", true);
-                    return;
+                if (isLogin) {
+                    handleLogin(email, password);
+                } else {
+                    const displayName = document.getElementById('full-name').value;
+                     if (!email || !password || !displayName) {
+                        showNotification("Please fill all fields to sign up.", true);
+                        return;
+                    }
+                    handleSignUp(email, password, displayName);
                 }
-                handleSignUp(email, password);
             });
             
             logoutBtn.addEventListener('click', handleLogout);
