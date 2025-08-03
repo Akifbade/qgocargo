@@ -834,9 +834,9 @@
                 <!-- Overall Summary -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                     <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Total Jobs</p><p class="text-2xl font-bold">${data.totalJobs}</p></div>
-                    <div class="bg-blue-100 p-4 rounded-lg"><p class="text-sm text-blue-800">Total Revenue</p><p class="text-2xl font-bold text-blue-900">$${data.totalRevenue.toFixed(2)}</p></div>
-                    <div class="bg-red-100 p-4 rounded-lg"><p class="text-sm text-red-800">Total Cost</p><p class="text-2xl font-bold text-red-900">$${data.totalCost.toFixed(2)}</p></div>
-                    <div class="bg-green-100 p-4 rounded-lg"><p class="text-sm text-green-800">Total Profit</p><p class="text-2xl font-bold text-green-900">$${data.totalProfit.toFixed(2)}</p></div>
+                    <div class="bg-blue-100 p-4 rounded-lg"><p class="text-sm text-blue-800">Total Revenue</p><p class="text-2xl font-bold text-blue-900">KD ${data.totalRevenue.toFixed(2)}</p></div>
+                    <div class="bg-red-100 p-4 rounded-lg"><p class="text-sm text-red-800">Total Cost</p><p class="text-2xl font-bold text-red-900">KD ${data.totalCost.toFixed(2)}</p></div>
+                    <div class="bg-green-100 p-4 rounded-lg"><p class="text-sm text-green-800">Total Profit</p><p class="text-2xl font-bold text-green-900">KD ${data.totalProfit.toFixed(2)}</p></div>
                 </div>
 
                 <!-- Detailed Breakdowns -->
@@ -845,18 +845,18 @@
                     <div>
                         <h4 class="text-lg font-semibold mb-2">Top Profitable Shippers</h4>
                         <table class="analytics-table"><thead><tr><th>Shipper</th><th>Total Profit</th></tr></thead>
-                        <tbody>${data.profitByShipper.slice(0, 5).map(([name, profit]) => `<tr><td>${name}</td><td>$${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table>
+                        <tbody>${data.profitByShipper.slice(0, 5).map(([name, profit]) => `<tr><td>${name}</td><td>KD ${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table>
                     </div>
                     <div>
                         <h4 class="text-lg font-semibold mb-2">Top Profitable Consignees</h4>
                         <table class="analytics-table"><thead><tr><th>Consignee</th><th>Total Profit</th></tr></thead>
-                        <tbody>${data.profitByConsignee.slice(0, 5).map(([name, profit]) => `<tr><td>${name}</td><td>$${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table>
+                        <tbody>${data.profitByConsignee.slice(0, 5).map(([name, profit]) => `<tr><td>${name}</td><td>KD ${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table>
                     </div>
                      <!-- Monthly Profit -->
                     <div class="lg:col-span-2">
                         <h4 class="text-lg font-semibold mb-2">Monthly Profit</h4>
                         <table class="analytics-table"><thead><tr><th>Month</th><th>Total Profit</th></tr></thead>
-                        <tbody>${data.monthlyProfit.map(([month, profit]) => `<tr><td>${month}</td><td>$${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table>
+                        <tbody>${data.monthlyProfit.map(([month, profit]) => `<tr><td>${month}</td><td>KD ${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table>
                     </div>
                 </div>
 
@@ -887,8 +887,8 @@
                                         <p class="text-xs text-gray-600">Desc: ${file.dsc || 'N/A'}</p>
                                     </td>
                                     <td>
-                                        <p class="font-bold text-green-600">$${file.profit.toFixed(2)}</p>
-                                        <p class="text-sm text-red-600">Cost: $${file.cost.toFixed(2)}</p>
+                                        <p class="font-bold text-green-600">KD ${file.profit.toFixed(2)}</p>
+                                        <p class="text-sm text-red-600">Cost: KD ${file.cost.toFixed(2)}</p>
                                     </td>
                                     <td>${file.status}</td>
                                     <td class="space-x-1">
