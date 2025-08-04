@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Job File Management System with Database</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- REMOVED: Unused html2pdf.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -41,6 +41,10 @@
             outline: none;
             border-color: var(--theme-color);
             box-shadow: 0 0 0 1px var(--theme-color);
+        }
+        .input-field:disabled {
+            background-color: #f3f4f6;
+            cursor: not-allowed;
         }
         .table-cell {
             border: 1px solid #d1d5db;
@@ -141,7 +145,6 @@
         .stamp-checked { border: 2px solid #2563eb; color: #2563eb; }
         .stamp-rejected { border: 2px solid #dc2626; color: #dc2626; }
     </style>
-    <style id="print-styles"></style>
 </head>
 <body class="bg-gray-100">
 
@@ -180,7 +183,6 @@
                         Create a new account
                     </a>
                 </p>
-                <!-- NEW: Forgot Password Link -->
                 <div class="text-center mt-2 text-sm">
                     <a href="#" id="forgot-password-link" class="font-medium text-indigo-600 hover:text-indigo-500">
                         Forgot your password?
@@ -299,7 +301,7 @@
                 <textarea id="remarks" rows="4" class="input-field w-full"></textarea>
             </div>
 
-            <!-- NEW: Creator/Editor Info -->
+            <!-- Creator/Editor Info -->
             <div id="file-info" class="text-xs text-gray-500 mb-4 border-t pt-4">
                 <span id="created-by-info"></span>
                 <span id="last-updated-by-info" class="ml-4"></span>
@@ -354,7 +356,7 @@
                 <h3 class="text-2xl font-bold">File Manager</h3>
                 <button onclick="closeModal('file-manager-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
-            <input type="text" id="search-bar" class="input-field w-full mb-4" placeholder="Search job files...">
+            <input type="text" id="search-bar" class="input-field w-full mb-4" placeholder="Search by Job File No, Shipper, Consignee...">
             <div id="job-files-list" class="space-y-2 max-h-[60vh] overflow-y-auto"></div>
         </div>
     </div>
@@ -362,11 +364,11 @@
     <!-- Confirmation Modal -->
     <div id="confirm-modal" class="overlay">
         <div class="modal-content max-w-sm">
-            <h3 class="text-lg font-bold mb-4" id="confirm-title">Confirm Deletion</h3>
+            <h3 class="text-lg font-bold mb-4" id="confirm-title">Confirm Action</h3>
             <p id="confirm-message" class="mb-4">Are you sure?</p>
             <div class="text-right mt-6 space-x-2">
                 <button id="confirm-cancel" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Cancel</button>
-                <button id="confirm-ok" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Delete</button>
+                <button id="confirm-ok" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Confirm</button>
             </div>
         </div>
     </div>
@@ -426,7 +428,7 @@
         </div>
     </div>
 
-    <!-- NEW: Forgot Password Modal -->
+    <!-- Forgot Password Modal -->
     <div id="forgot-password-modal" class="overlay">
         <div class="modal-content max-w-md">
             <div class="flex justify-between items-center mb-4">
@@ -450,7 +452,6 @@
     <!-- Firebase SDK and App Logic -->
     <script type="module">
         // Import Firebase SDKs
-        // UPDATED: Added sendPasswordResetEmail
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -458,15 +459,20 @@
         // --- Global variables ---
         let db, auth;
         let currentUser = null;
-        let jobFilesCache = []; // Cache for analytics
+        let jobFilesCache = []; // Cache for analytics and file manager
         let analyticsDataCache = null; // Cache for analytics data to re-sort
 
         // --- Firebase Configuration ---
+        // WARNING: Exposing your Firebase config keys in client-side code is a security risk.
+        // It's recommended to use environment variables and server-side logic to protect them.
+        // For this application to work, you must also set up Firestore Security Rules
+        // to prevent unauthorized access to your data.
         const firebaseConfig = {
             apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
             authDomain: "my-job-file-system.firebaseapp.com",
             projectId: "my-job-file-system",
-            storageBucket: "my-job-file-system.firebasestorage.app",
+            // FIXED: Corrected storage bucket URL format.
+            storageBucket: "my-job-file-system.appspot.com",
             messagingSenderId: "145307873304",
             appId: "1:145307873304:web:d661ea6ec118801b4a136d",
             measurementId: "G-8EHX5K7YHL"
@@ -485,9 +491,12 @@
                         const userDocRef = doc(db, 'users', user.uid);
                         let userDoc = await getDoc(userDocRef);
                         
+                        // If user document doesn't exist, create it
                         if (!userDoc.exists()) {
                             const usersCollectionRef = collection(db, 'users');
                             const userQuerySnapshot = await getDocs(usersCollectionRef);
+                            // FIXED: The first user to ever sign up becomes an admin.
+                            // The check should be for size === 0, before the new user is added.
                             const isFirstUser = userQuerySnapshot.size === 0;
 
                             const newUser = {
@@ -526,13 +535,14 @@
             }
         }
 
-        // --- NEW: Function to handle public view from QR code ---
+        // --- Function to handle public view from QR code ---
         async function initializeFirebaseAndShowPublicView(jobId) {
             try {
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 await showPublicJobView(jobId);
-            } catch (error) {
+            } catch (error)
+            {
                 console.error("Error initializing Firebase for public view:", error);
                 document.body.innerHTML = `<div class="p-4 text-center text-red-700 bg-red-100">Could not load job file. Database connection failed.</div>`;
             } finally {
@@ -566,23 +576,11 @@
             showLoader();
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-
-                const userDocRef = doc(db, 'users', user.uid);
-                const usersCollectionRef = collection(db, 'users');
-                const userQuerySnapshot = await getDocs(usersCollectionRef);
-                const isFirstUser = userQuerySnapshot.size === 1;
-
-                const newUser = {
-                    email: user.email,
-                    displayName: displayName,
-                    role: isFirstUser ? 'admin' : 'user',
-                    status: isFirstUser ? 'active' : 'inactive',
-                    createdAt: serverTimestamp()
-                };
-                await setDoc(userDocRef, newUser);
-
-                showNotification("Account created! Waiting for admin approval.", false);
+                // The onAuthStateChanged listener will handle creating the user document
+                showNotification("Account created! Please wait for admin approval.", false);
+                // Sign out the user immediately, they need to wait for approval
+                await signOut(auth);
+                toggleAuthView(true); // Switch back to login view
             } catch (error) {
                 console.error("Sign up error:", error);
                 showNotification(error.message, true);
@@ -594,9 +592,9 @@
             showLoader();
             try {
                 await signInWithEmailAndPassword(auth, email, password);
+                // onAuthStateChanged will handle the rest
             } catch (error) {
                 console.error("Login error:", error);
-                // More specific error message
                 let message = "Login failed. Please check your email and password.";
                 if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
                     message = "Incorrect email or password. Please try again or reset your password.";
@@ -606,7 +604,6 @@
             hideLoader();
         }
         
-        // NEW: Forgot Password Function
         async function handleForgotPassword() {
             const email = document.getElementById('reset-email').value.trim();
             if (!email) {
@@ -635,7 +632,6 @@
         }
 
         // --- Data Handling (Firestore) ---
-        // UPDATED: saveJobFile function with re-approval logic
         window.saveJobFile = async function() {
             if (!db) { showNotification("Database not connected.", true); return; }
             showLoader();
@@ -657,9 +653,9 @@
                     data.lastUpdatedBy = currentUser.displayName;
                     data.updatedAt = serverTimestamp();
 
-                    // If file was approved or checked, reset status for re-approval
+                    // If file was previously approved or checked, reset status for re-approval
                     if (existingData.status === 'approved' || existingData.status === 'checked') {
-                        data.status = 'pending'; // Reset status
+                        data.status = 'pending';
                         data.checkedBy = null;
                         data.checkedAt = null;
                         data.approvedBy = null;
@@ -667,7 +663,8 @@
                         data.rejectionReason = null;
                         data.rejectedBy = null;
                         data.rejectedAt = null;
-                        showNotification("File was re-submitted for approval.", false);
+                        // IMPROVED: Clearer notification message
+                        showNotification("File modified. Re-approval is now required.", false);
                     }
                     await setDoc(docRef, data, { merge: true });
                 } else {
@@ -699,7 +696,7 @@
             }
             const jobFileNo = document.getElementById('job-file-no').value.trim();
             if (!jobFileNo) {
-                showNotification("Please save the job file first.", true);
+                showNotification("Please save or load a job file first.", true);
                 return;
             }
             
@@ -731,7 +728,7 @@
             }
             const jobFileNo = document.getElementById('job-file-no').value.trim();
             if (!jobFileNo) {
-                showNotification("Please save the job file first.", true);
+                showNotification("Please save or load a job file first.", true);
                 return;
             }
             
@@ -804,34 +801,46 @@
                     return;
                 }
                 
-                let filesHtml = '';
-                const sortedDocs = [...jobFilesCache].sort((a,b) => (b.updatedAt?.toDate ? b.updatedAt.toDate() : 0) - (a.updatedAt?.toDate ? a.updatedAt.toDate() : 0));
+                // Sort by last updated time, newest first
+                const sortedDocs = [...jobFilesCache].sort((a,b) => (b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : 0) - (a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : 0));
+                
+                displayJobFiles(sortedDocs);
 
-                sortedDocs.forEach((docData) => {
-                    const deleteButton = currentUser.role === 'admin' ? `<button onclick="confirmDelete('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Delete</button>` : '';
-                    const lastUpdated = docData.updatedAt?.toDate ? docData.updatedAt.toDate().toLocaleString() : 'N/A';
-                    filesHtml += `
-                        <div class="job-file-item border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center bg-gray-50 hover:bg-gray-100 gap-2" 
-                             data-search-term="${(docData.jfn || '').toLowerCase()} ${(docData.sh || '').toLowerCase()} ${(docData.co || '').toLowerCase()}">
-                            <div class="text-center sm:text-left">
-                                <p class="font-bold text-indigo-700">${docData.jfn || 'No ID'}</p>
-                                <p class="text-sm text-gray-600">Shipper: ${docData.sh || 'N/A'} | Consignee: ${docData.co || 'N/A'}</p>
-                                <p class="text-xs text-gray-400">Last Updated: ${lastUpdated}</p>
-                            </div>
-                            <div class="space-x-2 flex-shrink-0">
-                                <button onclick="previewJobFileById('${docData.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded text-sm">Preview</button>
-                                <button onclick="loadJobFileById('${docData.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm">Load</button>
-                                ${deleteButton}
-                            </div>
-                        </div>
-                    `;
-                });
-                list.innerHTML = filesHtml;
             }, (error) => {
                 console.error("Error fetching job files: ", error);
                 showNotification("Error loading job files.", true);
             });
         }
+
+        function displayJobFiles(files) {
+            const list = document.getElementById('job-files-list');
+            let filesHtml = '';
+            files.forEach((docData) => {
+                const deleteButton = currentUser.role === 'admin' ? `<button onclick="confirmDelete('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Delete</button>` : '';
+                const lastUpdated = docData.updatedAt?.toDate ? docData.updatedAt.toDate().toLocaleString() : 'N/A';
+                
+                // Combine searchable terms into a single string
+                const searchTerm = [docData.jfn, docData.sh, docData.co].join(' ').toLowerCase();
+
+                filesHtml += `
+                    <div class="job-file-item border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center bg-gray-50 hover:bg-gray-100 gap-2" 
+                         data-search-term="${searchTerm}">
+                        <div class="text-center sm:text-left">
+                            <p class="font-bold text-indigo-700">${docData.jfn || 'No ID'}</p>
+                            <p class="text-sm text-gray-600">Shipper: ${docData.sh || 'N/A'} | Consignee: ${docData.co || 'N/A'}</p>
+                            <p class="text-xs text-gray-400">Last Updated: ${lastUpdated}</p>
+                        </div>
+                        <div class="space-x-2 flex-shrink-0">
+                            <button onclick="previewJobFileById('${docData.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded text-sm">Preview</button>
+                            <button onclick="loadJobFileById('${docData.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm">Load</button>
+                            ${deleteButton}
+                        </div>
+                    </div>
+                `;
+            });
+            list.innerHTML = filesHtml;
+        }
+
 
         window.loadJobFileById = async function(docId) {
             showLoader();
@@ -900,6 +909,10 @@
                 await deleteDoc(docRef);
                 hideLoader();
                 showNotification("Job file has been deleted.");
+                // If the deleted file is currently loaded, clear the form
+                if (document.getElementById('job-file-no').value === docId) {
+                    clearForm();
+                }
             } catch (error) {
                 hideLoader();
                 console.error("Error deleting document:", error);
@@ -914,7 +927,9 @@
                 return;
             }
             const modal = document.getElementById('confirm-modal');
+            modal.querySelector('#confirm-title').textContent = 'Confirm Deletion';
             modal.querySelector('#confirm-message').textContent = `Are you sure you want to delete job file "${docId}"? This action cannot be undone.`;
+            modal.querySelector('#confirm-ok').className = 'bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded';
             openModal('confirm-modal');
 
             const okButton = modal.querySelector('#confirm-ok');
@@ -927,7 +942,6 @@
             const closeConfirm = () => {
                 closeModal('confirm-modal');
                 okButton.removeEventListener('click', onOk);
-                cancelButton.removeEventListener('click', closeConfirm);
             };
             
             okButton.addEventListener('click', onOk, { once: true });
@@ -1003,7 +1017,7 @@
                 sortedFiles.sort((a, b) => b.date - a.date);
             } else if (sortBy === 'status') {
                 const statusOrder = { 'Pending Check': 1, 'Pending Approval': 2, 'Approved': 3, 'Rejected': 4 };
-                sortedFiles.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
+                sortedFiles.sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
             }
 
             body.innerHTML = `
@@ -1118,15 +1132,17 @@
             userQuerySnapshot.forEach(doc => {
                 const userData = doc.data();
                 const userId = doc.id;
+                // IMPROVEMENT: Disable inputs for the current admin to prevent self-lockout
+                const isDisabled = userId === currentUser.uid;
                 userListHtml += `
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center p-2 border-b">
-                        <input type="text" data-uid="${userId}" class="display-name-input input-field col-span-1" value="${userData.displayName}">
-                        <select data-uid="${userId}" class="role-select input-field col-span-1">
+                        <input type="text" data-uid="${userId}" class="display-name-input input-field col-span-1" value="${userData.displayName}" ${isDisabled ? 'disabled' : ''}>
+                        <select data-uid="${userId}" class="role-select input-field col-span-1" ${isDisabled ? 'disabled' : ''}>
                             <option value="user" ${userData.role === 'user' ? 'selected' : ''}>User</option>
                             <option value="checker" ${userData.role === 'checker' ? 'selected' : ''}>Checker</option>
                             <option value="admin" ${userData.role === 'admin' ? 'selected' : ''}>Admin</option>
                         </select>
-                        <select data-uid="${userId}" class="status-select input-field col-span-1">
+                        <select data-uid="${userId}" class="status-select input-field col-span-1" ${isDisabled ? 'disabled' : ''}>
                             <option value="active" ${userData.status === 'active' ? 'selected' : ''}>Active</option>
                             <option value="inactive" ${userData.status === 'inactive' ? 'selected' : ''}>Inactive</option>
                         </select>
@@ -1145,18 +1161,18 @@
             
             userRows.forEach(row => {
                 const nameInput = row.querySelector('.display-name-input');
+                // Skip disabled rows (the current admin)
+                if (nameInput.disabled) return;
+
                 const roleSelect = row.querySelector('.role-select');
                 const statusSelect = row.querySelector('.status-select');
                 const uid = nameInput.dataset.uid;
-                const newName = nameInput.value;
-                const newRole = roleSelect.value;
-                const newStatus = statusSelect.value;
                 
                 const userDocRef = doc(db, 'users', uid);
                 batch.update(userDocRef, { 
-                    displayName: newName,
-                    role: newRole,
-                    status: newStatus
+                    displayName: nameInput.value,
+                    role: roleSelect.value,
+                    status: statusSelect.value
                 });
             });
 
@@ -1186,32 +1202,29 @@
             document.getElementById('user-role').textContent = currentUser.role;
 
             // Show/hide role-specific elements
-            const adminElements = document.querySelectorAll('.admin-only');
-            const checkerElements = document.querySelectorAll('.checker-only');
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.checker-only').forEach(el => el.style.display = 'none');
             
             if (currentUser.role === 'admin') {
-                adminElements.forEach(el => el.style.display = 'block');
-                checkerElements.forEach(el => el.style.display = 'block');
+                document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+                document.querySelectorAll('.checker-only').forEach(el => el.style.display = 'block');
             } else if (currentUser.role === 'checker') {
-                adminElements.forEach(el => el.style.display = 'none');
-                checkerElements.forEach(el => el.style.display = 'block');
-            } else {
-                adminElements.forEach(el => el.style.display = 'none');
-                checkerElements.forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.checker-only').forEach(el => el.style.display = 'block');
             }
+            
+            // Set initial state of the form for the logged-in user
+            clearForm();
         }
 
         window.openModal = (id) => document.getElementById(id).classList.add('visible');
         window.closeModal = (id) => document.getElementById(id).classList.remove('visible');
         window.openFileManager = () => openModal('file-manager-modal');
         
-        // UPDATED: clearForm to reset new info fields
         window.clearForm = () => {
             const form = document.querySelector('#main-container');
-            const inputs = form.querySelectorAll('input[type="text"], input[type="date"], textarea');
-            const checkboxes = form.querySelectorAll('input[type="checkbox"]');
-            inputs.forEach(input => input.value = '');
-            checkboxes.forEach(checkbox => checkbox.checked = false);
+            form.querySelectorAll('input[type="text"], input[type="date"], textarea').forEach(input => input.value = '');
+            form.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
+            
             document.getElementById('date').valueAsDate = new Date();
             populateTable();
             calculate();
@@ -1220,21 +1233,16 @@
             document.getElementById('prepared-by').value = currentUser.displayName;
             
             // Clear creator/editor info display
-            const createdInfo = document.getElementById('created-by-info');
-            const updatedInfo = document.getElementById('last-updated-by-info');
-            if(createdInfo) createdInfo.textContent = '';
-            if(updatedInfo) updatedInfo.textContent = '';
+            document.getElementById('created-by-info').textContent = '';
+            document.getElementById('last-updated-by-info').textContent = '';
 
-
-            // Reset approval and check fields
-            const approveBtn = document.getElementById('approve-btn');
-            const checkBtn = document.getElementById('check-btn');
+            // Reset approval and check fields to their default state
             document.getElementById('approved-by').value = '';
             document.getElementById('checked-by').value = '';
-            approveBtn.disabled = false;
-            document.getElementById('approval-buttons').style.display = 'flex'; // Show both buttons
-            checkBtn.disabled = false;
-            checkBtn.textContent = 'Check Job File';
+            document.getElementById('check-btn').disabled = false;
+            document.getElementById('check-btn').textContent = 'Check Job File';
+            document.getElementById('approve-btn').disabled = false;
+            document.getElementById('reject-btn').disabled = false;
 
             // Hide all stamps and banners
             document.getElementById('checked-stamp').style.display = 'none';
@@ -1242,6 +1250,11 @@
             document.getElementById('rejected-stamp').style.display = 'none';
             document.getElementById('rejection-banner').style.display = 'none';
 
+            // Re-apply role-based visibility for buttons
+            const isChecker = ['admin', 'checker'].includes(currentUser.role);
+            const isAdmin = currentUser.role === 'admin';
+            document.getElementById('check-btn').style.display = isChecker ? 'block' : 'none';
+            document.getElementById('approval-buttons').style.display = isAdmin ? 'flex' : 'none';
 
             showNotification("Form cleared. Ready for a new job file.");
         }
@@ -1263,12 +1276,7 @@
         document.getElementById('search-bar').addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
             document.querySelectorAll('.job-file-item').forEach(item => {
-                const itemSearchTerm = item.dataset.searchTerm;
-                if (itemSearchTerm.includes(searchTerm)) {
-                    item.style.display = 'flex';
-                } else {
-                    item.style.display = 'none';
-                }
+                item.style.display = item.dataset.searchTerm.includes(searchTerm) ? 'flex' : 'none';
             });
         });
 
@@ -1300,11 +1308,9 @@
                 ch: charges,
                 re: getVal('remarks'),
                 pb: getVal('prepared-by'),
-                // checkedBy and approvedBy are handled by their respective systems
             };
         }
         
-        // UPDATED: populateFormFromData to show creator/editor info
         function populateFormFromData(data) {
             const setVal = (id, value) => { if (document.getElementById(id)) document.getElementById(id).value = value || ''; };
             const setChecked = (type, values) => {
@@ -1323,130 +1329,97 @@
             setVal('flight-voyage-no', data.fv); setVal('container-no', data.cn);
             setVal('remarks', data.re); 
             
-            // Set prepared by, but fall back to createdBy if pb is empty
             setVal('prepared-by', data.pb || data.createdBy || '');
 
             // Display creator and editor info
             const createdInfo = document.getElementById('created-by-info');
             const updatedInfo = document.getElementById('last-updated-by-info');
             
-            if (data.createdBy) {
-                const createdDate = data.createdAt?.toDate() ? ` on ${data.createdAt.toDate().toLocaleDateString()}` : '';
-                createdInfo.textContent = `Created by: ${data.createdBy}${createdDate}`;
-            } else {
-                createdInfo.textContent = '';
-            }
-
-            if (data.lastUpdatedBy) {
-                const updatedDate = data.updatedAt?.toDate() ? ` on ${data.updatedAt.toDate().toLocaleString()}` : '';
-                updatedInfo.textContent = `Last updated by: ${data.lastUpdatedBy}${updatedDate}`;
-            } else {
-                updatedInfo.textContent = '';
-            }
+            createdInfo.textContent = data.createdBy ? `Created by: ${data.createdBy} on ${data.createdAt?.toDate().toLocaleDateString()}` : '';
+            updatedInfo.textContent = data.lastUpdatedBy ? `Last updated by: ${data.lastUpdatedBy} on ${data.updatedAt?.toDate().toLocaleString()}` : '';
             
+            // Reset all status displays first
+            document.getElementById('checked-stamp').style.display = 'none';
+            document.getElementById('approved-stamp').style.display = 'none';
+            document.getElementById('rejected-stamp').style.display = 'none';
+            document.getElementById('rejection-banner').style.display = 'none';
+            document.getElementById('check-btn').style.display = 'none';
+            document.getElementById('approval-buttons').style.display = 'none';
+
             // Handle check status
             const checkBtn = document.getElementById('check-btn');
-            const checkedStamp = document.getElementById('checked-stamp');
             if (data.checkedBy) {
                 const checkedDate = data.checkedAt?.toDate() ? ` on ${data.checkedAt.toDate().toLocaleDateString()}` : '';
                 setVal('checked-by', `${data.checkedBy}${checkedDate}`);
                 checkBtn.disabled = true;
                 checkBtn.textContent = 'Checked';
-                checkedStamp.style.display = 'block';
+                document.getElementById('checked-stamp').style.display = 'block';
             } else {
                 setVal('checked-by', 'Pending Check');
                 checkBtn.disabled = false;
                 checkBtn.textContent = 'Check Job File';
-                checkedStamp.style.display = 'none';
             }
-            
+
             // Handle approval/rejection status
-            const approvalButtons = document.getElementById('approval-buttons');
-            const approvedStamp = document.getElementById('approved-stamp');
-            const rejectedStamp = document.getElementById('rejected-stamp');
-            const rejectionBanner = document.getElementById('rejection-banner');
-
-            approvedStamp.style.display = 'none';
-            rejectedStamp.style.display = 'none';
-            rejectionBanner.style.display = 'none';
-            approvalButtons.style.display = 'none';
-
-            if (currentUser && currentUser.role === 'admin') {
-                approvalButtons.style.display = 'flex';
-            }
-
             if (data.status === 'approved') {
                 const approvedDate = data.approvedAt?.toDate() ? ` on ${data.approvedAt.toDate().toLocaleDateString()}` : '';
                 setVal('approved-by', `${data.approvedBy}${approvedDate}`);
-                approvalButtons.style.display = 'none';
-                approvedStamp.style.display = 'block';
+                document.getElementById('approved-stamp').style.display = 'block';
             } else if (data.status === 'rejected') {
                 const rejectedDate = data.rejectedAt?.toDate() ? ` on ${data.rejectedAt.toDate().toLocaleDateString()}` : '';
                 setVal('approved-by', `Rejected by ${data.rejectedBy}${rejectedDate}`);
-                if (currentUser && currentUser.role !== 'admin') {
-                    approvalButtons.style.display = 'none';
-                }
-                rejectedStamp.style.display = 'block';
-                rejectionBanner.style.display = 'block';
+                document.getElementById('rejected-stamp').style.display = 'block';
+                document.getElementById('rejection-banner').style.display = 'block';
                 document.getElementById('rejection-reason').textContent = data.rejectionReason;
             } else {
                 setVal('approved-by', 'Pending Approval');
             }
 
+            // Show buttons based on role AND status
+            if (currentUser.role === 'admin') {
+                if (data.status !== 'approved') {
+                    document.getElementById('approval-buttons').style.display = 'flex';
+                }
+            }
+            if (['admin', 'checker'].includes(currentUser.role)) {
+                if (!data.checkedBy) {
+                     document.getElementById('check-btn').style.display = 'block';
+                }
+            }
 
             setChecked('clearance', data.cl);
             setChecked('product', data.pt);
 
-            if (data.ch) {
-                populateTable(); // First clear and build the table structure
-                const rows = document.querySelectorAll('#charges-table-body tr:not(#total-row)');
-                rows.forEach((row, index) => {
-                    const chargeKey = row.cells[0].textContent.trim();
-                    const chargeData = data.ch.find(c => c.l === chargeKey);
-                    if (chargeData) {
-                        row.querySelector('.cost-input').value = chargeData.c;
-                        row.querySelector('.selling-input').value = chargeData.s;
-                        row.querySelector('.notes-input').value = chargeData.n;
-                    }
-                });
-            }
+            // Populate charges table
+            populateTable(); // Rebuild table structure
+            const rows = document.querySelectorAll('#charges-table-body tr:not(#total-row)');
+            rows.forEach((row) => {
+                const chargeKey = row.cells[0].textContent.trim();
+                const chargeData = (data.ch || []).find(c => c.l === chargeKey);
+                if (chargeData) {
+                    row.querySelector('.cost-input').value = chargeData.c;
+                    row.querySelector('.selling-input').value = chargeData.s;
+                    row.querySelector('.notes-input').value = chargeData.n;
+                }
+            });
             calculate();
         }
         
         // --- Print and Calculation Logic ---
-        window.printAnalytics = function() {
-            const analyticsBody = document.getElementById('analytics-body');
-            const printContent = analyticsBody.innerHTML;
-
-            // Get all stylesheets from the main document to apply them to the print window
+        function createPrintWindow(title, content) {
             let styles = '';
             document.querySelectorAll('style, link[rel="stylesheet"]').forEach(el => {
                 styles += el.outerHTML;
             });
 
-            // Create a new window to isolate the print content
             const printWindow = window.open('', '', 'height=800,width=1200');
             
-            printWindow.document.write('<html><head><title>Analytics Report</title>');
-            printWindow.document.write(styles); // Apply all existing styles
-            printWindow.document.write(`
-                <style>
-                    /* Add print-specific styles for the new window */
-                    body { padding: 1.5rem; background-color: white !important; }
-                    /* Hide elements we don't want in the printout */
-                    #sort-analytics, button, select { display: none !important; }
-                    .analytics-table td:last-child, .analytics-table th:last-child { display: none !important; }
-                    .modal-content { box-shadow: none; border: none; }
-                </style>
-            `);
-            printWindow.document.write('</head><body>');
-            printWindow.document.write('<h1 class="text-3xl font-bold mb-6 text-center">Analytics Report</h1>');
-            printWindow.document.write(printContent);
+            printWindow.document.write(`<html><head><title>${title}</title>`);
+            printWindow.document.write(styles);
+            printWindow.document.write(content);
             printWindow.document.write('</body></html>');
-            
             printWindow.document.close();
             
-            // Use a timeout to ensure all content and styles are loaded before printing
             setTimeout(() => {
                 printWindow.focus();
                 printWindow.print();
@@ -1454,48 +1427,38 @@
             }, 750);
         }
 
+        window.printAnalytics = function() {
+            const analyticsBody = document.getElementById('analytics-body').innerHTML;
+            const printContent = `
+                <style>
+                    body { padding: 1.5rem; background-color: white !important; }
+                    #sort-analytics, button, select, .analytics-table td:last-child, .analytics-table th:last-child { display: none !important; }
+                    .modal-content { box-shadow: none; border: none; }
+                </style>
+                </head><body>
+                <h1 class="text-3xl font-bold mb-6 text-center">Analytics Report</h1>
+                ${analyticsBody}
+            `;
+            createPrintWindow('Analytics Report', printContent);
+        }
+
         window.printPreview = function() {
-            const previewBody = document.getElementById('preview-body');
-            const printContent = previewBody.innerHTML;
-
-            let styles = '';
-            document.querySelectorAll('style, link[rel="stylesheet"]').forEach(el => {
-                styles += el.outerHTML;
-            });
-
-            const printWindow = window.open('', '', 'height=800,width=1200');
-            
-            printWindow.document.write('<html><head><title>Job File Preview</title>');
-            printWindow.document.write(styles);
-            printWindow.document.write(`
+            const previewBody = document.getElementById('preview-body').innerHTML;
+            const printContent = `
                 <style>
                     body { padding: 0; margin: 0; background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                     .no-print { display: none !important; }
                 </style>
-            `);
-            printWindow.document.write('</head><body>');
-            printWindow.document.write(printContent);
-            printWindow.document.write('</body></html>');
-            
-            printWindow.document.close();
-            
-            setTimeout(() => {
-                printWindow.focus();
-                printWindow.print();
-                printWindow.close();
-            }, 750);
+                </head><body>
+                ${previewBody}
+            `;
+            createPrintWindow('Job File Preview', printContent);
         }
 
-        // UPDATED: getPrintViewHtml to include creator/editor info
         function getPrintViewHtml(data, isPublicView = false) {
-            let totalCost = 0, totalSelling = 0, totalProfit = 0;
-            (data.ch || []).forEach(c => {
-                const cost = parseFloat(c.c) || 0;
-                const selling = parseFloat(c.s) || 0;
-                totalCost += cost;
-                totalSelling += selling;
-                totalProfit += (selling - cost);
-            });
+            const totalCost = data.totalCost || 0;
+            const totalSelling = data.totalSelling || 0;
+            const totalProfit = data.totalProfit || 0;
             
             const checkedByText = data.checkedBy ? `${data.checkedBy} on ${data.checkedAt?.toDate().toLocaleDateString()}` : 'Pending';
             let approvedByText = 'Pending Approval';
@@ -1506,9 +1469,7 @@
             }
             
             const createdByText = data.createdBy ? `${data.createdBy} on ${data.createdAt?.toDate().toLocaleDateString()}` : (data.pb || 'N/A');
-            const lastUpdatedByText = data.lastUpdatedBy ? `${data.lastUpdatedBy} on ${data.updatedAt?.toDate().toLocaleString()}` : 'N/A';
-
-
+            
             const checkedStampHtml = data.checkedBy ? `<div class="stamp stamp-checked" style="display: block;">Checked</div>` : '';
             let approvalStampHtml = '';
             if (data.status === 'approved') {
@@ -1525,8 +1486,8 @@
             return `
                 <div class="border border-gray-700 p-2 bg-white">
                     <div class="grid grid-cols-12 gap-px bg-gray-700" style="border: 1px solid #374151;">
-                         <div class="col-span-3 bg-white p-1 flex items-center" style="border: 1px solid #374151;">
-                            <div id="print-logo-container" class="text-xl font-bold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
+                        <div class="col-span-3 bg-white p-1 flex items-center" style="border: 1px solid #374151;">
+                            <div class="text-xl font-bold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
                         </div>
                         <div class="col-span-6 bg-white flex items-center justify-center text-xl font-bold" style="border: 1px solid #374151;">JOB FILE</div>
                         <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><div><strong>Date:</strong> ${data.d || ''}</div><div><strong>P.O. #:</strong> ${data.po || ''}</div></div>
@@ -1580,8 +1541,7 @@
                 </div>`;
         }
 
-        // UPDATED: This function now also generates the QR code.
-        function printPage() {
+        window.printPage = function() {
             const data = getFormData();
             const printHTML = getPrintViewHtml(data, false);
             const printContainer = document.getElementById('print-output');
@@ -1600,8 +1560,8 @@
                 });
             }
 
-            document.getElementById('main-container').classList.add('hidden');
-            printContainer.classList.remove('hidden');
+            document.getElementById('main-container').style.display = 'none';
+            printContainer.style.display = 'block';
             
             setTimeout(() => { window.print(); }, 500);
         }
@@ -1635,13 +1595,13 @@
                 </thead>
                 <tbody id="charges-table-body">
             `;
-            tableHtml += chargeKeys.map(key => `<tr><td class="table-cell font-medium text-gray-700">${key}</td><td class="table-cell"><input type="text" class="cost-input input-field"></td><td class="table-cell"><input type="text" class="selling-input input-field"></td><td class="table-cell profit-output bg-gray-50"></td><td class="table-cell"><input type="text" class="notes-input input-field"></td></tr>`).join('');
+            tableHtml += chargeKeys.map(key => `<tr><td class="table-cell font-medium text-gray-700">${key}</td><td class="table-cell"><input type="number" class="cost-input input-field"></td><td class="table-cell"><input type="number" class="selling-input input-field"></td><td class="table-cell profit-output bg-gray-50 text-right">0.00</td><td class="table-cell"><input type="text" class="notes-input input-field"></td></tr>`).join('');
             tableHtml += `
                     <tr id="total-row" class="bg-gray-100 font-bold">
                         <td class="table-cell text-right">TOTAL:</td>
-                        <td id="total-cost" class="table-cell"></td>
-                        <td id="total-selling" class="table-cell"></td>
-                        <td id="total-profit" class="table-cell"></td>
+                        <td id="total-cost" class="table-cell text-right">0.00</td>
+                        <td id="total-selling" class="table-cell text-right">0.00</td>
+                        <td id="total-profit" class="table-cell text-right">0.00</td>
                         <td class="table-cell"></td>
                     </tr>
                 </tbody>
@@ -1655,7 +1615,20 @@
             });
         }
         
-        // Initialize everything on DOMContentLoaded
+        function toggleAuthView(showLogin) {
+            const nameField = document.getElementById('signup-name-field');
+            const emailField = document.getElementById('email-address');
+            
+            document.getElementById('auth-title').textContent = showLogin ? 'Sign in to your account' : 'Create a new account';
+            document.getElementById('auth-btn').textContent = showLogin ? 'Sign in' : 'Sign up';
+            document.getElementById('auth-link').textContent = showLogin ? 'Create a new account' : 'Already have an account? Sign in';
+            nameField.style.display = showLogin ? 'none' : 'block';
+            emailField.classList.toggle('rounded-t-md', !showLogin);
+            // Clear any pending approval messages when switching views
+            document.getElementById('approval-message').style.display = 'none';
+        }
+
+        // --- App Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const jobIdFromUrl = urlParams.get('jobId');
@@ -1671,35 +1644,16 @@
                 initializeFirebase();
             }
             
-            // Auth Event Listeners
-            const authBtn = document.getElementById('auth-btn');
-            const authLink = document.getElementById('auth-link');
-            const logoutBtn = document.getElementById('logout-btn');
-            const approveBtn = document.getElementById('approve-btn');
-            const rejectBtn = document.getElementById('reject-btn');
-            const confirmRejectBtn = document.getElementById('confirm-reject-btn');
-            const checkBtn = document.getElementById('check-btn');
-            const adminPanelBtn = document.getElementById('admin-panel-btn');
-            // NEW: Event listeners for forgot password
-            const forgotPasswordLink = document.getElementById('forgot-password-link');
-            const sendResetLinkBtn = document.getElementById('send-reset-link-btn');
-
+            // --- Event Listeners ---
             let isLogin = true;
 
-            authLink.addEventListener('click', (e) => {
+            document.getElementById('auth-link').addEventListener('click', (e) => {
                 e.preventDefault();
                 isLogin = !isLogin;
-                const nameField = document.getElementById('signup-name-field');
-                const emailField = document.getElementById('email-address');
-                
-                document.getElementById('auth-title').textContent = isLogin ? 'Sign in to your account' : 'Create a new account';
-                authBtn.textContent = isLogin ? 'Sign in' : 'Sign up';
-                authLink.textContent = isLogin ? 'Create a new account' : 'Already have an account? Sign in';
-                nameField.style.display = isLogin ? 'none' : 'block';
-                emailField.classList.toggle('rounded-t-md', !isLogin);
+                toggleAuthView(isLogin);
             });
 
-            authBtn.addEventListener('click', () => {
+            document.getElementById('auth-btn').addEventListener('click', () => {
                 const email = document.getElementById('email-address').value;
                 const password = document.getElementById('password').value;
                 if (isLogin) {
@@ -1714,24 +1668,21 @@
                 }
             });
             
-            logoutBtn.addEventListener('click', handleLogout);
-            approveBtn.addEventListener('click', approveJobFile);
-            rejectBtn.addEventListener('click', () => openModal('reject-reason-modal'));
-            confirmRejectBtn.addEventListener('click', rejectJobFile);
-            checkBtn.addEventListener('click', checkJobFile);
-            adminPanelBtn.addEventListener('click', openAdminPanel);
-
-            forgotPasswordLink.addEventListener('click', (e) => {
+            document.getElementById('logout-btn').addEventListener('click', handleLogout);
+            document.getElementById('approve-btn').addEventListener('click', approveJobFile);
+            document.getElementById('reject-btn').addEventListener('click', () => openModal('reject-reason-modal'));
+            document.getElementById('confirm-reject-btn').addEventListener('click', rejectJobFile);
+            document.getElementById('check-btn').addEventListener('click', checkJobFile);
+            document.getElementById('admin-panel-btn').addEventListener('click', openAdminPanel);
+            document.getElementById('forgot-password-link').addEventListener('click', (e) => {
                 e.preventDefault();
                 openModal('forgot-password-modal');
             });
+            document.getElementById('send-reset-link-btn').addEventListener('click', handleForgotPassword);
 
-            sendResetLinkBtn.addEventListener('click', handleForgotPassword);
-
-            // FIX: Event listener to restore the view after printing
             window.addEventListener('afterprint', () => {
-                document.getElementById('main-container').classList.remove('hidden');
-                document.getElementById('print-output').classList.add('hidden');
+                document.getElementById('main-container').style.display = 'block';
+                document.getElementById('print-output').style.display = 'none';
             });
             
             // Make functions globally accessible for onclick attributes
@@ -1750,6 +1701,7 @@
             window.printAnalytics = printAnalytics;
             window.printPreview = printPreview;
 
+            // Initial setup
             populateTable();
             calculate();
             document.getElementById('date').valueAsDate = new Date();
