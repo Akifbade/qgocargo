@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Job File Management System with Database</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- REMOVED: Unused html2pdf.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -14,20 +13,19 @@
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
         }
-        /* Main container adjustments for responsiveness */
         .container {
             max-width: 1200px;
-            margin: 1rem auto; /* Reduced margin for mobile */
-            padding: 1rem; /* Reduced padding for mobile */
+            margin: 1rem auto;
+            padding: 1rem;
             background-color: white;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem; /* Slightly larger radius */
             border-top: 5px solid var(--theme-color);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05); /* Softer shadow */
         }
         @media (min-width: 640px) {
             .container {
                 margin: 2rem auto;
-                padding: 2rem;
+                padding: 2.5rem; /* More padding on desktop */
             }
         }
         .input-field {
@@ -35,20 +33,20 @@
             border-radius: 0.375rem;
             padding: 0.5rem 0.75rem;
             width: 100%;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
         .input-field:focus {
             outline: none;
             border-color: var(--theme-color);
-            box-shadow: 0 0 0 1px var(--theme-color);
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3); /* Improved focus ring */
         }
         .input-field:disabled {
             background-color: #f3f4f6;
             cursor: not-allowed;
         }
         .table-cell {
-            border: 1px solid #d1d5db;
-            padding: 0.5rem; /* Adjusted padding for mobile */
+            border: 1px solid #e5e7eb; /* Lighter border */
+            padding: 0.5rem;
         }
         @media (min-width: 640px) {
             .table-cell {
@@ -65,7 +63,6 @@
             outline: none;
         }
         
-        /* Modal, Loader, and Notification Styles */
         .overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0, 0, 0, 0.5); display: flex;
@@ -79,7 +76,7 @@
         .modal-content {
             background: white; padding: 1.5rem; border-radius: 0.5rem;
             width: 100%;
-            max-width: 600px; /* Default max-width for modals */
+            max-width: 600px;
             max-height: 90vh; overflow-y: auto;
             transform: scale(0.9); transition: transform 0.3s;
         }
@@ -93,27 +90,20 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #notification {
-            position: fixed; bottom: 20px; left: 20px; right: 20px; /* Centered on mobile */
+            position: fixed; bottom: 20px; left: 50%;
+            transform: translateX(-50%);
             background-color: #2d3748; color: white;
             padding: 1rem 1.5rem; border-radius: 0.5rem;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            transform: translateY(100px); opacity: 0;
+            transform: translate(-50%, 100px); opacity: 0;
             transition: transform 0.5s, opacity 0.5s;
             z-index: 2000;
             text-align: center;
         }
-        @media (min-width: 640px) {
-            #notification {
-                left: auto;
-                right: 20px;
-                text-align: left;
-            }
-        }
         #notification.show {
-            transform: translateY(0); opacity: 1;
+            transform: translate(-50%, 0); opacity: 1;
         }
 
-        /* Print-Specific Styles */
         @page { size: A4; margin: 0.5cm; }
         @media print {
             body { background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -126,9 +116,8 @@
         #analytics-modal .analytics-table th, #analytics-modal .analytics-table td { border: 1px solid #d1d5db; padding: 0.5rem; text-align: left; }
         #analytics-modal .analytics-table th { background-color: #f3f4f6; font-weight: 600; }
         #print-output .print-field, #preview-modal .print-field { border: 1px solid #6b7280; padding: 0.3rem; min-height: 24px; word-break: break-all; }
-        .admin-only, .checker-only, #signup-name-field { display: none; } /* Hide role-specific elements by default */
+        .admin-only, .checker-only, #signup-name-field { display: none; }
         
-        /* Stamp Styles */
         .stamp {
             position: absolute;
             top: -10px; right: -10px;
@@ -139,7 +128,7 @@
             text-transform: uppercase;
             transform: rotate(15deg);
             opacity: 0.8;
-            display: none; /* Hidden by default */
+            display: none;
         }
         .stamp-approved { border: 2px solid #16a34a; color: #16a34a; }
         .stamp-checked { border: 2px solid #2563eb; color: #2563eb; }
@@ -229,16 +218,13 @@
             </div>
 
             <!-- Form Fields -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                <div class="lg:col-span-2">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="md:col-span-2">
                     <label for="job-file-no" class="block mb-1 font-semibold text-gray-700">Job File No.:</label>
                     <input type="text" id="job-file-no" class="input-field" placeholder="Enter a unique ID here...">
                 </div>
-                <div>
-                    <label for="type" class="block mb-1 font-semibold text-gray-700">Type:</label>
-                    <input type="text" id="type" class="input-field">
-                </div>
-                <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
+                <!-- REMOVED "Type" input field -->
+                <div class="flex items-end space-x-6">
                     <div>
                         <span class="font-semibold text-gray-700">Clearance</span>
                         <div class="mt-2 space-y-1">
@@ -279,15 +265,9 @@
                 <div><label for="volume-weight" class="block mb-1 font-semibold text-gray-700">Volume Weight:</label><input type="text" id="volume-weight" class="input-field"></div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <!-- NEW FEATURE: Added checkbox to control printing of description -->
+                <!-- REMOVED "Include in Print" checkbox -->
                 <div class="sm:col-span-2">
-                    <div class="flex items-center justify-between mb-1">
-                        <label for="description" class="block font-semibold text-gray-700">Description:</label>
-                        <label class="flex items-center text-sm text-gray-600 cursor-pointer">
-                            <input type="checkbox" id="include-description-in-print" class="mr-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" checked>
-                            Include in Print
-                        </label>
-                    </div>
+                    <label for="description" class="block mb-1 font-semibold text-gray-700">Description:</label>
                     <input type="text" id="description" class="input-field">
                 </div>
                 <div><label for="carrier" class="block mb-1 font-semibold text-gray-700">Carrier / Shipping Line / Trucking Co:</label><input type="text" id="carrier" class="input-field"></div>
@@ -298,7 +278,6 @@
             </div>
 
             <!-- Charges Table -->
-            <!-- GEMINI API FEATURE: Suggest Charges Button -->
             <div class="flex justify-between items-center mb-2">
                  <h2 class="text-xl font-semibold text-gray-800">Charges</h2>
                  <button onclick="suggestCharges()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1 px-3 rounded-lg text-sm transition-transform transform hover:scale-105">Suggest Charges ✨</button>
@@ -310,7 +289,6 @@
             </div>
 
             <!-- Remarks Section -->
-            <!-- GEMINI API FEATURE: Generate Remarks Button -->
             <div class="flex justify-between items-center mb-2">
                 <label for="remarks" class="block font-semibold text-gray-700">REMARKS:</label>
                 <button onclick="generateRemarks()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1 px-3 rounded-lg text-sm transition-transform transform hover:scale-105">Generate Remarks ✨</button>
@@ -348,11 +326,26 @@
 
             <!-- Action Buttons -->
             <div class="text-center mt-10 no-print flex flex-wrap justify-center gap-2 sm:gap-4">
-                 <button onclick="openAnalyticsDashboard()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">Analytics</button>
-                 <button onclick="openFileManager()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">File Manager</button>
-                 <button onclick="saveJobFile()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">Save to DB</button>
-                 <button onclick="clearForm()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">New Job</button>
-                 <button onclick="printPage()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">Print</button>
+                 <button onclick="openAnalyticsDashboard()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" /></svg>
+                    <span>Analytics</span>
+                 </button>
+                 <button onclick="openFileManager()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1H8a3 3 0 00-3 3v1.586l.293.293a1 1 0 001.414 0L10.414 12l-1.293 1.293a1 1 0 000 1.414l.293.293V16a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm8 2a1 1 0 000-2H4a1 1 0 00-1 1v10a1 1 0 001 1h4a1 1 0 001-1v-1.586l-.293-.293a1 1 0 01-1.414 0L6.586 12l1.293-1.293a1 1 0 011.414 0l.293-.293V8z" clip-rule="evenodd" /><path d="M18 8a2 2 0 00-2-2h-4l-2-2h-4a2 2 0 00-2 2v.5a1 1 0 002 0V6a1 1 0 011-1h2.586l2 2H16a1 1 0 011 1v8a1 1 0 01-1 1h-2.5a1 1 0 100 2H16a2 2 0 002-2V8z" /></svg>
+                    <span>File Manager</span>
+                 </button>
+                 <button onclick="saveJobFile()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6a1 1 0 10-2 0v5.586L7.707 10.293zM3 4a1 1 0 011-1h12a1 1 0 011 1v4a1 1 0 01-1 1h-2a1 1 0 00-1 1v4a1 1 0 001 1h2a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 001-1V9a1 1 0 00-1-1H4a1 1 0 01-1-1V4z" /></svg>
+                    <span>Save to DB</span>
+                 </button>
+                 <button onclick="clearForm()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.898 0V3a1 1 0 112 0v2.101a7.002 7.002 0 01-11.898 0V3a1 1 0 01-1-1zM12 10a2 2 0 11-4 0 2 2 0 014 0zM4 10a2 2 0 00-2 2v2a2 2 0 002 2h12a2 2 0 002-2v-2a2 2 0 00-2-2h-1.101A7.002 7.002 0 0010 12c-2.256 0-4.233-.996-5.5-2.543A7.002 7.002 0 004 10z" clip-rule="evenodd" /></svg>
+                    <span>New Job</span>
+                 </button>
+                 <button onclick="printPage()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" /></svg>
+                    <span>Print</span>
+                 </button>
             </div>
         </div>
     </div>
@@ -654,7 +647,7 @@
             showLoader();
             const docId = jobFileNo.replace(/\//g, '_');
 
-            // --- NEW FEATURE: DUPLICATE CHECK ---
+            // --- DUPLICATE CHECK ---
             const checks = [];
             if (jobFileNo) checks.push({ field: 'jfn', value: jobFileNo, label: 'Job File No.' });
             if (invoiceNo) checks.push({ field: 'in', value: invoiceNo, label: 'Invoice No.' });
@@ -665,11 +658,10 @@
                     const q = query(collection(db, 'jobfiles'), where(check.field, '==', check.value));
                     const querySnapshot = await getDocs(q);
                     for (const doc of querySnapshot.docs) {
-                        // If a document with the same value is found, but it has a different ID, it's a duplicate.
                         if (doc.id !== docId) {
                             hideLoader();
                             showNotification(`Duplicate ${check.label} found in job file: ${doc.data().jfn}`, true);
-                            return; // Stop the saving process
+                            return;
                         }
                     }
                 } catch (error) {
@@ -1252,8 +1244,6 @@
             form.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
             
             document.getElementById('date').valueAsDate = new Date();
-            // NEW FEATURE: Ensure the "Include in Print" checkbox is checked by default for new forms.
-            document.getElementById('include-description-in-print').checked = true;
             populateTable();
             calculate();
             
@@ -1311,7 +1301,6 @@
             document.querySelectorAll('#charges-table-body tr:not(#total-row)').forEach(row => {
                 if (row.id === 'total-row') return;
                 charges.push({
-                    // NEW FEATURE: Save the stable key and the potentially edited label
                     k: row.dataset.key,
                     l: row.querySelector('.description-input').value,
                     c: row.querySelector('.cost-input').value || '0',
@@ -1321,7 +1310,7 @@
             });
 
             return {
-                d: getVal('date'), po: getVal('po-number'), jfn: getVal('job-file-no'), t: getVal('type'),
+                d: getVal('date'), po: getVal('po-number'), jfn: getVal('job-file-no'),
                 cl: getChecked('[data-clearance]:checked'), pt: getChecked('[data-product]:checked'),
                 in: getVal('invoice-no'), bd: getVal('billing-date'), sm: getVal('salesman'),
                 sh: getVal('shipper-name'), co: getVal('consignee-name'),
@@ -1332,8 +1321,6 @@
                 ch: charges,
                 re: getVal('remarks'),
                 pb: getVal('prepared-by'),
-                // NEW FEATURE: Save the state of the "Include in Print" checkbox
-                idip: document.getElementById('include-description-in-print').checked
             };
         }
         
@@ -1346,7 +1333,7 @@
             };
 
             setVal('date', data.d); setVal('po-number', data.po); setVal('job-file-no', data.jfn);
-            setVal('type', data.t); setVal('invoice-no', data.in); setVal('billing-date', data.bd);
+            setVal('invoice-no', data.in); setVal('billing-date', data.bd);
             setVal('salesman', data.sm); setVal('shipper-name', data.sh); setVal('consignee-name', data.co);
             setVal('mawb', data.mawb); setVal('hawb', data.hawb); setVal('teams-of-shipping', data.ts);
             setVal('origin', data.or); setVal('no-of-pieces', data.pc); setVal('gross-weight', data.gw);
@@ -1355,9 +1342,6 @@
             setVal('flight-voyage-no', data.fv); setVal('container-no', data.cn);
             setVal('remarks', data.re); 
             
-            // NEW FEATURE: Set the "Include in Print" checkbox state, defaulting to true for older records.
-            document.getElementById('include-description-in-print').checked = data.idip !== false;
-
             setVal('prepared-by', data.pb || data.createdBy || '');
 
             const createdInfo = document.getElementById('created-by-info');
@@ -1414,16 +1398,15 @@
             setChecked('clearance', data.cl);
             setChecked('product', data.pt);
 
-            // NEW FEATURE: Populate charges table with editable descriptions
             populateTable();
             if (data.ch && data.ch.length > 0) {
-                const chargeMap = new Map(data.ch.map(c => [c.k, c])); // Use stable key 'k'
+                const chargeMap = new Map(data.ch.map(c => [c.k, c]));
                 const rows = document.querySelectorAll('#charges-table-body tr:not(#total-row)');
                 rows.forEach(row => {
-                    const key = row.dataset.key; // Get stable key from row
+                    const key = row.dataset.key;
                     const chargeData = chargeMap.get(key);
                     if (chargeData) {
-                        row.querySelector('.description-input').value = chargeData.l; // The edited label
+                        row.querySelector('.description-input').value = chargeData.l;
                         row.querySelector('.cost-input').value = chargeData.c;
                         row.querySelector('.selling-input').value = chargeData.s;
                         row.querySelector('.notes-input').value = chargeData.n;
@@ -1511,10 +1494,8 @@
             
             const qrContainerHtml = isPublicView ? '' : `<div class="col-span-3 bg-white p-1 flex items-center justify-center" style="border: 1px solid #374151;"><div class="qrcode-container"></div></div>`;
 
-            // NEW FEATURE: Conditionally render the description based on the checkbox state
-            const descriptionHtml = data.idip !== false 
-                ? `<div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Description:</strong><div class="print-field">${data.dsc || ''}</div></div>`
-                : '';
+            // The description will now always be included as the checkbox is removed
+            const descriptionHtml = `<div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Description:</strong><div class="print-field">${data.dsc || ''}</div></div>`;
 
             return `
                 <div class="border border-gray-700 p-2 bg-white">
@@ -1525,8 +1506,7 @@
                         <div class="col-span-6 bg-white flex items-center justify-center text-xl font-bold" style="border: 1px solid #374151;">JOB FILE</div>
                         <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><div><strong>Date:</strong> ${data.d || ''}</div><div><strong>P.O. #:</strong> ${data.po || ''}</div></div>
                         
-                        <div class="col-span-8 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Job File No.:</strong> ${data.jfn || ''}</div>
-                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Type:</strong> ${data.t || ''}</div>
+                        <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Job File No.:</strong> ${data.jfn || ''}</div>
 
                         <div class="col-span-12 bg-white p-1 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs" style="border: 1px solid #374151;">
                             <div><strong>Clearance</strong><br>${(data.cl || []).includes('Export') ? checkedSymbol : uncheckedSymbol} Export<br>${(data.cl || []).includes('Import') ? checkedSymbol : uncheckedSymbol} Import<br>${(data.cl || []).includes('Clearance') ? checkedSymbol : uncheckedSymbol} Clearance<br>${(data.cl || []).includes('Local Move') ? checkedSymbol : uncheckedSymbol} Local Move</div>
@@ -1614,7 +1594,6 @@
         }
         
         function populateTable() {
-            // NEW FEATURE: Changed to an array of objects for stable keys
             const chargeTypes = [
                 { key: 'ex_works', label: 'Ex-works Charges:' }, { key: 'freight', label: 'Land/Air / Sea Freight:' },
                 { key: 'surcharge', label: 'Fuell Security / War Surcharge:' }, { key: 'formalities', label: 'Formalities:' },
@@ -1642,7 +1621,6 @@
                 </thead>
                 <tbody id="charges-table-body">
             `;
-            // NEW FEATURE: Use chargeTypes array and add data-key for stable identification. Description is now an input.
             tableHtml += chargeTypes.map(charge => 
                 `<tr data-key="${charge.key}">
                     <td class="table-cell font-medium text-gray-700"><input type="text" class="description-input input-field" value="${charge.label}"></td>
@@ -1724,7 +1702,6 @@
                     Generate professional remarks for a freight forwarding job file with the following details.
                     The remarks should be concise and summarize the key aspects of the shipment.
 
-                    - Job Type: ${data.t || 'Not specified'}
                     - Product Type: ${(data.pt || []).join(', ') || 'Not specified'}
                     - Clearance Type: ${(data.cl || []).join(', ') || 'Not specified'}
                     - Shipper: ${data.sh || 'Not specified'}
@@ -1771,7 +1748,6 @@
                     Based on the following freight forwarding job details, suggest typical cost and selling prices in Kuwaiti Dinar (KD) for the provided list of charges.
                     Provide reasonable, non-zero estimates for relevant charges and 0 for irrelevant ones.
                     
-                    - Job Type: ${data.t || 'General Cargo'}
                     - Product Type: ${(data.pt || []).join(', ') || 'General'}
                     - Clearance Type: ${(data.cl || []).join(', ') || 'Standard'}
                     - Origin: ${data.or || 'Unknown'}
@@ -1920,4 +1896,4 @@
         });
     </script>
 </body>
-</html>
+</ht
