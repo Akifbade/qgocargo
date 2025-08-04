@@ -552,7 +552,9 @@
 
         async function showPublicJobView(jobId) {
             try {
-                const docRef = doc(db, 'jobfiles', jobId);
+                // FIX: Replace slashes from the URL parameter to match the valid Firestore document ID.
+                const docId = jobId.replace(/\//g, '_');
+                const docRef = doc(db, 'jobfiles', docId);
                 const docSnap = await getDoc(docRef);
 
                 if (docSnap.exists()) {
@@ -637,6 +639,8 @@
             showLoader();
             const jobFileNo = document.getElementById('job-file-no').value.trim();
             if (!jobFileNo) { hideLoader(); showNotification("Please enter a Job File No.", true); return; }
+            // FIX: Replace slashes in the job file number to create a valid Firestore document ID.
+            const docId = jobFileNo.replace(/\//g, '_');
 
             const data = getFormData();
             data.totalCost = parseFloat(document.getElementById('total-cost').textContent) || 0;
@@ -644,7 +648,7 @@
             data.totalProfit = parseFloat(document.getElementById('total-profit').textContent) || 0;
             
             try {
-                const docRef = doc(db, 'jobfiles', jobFileNo);
+                const docRef = doc(db, 'jobfiles', docId); // Use the sanitized docId
                 const docSnap = await getDoc(docRef);
 
                 if (docSnap.exists()) {
@@ -680,7 +684,7 @@
                 hideLoader();
                 showNotification("Job file saved successfully!");
                 // Reload the saved file to show updated status
-                loadJobFileById(jobFileNo);
+                loadJobFileById(docId); // Use the sanitized docId here as well
 
             } catch (error) {
                 hideLoader();
@@ -699,6 +703,8 @@
                 showNotification("Please save or load a job file first.", true);
                 return;
             }
+            // FIX: Replace slashes in the job file number to create a valid Firestore document ID.
+            const docId = jobFileNo.replace(/\//g, '_');
             
             showLoader();
             const checkData = {
@@ -708,7 +714,7 @@
             };
             
             try {
-                const docRef = doc(db, 'jobfiles', jobFileNo);
+                const docRef = doc(db, 'jobfiles', docId); // Use the sanitized docId
                 await setDoc(docRef, checkData, { merge: true });
                 const updatedDoc = await getDoc(docRef);
                 populateFormFromData(updatedDoc.data());
@@ -731,6 +737,8 @@
                 showNotification("Please save or load a job file first.", true);
                 return;
             }
+            // FIX: Replace slashes in the job file number to create a valid Firestore document ID.
+            const docId = jobFileNo.replace(/\//g, '_');
             
             showLoader();
             const approvalData = {
@@ -743,7 +751,7 @@
             };
             
             try {
-                const docRef = doc(db, 'jobfiles', jobFileNo);
+                const docRef = doc(db, 'jobfiles', docId); // Use the sanitized docId
                 await setDoc(docRef, approvalData, { merge: true });
                 const updatedDoc = await getDoc(docRef);
                 populateFormFromData(updatedDoc.data());
@@ -764,6 +772,8 @@
             }
 
             const jobFileNo = document.getElementById('job-file-no').value.trim();
+            // FIX: Replace slashes in the job file number to create a valid Firestore document ID.
+            const docId = jobFileNo.replace(/\//g, '_');
             showLoader();
             const rejectionData = {
                 rejectedBy: currentUser.displayName,
@@ -773,7 +783,7 @@
             };
 
             try {
-                const docRef = doc(db, 'jobfiles', jobFileNo);
+                const docRef = doc(db, 'jobfiles', docId); // Use the sanitized docId
                 await setDoc(docRef, rejectionData, { merge: true });
                 const updatedDoc = await getDoc(docRef);
                 populateFormFromData(updatedDoc.data());
@@ -910,7 +920,7 @@
                 hideLoader();
                 showNotification("Job file has been deleted.");
                 // If the deleted file is currently loaded, clear the form
-                if (document.getElementById('job-file-no').value === docId) {
+                if (document.getElementById('job-file-no').value.replace(/\//g, '_') === docId) {
                     clearForm();
                 }
             } catch (error) {
@@ -928,7 +938,7 @@
             }
             const modal = document.getElementById('confirm-modal');
             modal.querySelector('#confirm-title').textContent = 'Confirm Deletion';
-            modal.querySelector('#confirm-message').textContent = `Are you sure you want to delete job file "${docId}"? This action cannot be undone.`;
+            modal.querySelector('#confirm-message').textContent = `Are you sure you want to delete job file "${docId.replace(/_/g, '/')}"? This action cannot be undone.`;
             modal.querySelector('#confirm-ok').className = 'bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded';
             openModal('confirm-modal');
 
