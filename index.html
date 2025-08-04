@@ -288,7 +288,11 @@
             </div>
 
             <!-- Charges Table -->
-            <h2 class="text-xl font-semibold text-gray-800 mb-2">Charges</h2>
+            <!-- GEMINI API FEATURE: Suggest Charges Button -->
+            <div class="flex justify-between items-center mb-2">
+                 <h2 class="text-xl font-semibold text-gray-800">Charges</h2>
+                 <button onclick="suggestCharges()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1 px-3 rounded-lg text-sm transition-transform transform hover:scale-105">Suggest Charges ✨</button>
+            </div>
             <div class="mb-6 overflow-x-auto border border-gray-200 rounded-lg">
                 <table id="charges-table" class="w-full border-collapse">
                     <!-- JS will populate this -->
@@ -296,8 +300,12 @@
             </div>
 
             <!-- Remarks Section -->
+            <!-- GEMINI API FEATURE: Generate Remarks Button -->
+            <div class="flex justify-between items-center mb-2">
+                <label for="remarks" class="block font-semibold text-gray-700">REMARKS:</label>
+                <button onclick="generateRemarks()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1 px-3 rounded-lg text-sm transition-transform transform hover:scale-105">Generate Remarks ✨</button>
+            </div>
             <div class="mb-8">
-                <label for="remarks" class="block font-semibold text-gray-700 mb-2">REMARKS:</label>
                 <textarea id="remarks" rows="4" class="input-field w-full"></textarea>
             </div>
 
@@ -1638,6 +1646,172 @@
             document.getElementById('approval-message').style.display = 'none';
         }
 
+        // --- GEMINI API INTEGRATION ---
+
+        // Function to call Gemini API with exponential backoff
+        async function callGeminiApi(payload, retries = 3, delay = 1000) {
+            const apiKey = ""; // API key will be provided by the environment
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    if (response.status === 429 && retries > 0) {
+                        console.warn(`API call failed with status 429. Retrying in ${delay}ms...`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        return callGeminiApi(payload, retries - 1, delay * 2);
+                    }
+                    throw new Error(`API call failed with status ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                if (retries > 0) {
+                    console.warn(`API call failed. Retrying in ${delay}ms...`, error);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return callGeminiApi(payload, retries - 1, delay * 2);
+                }
+                console.error("API call failed after multiple retries:", error);
+                throw error;
+            }
+        }
+
+        // Function to generate remarks using Gemini
+        window.generateRemarks = async function() {
+            showLoader();
+            try {
+                const data = getFormData();
+                const prompt = `
+                    Generate professional remarks for a freight forwarding job file with the following details.
+                    The remarks should be concise and summarize the key aspects of the shipment.
+
+                    - Job Type: ${data.t || 'Not specified'}
+                    - Product Type: ${(data.pt || []).join(', ') || 'Not specified'}
+                    - Clearance Type: ${(data.cl || []).join(', ') || 'Not specified'}
+                    - Shipper: ${data.sh || 'Not specified'}
+                    - Consignee: ${data.co || 'Not specified'}
+                    - Origin: ${data.or || 'Not specified'}
+                    - Destination: ${data.de || 'Not specified'}
+                    - Description of Goods: ${data.dsc || 'Not specified'}
+                    - Carrier: ${data.ca || 'Not specified'}
+                    - MAWB/OBL: ${data.mawb || 'Not specified'}
+
+                    Generate a short paragraph suitable for the remarks section.
+                `;
+
+                const payload = {
+                    contents: [{ role: "user", parts: [{ text: prompt }] }]
+                };
+
+                const result = await callGeminiApi(payload);
+                
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    document.getElementById('remarks').value = text;
+                    showNotification("Remarks generated successfully! ✨");
+                } else {
+                    throw new Error("Invalid response structure from Gemini API.");
+                }
+
+            } catch (error) {
+                console.error("Error generating remarks:", error);
+                showNotification("Could not generate remarks. Please try again.", true);
+            } finally {
+                hideLoader();
+            }
+        }
+
+        // Function to suggest charges using Gemini
+        window.suggestCharges = async function() {
+            showLoader();
+            try {
+                const data = getFormData();
+                const chargeKeys = ["Ex-works Charges:", "Land/Air / Sea Freight:", "Fuell Security / War Surcharge:", "Formalities:", "Delivery Order Fee:", "Transportation Charges:", "Inspection / Computer Print Charges:", "Handling Charges:", "Labor / Forklift Charges:", "Documentation Charges:", "Clearance Charges:", "Customs Duty:", "Terminal Handling Charges:", "Legalization Charges:", "Demurrage Charges:", "Loading / Offloading Charges:", "Destination Clearance Charges:", "Packing Charges:", "Port Charges:", "Other Charges:", "PAI Approval :", "Insurance Fee :", "EPA Charges :"];
+                
+                const prompt = `
+                    Based on the following freight forwarding job details, suggest typical cost and selling prices in Kuwaiti Dinar (KD) for the provided list of charges.
+                    Provide reasonable, non-zero estimates for relevant charges and 0 for irrelevant ones.
+                    
+                    - Job Type: ${data.t || 'General Cargo'}
+                    - Product Type: ${(data.pt || []).join(', ') || 'General'}
+                    - Clearance Type: ${(data.cl || []).join(', ') || 'Standard'}
+                    - Origin: ${data.or || 'Unknown'}
+                    - Destination: ${data.de || 'Unknown'}
+                    - Description of Goods: ${data.dsc || 'General Goods'}
+                    - Gross Weight: ${data.gw || 'N/A'}
+
+                    Provide your suggestions for this list of charges: ${chargeKeys.join(', ')}
+                `;
+
+                const payload = {
+                    contents: [{ role: "user", parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                charges: {
+                                    type: "ARRAY",
+                                    items: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            chargeName: { type: "STRING" },
+                                            cost: { type: "NUMBER" },
+                                            selling: { type: "NUMBER" }
+                                        },
+                                        required: ["chargeName", "cost", "selling"]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+
+                const result = await callGeminiApi(payload);
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    
+                    const jsonText = result.candidates[0].content.parts[0].text;
+                    const parsedJson = JSON.parse(jsonText);
+                    
+                    if (parsedJson.charges && Array.isArray(parsedJson.charges)) {
+                        const chargeMap = new Map(parsedJson.charges.map(item => [item.chargeName, item]));
+                        
+                        document.querySelectorAll('#charges-table-body tr:not(#total-row)').forEach(row => {
+                            const chargeKey = row.cells[0].textContent.trim();
+                            const suggestion = chargeMap.get(chargeKey);
+                            if (suggestion) {
+                                row.querySelector('.cost-input').value = suggestion.cost || 0;
+                                row.querySelector('.selling-input').value = suggestion.selling || 0;
+                            }
+                        });
+                        
+                        calculate();
+                        showNotification("Charges suggested successfully! ✨");
+                    } else {
+                         throw new Error("Invalid JSON structure in API response.");
+                    }
+                } else {
+                    throw new Error("Invalid response structure from Gemini API.");
+                }
+
+            } catch (error) {
+                console.error("Error suggesting charges:", error);
+                showNotification("Could not suggest charges. Please try again.", true);
+            } finally {
+                hideLoader();
+            }
+        }
+
+
         // --- App Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
@@ -1710,6 +1884,8 @@
             window.confirmDelete = confirmDelete;
             window.printAnalytics = printAnalytics;
             window.printPreview = printPreview;
+            window.generateRemarks = generateRemarks;
+            window.suggestCharges = suggestCharges;
 
             // Initial setup
             populateTable();
