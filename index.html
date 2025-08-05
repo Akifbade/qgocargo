@@ -134,6 +134,39 @@
         .stamp-approved { border: 2px solid #16a34a; color: #16a34a; }
         .stamp-checked { border: 2px solid #2563eb; color: #2563eb; }
         .stamp-rejected { border: 2px solid #dc2626; color: #dc2626; }
+
+        /* Notification Bell Styles */
+        #notification-bell {
+            position: relative;
+            cursor: pointer;
+        }
+        #notification-count {
+            position: absolute;
+            top: -5px;
+            right: -10px;
+            background-color: #ef4444;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: bold;
+            display: none; /* Hidden by default */
+        }
+        #notification-panel {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 10px;
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            width: 320px;
+            z-index: 100;
+            max-height: 400px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -203,13 +236,22 @@
                 </div>
             </header>
             
-            <!-- User Info and Logout -->
+            <!-- User Info, Notifications, and Logout -->
             <div class="flex flex-col sm:flex-row justify-between items-center mb-4 bg-gray-50 p-2 rounded-md gap-2">
                 <div class="text-sm text-center sm:text-left">
                     Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role" class="capitalize"></span>)
                 </div>
-                <div>
-                    <button id="admin-panel-btn" class="admin-only bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Admin Panel</button>
+                <div class="flex items-center gap-4">
+                    <div id="notification-bell" class="relative">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600 hover:text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                        <span id="notification-count"></span>
+                        <div id="notification-panel">
+                            <!-- Notifications will be loaded here by JS -->
+                        </div>
+                    </div>
+                    <button id="admin-panel-btn" class="admin-only bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded text-sm">Admin Panel</button>
                     <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Logout</button>
                 </div>
             </div>
@@ -326,24 +368,24 @@
             <!-- Action Buttons -->
             <div class="text-center mt-10 no-print flex flex-wrap justify-center gap-2 sm:gap-4">
                  <button onclick="openAnalyticsDashboard()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" /></svg>
-                    <span>Analytics</span>
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" /></svg>
+                     <span>Analytics</span>
                  </button>
                  <button onclick="openFileManager()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1H8a3 3 0 00-3 3v1.586l.293.293a1 1 0 001.414 0L10.414 12l-1.293 1.293a1 1 0 000 1.414l.293.293V16a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm8 2a1 1 0 000-2H4a1 1 0 00-1 1v10a1 1 0 001 1h4a1 1 0 001-1v-1.586l-.293-.293a1 1 0 01-1.414 0L6.586 12l1.293-1.293a1 1 0 011.414 0l.293-.293V8z" clip-rule="evenodd" /><path d="M18 8a2 2 0 00-2-2h-4l-2-2h-4a2 2 0 00-2 2v.5a1 1 0 002 0V6a1 1 0 011-1h2.586l2 2H16a1 1 0 011 1v8a1 1 0 01-1 1h-2.5a1 1 0 100 2H16a2 2 0 002-2V8z" /></svg>
-                    <span>File Manager</span>
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1H8a3 3 0 00-3 3v1.586l.293.293a1 1 0 001.414 0L10.414 12l-1.293 1.293a1 1 0 000 1.414l.293.293V16a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm8 2a1 1 0 000-2H4a1 1 0 00-1 1v10a1 1 0 001 1h4a1 1 0 001-1v-1.586l-.293-.293a1 1 0 01-1.414 0L6.586 12l1.293-1.293a1 1 0 011.414 0l.293-.293V8z" clip-rule="evenodd" /><path d="M18 8a2 2 0 00-2-2h-4l-2-2h-4a2 2 0 00-2 2v.5a1 1 0 002 0V6a1 1 0 011-1h2.586l2 2H16a1 1 0 011 1v8a1 1 0 01-1 1h-2.5a1 1 0 100 2H16a2 2 0 002-2V8z" /></svg>
+                     <span>File Manager</span>
                  </button>
                  <button onclick="saveJobFile()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6a1 1 0 10-2 0v5.586L7.707 10.293zM3 4a1 1 0 011-1h12a1 1 0 011 1v4a1 1 0 01-1 1h-2a1 1 0 00-1 1v4a1 1 0 001 1h2a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 001-1V9a1 1 0 00-1-1H4a1 1 0 01-1-1V4z" /></svg>
-                    <span>Save to DB</span>
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6a1 1 0 10-2 0v5.586L7.707 10.293zM3 4a1 1 0 011-1h12a1 1 0 011 1v4a1 1 0 01-1 1h-2a1 1 0 00-1 1v4a1 1 0 001 1h2a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 001-1V9a1 1 0 00-1-1H4a1 1 0 01-1-1V4z" /></svg>
+                     <span>Save to DB</span>
                  </button>
                  <button onclick="clearForm()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.898 0V3a1 1 0 112 0v2.101a7.002 7.002 0 01-11.898 0V3a1 1 0 01-1-1zM12 10a2 2 0 11-4 0 2 2 0 014 0zM4 10a2 2 0 00-2 2v2a2 2 0 002 2h12a2 2 0 002-2v-2a2 2 0 00-2-2h-1.101A7.002 7.002 0 0010 12c-2.256 0-4.233-.996-5.5-2.543A7.002 7.002 0 004 10z" clip-rule="evenodd" /></svg>
-                    <span>New Job</span>
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.898 0V3a1 1 0 112 0v2.101a7.002 7.002 0 01-11.898 0V3a1 1 0 01-1-1zM12 10a2 2 0 11-4 0 2 2 0 014 0zM4 10a2 2 0 00-2 2v2a2 2 0 002 2h12a2 2 0 002-2v-2a2 2 0 00-2-2h-1.101A7.002 7.002 0 0010 12c-2.256 0-4.233-.996-5.5-2.543A7.002 7.002 0 004 10z" clip-rule="evenodd" /></svg>
+                     <span>New Job</span>
                  </button>
                  <button onclick="printPage()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" /></svg>
-                    <span>Print</span>
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" /></svg>
+                     <span>Print</span>
                  </button>
             </div>
         </div>
@@ -375,7 +417,7 @@
     <div id="confirm-modal" class="overlay">
         <div class="modal-content max-w-sm">
             <h3 class="text-lg font-bold mb-4" id="confirm-title">Confirm Action</h3>
-            <p id="confirm-message" class="mb-4">Are you sure?</p>
+            <div id="confirm-message" class="mb-4 text-sm">Are you sure?</div>
             <div class="text-right mt-6 space-x-2">
                 <button id="confirm-cancel" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Cancel</button>
                 <button id="confirm-ok" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Confirm</button>
@@ -415,12 +457,34 @@
     <div id="admin-panel-modal" class="overlay">
         <div class="modal-content max-w-2xl">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-bold">Admin Panel - User Management</h3>
+                <h3 class="text-2xl font-bold">Admin Panel</h3>
                 <button onclick="closeModal('admin-panel-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
-            <div id="user-list" class="space-y-2 max-h-[60vh] overflow-y-auto"></div>
-            <div class="text-right mt-4">
-                <button onclick="saveUserChanges()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save Changes</button>
+    
+            <!-- User Management -->
+            <div class="border rounded-lg p-4">
+                <h4 class="text-lg font-semibold mb-2">User Management</h4>
+                <div id="user-list" class="space-y-2 max-h-[40vh] overflow-y-auto"></div>
+                <div class="text-right mt-4">
+                    <button onclick="saveUserChanges()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save User Changes</button>
+                </div>
+            </div>
+    
+            <!-- Data Backup & Restore -->
+            <div class="border rounded-lg p-4 mt-6">
+                <h4 class="text-lg font-semibold mb-3">Data Backup & Restore</h4>
+                <p class="text-sm text-gray-600 mb-4">Backup all job files and user data to a single JSON file. This can be used for offline storage or to restore the database to a previous state.</p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button onclick="backupAllData()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                        Backup All Data
+                    </button>
+                    <label for="restore-file-input" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 cursor-pointer">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                        Restore From File
+                        <input type="file" id="restore-file-input" class="hidden" accept=".json" onchange="handleRestoreFile(event)">
+                    </label>
+                </div>
             </div>
         </div>
     </div>
@@ -464,13 +528,14 @@
         // Import Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, query, where, serverTimestamp, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, query, where, serverTimestamp, getDocs, writeBatch, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- Global variables ---
         let db, auth;
         let currentUser = null;
         let jobFilesCache = [];
         let analyticsDataCache = null;
+        let unsubscribeNotifications = null; // To store the notification listener
 
         // --- Firebase Configuration ---
         const firebaseConfig = {
@@ -523,9 +588,13 @@
                         console.log("User logged in:", currentUser);
                         showApp();
                         loadJobFiles();
+                        listenForNotifications(); // Start listening for notifications
                     } else {
                         currentUser = null;
                         console.log("User logged out");
+                        if (unsubscribeNotifications) {
+                            unsubscribeNotifications(); // Stop listening when logged out
+                        }
                         showLogin();
                     }
                 });
@@ -650,7 +719,6 @@
 
             // --- REVISED DUPLICATE CHECK ---
             const checks = [];
-            // Only check for Job File No. duplicates when creating a new file
             if (!isUpdating) {
                  checks.push({ field: 'jfn', value: jobFileNo, label: 'Job File No.' });
             }
@@ -664,7 +732,6 @@
                     
                     if (!querySnapshot.empty) {
                         if (isUpdating) {
-                            // In update mode, a match is only a duplicate if it's NOT the current document.
                             for (const foundDoc of querySnapshot.docs) {
                                 if (foundDoc.id !== docId) {
                                     hideLoader();
@@ -673,7 +740,6 @@
                                 }
                             }
                         } else {
-                            // In create mode, any match is a duplicate.
                             hideLoader();
                             showNotification(`Duplicate ${check.label} "${check.value}" already exists in job file: ${querySnapshot.docs[0].data().jfn}`, true);
                             return;
@@ -697,34 +763,44 @@
                 const docRef = doc(db, 'jobfiles', docId);
                 const docSnap = await getDoc(docRef);
 
-                if (docSnap.exists()) { // This condition is fine for updating data payload
-                    const existingData = docSnap.data();
-                    data.lastUpdatedBy = currentUser.displayName;
-                    data.updatedAt = serverTimestamp();
+                let isNewFile = !docSnap.exists();
+                let wasApprovedOrChecked = false;
 
-                    if (existingData.status === 'approved' || existingData.status === 'checked') {
-                        data.status = 'pending';
-                        data.checkedBy = null;
-                        data.checkedAt = null;
-                        data.approvedBy = null;
-                        data.approvedAt = null;
-                        data.rejectionReason = null;
-                        data.rejectedBy = null;
-                        data.rejectedAt = null;
-                        showNotification("File modified. Re-approval is now required.", false);
-                    }
-                    await setDoc(docRef, data, { merge: true });
-                } else {
+                if (!isNewFile) {
+                    const existingData = docSnap.data();
+                    wasApprovedOrChecked = ['approved', 'checked'].includes(existingData.status);
+                }
+
+                if (wasApprovedOrChecked) {
+                    data.status = 'pending';
+                    data.checkedBy = null; data.checkedAt = null;
+                    data.approvedBy = null; data.approvedAt = null;
+                    data.rejectionReason = null; data.rejectedBy = null; data.rejectedAt = null;
+                }
+
+                if (isNewFile) {
                     data.createdBy = currentUser.displayName;
                     data.createdAt = serverTimestamp();
-                    data.lastUpdatedBy = currentUser.displayName;
-                    data.updatedAt = serverTimestamp();
                     data.status = 'pending';
-                    await setDoc(docRef, data);
                 }
+                
+                data.lastUpdatedBy = currentUser.displayName;
+                data.updatedAt = serverTimestamp();
+                
+                await setDoc(docRef, data, { merge: true });
                 
                 hideLoader();
                 showNotification("Job file saved successfully!");
+
+                // --- NOTIFICATION LOGIC ---
+                if (isNewFile || wasApprovedOrChecked) {
+                    const message = isNewFile 
+                        ? `New job file '${jobFileNo}' was created by ${currentUser.displayName}.`
+                        : `Job file '${jobFileNo}' was modified by ${currentUser.displayName} and needs re-checking.`;
+                    await createNotificationForRoles(['admin', 'checker'], message, docId);
+                }
+                // --- END NOTIFICATION LOGIC ---
+
                 loadJobFileById(docId);
 
             } catch (error) {
@@ -760,6 +836,12 @@
                 populateFormFromData(updatedDoc.data());
                 hideLoader();
                 showNotification("Job File Checked!");
+
+                // --- NOTIFICATION LOGIC ---
+                const message = `Job file '${jobFileNo}' was checked by ${currentUser.displayName} and is ready for approval.`;
+                await createNotificationForRoles(['admin'], message, docId);
+                // --- END NOTIFICATION LOGIC ---
+
             } catch (error) {
                 hideLoader();
                 console.error("Error checking document: ", error);
@@ -896,7 +978,6 @@
 
                 if (docSnap.exists()) {
                     populateFormFromData(docSnap.data());
-                    // NEW: Disable Job File No. input on load
                     document.getElementById('job-file-no').disabled = true;
                     closeModal('file-manager-modal');
                     closeModal('analytics-modal');
@@ -1156,7 +1237,7 @@
             document.body.removeChild(link);
         }
 
-        // --- Admin Panel Logic ---
+        // --- Admin Panel & Backup/Restore Logic ---
         async function openAdminPanel() {
             if (currentUser.role !== 'admin') {
                 showNotification("Access denied.", true);
@@ -1225,6 +1306,237 @@
             }
         }
 
+        async function backupAllData() {
+            if (currentUser.role !== 'admin') {
+                showNotification("Access denied. Only admins can perform backups.", true);
+                return;
+            }
+            showLoader();
+            try {
+                const jobFilesQuery = query(collection(db, 'jobfiles'));
+                const usersQuery = query(collection(db, 'users'));
+
+                const jobFilesSnapshot = await getDocs(jobFilesQuery);
+                const usersSnapshot = await getDocs(usersQuery);
+
+                const jobfilesData = jobFilesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const usersData = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                const backupData = {
+                    version: "1.0",
+                    createdAt: new Date().toISOString(),
+                    data: {
+                        jobfiles: jobfilesData,
+                        users: usersData
+                    }
+                };
+
+                const jsonString = JSON.stringify(backupData, (key, value) => {
+                    // Convert Firestore Timestamps to ISO strings for JSON compatibility
+                    if (value && typeof value.toDate === 'function') {
+                        return value.toDate().toISOString();
+                    }
+                    return value;
+                }, 2); // The '2' argument prettifies the JSON output
+
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                const date = new Date().toISOString().slice(0, 10);
+                link.download = `qgo-cargo-backup-${date}.json`;
+                link.href = url;
+                link.click();
+                URL.revokeObjectURL(url);
+
+                showNotification("Backup created and download started successfully.");
+
+            } catch (error) {
+                console.error("Backup failed:", error);
+                showNotification("An error occurred during backup.", true);
+            } finally {
+                hideLoader();
+            }
+        }
+
+        async function handleRestoreFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (currentUser.role !== 'admin') {
+                showNotification("Access denied. Only admins can restore data.", true);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                try {
+                    const backupData = JSON.parse(content);
+
+                    if (!backupData.data || !backupData.data.jobfiles || !backupData.data.users) {
+                        showNotification("Invalid backup file format.", true);
+                        return;
+                    }
+
+                    const jobFileCount = backupData.data.jobfiles.length;
+                    const userCount = backupData.data.users.length;
+
+                    // Use the confirmation modal
+                    const modal = document.getElementById('confirm-modal');
+                    modal.querySelector('#confirm-title').textContent = 'Confirm Data Restore';
+                    modal.querySelector('#confirm-message').innerHTML = `
+                        <p>You are about to restore <b>${jobFileCount} job files</b> and <b>${userCount} users</b> from the selected file.</p>
+                        <p class="mt-2">This will <b class="underline">overwrite any existing data</b> with the content from the backup file. Documents not in the backup file will not be affected.</p>
+                        <p class="mt-2 text-red-600 font-bold">This action cannot be undone. Are you sure you want to proceed?</p>
+                    `;
+                    modal.querySelector('#confirm-ok').className = 'bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded';
+                    openModal('confirm-modal');
+
+                    const okButton = modal.querySelector('#confirm-ok');
+                    const cancelButton = modal.querySelector('#confirm-cancel');
+
+                    const onOk = async () => {
+                        closeConfirm();
+                        showLoader();
+                        try {
+                            const restoreBatch = writeBatch(db);
+                            
+                            // Restore job files
+                            backupData.data.jobfiles.forEach(jobFile => {
+                                const docRef = doc(db, 'jobfiles', jobFile.id);
+                                const { id, ...dataToRestore } = jobFile;
+                                restoreBatch.set(docRef, dataToRestore);
+                            });
+
+                            // Restore users
+                            backupData.data.users.forEach(user => {
+                                const docRef = doc(db, 'users', user.id);
+                                const { id, ...dataToRestore } = user;
+                                restoreBatch.set(docRef, dataToRestore);
+                            });
+
+                            await restoreBatch.commit();
+                            showNotification("Data restored successfully! The page will now reload.");
+                            setTimeout(() => window.location.reload(), 2000);
+
+                        } catch (error) {
+                            console.error("Restore failed:", error);
+                            showNotification("An error occurred during restore. Data may be partially restored.", true);
+                        } finally {
+                            hideLoader();
+                        }
+                    };
+
+                    const closeConfirm = () => {
+                        closeModal('confirm-modal');
+                        okButton.removeEventListener('click', onOk);
+                    };
+
+                    okButton.addEventListener('click', onOk, { once: true });
+                    cancelButton.addEventListener('click', closeConfirm, { once: true });
+
+                } catch (error) {
+                    console.error("Error reading restore file:", error);
+                    showNotification("Failed to read or parse the backup file. Please ensure it's a valid JSON backup.", true);
+                } finally {
+                    // Reset the file input so the same file can be selected again
+                    event.target.value = '';
+                }
+            };
+
+            reader.readAsText(file);
+        }
+
+        // --- Notification Functions ---
+        async function createNotificationForRoles(roles, message, jobFileId) {
+            try {
+                const usersQuery = query(collection(db, 'users'), where('role', 'in', roles));
+                const querySnapshot = await getDocs(usersQuery);
+                
+                const batch = writeBatch(db);
+                querySnapshot.forEach(userDoc => {
+                    // Don't notify the user who performed the action
+                    if (userDoc.id === currentUser.uid) return;
+
+                    const notificationRef = collection(db, 'notifications');
+                    batch.set(doc(notificationRef), {
+                        forUserId: userDoc.id,
+                        message: message,
+                        jobFileId: jobFileId,
+                        isRead: false,
+                        createdAt: serverTimestamp()
+                    });
+                });
+                await batch.commit();
+            } catch (error) {
+                console.error("Error creating notifications:", error);
+            }
+        }
+
+        function listenForNotifications() {
+            if (unsubscribeNotifications) unsubscribeNotifications(); // Unsubscribe from previous listener
+
+            const q = query(collection(db, 'notifications'), where('forUserId', '==', currentUser.uid));
+            
+            unsubscribeNotifications = onSnapshot(q, (snapshot) => {
+                const notifications = [];
+                snapshot.forEach(doc => {
+                    notifications.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Sort by date, newest first
+                notifications.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+
+                updateNotificationUI(notifications);
+            });
+        }
+
+        function updateNotificationUI(notifications) {
+            const countElement = document.getElementById('notification-count');
+            const panelElement = document.getElementById('notification-panel');
+            
+            const unreadCount = notifications.filter(n => !n.isRead).length;
+
+            if (unreadCount > 0) {
+                countElement.textContent = unreadCount;
+                countElement.style.display = 'block';
+            } else {
+                countElement.style.display = 'none';
+            }
+
+            if (notifications.length === 0) {
+                panelElement.innerHTML = `<div class="p-4 text-center text-sm text-gray-500">No notifications</div>`;
+                return;
+            }
+
+            panelElement.innerHTML = notifications.map(n => `
+                <div class="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer notification-item ${n.isRead ? 'opacity-60' : 'font-bold'}" data-jobfile-id="${n.jobFileId}" data-notification-id="${n.id}">
+                    <p class="text-sm text-gray-800">${n.message}</p>
+                    <p class="text-xs text-gray-400 mt-1">${n.createdAt?.toDate().toLocaleString() || ''}</p>
+                </div>
+            `).join('');
+        }
+        
+        async function markNotificationsAsRead() {
+            const unreadItems = document.querySelectorAll('.notification-item:not(.opacity-60)');
+            if (unreadItems.length === 0) return;
+
+            const batch = writeBatch(db);
+            unreadItems.forEach(item => {
+                const notifId = item.dataset.notificationId;
+                if (notifId) {
+                    const notifRef = doc(db, 'notifications', notifId);
+                    batch.update(notifRef, { isRead: true });
+                }
+            });
+
+            try {
+                await batch.commit();
+            } catch (error) {
+                console.error("Error marking notifications as read:", error);
+            }
+        }
+
 
         // --- UI Functions ---
         function showLogin() {
@@ -1261,7 +1573,6 @@
             form.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
             
             document.getElementById('date').valueAsDate = new Date();
-            // NEW: Enable Job File No. input for new forms
             document.getElementById('job-file-no').disabled = false;
             populateTable();
             calculate();
@@ -1886,6 +2197,37 @@
             });
             document.getElementById('send-reset-link-btn').addEventListener('click', handleForgotPassword);
 
+            // --- Notification Panel Listeners ---
+            const notificationBell = document.getElementById('notification-bell');
+            const notificationPanel = document.getElementById('notification-panel');
+
+            notificationBell.addEventListener('click', () => {
+                const isVisible = notificationPanel.style.display === 'block';
+                notificationPanel.style.display = isVisible ? 'none' : 'block';
+                if (!isVisible) {
+                    markNotificationsAsRead();
+                }
+            });
+
+            notificationPanel.addEventListener('click', (e) => {
+                const item = e.target.closest('.notification-item');
+                if (item) {
+                    const jobFileId = item.dataset.jobfileId;
+                    if (jobFileId) {
+                        loadJobFileById(jobFileId);
+                        notificationPanel.style.display = 'none';
+                    }
+                }
+            });
+
+            // Close notification panel if clicking outside
+            document.addEventListener('click', (e) => {
+                if (!notificationBell.contains(e.target) && !notificationPanel.contains(e.target)) {
+                    notificationPanel.style.display = 'none';
+                }
+            });
+
+
             window.addEventListener('afterprint', () => {
                 document.getElementById('main-container').style.display = 'block';
                 document.getElementById('print-output').style.display = 'none';
@@ -1907,6 +2249,8 @@
             window.printPreview = printPreview;
             window.generateRemarks = generateRemarks;
             window.suggestCharges = suggestCharges;
+            window.backupAllData = backupAllData;
+            window.handleRestoreFile = handleRestoreFile;
 
             populateTable();
             calculate();
