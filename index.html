@@ -135,37 +135,24 @@
         .stamp-checked { border: 2px solid #2563eb; color: #2563eb; }
         .stamp-rejected { border: 2px solid #dc2626; color: #dc2626; }
 
-        /* Notification Bell Styles */
-        #notification-bell {
-            position: relative;
+        /* Autocomplete styles */
+        .autocomplete-suggestions {
+            border: 1px solid #d1d5db;
+            border-top: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-height: 150px;
+            overflow-y: auto;
+            position: absolute;
+            background-color: white;
+            z-index: 999;
+            width: 100%;
+        }
+        .autocomplete-suggestion {
+            padding: 0.5rem;
             cursor: pointer;
         }
-        #notification-count {
-            position: absolute;
-            top: -5px;
-            right: -10px;
-            background-color: #ef4444;
-            color: white;
-            border-radius: 50%;
-            padding: 2px 6px;
-            font-size: 10px;
-            font-weight: bold;
-            display: none; /* Hidden by default */
-        }
-        #notification-panel {
-            display: none;
-            position: absolute;
-            right: 0;
-            top: 100%;
-            margin-top: 10px;
-            background-color: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.5rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            width: 320px;
-            z-index: 100;
-            max-height: 400px;
-            overflow-y: auto;
+        .autocomplete-suggestion:hover {
+            background-color: #f3f4f6;
         }
     </style>
 </head>
@@ -236,22 +223,13 @@
                 </div>
             </header>
             
-            <!-- User Info, Notifications, and Logout -->
+            <!-- User Info and Logout -->
             <div class="flex flex-col sm:flex-row justify-between items-center mb-4 bg-gray-50 p-2 rounded-md gap-2">
                 <div class="text-sm text-center sm:text-left">
                     Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role" class="capitalize"></span>)
                 </div>
-                <div class="flex items-center gap-4">
-                    <div id="notification-bell" class="relative">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600 hover:text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
-                        <span id="notification-count"></span>
-                        <div id="notification-panel">
-                            <!-- Notifications will be loaded here by JS -->
-                        </div>
-                    </div>
-                    <button id="admin-panel-btn" class="admin-only bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded text-sm">Admin Panel</button>
+                <div>
+                    <button id="admin-panel-btn" class="admin-only bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Admin Panel</button>
                     <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Logout</button>
                 </div>
             </div>
@@ -293,8 +271,16 @@
                 <div><label for="salesman" class="block mb-1 font-semibold text-gray-700">Salesman:</label><input type="text" id="salesman" class="input-field"></div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div><label for="shipper-name" class="block mb-1 font-semibold text-gray-700">Shipper's Name:</label><input type="text" id="shipper-name" class="input-field"></div>
-                <div><label for="consignee-name" class="block mb-1 font-semibold text-gray-700">Consignee's Name:</label><input type="text" id="consignee-name" class="input-field"></div>
+                <div class="relative">
+                    <label for="shipper-name" class="block mb-1 font-semibold text-gray-700">Shipper's Name:</label>
+                    <input type="text" id="shipper-name" class="input-field" autocomplete="off">
+                    <div id="shipper-suggestions" class="autocomplete-suggestions hidden"></div>
+                </div>
+                <div class="relative">
+                    <label for="consignee-name" class="block mb-1 font-semibold text-gray-700">Consignee's Name:</label>
+                    <input type="text" id="consignee-name" class="input-field" autocomplete="off">
+                    <div id="consignee-suggestions" class="autocomplete-suggestions hidden"></div>
+                </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                 <div><label for="mawb" class="block mb-1 font-semibold text-gray-700">MAWB / OBL / TCN No.:</label><input type="text" id="mawb" class="input-field"></div>
@@ -371,6 +357,10 @@
                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" /></svg>
                      <span>Analytics</span>
                  </button>
+                 <button onclick="openClientManager()" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" /></svg>
+                    <span>Clients</span>
+                </button>
                  <button onclick="openFileManager()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1H8a3 3 0 00-3 3v1.586l.293.293a1 1 0 001.414 0L10.414 12l-1.293 1.293a1 1 0 000 1.414l.293.293V16a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm8 2a1 1 0 000-2H4a1 1 0 00-1 1v10a1 1 0 001 1h4a1 1 0 001-1v-1.586l-.293-.293a1 1 0 01-1.414 0L6.586 12l1.293-1.293a1 1 0 011.414 0l.293-.293V8z" clip-rule="evenodd" /><path d="M18 8a2 2 0 00-2-2h-4l-2-2h-4a2 2 0 00-2 2v.5a1 1 0 002 0V6a1 1 0 011-1h2.586l2 2H16a1 1 0 011 1v8a1 1 0 01-1 1h-2.5a1 1 0 100 2H16a2 2 0 002-2V8z" /></svg>
                      <span>File Manager</span>
@@ -403,12 +393,41 @@
     
     <!-- File Manager Modal -->
     <div id="file-manager-modal" class="overlay">
-        <div class="modal-content max-w-4xl">
+        <div class="modal-content max-w-5xl"> <!-- Increased width for filters -->
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-2xl font-bold">File Manager</h3>
                 <button onclick="closeModal('file-manager-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
-            <input type="text" id="search-bar" class="input-field w-full mb-4" placeholder="Search by Job File No, Shipper, Consignee...">
+            
+            <!-- Search and Filter Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                <div class="md:col-span-2">
+                    <label for="search-bar" class="text-sm font-medium text-gray-700">Search</label>
+                    <input type="text" id="search-bar" class="input-field mt-1" placeholder="Job No, Shipper, etc.">
+                </div>
+                <div>
+                    <label for="filter-status" class="text-sm font-medium text-gray-700">Status</label>
+                    <select id="filter-status" class="input-field mt-1">
+                        <option value="">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="checked">Checked</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="filter-date-from" class="text-sm font-medium text-gray-700">From Date</label>
+                    <input type="date" id="filter-date-from" class="input-field mt-1">
+                </div>
+                <div>
+                    <label for="filter-date-to" class="text-sm font-medium text-gray-700">To Date</label>
+                    <input type="date" id="filter-date-to" class="input-field mt-1">
+                </div>
+                <div class="flex items-end">
+                    <button id="clear-filters-btn" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded text-sm">Clear Filters</button>
+                </div>
+            </div>
+
             <div id="job-files-list" class="space-y-2 max-h-[60vh] overflow-y-auto"></div>
         </div>
     </div>
@@ -522,6 +541,61 @@
         </div>
     </div>
 
+    <!-- Client Manager Modal -->
+    <div id="client-manager-modal" class="overlay">
+        <div class="modal-content max-w-4xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">Client Management</h3>
+                <button onclick="closeModal('client-manager-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Add/Edit Client Form -->
+                <div>
+                    <h4 id="client-form-title" class="text-xl font-semibold mb-4">Add New Client</h4>
+                    <form id="client-form" class="space-y-4">
+                        <input type="hidden" id="client-id">
+                        <div>
+                            <label for="client-name" class="block text-sm font-medium text-gray-700">Client Name</label>
+                            <input type="text" id="client-name" class="input-field mt-1" required>
+                        </div>
+                        <div>
+                            <label for="client-address" class="block text-sm font-medium text-gray-700">Address</label>
+                            <textarea id="client-address" rows="2" class="input-field mt-1"></textarea>
+                        </div>
+                        <div>
+                            <label for="client-contact-person" class="block text-sm font-medium text-gray-700">Contact Person</label>
+                            <input type="text" id="client-contact-person" class="input-field mt-1">
+                        </div>
+                        <div>
+                            <label for="client-phone" class="block text-sm font-medium text-gray-700">Phone</label>
+                            <input type="text" id="client-phone" class="input-field mt-1">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Client Type</label>
+                            <select id="client-type" class="input-field mt-1">
+                                <option value="Shipper">Shipper</option>
+                                <option value="Consignee">Consignee</option>
+                                <option value="Both">Both</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-4">
+                            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save Client</button>
+                            <button type="button" id="clear-client-form-btn" class="w-full bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Clear</button>
+                        </div>
+                    </form>
+                </div>
+                <!-- Client List -->
+                <div>
+                    <h4 class="text-xl font-semibold mb-4">Existing Clients</h4>
+                    <input type="text" id="client-search-bar" class="input-field mb-4" placeholder="Search clients...">
+                    <div id="client-list" class="space-y-2 max-h-[50vh] overflow-y-auto">
+                        <!-- Client list will be populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Firebase SDK and App Logic -->
     <script type="module">
@@ -534,8 +608,8 @@
         let db, auth;
         let currentUser = null;
         let jobFilesCache = [];
+        let clientsCache = []; // <-- New cache for clients
         let analyticsDataCache = null;
-        let unsubscribeNotifications = null; // To store the notification listener
 
         // --- Firebase Configuration ---
         const firebaseConfig = {
@@ -588,13 +662,10 @@
                         console.log("User logged in:", currentUser);
                         showApp();
                         loadJobFiles();
-                        listenForNotifications(); // Start listening for notifications
+                        loadClients(); // <-- Load clients on login
                     } else {
                         currentUser = null;
                         console.log("User logged out");
-                        if (unsubscribeNotifications) {
-                            unsubscribeNotifications(); // Stop listening when logged out
-                        }
                         showLogin();
                     }
                 });
@@ -719,6 +790,7 @@
 
             // --- REVISED DUPLICATE CHECK ---
             const checks = [];
+            // Only check for Job File No. duplicates when creating a new file
             if (!isUpdating) {
                  checks.push({ field: 'jfn', value: jobFileNo, label: 'Job File No.' });
             }
@@ -732,6 +804,7 @@
                     
                     if (!querySnapshot.empty) {
                         if (isUpdating) {
+                            // In update mode, a match is only a duplicate if it's NOT the current document.
                             for (const foundDoc of querySnapshot.docs) {
                                 if (foundDoc.id !== docId) {
                                     hideLoader();
@@ -740,6 +813,7 @@
                                 }
                             }
                         } else {
+                            // In create mode, any match is a duplicate.
                             hideLoader();
                             showNotification(`Duplicate ${check.label} "${check.value}" already exists in job file: ${querySnapshot.docs[0].data().jfn}`, true);
                             return;
@@ -763,44 +837,34 @@
                 const docRef = doc(db, 'jobfiles', docId);
                 const docSnap = await getDoc(docRef);
 
-                let isNewFile = !docSnap.exists();
-                let wasApprovedOrChecked = false;
-
-                if (!isNewFile) {
+                if (docSnap.exists()) { // This condition is fine for updating data payload
                     const existingData = docSnap.data();
-                    wasApprovedOrChecked = ['approved', 'checked'].includes(existingData.status);
-                }
+                    data.lastUpdatedBy = currentUser.displayName;
+                    data.updatedAt = serverTimestamp();
 
-                if (wasApprovedOrChecked) {
-                    data.status = 'pending';
-                    data.checkedBy = null; data.checkedAt = null;
-                    data.approvedBy = null; data.approvedAt = null;
-                    data.rejectionReason = null; data.rejectedBy = null; data.rejectedAt = null;
-                }
-
-                if (isNewFile) {
+                    if (existingData.status === 'approved' || existingData.status === 'checked') {
+                        data.status = 'pending';
+                        data.checkedBy = null;
+                        data.checkedAt = null;
+                        data.approvedBy = null;
+                        data.approvedAt = null;
+                        data.rejectionReason = null;
+                        data.rejectedBy = null;
+                        data.rejectedAt = null;
+                        showNotification("File modified. Re-approval is now required.", false);
+                    }
+                    await setDoc(docRef, data, { merge: true });
+                } else {
                     data.createdBy = currentUser.displayName;
                     data.createdAt = serverTimestamp();
+                    data.lastUpdatedBy = currentUser.displayName;
+                    data.updatedAt = serverTimestamp();
                     data.status = 'pending';
+                    await setDoc(docRef, data);
                 }
-                
-                data.lastUpdatedBy = currentUser.displayName;
-                data.updatedAt = serverTimestamp();
-                
-                await setDoc(docRef, data, { merge: true });
                 
                 hideLoader();
                 showNotification("Job file saved successfully!");
-
-                // --- NOTIFICATION LOGIC ---
-                if (isNewFile || wasApprovedOrChecked) {
-                    const message = isNewFile 
-                        ? `New job file '${jobFileNo}' was created by ${currentUser.displayName}.`
-                        : `Job file '${jobFileNo}' was modified by ${currentUser.displayName} and needs re-checking.`;
-                    await createNotificationForRoles(['admin', 'checker'], message, docId);
-                }
-                // --- END NOTIFICATION LOGIC ---
-
                 loadJobFileById(docId);
 
             } catch (error) {
@@ -836,12 +900,6 @@
                 populateFormFromData(updatedDoc.data());
                 hideLoader();
                 showNotification("Job File Checked!");
-
-                // --- NOTIFICATION LOGIC ---
-                const message = `Job file '${jobFileNo}' was checked by ${currentUser.displayName} and is ready for approval.`;
-                await createNotificationForRoles(['admin'], message, docId);
-                // --- END NOTIFICATION LOGIC ---
-
             } catch (error) {
                 hideLoader();
                 console.error("Error checking document: ", error);
@@ -925,12 +983,6 @@
             onSnapshot(q, (querySnapshot) => {
                 jobFilesCache = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
-                const list = document.getElementById('job-files-list');
-                if (jobFilesCache.length === 0) {
-                    list.innerHTML = `<p class="text-gray-500 text-center p-4">No saved job files found.</p>`;
-                    return;
-                }
-                
                 const sortedDocs = [...jobFilesCache].sort((a,b) => (b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : 0) - (a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : 0));
                 
                 displayJobFiles(sortedDocs);
@@ -943,6 +995,10 @@
 
         function displayJobFiles(files) {
             const list = document.getElementById('job-files-list');
+            if (files.length === 0) {
+                 list.innerHTML = `<p class="text-gray-500 text-center p-4">No job files match the current filters.</p>`;
+                 return;
+            }
             let filesHtml = '';
             files.forEach((docData) => {
                 const deleteButton = currentUser.role === 'admin' ? `<button onclick="confirmDelete('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Delete</button>` : '';
@@ -978,6 +1034,7 @@
 
                 if (docSnap.exists()) {
                     populateFormFromData(docSnap.data());
+                    // NEW: Disable Job File No. input on load
                     document.getElementById('job-file-no').disabled = true;
                     closeModal('file-manager-modal');
                     closeModal('analytics-modal');
@@ -1046,30 +1103,43 @@
             }
         }
 
-        window.confirmDelete = (docId) => {
+        window.confirmDelete = (docId, type = 'jobfile') => {
             if (currentUser.role !== 'admin') {
                 showNotification("Only admins can delete files.", true);
                 return;
             }
             const modal = document.getElementById('confirm-modal');
-            modal.querySelector('#confirm-title').textContent = 'Confirm Deletion';
-            modal.querySelector('#confirm-message').textContent = `Are you sure you want to delete job file "${docId.replace(/_/g, '/')}"? This action cannot be undone.`;
+            let message = '';
+            let onOk;
+
+            if (type === 'jobfile') {
+                modal.querySelector('#confirm-title').textContent = 'Confirm Job File Deletion';
+                message = `Are you sure you want to delete job file "${docId.replace(/_/g, '/')}"? This action cannot be undone.`;
+                onOk = () => deleteJobFile(docId);
+            } else if (type === 'client') {
+                modal.querySelector('#confirm-title').textContent = 'Confirm Client Deletion';
+                const client = clientsCache.find(c => c.id === docId);
+                message = `Are you sure you want to delete the client "${client?.name || 'this client'}"? This action cannot be undone.`;
+                onOk = () => deleteClient(docId);
+            }
+
+            modal.querySelector('#confirm-message').textContent = message;
             modal.querySelector('#confirm-ok').className = 'bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded';
             openModal('confirm-modal');
 
             const okButton = modal.querySelector('#confirm-ok');
             const cancelButton = modal.querySelector('#confirm-cancel');
 
-            const onOk = () => {
-                deleteJobFile(docId);
+            const handleOkClick = () => {
+                onOk();
                 closeConfirm();
             };
             const closeConfirm = () => {
                 closeModal('confirm-modal');
-                okButton.removeEventListener('click', onOk);
+                okButton.removeEventListener('click', handleOkClick);
             };
             
-            okButton.addEventListener('click', onOk, { once: true });
+            okButton.addEventListener('click', handleOkClick, { once: true });
             cancelButton.addEventListener('click', closeConfirm, { once: true });
         }
 
@@ -1447,96 +1517,6 @@
             reader.readAsText(file);
         }
 
-        // --- Notification Functions ---
-        async function createNotificationForRoles(roles, message, jobFileId) {
-            try {
-                const usersQuery = query(collection(db, 'users'), where('role', 'in', roles));
-                const querySnapshot = await getDocs(usersQuery);
-                
-                const batch = writeBatch(db);
-                querySnapshot.forEach(userDoc => {
-                    // Don't notify the user who performed the action
-                    if (userDoc.id === currentUser.uid) return;
-
-                    const notificationRef = collection(db, 'notifications');
-                    batch.set(doc(notificationRef), {
-                        forUserId: userDoc.id,
-                        message: message,
-                        jobFileId: jobFileId,
-                        isRead: false,
-                        createdAt: serverTimestamp()
-                    });
-                });
-                await batch.commit();
-            } catch (error) {
-                console.error("Error creating notifications:", error);
-            }
-        }
-
-        function listenForNotifications() {
-            if (unsubscribeNotifications) unsubscribeNotifications(); // Unsubscribe from previous listener
-
-            const q = query(collection(db, 'notifications'), where('forUserId', '==', currentUser.uid));
-            
-            unsubscribeNotifications = onSnapshot(q, (snapshot) => {
-                const notifications = [];
-                snapshot.forEach(doc => {
-                    notifications.push({ id: doc.id, ...doc.data() });
-                });
-
-                // Sort by date, newest first
-                notifications.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
-
-                updateNotificationUI(notifications);
-            });
-        }
-
-        function updateNotificationUI(notifications) {
-            const countElement = document.getElementById('notification-count');
-            const panelElement = document.getElementById('notification-panel');
-            
-            const unreadCount = notifications.filter(n => !n.isRead).length;
-
-            if (unreadCount > 0) {
-                countElement.textContent = unreadCount;
-                countElement.style.display = 'block';
-            } else {
-                countElement.style.display = 'none';
-            }
-
-            if (notifications.length === 0) {
-                panelElement.innerHTML = `<div class="p-4 text-center text-sm text-gray-500">No notifications</div>`;
-                return;
-            }
-
-            panelElement.innerHTML = notifications.map(n => `
-                <div class="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer notification-item ${n.isRead ? 'opacity-60' : 'font-bold'}" data-jobfile-id="${n.jobFileId}" data-notification-id="${n.id}">
-                    <p class="text-sm text-gray-800">${n.message}</p>
-                    <p class="text-xs text-gray-400 mt-1">${n.createdAt?.toDate().toLocaleString() || ''}</p>
-                </div>
-            `).join('');
-        }
-        
-        async function markNotificationsAsRead() {
-            const unreadItems = document.querySelectorAll('.notification-item:not(.opacity-60)');
-            if (unreadItems.length === 0) return;
-
-            const batch = writeBatch(db);
-            unreadItems.forEach(item => {
-                const notifId = item.dataset.notificationId;
-                if (notifId) {
-                    const notifRef = doc(db, 'notifications', notifId);
-                    batch.update(notifRef, { isRead: true });
-                }
-            });
-
-            try {
-                await batch.commit();
-            } catch (error) {
-                console.error("Error marking notifications as read:", error);
-            }
-        }
-
 
         // --- UI Functions ---
         function showLogin() {
@@ -1573,6 +1553,7 @@
             form.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
             
             document.getElementById('date').valueAsDate = new Date();
+            // NEW: Enable Job File No. input for new forms
             document.getElementById('job-file-no').disabled = false;
             populateTable();
             calculate();
@@ -1615,12 +1596,39 @@
             }, 3000);
         }
 
-        document.getElementById('search-bar').addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            document.querySelectorAll('.job-file-item').forEach(item => {
-                item.style.display = item.dataset.searchTerm.includes(searchTerm) ? 'flex' : 'none';
+        // --- Filter Logic ---
+        function applyFiltersAndDisplay() {
+            const searchTerm = document.getElementById('search-bar').value.toLowerCase();
+            const statusFilter = document.getElementById('filter-status').value;
+            const fromDate = document.getElementById('filter-date-from').value;
+            const toDate = document.getElementById('filter-date-to').value;
+
+            let filteredFiles = jobFilesCache.filter(file => {
+                // Text Search
+                const searchData = [file.jfn, file.sh, file.co].join(' ').toLowerCase();
+                if (searchTerm && !searchData.includes(searchTerm)) {
+                    return false;
+                }
+
+                // Status Filter
+                if (statusFilter && file.status !== statusFilter) {
+                    return false;
+                }
+                
+                // Date Filter
+                if (fromDate && file.d < fromDate) {
+                    return false;
+                }
+                if (toDate && file.d > toDate) {
+                    return false;
+                }
+                
+                return true;
             });
-        });
+
+            displayJobFiles(filteredFiles);
+        }
+
 
         // --- Data Handling (Local Form) ---
         function getFormData() {
@@ -2146,6 +2154,163 @@
                 hideLoader();
             }
         }
+        
+        // --- Client Management Functions ---
+        window.openClientManager = () => openModal('client-manager-modal');
+
+        function loadClients() {
+            if (!db) return;
+            const clientsCollection = collection(db, 'clients');
+            onSnapshot(query(clientsCollection), (snapshot) => {
+                clientsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                clientsCache.sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
+                displayClients(clientsCache);
+            }, (error) => {
+                console.error("Error loading clients:", error);
+                showNotification("Could not load clients.", true);
+            });
+        }
+
+        function displayClients(clients) {
+            const list = document.getElementById('client-list');
+            if (clients.length === 0) {
+                list.innerHTML = `<p class="text-gray-500 text-center p-4">No clients found.</p>`;
+                return;
+            }
+            list.innerHTML = clients.map(client => `
+                <div class="client-item border p-3 rounded-lg bg-gray-50 hover:bg-gray-100" data-search-term="${client.name.toLowerCase()}">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-bold">${client.name}</p>
+                            <p class="text-sm text-gray-600">${client.address || ''}</p>
+                            <p class="text-xs text-gray-500">${client.contactPerson || ''} - ${client.phone || ''}</p>
+                        </div>
+                        <div class="flex-shrink-0 space-x-2">
+                            <button onclick="editClient('${client.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs">Edit</button>
+                            <button onclick="confirmDelete('${client.id}', 'client')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function saveClient(event) {
+            event.preventDefault();
+            const clientId = document.getElementById('client-id').value;
+            const clientName = document.getElementById('client-name').value.trim();
+
+            if (!clientName) {
+                showNotification("Client name is required.", true);
+                return;
+            }
+
+            const clientData = {
+                name: clientName,
+                address: document.getElementById('client-address').value.trim(),
+                contactPerson: document.getElementById('client-contact-person').value.trim(),
+                phone: document.getElementById('client-phone').value.trim(),
+                type: document.getElementById('client-type').value,
+                updatedAt: serverTimestamp()
+            };
+
+            showLoader();
+            try {
+                let docRef;
+                if (clientId) {
+                    // Update existing client
+                    docRef = doc(db, 'clients', clientId);
+                    await setDoc(docRef, clientData, { merge: true });
+                    showNotification("Client updated successfully!");
+                } else {
+                    // Add new client
+                    clientData.createdAt = serverTimestamp();
+                    const clientsCollection = collection(db, 'clients');
+                    docRef = await addDoc(clientsCollection, clientData);
+                    showNotification("Client added successfully!");
+                }
+                clearClientForm();
+            } catch (error) {
+                console.error("Error saving client:", error);
+                showNotification("Could not save client.", true);
+            } finally {
+                hideLoader();
+            }
+        }
+        
+        function clearClientForm() {
+            document.getElementById('client-form').reset();
+            document.getElementById('client-id').value = '';
+            document.getElementById('client-form-title').textContent = 'Add New Client';
+        }
+
+        window.editClient = (clientId) => {
+            const client = clientsCache.find(c => c.id === clientId);
+            if (client) {
+                document.getElementById('client-id').value = client.id;
+                document.getElementById('client-name').value = client.name;
+                document.getElementById('client-address').value = client.address || '';
+                document.getElementById('client-contact-person').value = client.contactPerson || '';
+                document.getElementById('client-phone').value = client.phone || '';
+                document.getElementById('client-type').value = client.type || 'Shipper';
+                document.getElementById('client-form-title').textContent = 'Edit Client';
+            }
+        };
+
+        async function deleteClient(clientId) {
+            showLoader();
+            try {
+                await deleteDoc(doc(db, 'clients', clientId));
+                showNotification("Client deleted successfully.");
+            } catch (error) {
+                console.error("Error deleting client:", error);
+                showNotification("Could not delete client.", true);
+            } finally {
+                hideLoader();
+            }
+        }
+
+        function setupAutocomplete(inputId, suggestionsId, type) {
+            const input = document.getElementById(inputId);
+            const suggestionsPanel = document.getElementById(suggestionsId);
+
+            input.addEventListener('input', () => {
+                const value = input.value.toLowerCase();
+                if (value.length < 2) {
+                    suggestionsPanel.innerHTML = '';
+                    suggestionsPanel.classList.add('hidden');
+                    return;
+                }
+
+                const filteredClients = clientsCache.filter(client => 
+                    client.name.toLowerCase().includes(value) && 
+                    (client.type === type || client.type === 'Both')
+                );
+
+                if (filteredClients.length > 0) {
+                    suggestionsPanel.innerHTML = filteredClients.map(client => 
+                        `<div class="autocomplete-suggestion" data-name="${client.name}">${client.name}</div>`
+                    ).join('');
+                    suggestionsPanel.classList.remove('hidden');
+                } else {
+                    suggestionsPanel.innerHTML = '';
+                    suggestionsPanel.classList.add('hidden');
+                }
+            });
+
+            suggestionsPanel.addEventListener('click', (e) => {
+                if (e.target.classList.contains('autocomplete-suggestion')) {
+                    input.value = e.target.dataset.name;
+                    suggestionsPanel.innerHTML = '';
+                    suggestionsPanel.classList.add('hidden');
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (e.target.id !== inputId) {
+                    suggestionsPanel.classList.add('hidden');
+                }
+            });
+        }
 
 
         // --- App Initialization ---
@@ -2197,35 +2362,30 @@
             });
             document.getElementById('send-reset-link-btn').addEventListener('click', handleForgotPassword);
 
-            // --- Notification Panel Listeners ---
-            const notificationBell = document.getElementById('notification-bell');
-            const notificationPanel = document.getElementById('notification-panel');
-
-            notificationBell.addEventListener('click', () => {
-                const isVisible = notificationPanel.style.display === 'block';
-                notificationPanel.style.display = isVisible ? 'none' : 'block';
-                if (!isVisible) {
-                    markNotificationsAsRead();
-                }
+            // --- Filter Event Listeners ---
+            document.getElementById('search-bar').addEventListener('input', applyFiltersAndDisplay);
+            document.getElementById('filter-status').addEventListener('change', applyFiltersAndDisplay);
+            document.getElementById('filter-date-from').addEventListener('change', applyFiltersAndDisplay);
+            document.getElementById('filter-date-to').addEventListener('change', applyFiltersAndDisplay);
+            document.getElementById('clear-filters-btn').addEventListener('click', () => {
+                document.getElementById('search-bar').value = '';
+                document.getElementById('filter-status').value = '';
+                document.getElementById('filter-date-from').value = '';
+                document.getElementById('filter-date-to').value = '';
+                applyFiltersAndDisplay();
             });
 
-            notificationPanel.addEventListener('click', (e) => {
-                const item = e.target.closest('.notification-item');
-                if (item) {
-                    const jobFileId = item.dataset.jobfileId;
-                    if (jobFileId) {
-                        loadJobFileById(jobFileId);
-                        notificationPanel.style.display = 'none';
-                    }
-                }
+            // --- Client Manager Listeners ---
+            document.getElementById('client-form').addEventListener('submit', saveClient);
+            document.getElementById('clear-client-form-btn').addEventListener('click', clearClientForm);
+            document.getElementById('client-search-bar').addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredClients = clientsCache.filter(client => client.name.toLowerCase().includes(searchTerm));
+                displayClients(filteredClients);
             });
 
-            // Close notification panel if clicking outside
-            document.addEventListener('click', (e) => {
-                if (!notificationBell.contains(e.target) && !notificationPanel.contains(e.target)) {
-                    notificationPanel.style.display = 'none';
-                }
-            });
+            setupAutocomplete('shipper-name', 'shipper-suggestions', 'Shipper');
+            setupAutocomplete('consignee-name', 'consignee-suggestions', 'Consignee');
 
 
             window.addEventListener('afterprint', () => {
@@ -2235,6 +2395,7 @@
             
             window.openAnalyticsDashboard = openAnalyticsDashboard;
             window.openFileManager = openFileManager;
+            window.openClientManager = openClientManager;
             window.saveJobFile = saveJobFile;
             window.clearForm = clearForm;
             window.printPage = printPage;
@@ -2245,6 +2406,7 @@
             window.previewJobFileById = previewJobFileById;
             window.loadJobFileById = loadJobFileById;
             window.confirmDelete = confirmDelete;
+            window.editClient = editClient;
             window.printAnalytics = printAnalytics;
             window.printPreview = printPreview;
             window.generateRemarks = generateRemarks;
