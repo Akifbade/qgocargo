@@ -71,7 +71,6 @@
             opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
             padding: 1rem;
         }
-        /* FIX: Added a new 'top' class with a higher z-index for nested modals */
         .overlay.top {
             z-index: 1001;
         }
@@ -112,14 +111,14 @@
         @page { size: A4; margin: 0.5cm; }
         @media print {
             body { background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            #main-container, .no-print { display: none !important; }
-            #print-output, #public-view-container { display: block !important; padding: 0 !important; margin: 0 !important; }
+            #main-container, .no-print, #app-container, #login-screen { display: none !important; }
+            #print-output, #public-view-container, #analytics-container { display: block !important; padding: 0 !important; margin: 0 !important; }
         }
-        #print-output .print-table, #preview-modal .print-table, #analytics-modal .analytics-table { border-collapse: collapse; width: 100%; }
+        #print-output .print-table, #preview-modal .print-table, #analytics-container .analytics-table { border-collapse: collapse; width: 100%; }
         #print-output .print-table th, #print-output .print-table td,
         #preview-modal .print-table th, #preview-modal .print-table td,
-        #analytics-modal .analytics-table th, #analytics-modal .analytics-table td { border: 1px solid #d1d5db; padding: 0.5rem; text-align: left; }
-        #analytics-modal .analytics-table th { background-color: #f3f4f6; font-weight: 600; }
+        #analytics-container .analytics-table th, #analytics-container .analytics-table td { border: 1px solid #d1d5db; padding: 0.5rem; text-align: left; }
+        #analytics-container .analytics-table th { background-color: #f3f4f6; font-weight: 600; }
         #print-output .print-field, #preview-modal .print-field { border: 1px solid #6b7280; padding: 0.3rem; min-height: 24px; word-break: break-all; }
         .admin-only, .checker-only, #signup-name-field { display: none; }
         
@@ -270,11 +269,9 @@
                     </div>
                 </div>
             </div>
-            <!-- FIX: Changed grid layout and added missing 'job-file-open-date' input -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div><label for="invoice-no" class="block mb-1 font-semibold text-gray-700">Invoice No.:</label><input type="text" id="invoice-no" class="input-field"></div>
                 <div><label for="billing-date" class="block mb-1 font-semibold text-gray-700">Billing Date:</label><input type="date" id="billing-date" class="input-field"></div>
-                <div><label for="job-file-open-date" class="block mb-1 font-semibold text-gray-700">Job Open Date:</label><input type="date" id="job-file-open-date" class="input-field"></div>
                 <div><label for="salesman" class="block mb-1 font-semibold text-gray-700">Salesman:</label><input type="text" id="salesman" class="input-field"></div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -394,6 +391,21 @@
     <!-- This container is for the public QR code view -->
     <div id="public-view-container"></div>
 
+    <!-- Analytics Full-Screen Page -->
+    <div id="analytics-container" class="hidden">
+        <div class="container">
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-2 no-print">
+                <h3 class="text-2xl font-bold">Analytics Dashboard</h3>
+                <div>
+                    <button onclick="printAnalytics()" title="Print Analytics" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded mr-4">🖨️ Print</button>
+                    <button onclick="closeAnalyticsDashboard()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-3 rounded">Back to Job File</button>
+                </div>
+            </div>
+            <div id="analytics-body" class="space-y-6"></div>
+        </div>
+    </div>
+
+
     <!-- Modals -->
     <div id="loader-overlay" class="overlay"><div class="loader"></div></div>
     <div id="notification"></div>
@@ -462,20 +474,6 @@
                 </div>
             </div>
             <div id="preview-body"></div>
-        </div>
-    </div>
-
-    <!-- Analytics Modal -->
-    <div id="analytics-modal" class="overlay">
-        <div class="modal-content max-w-7xl"> <!-- MODIFIED: Increased width -->
-            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-2">
-                <h3 class="text-2xl font-bold">Analytics Dashboard</h3>
-                <div>
-                    <button onclick="printAnalytics()" title="Print Analytics" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded mr-4">🖨️ Print</button>
-                    <button onclick="closeModal('analytics-modal')" class="text-gray-500 hover:text-gray-800 text-3xl align-middle">&times;</button>
-                </div>
-            </div>
-            <div id="analytics-body" class="space-y-6"></div>
         </div>
     </div>
 
@@ -1355,7 +1353,13 @@
             };
 
             displayAnalytics(analyticsDataCache);
-            openModal('analytics-modal');
+            document.getElementById('app-container').style.display = 'none';
+            document.getElementById('analytics-container').style.display = 'block';
+        }
+
+        function closeAnalyticsDashboard() {
+            document.getElementById('analytics-container').style.display = 'none';
+            document.getElementById('app-container').style.display = 'block';
         }
 
         function displayAnalytics(data, sortBy = 'profit-desc', searchTerm = '') {
@@ -1704,11 +1708,13 @@
         function showLogin() {
             document.getElementById('login-screen').style.display = 'flex';
             document.getElementById('app-container').style.display = 'none';
+            document.getElementById('analytics-container').style.display = 'none';
         }
 
         function showApp() {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-container').style.display = 'block';
+            document.getElementById('analytics-container').style.display = 'none';
             document.getElementById('user-display-name').textContent = currentUser.displayName;
             document.getElementById('user-role').textContent = currentUser.role;
 
@@ -1738,7 +1744,6 @@
             }
             const modal = document.getElementById(id);
             modal.classList.add('visible');
-            // FIX: Add the 'top' class if we are opening a modal on top of another
             if (keepParent) {
                 modal.classList.add('top');
             }
@@ -1746,7 +1751,6 @@
         function closeModal(id) {
             const modal = document.getElementById(id);
             modal.classList.remove('visible');
-            // FIX: Remove the 'top' class when closing
             modal.classList.remove('top');
         }
         
@@ -1843,7 +1847,7 @@
             return {
                 d: getVal('date'), po: getVal('po-number'), jfn: getVal('job-file-no'),
                 cl: getChecked('[data-clearance]:checked'), pt: getChecked('[data-product]:checked'),
-                in: getVal('invoice-no'), bd: getVal('billing-date'), jfod: getVal('job-file-open-date'), sm: getVal('salesman'),
+                in: getVal('invoice-no'), bd: getVal('billing-date'), sm: getVal('salesman'),
                 sh: getVal('shipper-name'), co: getVal('consignee-name'),
                 mawb: getVal('mawb'), hawb: getVal('hawb'), ts: getVal('teams-of-shipping'), or: getVal('origin'),
                 pc: getVal('no-of-pieces'), gw: getVal('gross-weight'), de: getVal('destination'), vw: getVal('volume-weight'),
@@ -1864,7 +1868,7 @@
             };
 
             setVal('date', data.d); setVal('po-number', data.po); setVal('job-file-no', data.jfn);
-            setVal('invoice-no', data.in); setVal('billing-date', data.bd); setVal('job-file-open-date', data.jfod);
+            setVal('invoice-no', data.in); setVal('billing-date', data.bd);
             setVal('salesman', data.sm); setVal('shipper-name', data.sh); setVal('consignee-name', data.co);
             setVal('mawb', data.mawb); setVal('hawb', data.hawb); setVal('teams-of-shipping', data.ts);
             setVal('origin', data.or); setVal('no-of-pieces', data.pc); setVal('gross-weight', data.gw);
@@ -2042,9 +2046,8 @@
                             <div><strong>Product Type</strong><br>${(data.pt || []).includes('Air Freight') ? checkedSymbol : uncheckedSymbol} Air<br>${(data.pt || []).includes('Sea Freight') ? checkedSymbol : uncheckedSymbol} Sea<br>${(data.pt || []).includes('Land Freight') ? checkedSymbol : uncheckedSymbol} Land<br>${(data.pt || []).includes('Others') ? checkedSymbol : uncheckedSymbol} Others</div>
                         </div>
 
-                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Invoice No.:</strong><div class="print-field">${data.in || ''}</div></div>
-                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Billing Date:</strong><div class="print-field">${data.bd || ''}</div></div>
-                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Job Open Date:</strong><div class="print-field">${data.jfod || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Invoice No.:</strong><div class="print-field">${data.in || ''}</div></div>
+                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Billing Date:</strong><div class="print-field">${data.bd || ''}</div></div>
                         <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Salesman:</strong><div class="print-field">${data.sm || ''}</div></div>
 
                         <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Shipper's Name:</strong><div class="print-field">${data.sh || ''}</div></div>
@@ -2641,8 +2644,8 @@
                 document.getElementById('print-output').style.display = 'none';
             });
             
-            // FIX: Expose module functions to the global window object so onclick attributes can find them.
             window.openAnalyticsDashboard = openAnalyticsDashboard;
+            window.closeAnalyticsDashboard = closeAnalyticsDashboard;
             window.openFileManager = () => openModal('file-manager-modal');
             window.openClientManager = openClientManager;
             window.saveJobFile = saveJobFile;
