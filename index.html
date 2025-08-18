@@ -935,7 +935,7 @@
                 const docRef = doc(db, 'jobfiles', fileId);
                 await setDoc(docRef, checkData, { merge: true });
                 
-                if (!docId) { // Only reload form if action is from main page
+                if (!docId) {
                     const updatedDoc = await getDoc(docRef);
                     populateFormFromData(updatedDoc.data());
                 }
@@ -951,6 +951,32 @@
                 hideLoader();
                 console.error("Error checking document: ", error);
                 showNotification("Error checking job file.", true);
+            }
+        }
+
+        window.uncheckJobFile = async function(docId) {
+            if (!currentUser || !['admin', 'checker'].includes(currentUser.role)) {
+                showNotification("You do not have permission to uncheck files.", true);
+                return;
+            }
+            showLoader();
+            const uncheckData = {
+                checkedBy: null,
+                checkedAt: null,
+                status: 'pending'
+            };
+            try {
+                const docRef = doc(db, 'jobfiles', docId);
+                await setDoc(docRef, uncheckData, { merge: true });
+                hideLoader();
+                showNotification("Job File Unchecked!");
+                if (document.getElementById('user-jobs-modal').classList.contains('visible')) {
+                    showUserJobs(currentlyViewedUser);
+                }
+            } catch (error) {
+                hideLoader();
+                console.error("Error unchecking document: ", error);
+                showNotification("Error unchecking job file.", true);
             }
         }
 
@@ -984,7 +1010,7 @@
                 const docRef = doc(db, 'jobfiles', fileId);
                 await setDoc(docRef, approvalData, { merge: true });
 
-                if (!docId) { // Only reload form if action is from main page
+                if (!docId) {
                     const updatedDoc = await getDoc(docRef);
                     populateFormFromData(updatedDoc.data());
                 }
@@ -1155,9 +1181,7 @@
                     logUserActivity(fileData.jfn);
                     
                     document.getElementById('job-file-no').disabled = true;
-                    closeModal('file-manager-modal');
-                    closeModal('analytics-modal');
-                    closeModal('user-jobs-modal');
+                    closeAllModals();
                     showNotification("Job file loaded successfully.");
                 } else {
                     showNotification("Document not found.", true);
@@ -1193,7 +1217,7 @@
                         });
                     }
                     
-                    openModal('preview-modal');
+                    openModal('preview-modal', true); // Pass true to keep parent modals open
                 } else {
                     showNotification("Document not found.", true);
                 }
@@ -1247,7 +1271,7 @@
 
             modal.querySelector('#confirm-message').textContent = message;
             modal.querySelector('#confirm-ok').className = 'bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded';
-            openModal('confirm-modal');
+            openModal('confirm-modal', true); // Keep parent modals open
 
             const okButton = modal.querySelector('#confirm-ok');
             const cancelButton = modal.querySelector('#confirm-cancel');
@@ -1290,7 +1314,7 @@
                 let status = 'Pending Check';
                 if (job.status === 'rejected') status = 'Rejected';
                 else if (job.status === 'approved') status = 'Approved';
-                else if (job.status === 'checked') status = 'Pending Approval';
+                else if (job.status === 'checked') status = 'Checked';
 
                 totalRevenue += revenue;
                 totalCost += cost;
@@ -1351,7 +1375,7 @@
             } else if (sortBy === 'date-desc') {
                 sortedFiles.sort((a, b) => b.date - a.date);
             } else if (sortBy === 'status') {
-                const statusOrder = { 'Pending Check': 1, 'Pending Approval': 2, 'Approved': 3, 'Rejected': 4 };
+                const statusOrder = { 'Pending Check': 1, 'Checked': 2, 'Approved': 3, 'Rejected': 4 };
                 sortedFiles.sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
             } else if (sortBy === 'user') {
                 sortedFiles.sort((a, b) => (a.createdBy || '').localeCompare(b.createdBy || ''));
@@ -1382,6 +1406,11 @@
                         <h4 class="text-lg font-semibold mb-2">Top Users by Profit</h4>
                         <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>User</th><th>Files</th><th>Profit</th><th>Actions</th></tr></thead>
                         <tbody>${data.profitByUser.slice(0, 5).map(([name, stats]) => `<tr><td>${name}</td><td>${stats.count}</td><td>KD ${stats.profit.toFixed(2)}</td><td><button onclick="showUserJobs('${name}')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-2 rounded text-xs">View Jobs</button></td></tr>`).join('')}</tbody></table></div>
+                    </div>
+                    <div class="lg:col-span-3">
+                        <h4 class="text-lg font-semibold mb-2">Monthly Profit</h4>
+                        <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>Month</th><th>Total Profit</th></tr></thead>
+                        <tbody>${data.monthlyProfit.map(([month, profit]) => `<tr><td>${month}</td><td>KD ${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table></div>
                     </div>
                 </div>
 
@@ -1430,7 +1459,6 @@
                     </div>
                 </div>
             `;
-            // Re-add event listener for the new search bar
             document.getElementById('analytics-search-bar').addEventListener('input', (e) => {
                 displayAnalytics(analyticsDataCache, document.getElementById('sort-analytics').value, e.target.value);
             });
@@ -1691,7 +1719,18 @@
             clearForm();
         }
 
-        window.openModal = (id) => document.getElementById(id).classList.add('visible');
+        function closeAllModals() {
+            document.querySelectorAll('.overlay').forEach(modal => {
+                modal.classList.remove('visible');
+            });
+        }
+
+        window.openModal = (id, keepParent = false) => {
+            if (!keepParent) {
+                closeAllModals();
+            }
+            document.getElementById(id).classList.add('visible');
+        }
         window.closeModal = (id) => document.getElementById(id).classList.remove('visible');
         window.openFileManager = () => openModal('file-manager-modal');
         
@@ -1788,7 +1827,7 @@
             return {
                 d: getVal('date'), po: getVal('po-number'), jfn: getVal('job-file-no'),
                 cl: getChecked('[data-clearance]:checked'), pt: getChecked('[data-product]:checked'),
-                in: getVal('invoice-no'), bd: getVal('billing-date'), sm: getVal('salesman'),
+                in: getVal('invoice-no'), bd: getVal('billing-date'), jfod: getVal('job-file-open-date'), sm: getVal('salesman'),
                 sh: getVal('shipper-name'), co: getVal('consignee-name'),
                 mawb: getVal('mawb'), hawb: getVal('hawb'), ts: getVal('teams-of-shipping'), or: getVal('origin'),
                 pc: getVal('no-of-pieces'), gw: getVal('gross-weight'), de: getVal('destination'), vw: getVal('volume-weight'),
@@ -1809,7 +1848,7 @@
             };
 
             setVal('date', data.d); setVal('po-number', data.po); setVal('job-file-no', data.jfn);
-            setVal('invoice-no', data.in); setVal('billing-date', data.bd);
+            setVal('invoice-no', data.in); setVal('billing-date', data.bd); setVal('job-file-open-date', data.jfod);
             setVal('salesman', data.sm); setVal('shipper-name', data.sh); setVal('consignee-name', data.co);
             setVal('mawb', data.mawb); setVal('hawb', data.hawb); setVal('teams-of-shipping', data.ts);
             setVal('origin', data.or); setVal('no-of-pieces', data.pc); setVal('gross-weight', data.gw);
@@ -1987,8 +2026,9 @@
                             <div><strong>Product Type</strong><br>${(data.pt || []).includes('Air Freight') ? checkedSymbol : uncheckedSymbol} Air<br>${(data.pt || []).includes('Sea Freight') ? checkedSymbol : uncheckedSymbol} Sea<br>${(data.pt || []).includes('Land Freight') ? checkedSymbol : uncheckedSymbol} Land<br>${(data.pt || []).includes('Others') ? checkedSymbol : uncheckedSymbol} Others</div>
                         </div>
 
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Invoice No.:</strong><div class="print-field">${data.in || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Billing Date:</strong><div class="print-field">${data.bd || ''}</div></div>
+                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Invoice No.:</strong><div class="print-field">${data.in || ''}</div></div>
+                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Billing Date:</strong><div class="print-field">${data.bd || ''}</div></div>
+                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Job Open Date:</strong><div class="print-field">${data.jfod || ''}</div></div>
                         <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Salesman:</strong><div class="print-field">${data.sm || ''}</div></div>
 
                         <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Shipper's Name:</strong><div class="print-field">${data.sh || ''}</div></div>
@@ -2464,17 +2504,19 @@
                  userJobs.forEach((docData) => {
                     const deleteButton = currentUser.role === 'admin' ? `<button onclick="confirmDelete('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>` : '';
                     
-                    let checkButton = '';
-                    if ((currentUser.role === 'admin' || currentUser.role === 'checker') && docData.status === 'pending') {
-                        checkButton = `<button onclick="checkJobFile('${docData.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs">Check</button>`;
+                    let checkOrUncheckButton = '';
+                    if (currentUser.role === 'admin' || currentUser.role === 'checker') {
+                        if (docData.status === 'checked' || docData.status === 'approved') {
+                            checkOrUncheckButton = `<button onclick="uncheckJobFile('${docData.id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Uncheck</button>`;
+                        } else if (docData.status === 'pending') {
+                            checkOrUncheckButton = `<button onclick="checkJobFile('${docData.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs">Check</button>`;
+                        }
                     }
 
                     let approveButton = '';
                     if (currentUser.role === 'admin' && docData.status === 'checked') {
                         approveButton = `<button onclick="approveJobFile('${docData.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded text-xs">Approve</button>`;
                     }
-
-                    const createdDate = docData.createdAt?.toDate ? docData.createdAt.toDate().toLocaleDateString() : 'N/A';
                     
                     filesHtml += `
                         <div class="job-file-item border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center bg-gray-50 hover:bg-gray-100 gap-2">
@@ -2484,14 +2526,13 @@
                                 <p class="text-sm text-gray-600">Consignee: ${docData.co || 'N/A'}</p>
                             </div>
                             <div class="w-full sm:w-1/5 text-xs text-gray-500">
-                                <p>Created: ${createdDate}</p>
                                 <p>Cost: <span class="font-medium text-red-600">KD ${(docData.totalCost || 0).toFixed(2)}</span></p>
                                 <p>Profit: <span class="font-medium text-green-600">KD ${(docData.totalProfit || 0).toFixed(2)}</span></p>
                             </div>
                             <div class="space-x-2 flex-shrink-0">
                                 <button onclick="previewJobFileById('${docData.id}')" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-2 rounded text-xs">Preview</button>
                                 <button onclick="loadJobFileById('${docData.id}')" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-1 px-2 rounded text-xs">Load</button>
-                                ${checkButton}
+                                ${checkOrUncheckButton}
                                 ${approveButton}
                                 ${deleteButton}
                             </div>
@@ -2500,7 +2541,7 @@
                 });
                 list.innerHTML = filesHtml;
             }
-            openModal('user-jobs-modal');
+            openModal('user-jobs-modal', true);
         }
 
 
@@ -2543,7 +2584,7 @@
             
             document.getElementById('logout-btn').addEventListener('click', handleLogout);
             document.getElementById('approve-btn').addEventListener('click', () => approveJobFile());
-            document.getElementById('reject-btn').addEventListener('click', () => openModal('reject-reason-modal'));
+            document.getElementById('reject-btn').addEventListener('click', () => openModal('reject-reason-modal', true));
             document.getElementById('confirm-reject-btn').addEventListener('click', rejectJobFile);
             document.getElementById('check-btn').addEventListener('click', () => checkJobFile());
             document.getElementById('admin-panel-btn').addEventListener('click', openAdminPanel);
@@ -2607,6 +2648,7 @@
             window.showUserJobs = showUserJobs;
             window.checkJobFile = checkJobFile;
             window.approveJobFile = approveJobFile;
+            window.uncheckJobFile = uncheckJobFile;
 
             populateTable();
             calculate();
