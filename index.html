@@ -71,9 +71,6 @@
             opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
             padding: 1rem;
         }
-        .overlay.top {
-            z-index: 1001;
-        }
         .overlay.visible {
             opacity: 1; visibility: visible;
         }
@@ -1734,8 +1731,19 @@
         function closeAllModals() {
             document.querySelectorAll('.overlay').forEach(modal => {
                 modal.classList.remove('visible');
-                modal.classList.remove('top'); // Also remove the 'top' class
+                modal.style.zIndex = ''; 
             });
+        }
+
+        function getHighestZIndex() {
+            let highest = 1000;
+            document.querySelectorAll('.overlay.visible').forEach(modal => {
+                const z = parseInt(window.getComputedStyle(modal).zIndex, 10);
+                if (z > highest) {
+                    highest = z;
+                }
+            });
+            return highest;
         }
 
         function openModal(id, keepParent = false) {
@@ -1743,15 +1751,16 @@
                 closeAllModals();
             }
             const modal = document.getElementById(id);
-            modal.classList.add('visible');
             if (keepParent) {
-                modal.classList.add('top');
+                const highestZ = getHighestZIndex();
+                modal.style.zIndex = highestZ + 1;
             }
+            modal.classList.add('visible');
         }
         function closeModal(id) {
             const modal = document.getElementById(id);
             modal.classList.remove('visible');
-            modal.classList.remove('top');
+            modal.style.zIndex = '';
         }
         
         function clearForm() {
