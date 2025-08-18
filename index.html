@@ -1247,11 +1247,13 @@
             const profitByShipper = {};
             const profitByConsignee = {};
             const monthlyProfit = {};
+            const profitByUser = {}; // <-- NEW: For tracking user stats
 
             jobFilesCache.forEach(job => {
                 const profit = job.totalProfit || 0;
                 const revenue = job.totalSelling || 0;
                 const cost = job.totalCost || 0;
+                const creator = job.createdBy || 'Unknown'; // <-- NEW: Get creator
                 let status = 'Pending Check';
                 if (job.status === 'rejected') status = 'Rejected';
                 else if (job.status === 'approved') status = 'Approved';
@@ -1262,7 +1264,7 @@
                 totalCost += cost;
                 totalProfit += profit;
 
-                profitByFile.push({ id: job.id, jfn: job.jfn, shipper: job.sh, consignee: job.co, profit: profit, status: status, date: job.updatedAt?.toDate() || new Date(0), cost: cost, dsc: job.dsc, mawb: job.mawb });
+                profitByFile.push({ id: job.id, jfn: job.jfn, shipper: job.sh, consignee: job.co, profit: profit, status: status, date: job.updatedAt?.toDate() || new Date(0), cost: cost, dsc: job.dsc, mawb: job.mawb, createdBy: creator });
 
                 if (job.sh) {
                     profitByShipper[job.sh] = (profitByShipper[job.sh] || 0) + profit;
@@ -1274,13 +1276,22 @@
                     const month = job.d.substring(0, 7); // YYYY-MM
                     monthlyProfit[month] = (monthlyProfit[month] || 0) + profit;
                 }
+                
+                // --- NEW: Aggregate user data ---
+                if (!profitByUser[creator]) {
+                    profitByUser[creator] = { count: 0, profit: 0 };
+                }
+                profitByUser[creator].count++;
+                profitByUser[creator].profit += profit;
+                // --- END NEW ---
             });
 
             analyticsDataCache = {
                 totalJobs, totalRevenue, totalCost, totalProfit, profitByFile,
                 profitByShipper: Object.entries(profitByShipper).sort((a, b) => b[1] - a[1]),
                 profitByConsignee: Object.entries(profitByConsignee).sort((a, b) => b[1] - a[1]),
-                monthlyProfit: Object.entries(monthlyProfit).sort((a, b) => a[0].localeCompare(b[0]))
+                monthlyProfit: Object.entries(monthlyProfit).sort((a, b) => a[0].localeCompare(b[0])),
+                profitByUser: Object.entries(profitByUser).sort((a, b) => b[1].profit - a[1].profit) // <-- NEW: Add sorted user data
             };
 
             displayAnalytics(analyticsDataCache);
@@ -1299,6 +1310,8 @@
             } else if (sortBy === 'status') {
                 const statusOrder = { 'Pending Check': 1, 'Pending Approval': 2, 'Approved': 3, 'Rejected': 4 };
                 sortedFiles.sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
+            } else if (sortBy === 'user') { // <-- NEW: Sorting by user
+                sortedFiles.sort((a, b) => (a.createdBy || '').localeCompare(b.createdBy || ''));
             }
 
             body.innerHTML = `
@@ -1311,7 +1324,7 @@
                 </div>
 
                 <!-- Detailed Breakdowns -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div>
                         <h4 class="text-lg font-semibold mb-2">Top Profitable Shippers</h4>
                         <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>Shipper</th><th>Total Profit</th></tr></thead>
@@ -1322,10 +1335,11 @@
                         <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>Consignee</th><th>Total Profit</th></tr></thead>
                         <tbody>${data.profitByConsignee.slice(0, 5).map(([name, profit]) => `<tr><td>${name}</td><td>KD ${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table></div>
                     </div>
-                    <div class="lg:col-span-2">
-                        <h4 class="text-lg font-semibold mb-2">Monthly Profit</h4>
-                        <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>Month</th><th>Total Profit</th></tr></thead>
-                        <tbody>${data.monthlyProfit.map(([month, profit]) => `<tr><td>${month}</td><td>KD ${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table></div>
+                    <!-- NEW: Top Users Table -->
+                    <div>
+                        <h4 class="text-lg font-semibold mb-2">Top Users by Profit</h4>
+                        <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>User</th><th>Files</th><th>Total Profit</th></tr></thead>
+                        <tbody>${data.profitByUser.slice(0, 5).map(([name, stats]) => `<tr><td>${name}</td><td>${stats.count}</td><td>KD ${stats.profit.toFixed(2)}</td></tr>`).join('')}</tbody></table></div>
                     </div>
                 </div>
 
@@ -1339,6 +1353,7 @@
                                 <option value="profit-desc" ${sortBy === 'profit-desc' ? 'selected' : ''}>Profit (High to Low)</option>
                                 <option value="date-desc" ${sortBy === 'date-desc' ? 'selected' : ''}>Date (Newest First)</option>
                                 <option value="status" ${sortBy === 'status' ? 'selected' : ''}>Status</option>
+                                <option value="user" ${sortBy === 'user' ? 'selected' : ''}>User</option> <!-- NEW: Sort option -->
                             </select>
                             <button onclick="downloadAnalyticsCsv()" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-1 px-3 rounded text-sm">CSV</button>
                         </div>
@@ -1354,6 +1369,8 @@
                                         <p class="text-xs">Consignee: ${file.consignee || 'N/A'}</p>
                                         <p class="text-xs text-gray-600">AWB/MAWB: ${file.mawb || 'N/A'}</p>
                                         <p class="text-xs text-gray-600">Desc: ${file.dsc || 'N/A'}</p>
+                                        <!-- NEW: Creator Name -->
+                                        <p class="text-xs font-bold mt-1">Created by: ${file.createdBy || 'N/A'}</p>
                                     </td>
                                     <td>
                                         <p class="font-bold text-green-600">KD ${file.profit.toFixed(2)}</p>
@@ -1378,11 +1395,11 @@
         }
         
         window.downloadAnalyticsCsv = function() {
-            let csvContent = "data:text/csv;charset=utf-8,Job File ID,Shipper,Consignee,Profit,Status,Cost,Description,AWB/MAWB\n";
+            let csvContent = "data:text/csv;charset=utf-8,Job File ID,Shipper,Consignee,Profit,Status,Cost,Description,AWB/MAWB,Created By\n";
             const sortedFiles = [...analyticsDataCache.profitByFile].sort((a,b) => (b.profit || 0) - (a.profit || 0));
 
             sortedFiles.forEach(job => {
-                const rowData = [job.jfn, job.shipper || 'N/A', job.consignee || 'N/A', (job.profit || 0).toFixed(2), job.status, (job.cost || 0).toFixed(2), job.dsc || 'N/A', job.mawb || 'N/A'];
+                const rowData = [job.jfn, job.shipper || 'N/A', job.consignee || 'N/A', (job.profit || 0).toFixed(2), job.status, (job.cost || 0).toFixed(2), job.dsc || 'N/A', job.mawb || 'N/A', job.createdBy || 'N/A'];
                 const row = rowData.map(d => `"${String(d).replace(/"/g, '""')}"`).join(",");
                 csvContent += row + "\n";
             });
