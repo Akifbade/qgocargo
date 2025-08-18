@@ -229,6 +229,8 @@
                     Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role" class="capitalize"></span>)
                 </div>
                 <div>
+                    <!-- NEW BUTTON ADDED HERE -->
+                    <button id="activity-log-btn" class="admin-only bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Activity Log</button>
                     <button id="admin-panel-btn" class="admin-only bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Admin Panel</button>
                     <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Logout</button>
                 </div>
@@ -479,7 +481,7 @@
                 <h3 class="text-2xl font-bold">Admin Panel</h3>
                 <button onclick="closeModal('admin-panel-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
-    
+        
             <!-- User Management -->
             <div class="border rounded-lg p-4">
                 <h4 class="text-lg font-semibold mb-2">User Management</h4>
@@ -488,7 +490,7 @@
                     <button onclick="saveUserChanges()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save User Changes</button>
                 </div>
             </div>
-    
+        
             <!-- Data Backup & Restore -->
             <div class="border rounded-lg p-4 mt-6">
                 <h4 class="text-lg font-semibold mb-3">Data Backup & Restore</h4>
@@ -500,8 +502,8 @@
                     </button>
                     <label for="restore-file-input" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 cursor-pointer">
                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                        Restore From File
-                        <input type="file" id="restore-file-input" class="hidden" accept=".json" onchange="handleRestoreFile(event)">
+                         Restore From File
+                         <input type="file" id="restore-file-input" class="hidden" accept=".json" onchange="handleRestoreFile(event)">
                     </label>
                 </div>
             </div>
@@ -592,6 +594,30 @@
                         <!-- Client list will be populated by JS -->
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- NEW MODAL FOR USER ACTIVITY LOG -->
+    <div id="activity-log-modal" class="overlay">
+        <div class="modal-content max-w-4xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">User Activity Log</h3>
+                <button onclick="closeModal('activity-log-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div class="max-h-[70vh] overflow-y-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="table-cell font-semibold text-left">User Name</th>
+                            <th class="table-cell font-semibold text-left">Job File No.</th>
+                            <th class="table-cell font-semibold text-left">Time Opened</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activity-log-body">
+                        <!-- JS will populate this -->
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -1025,6 +1051,65 @@
             list.innerHTML = filesHtml;
         }
 
+        // --- NEW FUNCTION to log user activity ---
+        function logUserActivity(jobFileNo) {
+            if (!currentUser) return; // Don't log if no user is logged in
+
+            const logEntry = {
+                user: currentUser.displayName,
+                file: jobFileNo,
+                timestamp: new Date().toISOString()
+            };
+
+            let logs = [];
+            try {
+                const storedLogs = localStorage.getItem('userActivityLog');
+                if (storedLogs) {
+                    logs = JSON.parse(storedLogs);
+                }
+            } catch (e) {
+                console.error("Error parsing user activity log from localStorage", e);
+                logs = []; // Reset if data is corrupted
+            }
+
+            logs.unshift(logEntry); // Add new entry to the top
+
+            // Optional: Limit the log size to prevent localStorage from getting too big
+            if (logs.length > 200) {
+                logs.splice(200); // Keep only the most recent 200 entries
+            }
+
+            localStorage.setItem('userActivityLog', JSON.stringify(logs));
+        }
+        
+        // --- NEW FUNCTION to open and display the activity log ---
+        function openUserActivityLog() {
+            const logBody = document.getElementById('activity-log-body');
+            let logs = [];
+            try {
+                const storedLogs = localStorage.getItem('userActivityLog');
+                if (storedLogs) {
+                    logs = JSON.parse(storedLogs);
+                }
+            } catch (e) {
+                console.error("Error parsing user activity log from localStorage", e);
+            }
+
+            if (logs.length === 0) {
+                logBody.innerHTML = '<tr><td colspan="3" class="table-cell text-center p-4">No user activity recorded yet.</td></tr>';
+            } else {
+                logBody.innerHTML = logs.map(entry => `
+                    <tr class="border-b">
+                        <td class="table-cell">${entry.user || 'Unknown'}</td>
+                        <td class="table-cell font-medium">${entry.file || 'N/A'}</td>
+                        <td class="table-cell text-gray-600">${new Date(entry.timestamp).toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            }
+
+            openModal('activity-log-modal');
+        }
+
 
         window.loadJobFileById = async function(docId) {
             showLoader();
@@ -1033,8 +1118,12 @@
                 const docSnap = await getDoc(docRef);
 
                 if (docSnap.exists()) {
-                    populateFormFromData(docSnap.data());
-                    // NEW: Disable Job File No. input on load
+                    const fileData = docSnap.data();
+                    populateFormFromData(fileData);
+                    
+                    // MODIFIED: Call the activity logger
+                    logUserActivity(fileData.jfn);
+                    
                     document.getElementById('job-file-no').disabled = true;
                     closeModal('file-manager-modal');
                     closeModal('analytics-modal');
@@ -2343,8 +2432,8 @@
                 } else {
                     const displayName = document.getElementById('full-name').value;
                      if (!email || !password || !displayName) {
-                         showNotification("Please fill all fields to sign up.", true);
-                         return;
+                          showNotification("Please fill all fields to sign up.", true);
+                          return;
                      }
                     handleSignUp(email, password, displayName);
                 }
@@ -2361,6 +2450,9 @@
                 openModal('forgot-password-modal');
             });
             document.getElementById('send-reset-link-btn').addEventListener('click', handleForgotPassword);
+
+            // NEW: Event listener for the activity log button
+            document.getElementById('activity-log-btn').addEventListener('click', openUserActivityLog);
 
             // --- Filter Event Listeners ---
             document.getElementById('search-bar').addEventListener('input', applyFiltersAndDisplay);
