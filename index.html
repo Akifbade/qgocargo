@@ -229,7 +229,6 @@
                     Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role" class="capitalize"></span>)
                 </div>
                 <div>
-                    <!-- NEW BUTTON ADDED HERE -->
                     <button id="activity-log-btn" class="admin-only bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Activity Log</button>
                     <button id="admin-panel-btn" class="admin-only bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Admin Panel</button>
                     <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Logout</button>
@@ -598,7 +597,7 @@
         </div>
     </div>
     
-    <!-- NEW MODAL FOR USER ACTIVITY LOG -->
+    <!-- Activity Log Modal -->
     <div id="activity-log-modal" class="overlay">
         <div class="modal-content max-w-4xl">
             <div class="flex justify-between items-center mb-4">
@@ -622,6 +621,19 @@
         </div>
     </div>
 
+    <!-- NEW MODAL FOR USER-SPECIFIC JOBS -->
+    <div id="user-jobs-modal" class="overlay">
+        <div class="modal-content max-w-5xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="user-jobs-modal-title" class="text-2xl font-bold">User's Job Files</h3>
+                <button onclick="closeModal('user-jobs-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div id="user-jobs-list" class="space-y-2 max-h-[70vh] overflow-y-auto">
+                <!-- JS will populate this list -->
+            </div>
+        </div>
+    </div>
+
 
     <!-- Firebase SDK and App Logic -->
     <script type="module">
@@ -634,7 +646,7 @@
         let db, auth;
         let currentUser = null;
         let jobFilesCache = [];
-        let clientsCache = []; // <-- New cache for clients
+        let clientsCache = [];
         let analyticsDataCache = null;
 
         // --- Firebase Configuration ---
@@ -688,7 +700,7 @@
                         console.log("User logged in:", currentUser);
                         showApp();
                         loadJobFiles();
-                        loadClients(); // <-- Load clients on login
+                        loadClients();
                     } else {
                         currentUser = null;
                         console.log("User logged out");
@@ -814,9 +826,7 @@
             showLoader();
             const docId = jobFileNo.replace(/\//g, '_');
 
-            // --- REVISED DUPLICATE CHECK ---
             const checks = [];
-            // Only check for Job File No. duplicates when creating a new file
             if (!isUpdating) {
                  checks.push({ field: 'jfn', value: jobFileNo, label: 'Job File No.' });
             }
@@ -830,7 +840,6 @@
                     
                     if (!querySnapshot.empty) {
                         if (isUpdating) {
-                            // In update mode, a match is only a duplicate if it's NOT the current document.
                             for (const foundDoc of querySnapshot.docs) {
                                 if (foundDoc.id !== docId) {
                                     hideLoader();
@@ -839,7 +848,6 @@
                                 }
                             }
                         } else {
-                            // In create mode, any match is a duplicate.
                             hideLoader();
                             showNotification(`Duplicate ${check.label} "${check.value}" already exists in job file: ${querySnapshot.docs[0].data().jfn}`, true);
                             return;
@@ -852,7 +860,6 @@
                     return;
                 }
             }
-            // --- END DUPLICATE CHECK ---
 
             const data = getFormData();
             data.totalCost = parseFloat(document.getElementById('total-cost').textContent) || 0;
@@ -863,7 +870,7 @@
                 const docRef = doc(db, 'jobfiles', docId);
                 const docSnap = await getDoc(docRef);
 
-                if (docSnap.exists()) { // This condition is fine for updating data payload
+                if (docSnap.exists()) {
                     const existingData = docSnap.data();
                     data.lastUpdatedBy = currentUser.displayName;
                     data.updatedAt = serverTimestamp();
@@ -1051,9 +1058,8 @@
             list.innerHTML = filesHtml;
         }
 
-        // --- NEW FUNCTION to log user activity ---
         function logUserActivity(jobFileNo) {
-            if (!currentUser) return; // Don't log if no user is logged in
+            if (!currentUser) return;
 
             const logEntry = {
                 user: currentUser.displayName,
@@ -1069,20 +1075,18 @@
                 }
             } catch (e) {
                 console.error("Error parsing user activity log from localStorage", e);
-                logs = []; // Reset if data is corrupted
+                logs = [];
             }
 
-            logs.unshift(logEntry); // Add new entry to the top
+            logs.unshift(logEntry);
 
-            // Optional: Limit the log size to prevent localStorage from getting too big
             if (logs.length > 200) {
-                logs.splice(200); // Keep only the most recent 200 entries
+                logs.splice(200);
             }
 
             localStorage.setItem('userActivityLog', JSON.stringify(logs));
         }
         
-        // --- NEW FUNCTION to open and display the activity log ---
         function openUserActivityLog() {
             const logBody = document.getElementById('activity-log-body');
             let logs = [];
@@ -1121,12 +1125,12 @@
                     const fileData = docSnap.data();
                     populateFormFromData(fileData);
                     
-                    // MODIFIED: Call the activity logger
                     logUserActivity(fileData.jfn);
                     
                     document.getElementById('job-file-no').disabled = true;
                     closeModal('file-manager-modal');
                     closeModal('analytics-modal');
+                    closeModal('user-jobs-modal'); // Close user jobs modal if open
                     showNotification("Job file loaded successfully.");
                 } else {
                     showNotification("Document not found.", true);
@@ -1161,8 +1165,7 @@
                             correctLevel: QRCode.CorrectLevel.H
                         });
                     }
-
-                    closeModal('analytics-modal');
+                    
                     openModal('preview-modal');
                 } else {
                     showNotification("Document not found.", true);
@@ -1184,6 +1187,12 @@
                 showNotification("Job file has been deleted.");
                 if (document.getElementById('job-file-no').value.replace(/\//g, '_') === docId) {
                     clearForm();
+                }
+                // Refresh the user jobs modal if it's open
+                if(document.getElementById('user-jobs-modal').classList.contains('visible')) {
+                    const title = document.getElementById('user-jobs-modal-title').textContent;
+                    const userName = title.replace('Job Files Created by ', '');
+                    showUserJobs(userName);
                 }
             } catch (error) {
                 hideLoader();
@@ -1247,18 +1256,17 @@
             const profitByShipper = {};
             const profitByConsignee = {};
             const monthlyProfit = {};
-            const profitByUser = {}; // <-- NEW: For tracking user stats
+            const profitByUser = {};
 
             jobFilesCache.forEach(job => {
                 const profit = job.totalProfit || 0;
                 const revenue = job.totalSelling || 0;
                 const cost = job.totalCost || 0;
-                const creator = job.createdBy || 'Unknown'; // <-- NEW: Get creator
+                const creator = job.createdBy || 'Unknown';
                 let status = 'Pending Check';
                 if (job.status === 'rejected') status = 'Rejected';
                 else if (job.status === 'approved') status = 'Approved';
                 else if (job.status === 'checked') status = 'Pending Approval';
-
 
                 totalRevenue += revenue;
                 totalCost += cost;
@@ -1273,17 +1281,15 @@
                     profitByConsignee[job.co] = (profitByConsignee[job.co] || 0) + profit;
                 }
                 if (job.d) {
-                    const month = job.d.substring(0, 7); // YYYY-MM
+                    const month = job.d.substring(0, 7);
                     monthlyProfit[month] = (monthlyProfit[month] || 0) + profit;
                 }
                 
-                // --- NEW: Aggregate user data ---
                 if (!profitByUser[creator]) {
                     profitByUser[creator] = { count: 0, profit: 0 };
                 }
                 profitByUser[creator].count++;
                 profitByUser[creator].profit += profit;
-                // --- END NEW ---
             });
 
             analyticsDataCache = {
@@ -1291,7 +1297,7 @@
                 profitByShipper: Object.entries(profitByShipper).sort((a, b) => b[1] - a[1]),
                 profitByConsignee: Object.entries(profitByConsignee).sort((a, b) => b[1] - a[1]),
                 monthlyProfit: Object.entries(monthlyProfit).sort((a, b) => a[0].localeCompare(b[0])),
-                profitByUser: Object.entries(profitByUser).sort((a, b) => b[1].profit - a[1].profit) // <-- NEW: Add sorted user data
+                profitByUser: Object.entries(profitByUser).sort((a, b) => b[1].profit - a[1].profit)
             };
 
             displayAnalytics(analyticsDataCache);
@@ -1310,7 +1316,7 @@
             } else if (sortBy === 'status') {
                 const statusOrder = { 'Pending Check': 1, 'Pending Approval': 2, 'Approved': 3, 'Rejected': 4 };
                 sortedFiles.sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
-            } else if (sortBy === 'user') { // <-- NEW: Sorting by user
+            } else if (sortBy === 'user') {
                 sortedFiles.sort((a, b) => (a.createdBy || '').localeCompare(b.createdBy || ''));
             }
 
@@ -1335,11 +1341,10 @@
                         <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>Consignee</th><th>Total Profit</th></tr></thead>
                         <tbody>${data.profitByConsignee.slice(0, 5).map(([name, profit]) => `<tr><td>${name}</td><td>KD ${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table></div>
                     </div>
-                    <!-- NEW: Top Users Table -->
                     <div>
                         <h4 class="text-lg font-semibold mb-2">Top Users by Profit</h4>
-                        <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>User</th><th>Files</th><th>Total Profit</th></tr></thead>
-                        <tbody>${data.profitByUser.slice(0, 5).map(([name, stats]) => `<tr><td>${name}</td><td>${stats.count}</td><td>KD ${stats.profit.toFixed(2)}</td></tr>`).join('')}</tbody></table></div>
+                        <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>User</th><th>Files</th><th>Profit</th><th>Actions</th></tr></thead>
+                        <tbody>${data.profitByUser.slice(0, 5).map(([name, stats]) => `<tr><td>${name}</td><td>${stats.count}</td><td>KD ${stats.profit.toFixed(2)}</td><td><button onclick="showUserJobs('${name}')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-2 rounded text-xs">View Jobs</button></td></tr>`).join('')}</tbody></table></div>
                     </div>
                 </div>
 
@@ -1353,7 +1358,7 @@
                                 <option value="profit-desc" ${sortBy === 'profit-desc' ? 'selected' : ''}>Profit (High to Low)</option>
                                 <option value="date-desc" ${sortBy === 'date-desc' ? 'selected' : ''}>Date (Newest First)</option>
                                 <option value="status" ${sortBy === 'status' ? 'selected' : ''}>Status</option>
-                                <option value="user" ${sortBy === 'user' ? 'selected' : ''}>User</option> <!-- NEW: Sort option -->
+                                <option value="user" ${sortBy === 'user' ? 'selected' : ''}>User</option>
                             </select>
                             <button onclick="downloadAnalyticsCsv()" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-1 px-3 rounded text-sm">CSV</button>
                         </div>
@@ -1369,7 +1374,6 @@
                                         <p class="text-xs">Consignee: ${file.consignee || 'N/A'}</p>
                                         <p class="text-xs text-gray-600">AWB/MAWB: ${file.mawb || 'N/A'}</p>
                                         <p class="text-xs text-gray-600">Desc: ${file.dsc || 'N/A'}</p>
-                                        <!-- NEW: Creator Name -->
                                         <p class="text-xs font-bold mt-1">Created by: ${file.createdBy || 'N/A'}</p>
                                     </td>
                                     <td>
@@ -1508,12 +1512,11 @@
                 };
 
                 const jsonString = JSON.stringify(backupData, (key, value) => {
-                    // Convert Firestore Timestamps to ISO strings for JSON compatibility
                     if (value && typeof value.toDate === 'function') {
                         return value.toDate().toISOString();
                     }
                     return value;
-                }, 2); // The '2' argument prettifies the JSON output
+                }, 2);
 
                 const blob = new Blob([jsonString], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
@@ -1557,7 +1560,6 @@
                     const jobFileCount = backupData.data.jobfiles.length;
                     const userCount = backupData.data.users.length;
 
-                    // Use the confirmation modal
                     const modal = document.getElementById('confirm-modal');
                     modal.querySelector('#confirm-title').textContent = 'Confirm Data Restore';
                     modal.querySelector('#confirm-message').innerHTML = `
@@ -1577,14 +1579,12 @@
                         try {
                             const restoreBatch = writeBatch(db);
                             
-                            // Restore job files
                             backupData.data.jobfiles.forEach(jobFile => {
                                 const docRef = doc(db, 'jobfiles', jobFile.id);
                                 const { id, ...dataToRestore } = jobFile;
                                 restoreBatch.set(docRef, dataToRestore);
                             });
 
-                            // Restore users
                             backupData.data.users.forEach(user => {
                                 const docRef = doc(db, 'users', user.id);
                                 const { id, ...dataToRestore } = user;
@@ -1615,7 +1615,6 @@
                     console.error("Error reading restore file:", error);
                     showNotification("Failed to read or parse the backup file. Please ensure it's a valid JSON backup.", true);
                 } finally {
-                    // Reset the file input so the same file can be selected again
                     event.target.value = '';
                 }
             };
@@ -1659,7 +1658,6 @@
             form.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
             
             document.getElementById('date').valueAsDate = new Date();
-            // NEW: Enable Job File No. input for new forms
             document.getElementById('job-file-no').disabled = false;
             populateTable();
             calculate();
@@ -1702,7 +1700,6 @@
             }, 3000);
         }
 
-        // --- Filter Logic ---
         function applyFiltersAndDisplay() {
             const searchTerm = document.getElementById('search-bar').value.toLowerCase();
             const statusFilter = document.getElementById('filter-status').value;
@@ -1710,33 +1707,25 @@
             const toDate = document.getElementById('filter-date-to').value;
 
             let filteredFiles = jobFilesCache.filter(file => {
-                // Text Search
                 const searchData = [file.jfn, file.sh, file.co].join(' ').toLowerCase();
                 if (searchTerm && !searchData.includes(searchTerm)) {
                     return false;
                 }
-
-                // Status Filter
                 if (statusFilter && file.status !== statusFilter) {
                     return false;
                 }
-                
-                // Date Filter
                 if (fromDate && file.d < fromDate) {
                     return false;
                 }
                 if (toDate && file.d > toDate) {
                     return false;
                 }
-                
                 return true;
             });
 
             displayJobFiles(filteredFiles);
         }
 
-
-        // --- Data Handling (Local Form) ---
         function getFormData() {
             const getVal = id => document.getElementById(id).value || '';
             const getChecked = query => Array.from(document.querySelectorAll(query)).filter(el => el.checked).map(el => el.dataset.clearance || el.dataset.product);
@@ -1860,7 +1849,6 @@
             calculate();
         }
         
-        // --- Print and Calculation Logic ---
         function createPrintWindow(title, content) {
             let styles = '';
             document.querySelectorAll('style, link[rel="stylesheet"]').forEach(el => {
@@ -2418,6 +2406,42 @@
             });
         }
 
+        // --- NEW: Function to show jobs for a specific user ---
+        window.showUserJobs = function(userName) {
+            const userJobs = jobFilesCache.filter(job => job.createdBy === userName);
+            const modalTitle = document.getElementById('user-jobs-modal-title');
+            const list = document.getElementById('user-jobs-list');
+
+            modalTitle.textContent = `Job Files Created by ${userName}`;
+
+            if (userJobs.length === 0) {
+                list.innerHTML = `<p class="text-gray-500 text-center p-4">No job files found for this user.</p>`;
+            } else {
+                 let filesHtml = '';
+                 userJobs.forEach((docData) => {
+                    const deleteButton = currentUser.role === 'admin' ? `<button onclick="confirmDelete('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Delete</button>` : '';
+                    const lastUpdated = docData.updatedAt?.toDate ? docData.updatedAt.toDate().toLocaleString() : 'N/A';
+                    
+                    filesHtml += `
+                        <div class="job-file-item border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center bg-gray-50 hover:bg-gray-100 gap-2">
+                            <div class="text-center sm:text-left">
+                                <p class="font-bold text-indigo-700">${docData.jfn || 'No ID'}</p>
+                                <p class="text-sm text-gray-600">Shipper: ${docData.sh || 'N/A'} | Consignee: ${docData.co || 'N/A'}</p>
+                                <p class="text-xs text-gray-400">Last Updated: ${lastUpdated}</p>
+                            </div>
+                            <div class="space-x-2 flex-shrink-0">
+                                <button onclick="previewJobFileById('${docData.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded text-sm">Preview</button>
+                                <button onclick="loadJobFileById('${docData.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm">Load</button>
+                                ${deleteButton}
+                            </div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = filesHtml;
+            }
+            openModal('user-jobs-modal');
+        }
+
 
         // --- App Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -2468,10 +2492,8 @@
             });
             document.getElementById('send-reset-link-btn').addEventListener('click', handleForgotPassword);
 
-            // NEW: Event listener for the activity log button
             document.getElementById('activity-log-btn').addEventListener('click', openUserActivityLog);
 
-            // --- Filter Event Listeners ---
             document.getElementById('search-bar').addEventListener('input', applyFiltersAndDisplay);
             document.getElementById('filter-status').addEventListener('change', applyFiltersAndDisplay);
             document.getElementById('filter-date-from').addEventListener('change', applyFiltersAndDisplay);
@@ -2484,7 +2506,6 @@
                 applyFiltersAndDisplay();
             });
 
-            // --- Client Manager Listeners ---
             document.getElementById('client-form').addEventListener('submit', saveClient);
             document.getElementById('clear-client-form-btn').addEventListener('click', clearClientForm);
             document.getElementById('client-search-bar').addEventListener('input', (e) => {
@@ -2522,6 +2543,7 @@
             window.suggestCharges = suggestCharges;
             window.backupAllData = backupAllData;
             window.handleRestoreFile = handleRestoreFile;
+            window.showUserJobs = showUserJobs; // <-- Make new function globally accessible
 
             populateTable();
             calculate();
