@@ -1416,8 +1416,8 @@
                     </div>
                     <div class="lg:col-span-3">
                         <h4 class="text-lg font-semibold mb-2">Monthly Profit</h4>
-                        <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>Month</th><th>Total Profit</th></tr></thead>
-                        <tbody>${data.monthlyProfit.map(([month, profit]) => `<tr><td>${month}</td><td>KD ${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table></div>
+                        <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>Month</th><th>Total Profit</th><th>Actions</th></tr></thead>
+                        <tbody>${data.monthlyProfit.map(([month, profit]) => `<tr><td>${month}</td><td>KD ${profit.toFixed(2)}</td><td><button onclick="showMonthlyJobs('${month}')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-2 rounded text-xs">View Jobs</button></td></tr>`).join('')}</tbody></table></div>
                     </div>
                 </div>
 
@@ -2571,6 +2571,60 @@
             }
             openModal('user-jobs-modal', true);
         }
+        
+        function showMonthlyJobs(month) {
+            const monthlyJobs = jobFilesCache.filter(job => job.d && job.d.startsWith(month));
+            const modalTitle = document.getElementById('user-jobs-modal-title');
+            const list = document.getElementById('user-jobs-list');
+
+            modalTitle.textContent = `Job Files for ${month}`;
+
+            if (monthlyJobs.length === 0) {
+                list.innerHTML = `<p class="text-gray-500 text-center p-4">No job files found for this month.</p>`;
+            } else {
+                let filesHtml = '';
+                monthlyJobs.forEach((docData) => {
+                    const deleteButton = currentUser.role === 'admin' ? `<button onclick="confirmDelete('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>` : '';
+                    
+                    let checkOrUncheckButton = '';
+                    if (currentUser.role === 'admin' || currentUser.role === 'checker') {
+                        if (docData.status === 'checked' || docData.status === 'approved') {
+                            checkOrUncheckButton = `<button onclick="uncheckJobFile('${docData.id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Uncheck</button>`;
+                        } else if (docData.status === 'pending') {
+                            checkOrUncheckButton = `<button onclick="checkJobFile('${docData.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs">Check</button>`;
+                        }
+                    }
+
+                    let approveButton = '';
+                    if (currentUser.role === 'admin' && docData.status === 'checked') {
+                        approveButton = `<button onclick="approveJobFile('${docData.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded text-xs">Approve</button>`;
+                    }
+                    
+                    filesHtml += `
+                        <div class="job-file-item border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center bg-gray-50 hover:bg-gray-100 gap-2">
+                            <div class="w-full sm:w-2/5">
+                                <p class="font-bold text-indigo-700">${docData.jfn || 'No ID'}</p>
+                                <p class="text-sm text-gray-600">Shipper: ${docData.sh || 'N/A'}</p>
+                                <p class="text-sm text-gray-600">Consignee: ${docData.co || 'N/A'}</p>
+                            </div>
+                            <div class="w-full sm:w-1/5 text-xs text-gray-500">
+                                <p>Cost: <span class="font-medium text-red-600">KD ${(docData.totalCost || 0).toFixed(2)}</span></p>
+                                <p>Profit: <span class="font-medium text-green-600">KD ${(docData.totalProfit || 0).toFixed(2)}</span></p>
+                            </div>
+                            <div class="space-x-2 flex-shrink-0">
+                                <button onclick="previewJobFileById('${docData.id}')" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-2 rounded text-xs">Preview</button>
+                                <button onclick="loadJobFileById('${docData.id}')" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-1 px-2 rounded text-xs">Load</button>
+                                ${checkOrUncheckButton}
+                                ${approveButton}
+                                ${deleteButton}
+                            </div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = filesHtml;
+            }
+            openModal('user-jobs-modal', true);
+        }
 
 
         // --- App Initialization ---
@@ -2603,8 +2657,8 @@
                 } else {
                     const displayName = document.getElementById('full-name').value;
                      if (!email || !password || !displayName) {
-                           showNotification("Please fill all fields to sign up.", true);
-                           return;
+                          showNotification("Please fill all fields to sign up.", true);
+                          return;
                      }
                     handleSignUp(email, password, displayName);
                 }
@@ -2675,6 +2729,7 @@
             window.backupAllData = backupAllData;
             window.handleRestoreFile = handleRestoreFile;
             window.showUserJobs = showUserJobs;
+            window.showMonthlyJobs = showMonthlyJobs;
             window.checkJobFile = checkJobFile;
             window.approveJobFile = approveJobFile;
             window.uncheckJobFile = uncheckJobFile;
