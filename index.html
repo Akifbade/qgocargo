@@ -412,7 +412,10 @@
         <div class="modal-content max-w-5xl"> <!-- Increased width for filters -->
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-2xl font-bold">File Manager</h3>
-                <button onclick="closeModal('file-manager-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+                <div>
+                    <button onclick="openRecycleBin()" class="admin-only bg-gray-600 hover:bg-gray-700 text-white font-bold py-1 px-3 rounded text-sm mr-4">Recycle Bin</button>
+                    <button onclick="closeModal('file-manager-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+                </div>
             </div>
             
             <!-- Search and Filter Controls -->
@@ -630,6 +633,19 @@
                 <button onclick="closeModal('user-jobs-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
             <div id="user-jobs-list" class="space-y-2 max-h-[70vh] overflow-y-auto">
+                <!-- JS will populate this list -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Recycle Bin Modal -->
+    <div id="recycle-bin-modal" class="overlay">
+        <div class="modal-content max-w-5xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">Recycle Bin</h3>
+                <button onclick="closeModal('recycle-bin-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div id="recycle-bin-list" class="space-y-2 max-h-[70vh] overflow-y-auto">
                 <!-- JS will populate this list -->
             </div>
         </div>
@@ -1230,28 +1246,34 @@
             }
         }
         
-        async function deleteJobFile(docId) {
+        async function moveToRecycleBin(docId) {
             showLoader();
             try {
                 const docRef = doc(db, 'jobfiles', docId);
-                await deleteDoc(docRef);
-                hideLoader();
-                showNotification("Job file has been deleted.");
-                if (document.getElementById('job-file-no').value.replace(/\//g, '_') === docId) {
-                    clearForm();
-                }
-                if(document.getElementById('user-jobs-modal').classList.contains('visible')) {
-                    showUserJobs(currentlyViewedUser);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const dataToMove = docSnap.data();
+                    dataToMove.deletedAt = serverTimestamp();
+                    dataToMove.deletedBy = currentUser.displayName;
+                    
+                    const deletedDocRef = doc(db, 'deleted_jobfiles', docId);
+                    await setDoc(deletedDocRef, dataToMove);
+                    await deleteDoc(docRef);
+                    
+                    showNotification("Job file moved to recycle bin.");
+                } else {
+                    throw new Error("Document not found in main collection.");
                 }
             } catch (error) {
-                hideLoader();
-                console.error("Error deleting document:", error);
+                console.error("Error moving to recycle bin:", error);
                 showNotification("Error deleting job file.", true);
+            } finally {
+                hideLoader();
             }
         }
 
         function confirmDelete(docId, type = 'jobfile') {
-            if (currentUser.role !== 'admin') {
+             if (currentUser.role !== 'admin') {
                 showNotification("Only admins can delete files.", true);
                 return;
             }
@@ -1261,8 +1283,8 @@
 
             if (type === 'jobfile') {
                 modal.querySelector('#confirm-title').textContent = 'Confirm Job File Deletion';
-                message = `Are you sure you want to delete job file "${docId.replace(/_/g, '/')}"? This action cannot be undone.`;
-                onOk = () => deleteJobFile(docId);
+                message = `Are you sure you want to move job file "${docId.replace(/_/g, '/')}" to the recycle bin?`;
+                onOk = () => moveToRecycleBin(docId);
             } else if (type === 'client') {
                 modal.querySelector('#confirm-title').textContent = 'Confirm Client Deletion';
                 const client = clientsCache.find(c => c.id === docId);
@@ -1270,9 +1292,9 @@
                 onOk = () => deleteClient(docId);
             }
 
-            modal.querySelector('#confirm-message').textContent = message;
+            modal.querySelector('#confirm-message').innerHTML = message;
             modal.querySelector('#confirm-ok').className = 'bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded';
-            openModal('confirm-modal', true); // Keep parent modals open
+            openModal('confirm-modal', true);
 
             const okButton = modal.querySelector('#confirm-ok');
             const cancelButton = modal.querySelector('#confirm-cancel');
@@ -1304,7 +1326,7 @@
             const profitByFile = [];
             const profitByShipper = {};
             const profitByConsignee = {};
-            const monthlyProfit = {};
+            const monthlyStats = {};
             const profitByUser = {};
 
             jobFilesCache.forEach(job => {
@@ -1331,7 +1353,11 @@
                 }
                 if (job.d) {
                     const month = job.d.substring(0, 7);
-                    monthlyProfit[month] = (monthlyProfit[month] || 0) + profit;
+                    if (!monthlyStats[month]) {
+                        monthlyStats[month] = { profit: 0, count: 0 };
+                    }
+                    monthlyStats[month].profit += profit;
+                    monthlyStats[month].count++;
                 }
                 
                 if (!profitByUser[creator]) {
@@ -1345,7 +1371,7 @@
                 totalJobs, totalRevenue, totalCost, totalProfit, profitByFile,
                 profitByShipper: Object.entries(profitByShipper).sort((a, b) => b[1] - a[1]),
                 profitByConsignee: Object.entries(profitByConsignee).sort((a, b) => b[1] - a[1]),
-                monthlyProfit: Object.entries(monthlyProfit).sort((a, b) => a[0].localeCompare(b[0])),
+                monthlyStats: Object.entries(monthlyStats).sort((a, b) => a[0].localeCompare(b[0])),
                 profitByUser: Object.entries(profitByUser).sort((a, b) => b[1].profit - a[1].profit)
             };
 
@@ -1415,9 +1441,9 @@
                         <tbody>${data.profitByUser.slice(0, 5).map(([name, stats]) => `<tr><td>${name}</td><td>${stats.count}</td><td>KD ${stats.profit.toFixed(2)}</td><td><button onclick="showUserJobs('${name}')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-2 rounded text-xs">View Jobs</button></td></tr>`).join('')}</tbody></table></div>
                     </div>
                     <div class="lg:col-span-3">
-                        <h4 class="text-lg font-semibold mb-2">Monthly Profit</h4>
-                        <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>Month</th><th>Total Profit</th><th>Actions</th></tr></thead>
-                        <tbody>${data.monthlyProfit.map(([month, profit]) => `<tr><td>${month}</td><td>KD ${profit.toFixed(2)}</td><td><button onclick="showMonthlyJobs('${month}')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-2 rounded text-xs">View Jobs</button></td></tr>`).join('')}</tbody></table></div>
+                        <h4 class="text-lg font-semibold mb-2">Monthly Report</h4>
+                        <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>Month</th><th>Total Jobs</th><th>Total Profit / Loss</th><th>Actions</th></tr></thead>
+                        <tbody>${data.monthlyStats.map(([month, stats]) => `<tr><td>${month}</td><td>${stats.count}</td><td>KD ${stats.profit.toFixed(2)}</td><td><button onclick="showMonthlyJobs('${month}')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-2 rounded text-xs">View Jobs</button></td></tr>`).join('')}</tbody></table></div>
                     </div>
                 </div>
 
@@ -2626,6 +2652,114 @@
             openModal('user-jobs-modal', true);
         }
 
+        // --- Recycle Bin Functions ---
+        async function openRecycleBin() {
+            showLoader();
+            try {
+                const deletedFilesRef = collection(db, 'deleted_jobfiles');
+                const q = query(deletedFilesRef);
+                const querySnapshot = await getDocs(q);
+                const deletedFiles = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                const list = document.getElementById('recycle-bin-list');
+                if (deletedFiles.length === 0) {
+                    list.innerHTML = `<p class="text-gray-500 text-center p-4">The recycle bin is empty.</p>`;
+                } else {
+                    let filesHtml = '';
+                    deletedFiles.forEach((docData) => {
+                        const deletedAt = docData.deletedAt?.toDate ? docData.deletedAt.toDate().toLocaleString() : 'N/A';
+                        filesHtml += `
+                            <div class="job-file-item border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center bg-gray-50 hover:bg-gray-100 gap-2">
+                                <div class="text-center sm:text-left">
+                                    <p class="font-bold text-indigo-700">${docData.jfn || 'No ID'}</p>
+                                    <p class="text-sm text-gray-600">Shipper: ${docData.sh || 'N/A'}</p>
+                                    <p class="text-xs text-gray-400">Deleted by ${docData.deletedBy || 'Unknown'} on ${deletedAt}</p>
+                                </div>
+                                <div class="space-x-2 flex-shrink-0">
+                                    <button onclick="restoreJobFile('${docData.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm">Restore</button>
+                                    <button onclick="confirmPermanentDelete('${docData.id}')" class="bg-red-700 hover:bg-red-800 text-white font-bold py-1 px-3 rounded text-sm">Delete Permanently</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    list.innerHTML = filesHtml;
+                }
+                openModal('recycle-bin-modal', true);
+            } catch (error) {
+                console.error("Error opening recycle bin:", error);
+                showNotification("Could not open recycle bin.", true);
+            } finally {
+                hideLoader();
+            }
+        }
+
+        async function restoreJobFile(docId) {
+            showLoader();
+            try {
+                const deletedDocRef = doc(db, 'deleted_jobfiles', docId);
+                const docSnap = await getDoc(deletedDocRef);
+
+                if (docSnap.exists()) {
+                    const dataToRestore = docSnap.data();
+                    delete dataToRestore.deletedAt;
+                    delete dataToRestore.deletedBy;
+
+                    const newDocRef = doc(db, 'jobfiles', docId);
+                    await setDoc(newDocRef, dataToRestore);
+                    await deleteDoc(deletedDocRef);
+
+                    showNotification("Job file restored successfully.");
+                    openRecycleBin(); // Refresh the recycle bin view
+                } else {
+                    throw new Error("Document not found in recycle bin.");
+                }
+            } catch (error) {
+                console.error("Error restoring file:", error);
+                showNotification("Error restoring file.", true);
+            } finally {
+                hideLoader();
+            }
+        }
+
+        function confirmPermanentDelete(docId) {
+            const modal = document.getElementById('confirm-modal');
+            modal.querySelector('#confirm-title').textContent = 'Confirm Permanent Deletion';
+            modal.querySelector('#confirm-message').innerHTML = `Are you sure you want to permanently delete job file "${docId.replace(/_/g, '/')}"? <b class="text-red-600">This action cannot be undone.</b>`;
+            modal.querySelector('#confirm-ok').className = 'bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded';
+            openModal('confirm-modal', true);
+
+            const okButton = modal.querySelector('#confirm-ok');
+            const cancelButton = modal.querySelector('#confirm-cancel');
+
+            const onOk = () => {
+                permanentlyDeleteJobFile(docId);
+                closeConfirm();
+            };
+
+            const closeConfirm = () => {
+                closeModal('confirm-modal');
+                okButton.removeEventListener('click', onOk);
+            };
+
+            okButton.addEventListener('click', onOk, { once: true });
+            cancelButton.addEventListener('click', closeConfirm, { once: true });
+        }
+
+        async function permanentlyDeleteJobFile(docId) {
+            showLoader();
+            try {
+                const deletedDocRef = doc(db, 'deleted_jobfiles', docId);
+                await deleteDoc(deletedDocRef);
+                showNotification("Job file permanently deleted.");
+                openRecycleBin(); // Refresh the recycle bin view
+            } catch (error) {
+                console.error("Error permanently deleting file:", error);
+                showNotification("Could not permanently delete file.", true);
+            } finally {
+                hideLoader();
+            }
+        }
+
 
         // --- App Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -2733,6 +2867,9 @@
             window.checkJobFile = checkJobFile;
             window.approveJobFile = approveJobFile;
             window.uncheckJobFile = uncheckJobFile;
+            window.openRecycleBin = openRecycleBin;
+            window.restoreJobFile = restoreJobFile;
+            window.confirmPermanentDelete = confirmPermanentDelete;
 
             populateTable();
             calculate();
