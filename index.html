@@ -1314,12 +1314,39 @@
 
         // --- Analytics Dashboard Logic ---
         function openAnalyticsDashboard() {
-            if (jobFilesCache.length === 0) {
-                showNotification("No data available for analysis.", true);
+            filterAnalyticsByTimeframe('all');
+            document.getElementById('app-container').style.display = 'none';
+            document.getElementById('analytics-container').style.display = 'block';
+        }
+
+        function filterAnalyticsByTimeframe(timeframe) {
+            let filteredJobs = jobFilesCache;
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth();
+
+            if (timeframe === 'year') {
+                filteredJobs = jobFilesCache.filter(job => {
+                    const jobDate = job.d ? new Date(job.d) : null;
+                    return jobDate && jobDate.getFullYear() === currentYear;
+                });
+            } else if (timeframe === 'month') {
+                filteredJobs = jobFilesCache.filter(job => {
+                    const jobDate = job.d ? new Date(job.d) : null;
+                    return jobDate && jobDate.getFullYear() === currentYear && jobDate.getMonth() === currentMonth;
+                });
+            }
+            
+            calculateAndDisplayAnalytics(filteredJobs);
+        }
+
+        function calculateAndDisplayAnalytics(jobs) {
+             if (jobs.length === 0) {
+                document.getElementById('analytics-body').innerHTML = `<p class="text-center text-gray-500">No data available for the selected period.</p>`;
                 return;
             }
 
-            let totalJobs = jobFilesCache.length;
+            let totalJobs = jobs.length;
             let totalRevenue = 0;
             let totalCost = 0;
             let totalProfit = 0;
@@ -1329,7 +1356,7 @@
             const monthlyStats = {};
             const profitByUser = {};
 
-            jobFilesCache.forEach(job => {
+            jobs.forEach(job => {
                 const profit = job.totalProfit || 0;
                 const revenue = job.totalSelling || 0;
                 const cost = job.totalCost || 0;
@@ -1376,8 +1403,6 @@
             };
 
             displayAnalytics(analyticsDataCache);
-            document.getElementById('app-container').style.display = 'none';
-            document.getElementById('analytics-container').style.display = 'block';
         }
 
         function closeAnalyticsDashboard() {
@@ -1415,6 +1440,12 @@
             }
 
             body.innerHTML = `
+                <!-- Timeframe Filters -->
+                <div class="flex justify-center mb-4 space-x-2">
+                    <button onclick="filterAnalyticsByTimeframe('all')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">All Time</button>
+                    <button onclick="filterAnalyticsByTimeframe('year')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Year</button>
+                    <button onclick="filterAnalyticsByTimeframe('month')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Month</button>
+                </div>
                 <!-- Overall Summary -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-center">
                     <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Total Jobs</p><p class="text-2xl font-bold">${data.totalJobs}</p></div>
@@ -2870,6 +2901,7 @@
             window.openRecycleBin = openRecycleBin;
             window.restoreJobFile = restoreJobFile;
             window.confirmPermanentDelete = confirmPermanentDelete;
+            window.filterAnalyticsByTimeframe = filterAnalyticsByTimeframe;
 
             populateTable();
             calculate();
