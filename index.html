@@ -235,6 +235,13 @@
                 </div>
             </div>
             
+            <!-- Status Summary -->
+            <div id="status-summary-main" class="mb-4"></div>
+
+            <div id="checker-info-banner" class="checker-only hidden p-3 mb-4 text-center text-blue-800 bg-blue-100 rounded-lg">
+                <strong>Note:</strong> Files must be checked before they can be approved or rejected by an admin.
+            </div>
+
             <div id="rejection-banner" class="hidden p-3 mb-4 text-center text-red-800 bg-red-100 rounded-lg">
                 <strong>This job file was rejected.</strong> Reason: <span id="rejection-reason"></span>
             </div>
@@ -1089,6 +1096,7 @@
                 const sortedDocs = [...jobFilesCache].sort((a,b) => (b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : 0) - (a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : 0));
                 
                 displayJobFiles(sortedDocs);
+                updateStatusSummary('status-summary-main', jobFilesCache);
 
             }, (error) => {
                 console.error("Error fetching job files: ", error);
@@ -1274,8 +1282,8 @@
 
         function confirmDelete(docId, type = 'jobfile') {
              if (currentUser.role !== 'admin') {
-                showNotification("Only admins can delete files.", true);
-                return;
+                 showNotification("Only admins can delete files.", true);
+                 return;
             }
             const modal = document.getElementById('confirm-modal');
             let message = '';
@@ -1287,7 +1295,7 @@
                 onOk = () => moveToRecycleBin(docId);
             } else if (type === 'client') {
                 modal.querySelector('#confirm-title').textContent = 'Confirm Client Deletion';
-                const client = clientsCache.find(c => c.id === docId);
+                const client = clientsCache.find(c => c.id === clientId);
                 message = `Are you sure you want to delete the client "${client?.name || 'this client'}"? This action cannot be undone.`;
                 onOk = () => deleteClient(docId);
             }
@@ -1343,15 +1351,15 @@
 
         function calculateAndDisplayAnalytics(jobs) {
              if (jobs.length === 0) {
-                document.getElementById('analytics-body').innerHTML = `
-                <!-- Timeframe Filters -->
-                <div class="flex justify-center mb-4 space-x-2">
-                    <button onclick="filterAnalyticsByTimeframe('all')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">All Time</button>
-                    <button onclick="filterAnalyticsByTimeframe('year')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Year</button>
-                    <button onclick="filterAnalyticsByTimeframe('month')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Month</button>
-                </div>
-                <p class="text-center text-gray-500">No data available for the selected period.</p>`;
-                return;
+                 document.getElementById('analytics-body').innerHTML = `
+                 <!-- Timeframe Filters -->
+                 <div class="flex justify-center mb-4 space-x-2">
+                     <button onclick="filterAnalyticsByTimeframe('all')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">All Time</button>
+                     <button onclick="filterAnalyticsByTimeframe('year')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Year</button>
+                     <button onclick="filterAnalyticsByTimeframe('month')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Month</button>
+                 </div>
+                 <p class="text-center text-gray-500">No data available for the selected period.</p>`;
+                 return;
             }
 
             let totalJobs = jobs.length;
@@ -1786,8 +1794,10 @@
             if (currentUser.role === 'admin') {
                 document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
                 document.querySelectorAll('.checker-only').forEach(el => el.style.display = 'block');
+                document.getElementById('checker-info-banner').style.display = 'block';
             } else if (currentUser.role === 'checker') {
                 document.querySelectorAll('.checker-only').forEach(el => el.style.display = 'block');
+                document.getElementById('checker-info-banner').style.display = 'block';
             }
             
             clearForm();
@@ -2266,6 +2276,23 @@
             nameField.style.display = showLogin ? 'none' : 'block';
             emailField.classList.toggle('rounded-t-md', !showLogin);
             document.getElementById('approval-message').style.display = 'none';
+        }
+
+        function updateStatusSummary(targetId, dataSource) {
+            const approvedCount = dataSource.filter(file => file.status === 'approved').length;
+            const rejectedCount = dataSource.filter(file => file.status === 'rejected').length;
+            const checkedCount = dataSource.filter(file => file.status === 'checked').length;
+            const pendingCount = dataSource.filter(file => file.status === 'pending').length;
+
+            const summaryHtml = `
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div class="bg-green-100 p-4 rounded-lg"><p class="text-sm text-green-800">Approved</p><p class="text-2xl font-bold text-green-900">${approvedCount}</p></div>
+                    <div class="bg-red-100 p-4 rounded-lg"><p class="text-sm text-red-800">Rejected</p><p class="text-2xl font-bold text-red-900">${rejectedCount}</p></div>
+                    <div class="bg-blue-100 p-4 rounded-lg"><p class="text-sm text-blue-800">Checked</p><p class="text-2xl font-bold text-blue-900">${checkedCount}</p></div>
+                    <div class="bg-yellow-100 p-4 rounded-lg"><p class="text-sm text-yellow-800">Pending</p><p class="text-2xl font-bold text-yellow-900">${pendingCount}</p></div>
+                </div>
+            `;
+            document.getElementById(targetId).innerHTML = summaryHtml;
         }
 
         // --- GEMINI API INTEGRATION ---
@@ -2830,9 +2857,9 @@
                 } else {
                     const displayName = document.getElementById('full-name').value;
                      if (!email || !password || !displayName) {
-                          showNotification("Please fill all fields to sign up.", true);
-                          return;
-                     }
+                         showNotification("Please fill all fields to sign up.", true);
+                         return;
+                    }
                     handleSignUp(email, password, displayName);
                 }
             });
