@@ -1317,6 +1317,7 @@
             filterAnalyticsByTimeframe('all');
             document.getElementById('app-container').style.display = 'none';
             document.getElementById('analytics-container').style.display = 'block';
+            window.scrollTo(0, 0);
         }
 
         function filterAnalyticsByTimeframe(timeframe) {
@@ -1342,7 +1343,14 @@
 
         function calculateAndDisplayAnalytics(jobs) {
              if (jobs.length === 0) {
-                document.getElementById('analytics-body').innerHTML = `<p class="text-center text-gray-500">No data available for the selected period.</p>`;
+                document.getElementById('analytics-body').innerHTML = `
+                <!-- Timeframe Filters -->
+                <div class="flex justify-center mb-4 space-x-2">
+                    <button onclick="filterAnalyticsByTimeframe('all')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">All Time</button>
+                    <button onclick="filterAnalyticsByTimeframe('year')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Year</button>
+                    <button onclick="filterAnalyticsByTimeframe('month')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Month</button>
+                </div>
+                <p class="text-center text-gray-500">No data available for the selected period.</p>`;
                 return;
             }
 
