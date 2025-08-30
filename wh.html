@@ -61,7 +61,6 @@
     <div id="app-container" class="container hidden"></div>
     
     <div id="worker-delivery-page" class="hidden"></div>
-    <div id="final-pod-page" class="hidden"></div>
     <div id="public-pod-view" class="hidden bg-white p-8 min-h-screen"></div>
     
     <div id="loader-overlay" class="overlay hidden"><div class="loader"></div></div>
@@ -96,7 +95,6 @@
         let usersCache = [];
         let workersCache = [];
 
-        // --- UI HELPER FUNCTIONS ---
         const showLoader = () => document.getElementById('loader-overlay').classList.add('visible');
         const hideLoader = () => document.getElementById('loader-overlay').classList.remove('visible');
         const openModal = (id) => document.getElementById(id).classList.add('visible');
@@ -109,16 +107,12 @@
             setTimeout(() => { notification.classList.remove('show'); }, 5000);
         }
 
-        // --- AUTHENTICATION ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const userDocRef = doc(db, 'users', user.uid);
-                const userDoc = await getDoc(userDocRef);
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
                 if (userDoc.exists() && userDoc.data().status === 'active') {
                     currentUser = { uid: user.uid, ...userDoc.data() };
-                    if (!currentUser.pod_role) {
-                        currentUser.pod_role = (currentUser.role === 'admin' || currentUser.role === 'supervisor') ? 'supervisor' : 'worker';
-                    }
+                    if (!currentUser.pod_role) currentUser.pod_role = (currentUser.role === 'admin' || currentUser.role === 'supervisor') ? 'supervisor' : 'worker';
                     document.getElementById('login-screen').style.display = 'none';
                     document.getElementById('app-container').style.display = 'block';
                     loadInitialData();
@@ -134,15 +128,8 @@
         });
         
         async function loadInitialData() {
-            const usersQuery = query(collection(db, 'users'));
-            const userSnapshot = await getDocs(usersQuery);
-            usersCache = userSnapshot.docs.map(doc => {
-                const userData = doc.data();
-                if (!userData.pod_role) {
-                    userData.pod_role = (userData.role === 'admin' || userData.role === 'supervisor') ? 'supervisor' : 'worker';
-                }
-                return { id: doc.id, ...userData };
-            });
+            const userSnapshot = await getDocs(query(collection(db, 'users')));
+            usersCache = userSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             workersCache = usersCache.filter(u => u.pod_role === 'worker').map(u => u.displayName);
             renderUIBasedOnRole();
         }
@@ -158,6 +145,8 @@
                 switchTab('dashboard');
             } else { // Worker
                 appContainer.innerHTML = getWorkerDashboardShell();
+                document.getElementById('user-display-name').textContent = currentUser.displayName;
+                document.getElementById('user-role-display').textContent = currentUser.pod_role;
                 document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
                 listenForJobFiles();
             }
@@ -212,11 +201,8 @@
                 const userInCache = usersCache.find(u => u.id === userId);
                 if (userInCache) userInCache.pod_role = newRole;
                 showNotification(`POD System Role updated for ${userInCache.displayName}.`);
-            } catch (error) {
-                 showNotification("Failed to update role.", true);
-            } finally {
-                hideLoader();
-            }
+            } catch (error) { showNotification("Failed to update role.", true);
+            } finally { hideLoader(); }
         };
 
         window.toggleWarehousePermission = async (checkbox) => {
@@ -228,12 +214,8 @@
                 const userInCache = usersCache.find(u => u.id === userId);
                 if (userInCache) userInCache.canManageWarehouse = canManage;
                 showNotification(`Permissions updated for ${userInCache.displayName}.`);
-            } catch (error) {
-                 showNotification("Failed to update permissions.", true);
-                 checkbox.checked = !canManage;
-            } finally {
-                hideLoader();
-            }
+            } catch (error) { showNotification("Failed to update permissions.", true); checkbox.checked = !canManage;
+            } finally { hideLoader(); }
         };
 
         function listenForInventory() {
@@ -249,56 +231,20 @@
             const canManage = currentUser.canManageWarehouse;
             container.innerHTML = inventoryCache.length === 0 ? `<p class="text-center text-gray-500 p-4">No inventory items found.</p>` : inventoryCache.map(item => `
                 <div class="job-card" style="border-left-color: #6b7280;">
-                    <div>
-                        <p class="font-bold text-lg">${item.name} <span class="text-sm font-normal text-gray-500">${item.sku || ''}</span></p>
-                        <p class="text-xs text-gray-500">Category: ${item.category || 'N/A'} | Supplier: ${item.supplier || 'N/A'} | Cost: ${item.cost || 0} KWD</p>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <p class="text-2xl font-bold">${item.quantity} <span class="text-sm font-normal text-gray-500">${item.unit || 'units'}</span></p>
-                        ${canManage ? `<button onclick="openUpdateStockModal('${item.id}', '${item.name}', ${item.quantity})" class="bg-gray-200 hover:bg-gray-300 text-black font-bold py-2 px-4 rounded">Update Stock</button>` : ''}
-                    </div>
+                    <div><p class="font-bold text-lg">${item.name} <span class="text-sm font-normal text-gray-500">${item.sku || ''}</span></p><p class="text-xs text-gray-500">Category: ${item.category || 'N/A'} | Supplier: ${item.supplier || 'N/A'} | Cost: ${item.cost || 0} KWD</p></div>
+                    <div class="flex items-center gap-4"><p class="text-2xl font-bold">${item.quantity} <span class="text-sm font-normal text-gray-500">${item.unit || 'units'}</span></p>${canManage ? `<button onclick="openUpdateStockModal('${item.id}', '${item.name}', ${item.quantity})" class="bg-gray-200 hover:bg-gray-300 text-black font-bold py-2 px-4 rounded">Update</button>` : ''}</div>
                 </div>`).join('');
         }
         
         window.openUpdateStockModal = (itemId, itemName, currentQty) => {
             const modal = document.getElementById('inventory-modal');
-            modal.querySelector('.modal-content').innerHTML = `
-                <h3 class="text-lg font-bold mb-4">Update Stock for ${itemName}</h3>
-                <p class="text-sm mb-4">Current Stock: <strong>${currentQty}</strong>.</p>
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="block text-sm font-medium">Add Stock</label><input type="number" id="add-stock-input" class="w-full p-2 border rounded-md" placeholder="e.g., 50"></div>
-                    <div><label class="block text-sm font-medium">Remove Stock</label><input type="number" id="remove-stock-input" class="w-full p-2 border rounded-md" placeholder="e.g., 5"></div>
-                </div>
-                <div class="text-right mt-6 space-x-2">
-                    <button onclick="closeModal('inventory-modal')" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Cancel</button>
-                    <button onclick="updateStock('${itemId}')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Save Changes</button>
-                </div>`;
+            modal.querySelector('.modal-content').innerHTML = `<h3 class="text-lg font-bold mb-4">Update Stock: ${itemName}</h3><p class="text-sm mb-4">Current Stock: <strong>${currentQty}</strong>.</p><div class="grid grid-cols-2 gap-4"><div><label class="block text-sm">Add Stock</label><input type="number" id="add-stock-input" class="w-full p-2 border rounded-md" placeholder="e.g., 50"></div><div><label class="block text-sm">Remove Stock</label><input type="number" id="remove-stock-input" class="w-full p-2 border rounded-md" placeholder="e.g., 5"></div></div><div class="text-right mt-6 space-x-2"><button onclick="closeModal('inventory-modal')" class="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button><button onclick="updateStock('${itemId}')" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded">Save</button></div>`;
             openModal('inventory-modal');
         };
 
         window.openAddItemModal = () => {
              const modal = document.getElementById('inventory-modal');
-            modal.querySelector('.modal-content').innerHTML = `
-                <h3 class="text-lg font-bold mb-4">Add New Inventory Item</h3>
-                <div class="space-y-4">
-                    <div><label class="block text-sm">Item Name</label><input type="text" id="new-item-name" class="w-full p-2 border rounded-md" placeholder="e.g., Cardboard Box (Large)"></div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="block text-sm">Item Code / SKU</label><input type="text" id="new-item-sku" class="w-full p-2 border rounded-md"></div>
-                        <div><label class="block text-sm">Category</label><input type="text" id="new-item-category" class="w-full p-2 border rounded-md" placeholder="e.g., Boxes"></div>
-                    </div>
-                     <div class="grid grid-cols-2 gap-4">
-                        <div><label class="block text-sm">Initial Quantity</label><input type="number" id="new-item-qty" class="w-full p-2 border rounded-md" value="0"></div>
-                        <div><label class="block text-sm">Unit</label><input type="text" id="new-item-unit" class="w-full p-2 border rounded-md" placeholder="e.g., pieces, rolls"></div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="block text-sm">Supplier</label><input type="text" id="new-item-supplier" class="w-full p-2 border rounded-md"></div>
-                        <div><label class="block text-sm">Cost per Unit (KWD)</label><input type="number" id="new-item-cost" class="w-full p-2 border rounded-md" placeholder="e.g., 1.250"></div>
-                    </div>
-                </div>
-                <div class="text-right mt-6 space-x-2">
-                    <button onclick="closeModal('inventory-modal')" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Cancel</button>
-                    <button onclick="addNewItem()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Add Item</button>
-                </div>`;
+            modal.querySelector('.modal-content').innerHTML = `<h3 class="text-lg font-bold mb-4">Add New Item</h3><div class="space-y-4"><div><label class="block text-sm">Item Name</label><input type="text" id="new-item-name" class="w-full p-2 border rounded-md"></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-sm">SKU</label><input type="text" id="new-item-sku" class="w-full p-2 border rounded-md"></div><div><label class="block text-sm">Category</label><input type="text" id="new-item-category" class="w-full p-2 border rounded-md"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-sm">Quantity</label><input type="number" id="new-item-qty" class="w-full p-2 border rounded-md" value="0"></div><div><label class="block text-sm">Unit</label><input type="text" id="new-item-unit" class="w-full p-2 border rounded-md" placeholder="e.g., pieces"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-sm">Supplier</label><input type="text" id="new-item-supplier" class="w-full p-2 border rounded-md"></div><div><label class="block text-sm">Cost/Unit (KWD)</label><input type="number" id="new-item-cost" class="w-full p-2 border rounded-md"></div></div></div><div class="text-right mt-6 space-x-2"><button onclick="closeModal('inventory-modal')" class="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button><button onclick="addNewItem()" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">Add Item</button></div>`;
             openModal('inventory-modal');
         }
 
@@ -309,12 +255,12 @@
             if(change === 0) { closeModal('inventory-modal'); return; }
             showLoader();
             try {
-                await runTransaction(db, async (transaction) => {
+                await runTransaction(db, async (t) => {
                     const itemRef = doc(db, "inventory", itemId);
-                    const itemDoc = await transaction.get(itemRef);
+                    const itemDoc = await t.get(itemRef);
                     if (!itemDoc.exists()) throw "Document does not exist!";
                     const newQuantity = (itemDoc.data().quantity || 0) + change;
-                    transaction.update(itemRef, { quantity: newQuantity });
+                    t.update(itemRef, { quantity: newQuantity });
                 });
                 showNotification("Stock updated successfully!");
                 closeModal('inventory-modal');
@@ -325,15 +271,7 @@
         window.addNewItem = async () => {
             const name = document.getElementById('new-item-name').value.trim();
             if(!name) { showNotification("Item name is required.", true); return; }
-            const newItem = {
-                name, 
-                quantity: parseInt(document.getElementById('new-item-qty').value) || 0,
-                unit: document.getElementById('new-item-unit').value.trim(),
-                sku: document.getElementById('new-item-sku').value.trim(),
-                category: document.getElementById('new-item-category').value.trim(),
-                supplier: document.getElementById('new-item-supplier').value.trim(),
-                cost: parseFloat(document.getElementById('new-item-cost').value) || 0,
-            };
+            const newItem = { name, quantity: parseInt(document.getElementById('new-item-qty').value) || 0, unit: document.getElementById('new-item-unit').value.trim(), sku: document.getElementById('new-item-sku').value.trim(), category: document.getElementById('new-item-category').value.trim(), supplier: document.getElementById('new-item-supplier').value.trim(), cost: parseFloat(document.getElementById('new-item-cost').value) || 0 };
             showLoader();
             try {
                 await addDoc(collection(db, "inventory"), newItem);
@@ -357,7 +295,6 @@
             const inputs = document.querySelectorAll('#job-details-modal input[data-item-id]');
             const materialsUsed = {};
             const stockUpdates = [];
-
             inputs.forEach(input => {
                 const qtyUsed = parseInt(input.value) || 0;
                 if (qtyUsed > 0) {
@@ -366,20 +303,17 @@
                     stockUpdates.push({ id: itemId, change: -qtyUsed });
                 }
             });
-
             showLoader();
             try {
-                await runTransaction(db, async (transaction) => {
-                    const jobDocRef = doc(db, 'jobfiles', jobId);
-                    transaction.update(jobDocRef, { materialsUsed });
-                    
+                await runTransaction(db, async (t) => {
+                    t.update(doc(db, 'jobfiles', jobId), { materialsUsed });
                     for (const update of stockUpdates) {
                         const itemRef = doc(db, "inventory", update.id);
-                        const itemDoc = await transaction.get(itemRef);
+                        const itemDoc = await t.get(itemRef);
                         if (!itemDoc.exists()) throw `Inventory item ${update.id} not found!`;
                         const newQuantity = (itemDoc.data().quantity || 0) + update.change;
                         if (newQuantity < 0) throw `Not enough stock for ${itemDoc.data().name}.`;
-                        transaction.update(itemRef, { quantity: newQuantity });
+                        t.update(itemRef, { quantity: newQuantity });
                     }
                 });
                 showNotification("Job materials saved and stock updated.");
