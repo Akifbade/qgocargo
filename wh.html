@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QGO - Logistics & Warehouse System</title>
+    <title>QGO - Live Logistics & Warehouse System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
@@ -23,14 +23,13 @@
         #notification.show { transform: translateY(0); opacity: 1; }
         #signature-pad { border: 2px dashed #d1d5db; border-radius: 0.5rem; cursor: crosshair; width: 100%; height: 200px; }
         .pod-view-section { border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem; }
-        .simulation-active { background-color: var(--theme-color); color: white; }
         .dashboard-tab { cursor: pointer; padding: 0.5rem 1rem; border-bottom: 2px solid transparent; color: #6b7280; }
         .dashboard-tab-active { border-color: var(--theme-color); color: var(--theme-color); font-weight: 600; }
         .job-category-header { font-size: 1.25rem; font-weight: 700; color: #374151; margin-top: 1.5rem; margin-bottom: 0.75rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; }
-        .job-card { background-color: #ffffff; border: 1px solid #e5e7eb; border-left-width: 4px; padding: 1rem; border-radius: 0.5rem; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; transition: box-shadow 0.2s; }
+        .job-card { background-color: #ffffff; border: 1px solid #e5e7eb; border-left-width: 4px; padding: 1rem; border-radius: 0.5rem; margin-bottom: 0.75rem; display: flex; flex-direction: column; sm:flex-direction: row; justify-content: space-between; align-items: flex-start; sm:align-items: center; gap: 1rem; transition: box-shadow 0.2s; }
         .job-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         .stat-card { background-color: #f9fafb; padding: 1rem; border-radius: 0.5rem; text-align: center; border: 1px solid #e5e7eb; }
-        #final-pod-page-container { max-width: 800px; margin: 2rem auto; padding: 2.5rem; background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 0.5rem; }
+        .input-field { border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.5rem 0.75rem; width: 100%; }
         @media print { 
             body * { visibility: hidden; } 
             #pod-document, #pod-document * { visibility: visible; } 
@@ -41,15 +40,27 @@
     </style>
 </head>
 <body class="bg-gray-100">
-    <div class="bg-gray-800 text-white p-2 text-center text-sm shadow-lg no-print">
-        <span class="font-bold mr-4">SIMULATION MODE</span>
-        <button id="simulate-admin-btn" class="simulation-active px-3 py-1 rounded-md">Simulate Supervisor</button>
-        <button id="simulate-worker-btn" class="px-3 py-1 rounded-md">Simulate Worker</button>
+    <div id="login-screen" class="hidden min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <div>
+                <div class="text-center text-5xl font-extrabold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
+                <h2 id="auth-title" class="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
+            </div>
+            <div class="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-md">
+                <div id="approval-message" class="hidden p-4 text-center text-yellow-800 bg-yellow-100 rounded-lg">Your account is awaiting admin approval.</div>
+                <div class="rounded-md shadow-sm -space-y-px">
+                    <div id="signup-name-field" style="display: none;"><input id="full-name" type="text" class="input-field rounded-t-md" placeholder="Full Name"></div>
+                    <div><input id="email-address" type="email" autocomplete="email" required class="input-field" placeholder="Email address"></div>
+                    <div><input id="password" type="password" autocomplete="current-password" required class="input-field rounded-b-md" placeholder="Password"></div>
+                </div>
+                <div><button id="auth-btn" class="w-full flex justify-center py-2 px-4 border rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Sign in</button></div>
+                <p class="mt-2 text-center text-sm text-gray-600"><a href="#" id="auth-link" class="font-medium text-indigo-600 hover:text-indigo-500">Create a new account</a></p>
+            </div>
+        </div>
     </div>
 
-    <div id="app-container" class="container"></div>
+    <div id="app-container" class="container hidden"></div>
     
-    <div id="final-pod-page" class="hidden"></div>
     <div id="public-pod-view" class="hidden bg-white p-8 min-h-screen"></div>
     
     <div id="loader-overlay" class="overlay hidden"><div class="loader"></div></div>
@@ -59,10 +70,13 @@
     <div id="assign-worker-modal" class="overlay"><div class="modal-content" style="max-width: 400px;"></div></div>
     <div id="inventory-modal" class="overlay"><div class="modal-content" style="max-width: 500px;"></div></div>
     <div id="job-details-modal" class="overlay"><div class="modal-content"></div></div>
+    <div id="confirm-modal" class="overlay"><div class="modal-content" style="max-width: 400px;"></div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, onSnapshot, collection, query, where, getDocs, writeBatch, serverTimestamp, addDoc, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs, writeBatch, serverTimestamp, addDoc, runTransaction, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadString, getDownloadURL, uploadBytes } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc", authDomain: "my-job-file-system.firebaseapp.com", projectId: "my-job-file-system",
@@ -71,39 +85,82 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const storage = getStorage(app);
+        const auth = getAuth(app);
         
         let currentUser;
         let currentView = 'admin';
         let signaturePad;
         let inventoryCache = [];
         let jobsCache = [];
-        const WORKERS = ['Ali Hassan', 'Mohammed Khan', 'Fatima Ahmed', 'Yusuf Ibrahim'];
+        let usersCache = [];
+        let workersCache = [];
 
-        function simulateUser(role, workerName = null) {
-            currentUser = role === 'admin' ? { displayName: 'Fahad (Supervisor)', role: 'admin' } : { displayName: workerName || 'Ali Hassan', role: 'worker' };
-            document.getElementById('simulate-admin-btn').classList.toggle('simulation-active', role === 'admin');
-            document.getElementById('simulate-worker-btn').classList.toggle('simulation-active', role === 'worker');
+        // --- UI HELPER FUNCTIONS ---
+        const showLoader = () => document.getElementById('loader-overlay').classList.add('visible');
+        const hideLoader = () => document.getElementById('loader-overlay').classList.remove('visible');
+        const openModal = (id) => document.getElementById(id).classList.add('visible');
+        window.closeModal = (id) => document.getElementById(id).classList.remove('visible');
+        function showNotification(message, isError = false) {
+            const notification = document.getElementById('notification');
+            notification.innerHTML = message;
+            notification.style.backgroundColor = isError ? '#c53030' : '#2d3748';
+            notification.classList.add('show');
+            setTimeout(() => { notification.classList.remove('show'); }, 5000);
+        }
+
+        // --- AUTHENTICATION ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userDocRef = doc(db, 'users', user.uid);
+                const userDoc = await getDoc(userDocRef);
+                if (userDoc.exists() && userDoc.data().status === 'active') {
+                    currentUser = { uid: user.uid, ...userDoc.data() };
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('app-container').style.display = 'block';
+                    loadInitialData();
+                } else {
+                    document.getElementById('approval-message').style.display = 'block';
+                    signOut(auth);
+                }
+            } else {
+                currentUser = null;
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('app-container').style.display = 'none';
+            }
+        });
+        
+        async function loadInitialData() {
+            const usersQuery = query(collection(db, 'users'));
+            const userSnapshot = await getDocs(usersQuery);
+            usersCache = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            workersCache = usersCache.filter(u => u.role === 'worker').map(u => u.displayName);
             renderUIBasedOnRole();
         }
 
         function renderUIBasedOnRole() {
             const appContainer = document.getElementById('app-container');
-            if (currentUser.role === 'admin') {
+            if (currentUser.role === 'admin' || currentUser.role === 'supervisor') {
                 appContainer.innerHTML = getAdminDashboardShell();
                 document.getElementById('dashboard-tab-btn').addEventListener('click', () => switchTab('dashboard'));
                 document.getElementById('warehouse-tab-btn').addEventListener('click', () => switchTab('warehouse'));
+                document.getElementById('admin-tab-btn').addEventListener('click', () => switchTab('admin'));
+                document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
                 switchTab('dashboard');
-            } else {
+            } else { // Worker
                 appContainer.innerHTML = getWorkerDashboardShell();
+                document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
                 listenForJobFiles();
             }
         }
         
         function switchTab(tabName) {
-            document.getElementById('dashboard-tab-btn').classList.toggle('dashboard-tab-active', tabName === 'dashboard');
-            document.getElementById('warehouse-tab-btn').classList.toggle('dashboard-tab-active', tabName === 'warehouse');
-            document.getElementById('dashboard-content').style.display = tabName === 'dashboard' ? 'block' : 'none';
-            document.getElementById('warehouse-content').style.display = tabName === 'warehouse' ? 'block' : 'none';
+            document.querySelectorAll('.dashboard-tab').forEach(t => t.classList.remove('dashboard-tab-active'));
+            document.getElementById(`${tabName}-tab-btn`).classList.add('dashboard-tab-active');
+            
+            document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+            document.getElementById(`${tabName}-content`).style.display = 'block';
+
             if (tabName === 'dashboard') {
                 document.getElementById('user-display-name').textContent = currentUser.displayName;
                 document.getElementById('user-role-display').textContent = currentUser.role;
@@ -111,28 +168,87 @@
                 document.getElementById('worker-view-btn').addEventListener('click', () => renderTable('worker'));
                 document.getElementById('job-search-input').addEventListener('input', (e) => listenForJobFiles(e.target.value));
                 renderTable('admin');
-            } else {
-                document.getElementById('add-item-btn').addEventListener('click', openAddItemModal);
+            } else if (tabName === 'warehouse') {
+                document.getElementById('add-item-btn').style.display = currentUser.canManageWarehouse ? 'block' : 'none';
                 listenForInventory();
+            } else if (tabName === 'admin') {
+                displayAdminPanel();
             }
         }
+        
+        function displayAdminPanel() {
+            const container = document.getElementById('admin-content');
+            container.innerHTML = usersCache.map(user => {
+                const isCurrentUser = user.id === currentUser.uid;
+                return `
+                <div class="job-card">
+                    <div><p class="font-bold">${user.displayName}</p></div>
+                    <div class="flex items-center space-x-4">
+                        <select data-userid="${user.id}" onchange="updateUserRole(this)" class="p-2 border rounded-md text-sm" ${isCurrentUser ? 'disabled' : ''}>
+                            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+                            <option value="supervisor" ${user.role === 'supervisor' ? 'selected' : ''}>Supervisor</option>
+                            <option value="worker" ${user.role === 'worker' ? 'selected' : ''}>Worker</option>
+                        </select>
+                        <label class="flex items-center text-sm"><input type="checkbox" data-userid="${user.id}" onchange="toggleWarehousePermission(this)" class="mr-2" ${user.canManageWarehouse ? 'checked' : ''} ${isCurrentUser ? 'disabled' : ''}> Can Manage Warehouse</label>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        window.updateUserRole = async (select) => {
+            const userId = select.dataset.userid;
+            const newRole = select.value;
+            showLoader();
+            try {
+                await updateDoc(doc(db, 'users', userId), { role: newRole });
+                const userInCache = usersCache.find(u => u.id === userId);
+                if (userInCache) userInCache.role = newRole;
+                showNotification(`Role updated for ${userInCache.displayName}.`);
+            } catch (error) {
+                 showNotification("Failed to update role.", true);
+            } finally {
+                hideLoader();
+            }
+        };
+
+        window.toggleWarehousePermission = async (checkbox) => {
+            const userId = checkbox.dataset.userid;
+            const canManage = checkbox.checked;
+            showLoader();
+            try {
+                await updateDoc(doc(db, 'users', userId), { canManageWarehouse: canManage });
+                const userInCache = usersCache.find(u => u.id === userId);
+                if (userInCache) userInCache.canManageWarehouse = canManage;
+                showNotification(`Permissions updated for ${userInCache.displayName}.`);
+            } catch (error) {
+                 showNotification("Failed to update permissions.", true);
+                 checkbox.checked = !canManage;
+            } finally {
+                hideLoader();
+            }
+        };
 
         function listenForInventory() {
             const q = query(collection(db, "inventory"));
             onSnapshot(q, (snapshot) => {
-                if(inventoryCache.length === 0) { // Only populate once to maintain simulation state
-                    inventoryCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                }
+                inventoryCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 displayInventory();
             });
         }
 
         function displayInventory() {
             const container = document.getElementById('inventory-list');
+            const canManage = currentUser.canManageWarehouse;
             container.innerHTML = inventoryCache.length === 0 ? `<p class="text-center text-gray-500 p-4">No inventory items found.</p>` : inventoryCache.map(item => `
                 <div class="job-card" style="border-left-color: #6b7280;">
-                    <div><p class="font-bold text-lg">${item.name}</p><p class="text-sm text-gray-500">${item.unit || 'units'}</p></div>
-                    <div class="flex items-center gap-4"><p class="text-2xl font-bold">${item.quantity}</p><button onclick="openUpdateStockModal('${item.id}', '${item.name}', ${item.quantity})" class="bg-gray-200 hover:bg-gray-300 text-black font-bold py-2 px-4 rounded">Update Stock</button></div>
+                    <div>
+                        <p class="font-bold text-lg">${item.name} <span class="text-sm font-normal text-gray-500">${item.sku || ''}</span></p>
+                        <p class="text-xs text-gray-500">Category: ${item.category || 'N/A'} | Supplier: ${item.supplier || 'N/A'} | Cost: ${item.cost || 0} KWD</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <p class="text-2xl font-bold">${item.quantity} <span class="text-sm font-normal text-gray-500">${item.unit || 'units'}</span></p>
+                        ${canManage ? `<button onclick="openUpdateStockModal('${item.id}', '${item.name}', ${item.quantity})" class="bg-gray-200 hover:bg-gray-300 text-black font-bold py-2 px-4 rounded">Update Stock</button>` : ''}
+                    </div>
                 </div>`).join('');
         }
         
@@ -140,7 +256,7 @@
             const modal = document.getElementById('inventory-modal');
             modal.querySelector('.modal-content').innerHTML = `
                 <h3 class="text-lg font-bold mb-4">Update Stock for ${itemName}</h3>
-                <p class="text-sm mb-4">Current Stock: <strong>${currentQty}</strong>. Enter values to add or remove from this total.</p>
+                <p class="text-sm mb-4">Current Stock: <strong>${currentQty}</strong>.</p>
                 <div class="grid grid-cols-2 gap-4">
                     <div><label class="block text-sm font-medium">Add Stock</label><input type="number" id="add-stock-input" class="w-full p-2 border rounded-md" placeholder="e.g., 50"></div>
                     <div><label class="block text-sm font-medium">Remove Stock</label><input type="number" id="remove-stock-input" class="w-full p-2 border rounded-md" placeholder="e.g., 5"></div>
@@ -156,10 +272,20 @@
              const modal = document.getElementById('inventory-modal');
             modal.querySelector('.modal-content').innerHTML = `
                 <h3 class="text-lg font-bold mb-4">Add New Inventory Item</h3>
-                <div><label class="block text-sm font-medium">Item Name</label><input type="text" id="new-item-name" class="w-full p-2 border rounded-md" placeholder="e.g., Cardboard Box (Large)"></div>
-                <div class="grid grid-cols-2 gap-4 mt-4">
-                    <div><label class="block text-sm font-medium">Initial Quantity</label><input type="number" id="new-item-qty" class="w-full p-2 border rounded-md" value="0"></div>
-                    <div><label class="block text-sm font-medium">Unit</label><input type="text" id="new-item-unit" class="w-full p-2 border rounded-md" placeholder="e.g., pieces, rolls"></div>
+                <div class="space-y-4">
+                    <div><label class="block text-sm">Item Name</label><input type="text" id="new-item-name" class="w-full p-2 border rounded-md" placeholder="e.g., Cardboard Box (Large)"></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm">Item Code / SKU</label><input type="text" id="new-item-sku" class="w-full p-2 border rounded-md"></div>
+                        <div><label class="block text-sm">Category</label><input type="text" id="new-item-category" class="w-full p-2 border rounded-md" placeholder="e.g., Boxes"></div>
+                    </div>
+                     <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm">Initial Quantity</label><input type="number" id="new-item-qty" class="w-full p-2 border rounded-md" value="0"></div>
+                        <div><label class="block text-sm">Unit</label><input type="text" id="new-item-unit" class="w-full p-2 border rounded-md" placeholder="e.g., pieces, rolls"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm">Supplier</label><input type="text" id="new-item-supplier" class="w-full p-2 border rounded-md"></div>
+                        <div><label class="block text-sm">Cost per Unit (KWD)</label><input type="number" id="new-item-cost" class="w-full p-2 border rounded-md" placeholder="e.g., 1.250"></div>
+                    </div>
                 </div>
                 <div class="text-right mt-6 space-x-2">
                     <button onclick="closeModal('inventory-modal')" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Cancel</button>
@@ -168,81 +294,95 @@
             openModal('inventory-modal');
         }
 
-        window.updateStock = (itemId) => {
+        window.updateStock = async (itemId) => {
             const add = parseInt(document.getElementById('add-stock-input').value) || 0;
             const remove = parseInt(document.getElementById('remove-stock-input').value) || 0;
             const change = add - remove;
-            const item = inventoryCache.find(i => i.id === itemId);
-            if (item) {
-                item.quantity += change;
-                showNotification(`Simulated stock update for ${item.name}.`);
-                displayInventory();
-            }
-            closeModal('inventory-modal');
+            if(change === 0) { closeModal('inventory-modal'); return; }
+            showLoader();
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const itemRef = doc(db, "inventory", itemId);
+                    const itemDoc = await transaction.get(itemRef);
+                    if (!itemDoc.exists()) throw "Document does not exist!";
+                    const newQuantity = (itemDoc.data().quantity || 0) + change;
+                    transaction.update(itemRef, { quantity: newQuantity });
+                });
+                showNotification("Stock updated successfully!");
+                closeModal('inventory-modal');
+            } catch (e) { console.error("Transaction failed: ", e); showNotification("Failed to update stock.", true);
+            } finally { hideLoader(); }
         };
 
-        window.addNewItem = () => {
+        window.addNewItem = async () => {
             const name = document.getElementById('new-item-name').value.trim();
-            const quantity = parseInt(document.getElementById('new-item-qty').value) || 0;
-            const unit = document.getElementById('new-item-unit').value.trim();
             if(!name) { showNotification("Item name is required.", true); return; }
-            inventoryCache.push({ id: `sim_${Date.now()}`, name, quantity, unit });
-            showNotification(`Simulated add of ${name}.`);
-            displayInventory();
-            closeModal('inventory-modal');
+            const newItem = {
+                name, 
+                quantity: parseInt(document.getElementById('new-item-qty').value) || 0,
+                unit: document.getElementById('new-item-unit').value.trim(),
+                sku: document.getElementById('new-item-sku').value.trim(),
+                category: document.getElementById('new-item-category').value.trim(),
+                supplier: document.getElementById('new-item-supplier').value.trim(),
+                cost: parseFloat(document.getElementById('new-item-cost').value) || 0,
+            };
+            showLoader();
+            try {
+                await addDoc(collection(db, "inventory"), newItem);
+                showNotification("New item added to inventory.");
+                closeModal('inventory-modal');
+            } catch(e) { console.error("Error adding item:", e); showNotification("Failed to add new item.", true);
+            } finally { hideLoader(); }
         }
         
         window.openJobDetailsModal = (jobId) => {
             const job = jobsCache.find(j => j.id === jobId);
             if (!job) { showNotification("Job details not found.", true); return; }
-            
             const modal = document.getElementById('job-details-modal');
             let materialsHtml = inventoryCache.map(item => `
-                <div class="grid grid-cols-3 items-center gap-2">
-                    <label class="text-sm">${item.name}</label>
-                    <input type="number" data-item-id="${item.id}" class="w-full p-1 border rounded-md text-sm" placeholder="Qty">
-                    <span class="text-xs text-gray-500">In Stock: ${item.quantity}</span>
-                </div>
-            `).join('');
-
-            modal.querySelector('.modal-content').innerHTML = `
-                <h3 class="text-lg font-bold mb-4">Manage Job: ${job.jfn}</h3>
-                <div class="pod-view-section bg-gray-50 mb-4">
-                    <p><strong>Shipper:</strong> ${job.sh || 'N/A'}</p>
-                    <p><strong>Consignee:</strong> ${job.co || 'N/A'}</p>
-                </div>
-                <h4 class="font-semibold mb-2">Packing Materials Used</h4>
-                <div class="space-y-2 max-h-48 overflow-y-auto pr-2">${materialsHtml}</div>
-                <div class="text-right mt-6 space-x-2">
-                    <button onclick="closeModal('job-details-modal')" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Cancel</button>
-                    <button onclick="saveJobMaterials('${jobId}')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save & Update Stock</button>
-                </div>`;
+                <div class="grid grid-cols-3 items-center gap-2"><label class="text-sm">${item.name}</label><input type="number" data-item-id="${item.id}" class="w-full p-1 border rounded-md text-sm" placeholder="Qty" value="${job.materialsUsed?.[item.id] || ''}"><span class="text-xs text-gray-500">In Stock: ${item.quantity}</span></div>`).join('');
+            modal.querySelector('.modal-content').innerHTML = `<h3 class="text-lg font-bold mb-4">Manage Job: ${job.jfn}</h3><div class="pod-view-section bg-gray-50 mb-4"><p><strong>Shipper:</strong> ${job.sh || 'N/A'}</p><p><strong>Consignee:</strong> ${job.co || 'N/A'}</p></div><h4 class="font-semibold mb-2">Packing Materials Used</h4><div class="space-y-2 max-h-48 overflow-y-auto pr-2">${materialsHtml}</div><div class="text-right mt-6 space-x-2"><button onclick="closeModal('job-details-modal')" class="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button><button onclick="saveJobMaterials('${jobId}')" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">Save & Update Stock</button></div>`;
             openModal('job-details-modal');
         };
 
-        window.saveJobMaterials = (jobId) => {
+        window.saveJobMaterials = async (jobId) => {
             const inputs = document.querySelectorAll('#job-details-modal input[data-item-id]');
-            let updated = false;
+            const materialsUsed = {};
+            const stockUpdates = [];
+
             inputs.forEach(input => {
                 const qtyUsed = parseInt(input.value) || 0;
                 if (qtyUsed > 0) {
                     const itemId = input.dataset.itemId;
-                    const item = inventoryCache.find(i => i.id === itemId);
-                    if (item) {
-                        item.quantity -= qtyUsed;
-                        updated = true;
-                    }
+                    materialsUsed[itemId] = qtyUsed;
+                    stockUpdates.push({ id: itemId, change: -qtyUsed });
                 }
             });
-            if (updated) {
-                showNotification("Simulated stock levels updated.");
-            }
-            closeModal('job-details-modal');
+
+            showLoader();
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const jobDocRef = doc(db, 'jobfiles', jobId);
+                    transaction.update(jobDocRef, { materialsUsed });
+                    
+                    for (const update of stockUpdates) {
+                        const itemRef = doc(db, "inventory", update.id);
+                        const itemDoc = await transaction.get(itemRef);
+                        if (!itemDoc.exists()) throw `Inventory item ${update.id} not found!`;
+                        const newQuantity = (itemDoc.data().quantity || 0) + update.change;
+                        if (newQuantity < 0) throw `Not enough stock for ${itemDoc.data().name}.`;
+                        transaction.update(itemRef, { quantity: newQuantity });
+                    }
+                });
+                showNotification("Job materials saved and stock updated.");
+                closeModal('job-details-modal');
+            } catch (e) { console.error("Transaction failed: ", e); showNotification(`Error: ${e}`, true);
+            } finally { hideLoader(); }
         };
 
         function renderTable(view) {
             currentView = view;
-            if (currentUser.role === 'admin') {
+            if ((currentUser.role === 'admin' || currentUser.role === 'supervisor') && document.getElementById('admin-view-btn')) {
                 document.getElementById('admin-view-btn').classList.toggle('bg-white', view === 'admin');
                 document.getElementById('worker-view-btn').classList.toggle('bg-white', view === 'worker');
             }
@@ -257,9 +397,14 @@
                 
                 let jobsToDisplay = [...jobsCache];
 
-                if (currentView === 'admin') {
-                    displayAdminView(jobsToDisplay, searchTerm.toLowerCase());
-                } else {
+                if (currentUser.role === 'admin' || currentUser.role === 'supervisor') {
+                    if(currentView === 'worker') {
+                        jobsToDisplay = jobsToDisplay.filter(job => job.status === 'Out for Delivery');
+                        displayWorkerView(jobsToDisplay, true);
+                    } else {
+                        displayAdminView(jobsToDisplay, searchTerm.toLowerCase());
+                    }
+                } else { // Worker role
                     jobsToDisplay = jobsToDisplay.filter(job => job.status === 'Out for Delivery' && job.assignedTo === currentUser.displayName);
                     displayWorkerView(jobsToDisplay);
                 }
@@ -268,12 +413,9 @@
         
         function displayAdminView(jobs, searchTerm) {
             const container = document.getElementById('job-list-container');
-            const todayStart = new Date();
-            todayStart.setHours(0,0,0,0);
+            const todayStart = new Date(); todayStart.setHours(0,0,0,0);
             
-            if (searchTerm) {
-                jobs = jobs.filter(j => (j.jfn || '').toLowerCase().includes(searchTerm) || (j.sh || '').toLowerCase().includes(searchTerm) || (j.co || '').toLowerCase().includes(searchTerm));
-            }
+            if (searchTerm) jobs = jobs.filter(j => (j.jfn || '').toLowerCase().includes(searchTerm) || (j.sh || '').toLowerCase().includes(searchTerm) || (j.co || '').toLowerCase().includes(searchTerm));
 
             const ready = jobs.filter(j => ['approved', 'checked'].includes(j.status));
             const out = jobs.filter(j => j.status === 'Out for Delivery');
@@ -291,9 +433,10 @@
             container.innerHTML = html;
         }
 
-        function displayWorkerView(jobs) {
+        function displayWorkerView(jobs, isAdminViewing = false) {
             const container = document.getElementById('job-list-container');
-            container.innerHTML = jobs.length === 0 ? `<p class="p-8 text-center text-gray-500">You have no jobs assigned for delivery.</p>` : `<h2 class="job-category-header">Your Assigned Deliveries (${jobs.length})</h2>` + jobs.map(job => createJobCardHtml(job, '#059669')).join('');
+            const title = isAdminViewing ? "All Out for Delivery Jobs" : "Your Assigned Deliveries";
+            container.innerHTML = jobs.length === 0 ? `<p class="p-8 text-center text-gray-500">No jobs are currently out for delivery.</p>` : `<h2 class="job-category-header">${title} (${jobs.length})</h2>` + jobs.map(job => createJobCardHtml(job, '#059669')).join('');
         }
 
         function createCategorySection(title, jobs, color) {
@@ -305,20 +448,52 @@
         function createJobCardHtml(job, color = '#78716c') {
             const status = job.status || 'pending';
             let actionButtons = '';
-            if (currentView === 'admin') {
+            const deleteBtn = `<button onclick='confirmDeletePod("${job.jfn}")' class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded text-sm ml-2">Delete POD</button>`;
+
+            if (currentUser.role === 'admin' || currentUser.role === 'supervisor') {
                 const manageBtn = `<button onclick='openJobDetailsModal("${job.id}")' class="bg-gray-200 hover:bg-gray-300 text-black font-bold py-2 px-4 rounded text-sm">Manage Job</button>`;
                 if (status === 'approved' || status === 'checked') actionButtons = manageBtn + `<button onclick='openAssignWorkerModal("${job.id}")' class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm ml-2">Prepare Delivery</button>`;
-                else if (status === 'Out for Delivery' || status === 'Completed-POD') actionButtons = `<button onclick='openViewPodModal("${job.jfn}")' class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded text-sm">View Order</button>`;
+                else if (status === 'Out for Delivery') actionButtons = `<button onclick='openViewPodModal("${job.jfn}")' class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded text-sm">View Order</button>`;
+                else if (status === 'Completed-POD') actionButtons = `<button onclick='openViewPodModal("${job.jfn}")' class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded text-sm">View Order</button>` + deleteBtn;
                 else actionButtons = manageBtn;
-            } else {
+            } else { // Worker
                 actionButtons = `<button onclick='openWorkerPodModal("${job.jfn}")' class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-sm">Complete Delivery</button>`;
             }
             return `<div class="job-card" style="border-left-color: ${color};"><div><p class="font-bold text-indigo-700">${job.jfn || 'N/A'}</p><p class="text-sm text-gray-600"><strong>Shipper:</strong> ${job.sh || 'N/A'}</p><p class="text-sm text-gray-600"><strong>Consignee:</strong> ${job.co || 'N/A'}</p></div><div class="text-right space-x-2">${actionButtons}<p class="text-xs text-gray-400 mt-2">Last Updated: ${job.updatedAt?.toDate().toLocaleString() || 'N/A'}</p></div></div>`;
         }
+        
+        window.confirmDeletePod = (jobFileNo) => {
+            const modal = document.getElementById('confirm-modal');
+            modal.querySelector('.modal-content').innerHTML = `
+                <h3 class="text-lg font-bold mb-4">Confirm POD Deletion</h3>
+                <p>Are you sure you want to delete the POD for job <strong>${jobFileNo}</strong>? This will revert the job's status to 'approved' and allow it to be re-assigned.</p>
+                <div class="text-right mt-6 space-x-2">
+                    <button onclick="closeModal('confirm-modal')" class="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button>
+                    <button onclick="deletePod('${jobFileNo}')" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">Confirm Deletion</button>
+                </div>`;
+            openModal('confirm-modal');
+        };
+
+        window.deletePod = async (jobFileNo) => {
+             showLoader();
+            try {
+                const pod = await findPodByJobFileNo(jobFileNo);
+                if(!pod) throw new Error("POD document not found");
+
+                const batch = writeBatch(db);
+                batch.delete(doc(db, 'pods', pod.id));
+                batch.update(doc(db, 'jobfiles', jobFileNo.replace(/\//g, '_')), { status: 'approved' });
+                await batch.commit();
+                
+                showNotification("POD deleted and job status reverted.");
+                closeModal('confirm-modal');
+            } catch (error) { console.error("Error deleting POD:", error); showNotification("Error deleting POD.", true);
+            } finally { hideLoader(); }
+        };
 
         window.openAssignWorkerModal = (docId) => {
             const modal = document.getElementById('assign-worker-modal');
-            modal.querySelector('.modal-content').innerHTML = `<h3 class="text-lg font-bold mb-4">Assign Worker for Delivery</h3><select id="worker-select" class="w-full p-2 border rounded-md">${WORKERS.map(w => `<option value="${w}">${w}</option>`).join('')}</select><div class="text-right mt-6 space-x-2"><button onclick="closeModal('assign-worker-modal')" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Cancel</button><button onclick="preparePodDocument('${docId}')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Confirm</button></div>`;
+            modal.querySelector('.modal-content').innerHTML = `<h3 class="text-lg font-bold mb-4">Assign Worker</h3><select id="worker-select" class="w-full p-2 border rounded-md">${workersCache.map(w => `<option value="${w}">${w}</option>`).join('')}</select><div class="text-right mt-6 space-x-2"><button onclick="closeModal('assign-worker-modal')" class="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button><button onclick="preparePodDocument('${docId}')" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded">Confirm</button></div>`;
             openModal('assign-worker-modal');
         };
 
@@ -343,19 +518,10 @@
                 batch.set(doc(collection(db, 'pods')), podData);
                 batch.update(jobDocRef, { status: 'Out for Delivery', assignedTo: workerName, updatedAt: serverTimestamp() });
                 await batch.commit();
-                const notification = document.getElementById('notification');
-                notification.innerHTML = `Delivery assigned to ${workerName}. <button onclick="switchToWorker('${workerName}')" class="font-bold underline ml-2">Switch to ${workerName}'s View</button>`;
-                notification.style.backgroundColor = '#2d3748';
-                notification.classList.add('show');
-                setTimeout(() => { notification.classList.remove('show'); }, 5000);
+                showNotification(`Delivery assigned to ${workerName}.`);
                 closeModal('assign-worker-modal');
             } catch (error) { console.error("Error preparing POD:", error); showNotification("Error preparing document.", true);
             } finally { hideLoader(); }
-        };
-
-        window.switchToWorker = (workerName) => {
-            simulateUser('worker', workerName);
-            document.getElementById('notification').classList.remove('show');
         };
 
         async function findPodByJobFileNo(jobFileNo) {
@@ -402,62 +568,31 @@
             }
             showLoader();
             try {
-                const signatureDataUrl = signaturePad.toDataURL();
-                let photoDataUrl = null;
-                if (photoFile) {
-                    photoDataUrl = await new Promise(resolve => {
-                        const reader = new FileReader();
-                        reader.onload = e => resolve(e.target.result);
-                        reader.readAsDataURL(photoFile);
-                    });
-                }
+                const podDocRef = doc(db, 'pods', podId);
                 const pod = await findPodById(podId);
-                const finalPodData = {
-                    ...pod, receiverName, signatureUrl: signatureDataUrl, photoUrl: photoDataUrl,
-                    podStatus: 'Completed-POD', deliveredBy: currentUser.displayName, podTimestamp: new Date()
-                };
-                showFinalPodPage(finalPodData);
+                
+                const signatureRef = ref(storage, `pod_signatures/${pod.jobFileNo}_${Date.now()}.png`);
+                await uploadString(signatureRef, signaturePad.toDataURL(), 'data_url');
+                const signatureUrl = await getDownloadURL(signatureRef);
+                
+                let photoUrl = null;
+                if (photoFile) {
+                    const photoRef = ref(storage, `pod_photos/${pod.jobFileNo}_${Date.now()}`);
+                    await uploadBytes(photoRef, photoFile);
+                    photoUrl = await getDownloadURL(photoRef);
+                }
+                
+                const batch = writeBatch(db);
+                batch.update(podDocRef, { podStatus: 'Completed-POD', receiverName, signatureUrl, photoUrl, podTimestamp: serverTimestamp(), deliveredBy: currentUser.displayName });
+                batch.update(doc(db, 'jobfiles', pod.jobFileNo.replace(/\//g, '_')), { status: 'Completed-POD', updatedAt: serverTimestamp() });
+                await batch.commit();
+
+                showNotification("POD Submitted Successfully!");
                 closeModal('worker-pod-modal');
-            } catch(error) { console.error("Error in POD simulation:", error); showNotification("Could not generate final POD.", true);
+            } catch(error) { console.error("Error submitting POD:", error); showNotification("Failed to submit POD.", true);
             } finally { hideLoader(); }
         }
 
-        function showFinalPodPage(podData) {
-            document.getElementById('app-container').style.display = 'none';
-            const finalPage = document.getElementById('final-pod-page');
-            finalPage.innerHTML = getFinalPodPageHtml(podData);
-            finalPage.style.display = 'block';
-            JsBarcode("#barcode", podData.jobFileNo, { format: "CODE128", lineColor: "#000", width: 2, height: 40, displayValue: false });
-            new QRCode(document.getElementById("qrcode"), { text: window.location.href.split('?')[0] + '?viewpod=' + podData.jobFileNo, width: 80, height: 80 });
-
-            document.getElementById('print-final-pod').addEventListener('click', () => window.print());
-            document.getElementById('back-to-dashboard').addEventListener('click', () => {
-                finalPage.style.display = 'none';
-                document.getElementById('app-container').style.display = 'block';
-                listenForJobFiles(); 
-            });
-            document.getElementById('send-email-btn').addEventListener('click', () => sendShareLink('email', podData.jobFileNo));
-            document.getElementById('send-whatsapp-btn').addEventListener('click', () => sendShareLink('whatsapp', podData.jobFileNo));
-        }
-
-        function sendShareLink(method, jobFileNo) {
-            const link = window.location.href.split('?')[0] + '?viewpod=' + encodeURIComponent(jobFileNo);
-            const message = `Dear Customer, please find your Proof of Delivery from Q'go Cargo here: ${link}`;
-            if (method === 'email') {
-                const email = document.getElementById('share-email').value;
-                if (!email) { showNotification('Please enter an email address.', true); return; }
-                window.location.href = `mailto:${email}?subject=Q'go Cargo Proof of Delivery for Job ${jobFileNo}&body=${encodeURIComponent(message)}`;
-            } else if (method === 'whatsapp') {
-                const phone = document.getElementById('share-whatsapp').value;
-                if (!phone) { showNotification('Please enter a phone number.', true); return; }
-                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
-            }
-        }
-
-        function getFinalPodPageHtml(pod) {
-            return `<div id="final-pod-page-container"><div id="pod-document">${getProfessionalPodHtml(pod)}</div><div class="mt-8 no-print"><div class="p-4 bg-gray-50 border rounded-lg"><h3 class="font-bold text-lg mb-2">Share with Customer</h3><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div class="flex items-center"><input type="email" id="share-email" placeholder="Customer's Email" class="w-full p-2 border rounded-l-md"><button id="send-email-btn" class="bg-blue-600 text-white p-2 rounded-r-md">Send Email</button></div><div class="flex items-center"><input type="tel" id="share-whatsapp" placeholder="Customer's WhatsApp" class="w-full p-2 border rounded-l-md"><button id="send-whatsapp-btn" class="bg-green-600 text-white p-2 rounded-r-md">Send WhatsApp</button></div></div></div><div class="text-center mt-6 space-x-4"><button id="print-final-pod" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg">Print / Save PDF</button><button id="back-to-dashboard" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg">Back to Dashboard</button></div></div></div>`;
-        }
-        
         function getAdminViewPodModalHtml(pod) {
             const content = pod ? getProfessionalPodHtml(pod) : '<div class="flex justify-center p-8"><div class="loader"></div></div>';
             return `<div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-bold">Delivery Note & POD</h2><div><button onclick="printPod()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-3 rounded text-sm mr-2">Print</button><button onclick="closeModal('view-pod-modal')" class="text-gray-400 hover:text-gray-600 text-3xl">&times;</button></div></div><div id="pod-details-content">${content}</div>`;
@@ -466,7 +601,7 @@
         function getProfessionalPodHtml(pod) {
             let podCompletionDetails = '';
             if (pod.podStatus === 'Completed-POD') {
-                const podDate = pod.podTimestamp?.toLocaleString('en-KW') || 'N/A';
+                const podDate = pod.podTimestamp?.toDate().toLocaleString('en-KW') || 'N/A';
                 const photoHtml = pod.photoUrl ? `<a href="${pod.photoUrl}" target="_blank"><img src="${pod.photoUrl}" alt="Photo" class="mt-1 rounded-md border-2 p-1 bg-white max-h-48"></a>` : '<p class="text-xs italic text-gray-500">No photo provided.</p>';
                 podCompletionDetails = `<div class="mt-4 pod-view-section bg-green-50"><h3 class="text-green-700">Proof of Delivery - Completed</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><p><strong>Receiver:</strong> ${pod.receiverName || 'N/A'}</p><p><strong>Received On:</strong> ${podDate}</p><p><strong>Delivered By:</strong> ${pod.deliveredBy || 'N/A'}</p><p class="mt-2"><strong>Signature:</strong></p><img src="${pod.signatureUrl}" alt="Signature" class="mt-1 rounded-md border-2 p-1 bg-white"></div><div><p><strong>Photo Evidence:</strong></p>${photoHtml}</div></div></div>`;
             } else {
@@ -477,15 +612,15 @@
         }
 
         function getWorkerPodCaptureHtml(pod) {
-            return `<div class="flex justify-between items-center"><h2 class="text-2xl font-bold">Complete Delivery</h2><button onclick="closeModal('worker-pod-modal')" class="text-gray-400 hover:text-gray-600 text-3xl">&times;</button></div><div class="mt-4 max-h-[60vh] overflow-y-auto pr-2">${getProfessionalPodHtml(pod)}<div class="mt-4 pod-view-section bg-blue-50"><h3 class="text-blue-700">Proof of Delivery - Capture</h3><div class="space-y-4 mt-2"><div><label for="receiver-name" class="block text-sm font-medium text-gray-700">Receiver Full Name</label><input type="text" id="receiver-name" class="w-full mt-1 p-2 border rounded-md" required></div><div><label class="block text-sm font-medium text-gray-700">Receiver Signature</label><canvas id="signature-pad"></canvas><button id="clear-signature" type="button" class="text-xs text-indigo-600 mt-1">Clear Signature</button></div><div><label for="pod-photo" class="block text-sm font-medium text-gray-700">Photo Evidence (Optional)</label><input type="file" id="pod-photo" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"></div></div></div></div><div class="mt-6"><button id="submit-pod-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg">Submit & Generate Final POD</button></div>`;
+            return `<div class="flex justify-between items-center"><h2 class="text-2xl font-bold">Complete Delivery</h2><button onclick="closeModal('worker-pod-modal')" class="text-gray-400 hover:text-gray-600 text-3xl">&times;</button></div><div class="mt-4 max-h-[60vh] overflow-y-auto pr-2">${getProfessionalPodHtml(pod)}<div class="mt-4 pod-view-section bg-blue-50"><h3 class="text-blue-700">Proof of Delivery - Capture</h3><div class="space-y-4 mt-2"><div><label for="receiver-name" class="block text-sm font-medium text-gray-700">Receiver Full Name</label><input type="text" id="receiver-name" class="w-full mt-1 p-2 border rounded-md" required></div><div><label class="block text-sm font-medium text-gray-700">Receiver Signature</label><canvas id="signature-pad"></canvas><button id="clear-signature" type="button" class="text-xs text-indigo-600 mt-1">Clear Signature</button></div><div><label for="pod-photo" class="block text-sm font-medium text-gray-700">Photo Evidence (Optional)</label><input type="file" id="pod-photo" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"></div></div></div></div><div class="mt-6"><button id="submit-pod-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg">Submit POD</button></div>`;
         }
 
         function getAdminDashboardShell() {
-            return `<div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"><div><h1 class="text-3xl font-bold" style="color: var(--theme-color);">QGO Logistics Platform</h1><p class="text-sm text-gray-500">Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role-display" class="capitalize"></span>)</p></div></div><div class="border-b border-gray-200 mb-4"><nav class="-mb-px flex space-x-8" aria-label="Tabs"><button id="dashboard-tab-btn" class="dashboard-tab dashboard-tab-active">Dashboard</button><button id="warehouse-tab-btn" class="dashboard-tab">Warehouse</button></nav></div><div id="dashboard-content"><div class="flex items-center justify-between mb-4"><div id="view-toggle-container" class="flex items-center space-x-2 bg-gray-200 p-1 rounded-lg"><button id="admin-view-btn" class="px-4 py-1 text-sm font-semibold rounded-md">Admin View</button><button id="worker-view-btn" class="px-4 py-1 text-sm font-semibold rounded-md">Worker View</button></div></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="stat-card"><p class="text-sm text-gray-500">Ready for Delivery</p><p id="ready-count" class="text-3xl font-bold text-blue-600">0</p></div><div class="stat-card"><p class="text-sm text-gray-500">In Transit</p><p id="transit-count" class="text-3xl font-bold text-amber-600">0</p></div><div class="stat-card"><p class="text-sm text-gray-500">Completed Today</p><p id="completed-count" class="text-3xl font-bold text-green-600">0</p></div></div><div><input type="text" id="job-search-input" placeholder="Search by Job No, Shipper, Consignee..." class="w-full p-2 border rounded-md mb-4"></div><div id="job-list-container"></div></div><div id="warehouse-content" class="hidden"><div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-bold">Warehouse Inventory</h2><button id="add-item-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Add New Item</button></div><div id="inventory-list"></div></div>`;
+            return `<div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"><div><h1 class="text-3xl font-bold" style="color: var(--theme-color);">QGO Logistics Platform</h1><p class="text-sm text-gray-500">Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role-display" class="capitalize"></span>)</p></div><button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Logout</button></div><div class="border-b border-gray-200 mb-4"><nav class="-mb-px flex space-x-8" aria-label="Tabs"><button id="dashboard-tab-btn" class="dashboard-tab">Dashboard</button><button id="warehouse-tab-btn" class="dashboard-tab">Warehouse</button><button id="admin-tab-btn" class="dashboard-tab">Admin</button></nav></div><div id="dashboard-content" class="tab-content hidden"><div class="flex items-center justify-between mb-4"><div id="view-toggle-container" class="flex items-center space-x-2 bg-gray-200 p-1 rounded-lg"><button id="admin-view-btn" class="px-4 py-1 text-sm font-semibold rounded-md">Admin View</button><button id="worker-view-btn" class="px-4 py-1 text-sm font-semibold rounded-md">Worker View</button></div></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="stat-card"><p class="text-sm text-gray-500">Ready for Delivery</p><p id="ready-count" class="text-3xl font-bold text-blue-600">0</p></div><div class="stat-card"><p class="text-sm text-gray-500">In Transit</p><p id="transit-count" class="text-3xl font-bold text-amber-600">0</p></div><div class="stat-card"><p class="text-sm text-gray-500">Completed Today</p><p id="completed-count" class="text-3xl font-bold text-green-600">0</p></div></div><div><input type="text" id="job-search-input" placeholder="Search by Job No, Shipper, Consignee..." class="w-full p-2 border rounded-md mb-4"></div><div id="job-list-container"></div></div><div id="warehouse-content" class="tab-content hidden"><div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-bold">Warehouse Inventory</h2><button id="add-item-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Add New Item</button></div><div id="inventory-list"></div></div><div id="admin-content" class="tab-content hidden"><h2 class="text-2xl font-bold mb-4">User Permissions</h2></div>`;
         }
         
         function getWorkerDashboardShell() {
-             return `<div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"><div><h1 class="text-3xl font-bold" style="color: var(--theme-color);">Your Delivery Tasks</h1><p class="text-sm text-gray-500">Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role-display" class="capitalize"></span>)</p></div></div><div id="job-list-container"></div>`;
+             return `<div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"><div><h1 class="text-3xl font-bold" style="color: var(--theme-color);">Your Delivery Tasks</h1><p class="text-sm text-gray-500">Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role-display" class="capitalize"></span>)</p></div><button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Logout</button></div><div id="job-list-container"></div>`;
         }
         
         window.printPod = () => {
@@ -497,24 +632,12 @@
                 window.print();
             }
         };
-
-        const showLoader = () => document.getElementById('loader-overlay').classList.add('visible');
-        const hideLoader = () => document.getElementById('loader-overlay').classList.remove('visible');
-        const openModal = (id) => document.getElementById(id).classList.add('visible');
-        window.closeModal = (id) => document.getElementById(id).classList.remove('visible');
-        function showNotification(message, isError = false) {
-            const notification = document.getElementById('notification');
-            notification.innerHTML = message;
-            notification.style.backgroundColor = isError ? '#c53030' : '#2d3748';
-            notification.classList.add('show');
-            setTimeout(() => { notification.classList.remove('show'); }, 5000);
-        }
         
         async function checkPublicView() {
             const params = new URLSearchParams(window.location.search);
             const podToView = params.get('viewpod');
             if (podToView) {
-                document.querySelector('.no-print').style.display = 'none';
+                document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('app-container').style.display = 'none';
                 const publicView = document.getElementById('public-pod-view');
                 publicView.innerHTML = '<div class="flex justify-center p-8"><div class="loader"></div></div>';
@@ -528,12 +651,40 @@
                     publicView.innerHTML = '<p class="text-center font-bold text-red-600">Proof of Delivery not found.</p>';
                 }
             } else {
-                simulateUser('admin');
+                document.getElementById('login-screen').style.display = 'flex';
             }
         }
         
-        document.getElementById('simulate-admin-btn').addEventListener('click', () => simulateUser('admin'));
-        document.getElementById('simulate-worker-btn').addEventListener('click', () => simulateUser('worker'));
+        let isLogin = true;
+        document.getElementById('auth-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            isLogin = !isLogin;
+            document.getElementById('auth-title').textContent = isLogin ? 'Sign in to your account' : 'Create a new account';
+            document.getElementById('auth-btn').textContent = isLogin ? 'Sign in' : 'Sign up';
+            document.getElementById('auth-link').textContent = isLogin ? 'Create a new account' : 'Already have an account? Sign in';
+            document.getElementById('signup-name-field').style.display = isLogin ? 'none' : 'block';
+        });
+
+        document.getElementById('auth-btn').addEventListener('click', async () => {
+            const email = document.getElementById('email-address').value;
+            const password = document.getElementById('password').value;
+            showLoader();
+            try {
+                if (isLogin) {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    const displayName = document.getElementById('full-name').value;
+                    if (!displayName) throw new Error("Full name is required for sign up.");
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    await setDoc(doc(db, 'users', userCredential.user.uid), {
+                        displayName, email, role: 'worker', status: 'inactive', createdAt: serverTimestamp()
+                    });
+                    showNotification("Account created. Please wait for admin approval.");
+                    signOut(auth);
+                }
+            } catch (error) { showNotification(error.message, true);
+            } finally { hideLoader(); }
+        });
         
         checkPublicView();
 
