@@ -116,6 +116,10 @@
                 const userDoc = await getDoc(userDocRef);
                 if (userDoc.exists() && userDoc.data().status === 'active') {
                     currentUser = { uid: user.uid, ...userDoc.data() };
+                    // If user doesn't have a pod_role, assign a default based on main role
+                    if (!currentUser.pod_role) {
+                        currentUser.pod_role = (currentUser.role === 'admin' || currentUser.role === 'supervisor') ? 'supervisor' : 'worker';
+                    }
                     document.getElementById('login-screen').style.display = 'none';
                     document.getElementById('app-container').style.display = 'block';
                     loadInitialData();
@@ -133,14 +137,20 @@
         async function loadInitialData() {
             const usersQuery = query(collection(db, 'users'));
             const userSnapshot = await getDocs(usersQuery);
-            usersCache = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            workersCache = usersCache.filter(u => u.role === 'worker').map(u => u.displayName);
+            usersCache = userSnapshot.docs.map(doc => {
+                const userData = doc.data();
+                if (!userData.pod_role) {
+                    userData.pod_role = (userData.role === 'admin' || userData.role === 'supervisor') ? 'supervisor' : 'worker';
+                }
+                return { id: doc.id, ...userData };
+            });
+            workersCache = usersCache.filter(u => u.pod_role === 'worker').map(u => u.displayName);
             renderUIBasedOnRole();
         }
 
         function renderUIBasedOnRole() {
             const appContainer = document.getElementById('app-container');
-            if (currentUser.role === 'admin' || currentUser.role === 'supervisor') {
+            if (currentUser.pod_role === 'supervisor') {
                 appContainer.innerHTML = getAdminDashboardShell();
                 document.getElementById('dashboard-tab-btn').addEventListener('click', () => switchTab('dashboard'));
                 document.getElementById('warehouse-tab-btn').addEventListener('click', () => switchTab('warehouse'));
@@ -163,7 +173,7 @@
 
             if (tabName === 'dashboard') {
                 document.getElementById('user-display-name').textContent = currentUser.displayName;
-                document.getElementById('user-role-display').textContent = currentUser.role;
+                document.getElementById('user-role-display').textContent = currentUser.pod_role;
                 document.getElementById('admin-view-btn').addEventListener('click', () => renderTable('admin'));
                 document.getElementById('worker-view-btn').addEventListener('click', () => renderTable('worker'));
                 document.getElementById('job-search-input').addEventListener('input', (e) => listenForJobFiles(e.target.value));
@@ -182,12 +192,11 @@
                 const isCurrentUser = user.id === currentUser.uid;
                 return `
                 <div class="job-card">
-                    <div><p class="font-bold">${user.displayName}</p></div>
+                    <div><p class="font-bold">${user.displayName}</p><p class="text-sm capitalize text-gray-500">Main Role: ${user.role}</p></div>
                     <div class="flex items-center space-x-4">
-                        <select data-userid="${user.id}" onchange="updateUserRole(this)" class="p-2 border rounded-md text-sm" ${isCurrentUser ? 'disabled' : ''}>
-                            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
-                            <option value="supervisor" ${user.role === 'supervisor' ? 'selected' : ''}>Supervisor</option>
-                            <option value="worker" ${user.role === 'worker' ? 'selected' : ''}>Worker</option>
+                        <select data-userid="${user.id}" onchange="updateUserPodRole(this)" class="p-2 border rounded-md text-sm" ${isCurrentUser ? 'disabled' : ''}>
+                            <option value="supervisor" ${user.pod_role === 'supervisor' ? 'selected' : ''}>Supervisor</option>
+                            <option value="worker" ${user.pod_role === 'worker' ? 'selected' : ''}>Worker</option>
                         </select>
                         <label class="flex items-center text-sm"><input type="checkbox" data-userid="${user.id}" onchange="toggleWarehousePermission(this)" class="mr-2" ${user.canManageWarehouse ? 'checked' : ''} ${isCurrentUser ? 'disabled' : ''}> Can Manage Warehouse</label>
                     </div>
@@ -195,15 +204,15 @@
             }).join('');
         }
 
-        window.updateUserRole = async (select) => {
+        window.updateUserPodRole = async (select) => {
             const userId = select.dataset.userid;
             const newRole = select.value;
             showLoader();
             try {
-                await updateDoc(doc(db, 'users', userId), { role: newRole });
+                await updateDoc(doc(db, 'users', userId), { pod_role: newRole });
                 const userInCache = usersCache.find(u => u.id === userId);
-                if (userInCache) userInCache.role = newRole;
-                showNotification(`Role updated for ${userInCache.displayName}.`);
+                if (userInCache) userInCache.pod_role = newRole;
+                showNotification(`POD System Role updated for ${userInCache.displayName}.`);
             } catch (error) {
                  showNotification("Failed to update role.", true);
             } finally {
