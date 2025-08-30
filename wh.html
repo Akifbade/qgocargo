@@ -16,7 +16,6 @@
         .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; padding: 1rem; }
         .overlay.visible { opacity: 1; visibility: visible; }
         .modal-content { background: white; padding: 1.5rem; border-radius: 0.5rem; width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; transform: scale(0.9); transition: transform 0.3s; }
-        .worker-modal { max-width: 500px; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--theme-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #notification { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: #2d3748; color: white; padding: 1rem 1.5rem; border-radius: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000; text-align: center; transition: transform 0.5s, opacity 0.5s; transform: translateY(100px); opacity: 0; }
@@ -61,12 +60,13 @@
 
     <div id="app-container" class="container hidden"></div>
     
+    <div id="worker-delivery-page" class="hidden"></div>
+    <div id="final-pod-page" class="hidden"></div>
     <div id="public-pod-view" class="hidden bg-white p-8 min-h-screen"></div>
     
     <div id="loader-overlay" class="overlay hidden"><div class="loader"></div></div>
     <div id="notification"></div>
     <div id="view-pod-modal" class="overlay"><div id="view-pod-modal-content" class="modal-content"></div></div>
-    <div id="worker-pod-modal" class="overlay"><div id="worker-pod-modal-content" class="modal-content worker-modal"></div></div>
     <div id="assign-worker-modal" class="overlay"><div class="modal-content" style="max-width: 400px;"></div></div>
     <div id="inventory-modal" class="overlay"><div class="modal-content" style="max-width: 500px;"></div></div>
     <div id="job-details-modal" class="overlay"><div class="modal-content"></div></div>
@@ -116,7 +116,6 @@
                 const userDoc = await getDoc(userDocRef);
                 if (userDoc.exists() && userDoc.data().status === 'active') {
                     currentUser = { uid: user.uid, ...userDoc.data() };
-                    // If user doesn't have a pod_role, assign a default based on main role
                     if (!currentUser.pod_role) {
                         currentUser.pod_role = (currentUser.role === 'admin' || currentUser.role === 'supervisor') ? 'supervisor' : 'worker';
                     }
@@ -458,15 +457,16 @@
             const status = job.status || 'pending';
             let actionButtons = '';
             const deleteBtn = `<button onclick='confirmDeletePod("${job.jfn}")' class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded text-sm ml-2">Delete POD</button>`;
+            const cancelBtn = `<button onclick='confirmCancelDelivery("${job.jfn}")' class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded text-sm ml-2">Cancel Delivery</button>`;
 
             if (currentUser.role === 'admin' || currentUser.role === 'supervisor') {
                 const manageBtn = `<button onclick='openJobDetailsModal("${job.id}")' class="bg-gray-200 hover:bg-gray-300 text-black font-bold py-2 px-4 rounded text-sm">Manage Job</button>`;
                 if (status === 'approved' || status === 'checked') actionButtons = manageBtn + `<button onclick='openAssignWorkerModal("${job.id}")' class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm ml-2">Prepare Delivery</button>`;
-                else if (status === 'Out for Delivery') actionButtons = `<button onclick='openViewPodModal("${job.jfn}")' class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded text-sm">View Order</button>`;
+                else if (status === 'Out for Delivery') actionButtons = `<button onclick='openViewPodModal("${job.jfn}")' class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded text-sm">View Order</button>` + cancelBtn;
                 else if (status === 'Completed-POD') actionButtons = `<button onclick='openViewPodModal("${job.jfn}")' class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded text-sm">View Order</button>` + deleteBtn;
                 else actionButtons = manageBtn;
             } else { // Worker
-                actionButtons = `<button onclick='openWorkerPodModal("${job.jfn}")' class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-sm">Complete Delivery</button>`;
+                actionButtons = `<button onclick='openWorkerDeliveryPage("${job.jfn}")' class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-sm">Complete Delivery</button>`;
             }
             return `<div class="job-card" style="border-left-color: ${color};"><div><p class="font-bold text-indigo-700">${job.jfn || 'N/A'}</p><p class="text-sm text-gray-600"><strong>Shipper:</strong> ${job.sh || 'N/A'}</p><p class="text-sm text-gray-600"><strong>Consignee:</strong> ${job.co || 'N/A'}</p></div><div class="text-right space-x-2">${actionButtons}<p class="text-xs text-gray-400 mt-2">Last Updated: ${job.updatedAt?.toDate().toLocaleString() || 'N/A'}</p></div></div>`;
         }
@@ -482,6 +482,18 @@
                 </div>`;
             openModal('confirm-modal');
         };
+        
+        window.confirmCancelDelivery = (jobFileNo) => {
+            const modal = document.getElementById('confirm-modal');
+            modal.querySelector('.modal-content').innerHTML = `
+                <h3 class="text-lg font-bold mb-4">Confirm Delivery Cancellation</h3>
+                <p>Are you sure you want to cancel the delivery for job <strong>${jobFileNo}</strong>? This will delete the POD record and return the job to the 'approved' state.</p>
+                <div class="text-right mt-6 space-x-2">
+                    <button onclick="closeModal('confirm-modal')" class="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button>
+                    <button onclick="deletePod('${jobFileNo}')" class="bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded">Confirm Cancellation</button>
+                </div>`;
+            openModal('confirm-modal');
+        };
 
         window.deletePod = async (jobFileNo) => {
              showLoader();
@@ -491,7 +503,7 @@
 
                 const batch = writeBatch(db);
                 batch.delete(doc(db, 'pods', pod.id));
-                batch.update(doc(db, 'jobfiles', jobFileNo.replace(/\//g, '_')), { status: 'approved' });
+                batch.update(doc(db, 'jobfiles', jobFileNo.replace(/\//g, '_')), { status: 'approved', assignedTo: null });
                 await batch.commit();
                 
                 showNotification("POD deleted and job status reverted.");
@@ -554,18 +566,30 @@
             modalContent.innerHTML = getAdminViewPodModalHtml(pod);
         };
 
-        window.openWorkerPodModal = async (jobFileNo) => {
-            const modalContent = document.getElementById('worker-pod-modal-content');
-            modalContent.innerHTML = '<div class="flex justify-center p-8"><div class="loader"></div></div>';
-            openModal('worker-pod-modal');
+        window.openWorkerDeliveryPage = async (jobFileNo) => {
+            showLoader();
             const pod = await findPodByJobFileNo(jobFileNo);
-            if (!pod) { modalContent.innerHTML = '<p class="text-center text-red-600">Could not find delivery details.</p>'; return; }
-            modalContent.innerHTML = getWorkerPodCaptureHtml(pod);
+            if (!pod) { 
+                showNotification("Could not find delivery details.", true);
+                hideLoader();
+                return;
+            }
+
+            document.getElementById('app-container').style.display = 'none';
+            const deliveryPage = document.getElementById('worker-delivery-page');
+            deliveryPage.innerHTML = getWorkerPodCapturePageHtml(pod);
+            deliveryPage.style.display = 'block';
+
             const canvas = document.getElementById('signature-pad');
             canvas.width = canvas.offsetWidth;
             signaturePad = new SignaturePad(canvas);
             document.getElementById('clear-signature').addEventListener('click', () => signaturePad.clear());
             document.getElementById('submit-pod-btn').addEventListener('click', () => submitPod(pod.id));
+            document.getElementById('back-to-tasks-btn').addEventListener('click', () => {
+                deliveryPage.style.display = 'none';
+                document.getElementById('app-container').style.display = 'block';
+            });
+            hideLoader();
         };
         
         async function submitPod(podId) {
@@ -597,7 +621,9 @@
                 await batch.commit();
 
                 showNotification("POD Submitted Successfully!");
-                closeModal('worker-pod-modal');
+                document.getElementById('worker-delivery-page').style.display = 'none';
+                document.getElementById('app-container').style.display = 'block';
+
             } catch(error) { console.error("Error submitting POD:", error); showNotification("Failed to submit POD.", true);
             } finally { hideLoader(); }
         }
@@ -620,10 +646,31 @@
             return `<div id="professional-pod-view" class="text-sm"><div class="flex justify-between items-start pb-4 mb-4 border-b-2 border-black"><div><div class="text-3xl font-extrabold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div><p class="text-xs text-gray-500 mt-1">Salmiya, Kuwait<br>+965 1234 5678 | info@qgocargo.com</p></div><div class="text-right"><h2 class="text-2xl font-bold text-gray-700">DELIVERY NOTE</h2><p><strong>Job No:</strong> ${pod.jobFileNo}</p><svg id="barcode"></svg></div></div><div class="grid grid-cols-2 gap-4 mb-4"><div class="pod-view-section"><h3>Shipper</h3><p>${pod.shipperName || 'N/A'}</p><p><strong>Origin:</strong> ${pod.origin || 'N/A'}</p></div><div class="pod-view-section"><h3>Consignee</h3><p>${pod.consigneeName || 'N/A'}</p><p><strong>Destination:</strong> ${pod.destination || 'N/A'}</p></div></div><div class="pod-view-section mb-4"><h3>Shipment Information</h3><p><strong>Description:</strong> ${pod.description || 'N/A'}</p><div class="grid grid-cols-2 gap-4 mt-2"><div><p><strong>MAWB/OBL:</strong> ${pod.mawb || 'N/A'}</p><p><strong>HAWB/HBL:</strong> ${pod.hawb || 'N/A'}</p></div><div><p><strong>Pieces:</strong> ${pod.pieces || 'N/A'}</p><p><strong>Weight:</strong> ${pod.grossWeight || 'N/A'}</p></div></div></div>${podCompletionDetails}<div class="flex justify-between items-end pt-4 mt-4 border-t"><p class="text-xs text-gray-400">Prepared By: ${pod.preparedBy || 'N/A'}</p><div id="qrcode" class="w-20 h-20"></div></div></div>`;
         }
 
-        function getWorkerPodCaptureHtml(pod) {
-            return `<div class="flex justify-between items-center"><h2 class="text-2xl font-bold">Complete Delivery</h2><button onclick="closeModal('worker-pod-modal')" class="text-gray-400 hover:text-gray-600 text-3xl">&times;</button></div><div class="mt-4 max-h-[60vh] overflow-y-auto pr-2">${getProfessionalPodHtml(pod)}<div class="mt-4 pod-view-section bg-blue-50"><h3 class="text-blue-700">Proof of Delivery - Capture</h3><div class="space-y-4 mt-2"><div><label for="receiver-name" class="block text-sm font-medium text-gray-700">Receiver Full Name</label><input type="text" id="receiver-name" class="w-full mt-1 p-2 border rounded-md" required></div><div><label class="block text-sm font-medium text-gray-700">Receiver Signature</label><canvas id="signature-pad"></canvas><button id="clear-signature" type="button" class="text-xs text-indigo-600 mt-1">Clear Signature</button></div><div><label for="pod-photo" class="block text-sm font-medium text-gray-700">Photo Evidence (Optional)</label><input type="file" id="pod-photo" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"></div></div></div></div><div class="mt-6"><button id="submit-pod-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg">Submit POD</button></div>`;
+        function getWorkerPodCapturePageHtml(pod) {
+            return `
+                <div class="container">
+                     <div class="flex justify-between items-center mb-4">
+                        <h1 class="text-2xl font-bold">Complete Delivery</h1>
+                        <button id="back-to-tasks-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">Back to Task List</button>
+                    </div>
+                    <div class="mt-4 max-h-[75vh] overflow-y-auto pr-2">
+                        ${getProfessionalPodHtml(pod)}
+                        <div class="mt-4 pod-view-section bg-blue-50">
+                            <h3 class="text-blue-700">Proof of Delivery - Capture</h3>
+                            <div class="space-y-4 mt-2">
+                                <div><label for="receiver-name" class="block text-sm font-medium text-gray-700">Receiver Full Name</label><input type="text" id="receiver-name" class="w-full mt-1 p-2 border rounded-md" required></div>
+                                <div><label class="block text-sm font-medium text-gray-700">Receiver Signature</label><canvas id="signature-pad"></canvas><button id="clear-signature" type="button" class="text-xs text-indigo-600 mt-1">Clear Signature</button></div>
+                                <div><label for="pod-photo" class="block text-sm font-medium text-gray-700">Photo Evidence (Optional)</label><input type="file" id="pod-photo" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <button id="submit-pod-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg">Submit POD</button>
+                    </div>
+                </div>
+            `;
         }
-
+        
         function getAdminDashboardShell() {
             return `<div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"><div><h1 class="text-3xl font-bold" style="color: var(--theme-color);">QGO Logistics Platform</h1><p class="text-sm text-gray-500">Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role-display" class="capitalize"></span>)</p></div><button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Logout</button></div><div class="border-b border-gray-200 mb-4"><nav class="-mb-px flex space-x-8" aria-label="Tabs"><button id="dashboard-tab-btn" class="dashboard-tab">Dashboard</button><button id="warehouse-tab-btn" class="dashboard-tab">Warehouse</button><button id="admin-tab-btn" class="dashboard-tab">Admin</button></nav></div><div id="dashboard-content" class="tab-content hidden"><div class="flex items-center justify-between mb-4"><div id="view-toggle-container" class="flex items-center space-x-2 bg-gray-200 p-1 rounded-lg"><button id="admin-view-btn" class="px-4 py-1 text-sm font-semibold rounded-md">Admin View</button><button id="worker-view-btn" class="px-4 py-1 text-sm font-semibold rounded-md">Worker View</button></div></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="stat-card"><p class="text-sm text-gray-500">Ready for Delivery</p><p id="ready-count" class="text-3xl font-bold text-blue-600">0</p></div><div class="stat-card"><p class="text-sm text-gray-500">In Transit</p><p id="transit-count" class="text-3xl font-bold text-amber-600">0</p></div><div class="stat-card"><p class="text-sm text-gray-500">Completed Today</p><p id="completed-count" class="text-3xl font-bold text-green-600">0</p></div></div><div><input type="text" id="job-search-input" placeholder="Search by Job No, Shipper, Consignee..." class="w-full p-2 border rounded-md mb-4"></div><div id="job-list-container"></div></div><div id="warehouse-content" class="tab-content hidden"><div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-bold">Warehouse Inventory</h2><button id="add-item-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Add New Item</button></div><div id="inventory-list"></div></div><div id="admin-content" class="tab-content hidden"><h2 class="text-2xl font-bold mb-4">User Permissions</h2></div>`;
         }
