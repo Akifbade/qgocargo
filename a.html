@@ -6,6 +6,7 @@
     <title>Job File Management System with Database</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root { --theme-color: #4f46e5; }
@@ -674,6 +675,7 @@
         let analyticsDataCache = null;
         let currentFilteredJobs = [];
         let fileIdToReject = null; 
+        let profitChartInstance = null;
 
         // --- Firebase Configuration ---
         const firebaseConfig = {
@@ -1334,7 +1336,8 @@
 
         // --- Analytics Dashboard Logic ---
         function openAnalyticsDashboard() {
-            filterAnalyticsByTimeframe('all', 'bd'); // Default to billing date
+            const dateType = document.getElementById('analytics-date-type')?.value || 'bd';
+            filterAnalyticsByTimeframe('all', dateType);
             document.getElementById('app-container').style.display = 'none';
             document.getElementById('analytics-container').style.display = 'block';
             window.scrollTo(0, 0);
@@ -1369,15 +1372,37 @@
 
 
         function calculateAndDisplayAnalytics(jobs) {
+            const body = document.getElementById('analytics-body');
              if (jobs.length === 0) {
-                 document.getElementById('analytics-body').innerHTML = `
+                 body.innerHTML = `
                  <!-- Timeframe Filters -->
-                 <div class="flex justify-center mb-4 space-x-2">
-                     <button onclick="filterAnalyticsByTimeframe('all')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">All Time</button>
-                     <button onclick="filterAnalyticsByTimeframe('year')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Year</button>
-                     <button onclick="filterAnalyticsByTimeframe('month')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Month</button>
-                 </div>
-                 <p class="text-center text-gray-500">No data available for the selected period.</p>`;
+                <div class="space-y-3">
+                    <div class="flex items-center justify-center gap-4">
+                         <label for="analytics-date-type" class="text-sm font-medium">Report Date Type:</label>
+                         <select id="analytics-date-type" class="input-field w-auto">
+                            <option value="bd">Billing Date</option>
+                            <option value="d">Opening Date</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-center flex-wrap gap-2">
+                        <button data-timeframe="all" class="timeframe-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">All Time</button>
+                        <button data-timeframe="thisYear" class="timeframe-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Year</button>
+                        <button data-timeframe="lastYear" class="timeframe-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">Last Year</button>
+                    </div>
+                </div>
+                 <p class="text-center text-gray-500 mt-8">No data available for the selected period.</p>`;
+                 
+                document.querySelectorAll('.timeframe-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const timeframe = e.target.dataset.timeframe;
+                        const dateType = document.getElementById('analytics-date-type').value;
+                        filterAnalyticsByTimeframe(timeframe, dateType);
+                    });
+                });
+                 document.getElementById('analytics-date-type').addEventListener('change', (e) => {
+                     const activeTimeframeButton = document.querySelector('.timeframe-btn.bg-indigo-700') || document.querySelector('[data-timeframe="all"]');
+                     filterAnalyticsByTimeframe(activeTimeframeButton.dataset.timeframe, e.target.value);
+                });
                  return;
             }
 
@@ -1469,6 +1494,86 @@
             document.getElementById('analytics-container').style.display = 'none';
             document.getElementById('app-container').style.display = 'block';
         }
+        
+        function renderProfitChart(data, monthlyReportType) {
+            if (profitChartInstance) {
+                profitChartInstance.destroy();
+            }
+
+            const ctx = document.getElementById('profit-chart')?.getContext('2d');
+            if (!ctx) return;
+            
+            const monthlyStats = monthlyReportType === 'billing' ? data.monthlyStatsByBilling : data.monthlyStatsByOpening;
+            
+            let year;
+            if (currentFilteredJobs.length > 0) {
+                 const dateField = monthlyReportType === 'billing' ? currentFilteredJobs[0].bd : currentFilteredJobs[0].d;
+                 if(dateField) year = new Date(dateField).getFullYear();
+            }
+            if (!year) year = new Date().getFullYear();
+
+
+            const labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const profits = Array(12).fill(0);
+            
+            monthlyStats.forEach(([monthStr, stats]) => {
+                const [statYear, statMonth] = monthStr.split('-').map(Number);
+                if (statYear === year) {
+                    profits[statMonth - 1] = stats.profit;
+                }
+            });
+
+            const maxProfit = Math.max(...profits.map(p => Math.abs(p)));
+
+            const backgroundColors = profits.map(p => {
+                if (p === 0) return 'rgba(201, 203, 207, 0.6)';
+                const alpha = Math.max(0.2, Math.abs(p) / (maxProfit || 1));
+                return p > 0 ? `rgba(75, 192, 192, ${alpha})` : `rgba(255, 99, 132, ${alpha})`;
+            });
+
+            profitChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: `Monthly Profit for ${year}`,
+                        data: profits,
+                        backgroundColor: backgroundColors,
+                        borderColor: backgroundColors.map(c => c.replace('0.6', '1').replace('0.2','1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    return 'KD ' + value;
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                             callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += 'KD ' + context.parsed.y.toFixed(2);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
 
         function displayAnalytics(data, sortBy = 'profit-desc', searchTerm = '', monthlyReportType = 'billing') {
             const body = document.getElementById('analytics-body');
@@ -1518,8 +1623,8 @@
                     <div class="flex items-center justify-center gap-4">
                          <label for="analytics-date-type" class="text-sm font-medium">Report Date Type:</label>
                          <select id="analytics-date-type" class="input-field w-auto">
-                            <option value="bd" ${document.getElementById('analytics-date-type')?.value !== 'd' ? 'selected' : ''}>Billing Date</option>
-                            <option value="d" ${document.getElementById('analytics-date-type')?.value === 'd' ? 'selected' : ''}>Opening Date</option>
+                            <option value="bd" ${monthlyReportType === 'bd' ? 'selected' : ''}>Billing Date</option>
+                            <option value="d" ${monthlyReportType === 'd' ? 'selected' : ''}>Opening Date</option>
                         </select>
                     </div>
                     <div class="flex justify-center flex-wrap gap-2">
@@ -1538,6 +1643,8 @@
                     <div class="bg-red-100 p-4 rounded-lg"><p class="text-sm text-red-800">Total Cost</p><p class="text-2xl font-bold text-red-900">KD ${data.totalCost.toFixed(2)}</p></div>
                     <div class="bg-green-100 p-4 rounded-lg"><p class="text-sm text-green-800">Total Profit</p><p class="text-2xl font-bold text-green-900">KD ${data.totalProfit.toFixed(2)}</p></div>
                 </div>
+                 <!-- Profit Chart -->
+                <div class="bg-white p-4 rounded-lg shadow-sm lg:col-span-3"><canvas id="profit-chart"></canvas></div>
 
                 <!-- Detailed Breakdowns -->
                 <div id="analytics-tables" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1614,6 +1721,8 @@
                 </div>
             `;
             
+            renderProfitChart(data, monthlyReportType);
+
             document.getElementById('analytics-search-bar').addEventListener('input', (e) => {
                 displayAnalytics(analyticsDataCache, document.getElementById('sort-analytics').value, e.target.value, document.getElementById('analytics-date-type').value);
             });
@@ -1621,15 +1730,20 @@
                  displayAnalytics(analyticsDataCache, e.target.value, document.getElementById('analytics-search-bar').value, document.getElementById('analytics-date-type').value);
             });
              document.getElementById('analytics-date-type').addEventListener('change', (e) => {
-                 // Re-filter and display when date type changes
-                 const activeTimeframeButton = document.querySelector('.timeframe-btn.bg-indigo-700') || document.querySelector('.timeframe-btn');
+                 const activeTimeframeButton = document.querySelector('.timeframe-btn.bg-indigo-700') || document.querySelector('[data-timeframe="all"]');
                  filterAnalyticsByTimeframe(activeTimeframeButton.dataset.timeframe, e.target.value);
             });
 
             document.querySelectorAll('.timeframe-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                     document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.replace('bg-indigo-700', 'bg-indigo-500'));
-                     e.target.classList.replace('bg-indigo-500', 'bg-indigo-700');
+                     document.querySelectorAll('.timeframe-btn').forEach(b => {
+                        b.classList.remove('bg-indigo-700', 'text-white');
+                        if(!b.classList.contains('bg-gray-200')) {
+                           b.classList.add('bg-indigo-500');
+                        }
+                     });
+                     e.target.classList.remove('bg-indigo-500', 'bg-gray-200');
+                     e.target.classList.add('bg-indigo-700', 'text-white');
                     const timeframe = e.target.dataset.timeframe;
                     const dateType = document.getElementById('analytics-date-type').value;
                     filterAnalyticsByTimeframe(timeframe, dateType);
