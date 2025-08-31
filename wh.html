@@ -16,6 +16,7 @@
         .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; padding: 1rem; }
         .overlay.visible { opacity: 1; visibility: visible; }
         .modal-content { background: white; padding: 1.5rem; border-radius: 0.5rem; width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; transform: scale(0.9); transition: transform 0.3s; }
+        .worker-modal { max-width: 500px; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--theme-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #notification { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: #2d3748; color: white; padding: 1rem 1.5rem; border-radius: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000; text-align: center; transition: transform 0.5s, opacity 0.5s; transform: translateY(100px); opacity: 0; }
@@ -70,6 +71,7 @@
     <div id="inventory-modal" class="overlay"><div class="modal-content" style="max-width: 500px;"></div></div>
     <div id="job-details-modal" class="overlay"><div class="modal-content"></div></div>
     <div id="confirm-modal" class="overlay"><div class="modal-content" style="max-width: 400px;"></div></div>
+    <div id="print-area" class="hidden"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -95,6 +97,7 @@
         let usersCache = [];
         let workersCache = [];
 
+        // --- UI HELPER FUNCTIONS ---
         const showLoader = () => document.getElementById('loader-overlay').classList.add('visible');
         const hideLoader = () => document.getElementById('loader-overlay').classList.remove('visible');
         const openModal = (id) => document.getElementById(id).classList.add('visible');
@@ -107,12 +110,16 @@
             setTimeout(() => { notification.classList.remove('show'); }, 5000);
         }
 
+        // --- AUTHENTICATION ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                const userDocRef = doc(db, 'users', user.uid);
+                const userDoc = await getDoc(userDocRef);
                 if (userDoc.exists() && userDoc.data().status === 'active') {
                     currentUser = { uid: user.uid, ...userDoc.data() };
-                    if (!currentUser.pod_role) currentUser.pod_role = (currentUser.role === 'admin' || currentUser.role === 'supervisor') ? 'supervisor' : 'worker';
+                    if (!currentUser.pod_role) {
+                        currentUser.pod_role = (currentUser.role === 'admin' || currentUser.role === 'supervisor') ? 'supervisor' : 'worker';
+                    }
                     document.getElementById('login-screen').style.display = 'none';
                     document.getElementById('app-container').style.display = 'block';
                     loadInitialData();
@@ -128,8 +135,15 @@
         });
         
         async function loadInitialData() {
-            const userSnapshot = await getDocs(query(collection(db, 'users')));
-            usersCache = userSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            const usersQuery = query(collection(db, 'users'));
+            const userSnapshot = await getDocs(usersQuery);
+            usersCache = userSnapshot.docs.map(doc => {
+                const userData = doc.data();
+                if (!userData.pod_role) {
+                    userData.pod_role = (userData.role === 'admin' || userData.role === 'supervisor') ? 'supervisor' : 'worker';
+                }
+                return { id: doc.id, ...userData };
+            });
             workersCache = usersCache.filter(u => u.pod_role === 'worker').map(u => u.displayName);
             renderUIBasedOnRole();
         }
@@ -145,8 +159,6 @@
                 switchTab('dashboard');
             } else { // Worker
                 appContainer.innerHTML = getWorkerDashboardShell();
-                document.getElementById('user-display-name').textContent = currentUser.displayName;
-                document.getElementById('user-role-display').textContent = currentUser.pod_role;
                 document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
                 listenForJobFiles();
             }
@@ -437,7 +449,7 @@
 
                 const batch = writeBatch(db);
                 batch.delete(doc(db, 'pods', pod.id));
-                batch.update(doc(db, 'jobfiles', jobFileNo.replace(/\//g, '_')), { status: 'approved', assignedTo: null });
+                batch.update(doc(db, 'jobfiles', jobFileNo.replace(/\//g, '_')), { status: pod.originalJobStatus || 'approved', assignedTo: null });
                 await batch.commit();
                 
                 showNotification("POD deleted and job status reverted.");
@@ -467,7 +479,8 @@
                     origin: jobData.or, destination: jobData.de, pieces: jobData.pc,
                     grossWeight: jobData.gw, podStatus: 'Out for Delivery',
                     preparedBy: currentUser.displayName, preparedAt: serverTimestamp(),
-                    assignedTo: workerName
+                    assignedTo: workerName,
+                    originalJobStatus: jobData.status
                 };
                 const batch = writeBatch(db);
                 batch.set(doc(collection(db, 'pods')), podData);
@@ -508,7 +521,6 @@
                 hideLoader();
                 return;
             }
-
             document.getElementById('app-container').style.display = 'none';
             const deliveryPage = document.getElementById('worker-delivery-page');
             deliveryPage.innerHTML = getWorkerPodCapturePageHtml(pod);
