@@ -229,8 +229,10 @@
                 <div class="text-sm text-center sm:text-left">
                     Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role" class="capitalize"></span>)
                 </div>
+                <div class="flex-grow text-center">
+                     <button onclick="openAnalyticsDashboard()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-5 rounded-md text-base">Analytics</button>
+                </div>
                 <div>
-                    <button onclick="openAnalyticsDashboard()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-1 px-3 rounded text-sm mr-2">Analytics</button>
                     <button id="activity-log-btn" class="admin-only bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Activity Log</button>
                     <button id="admin-panel-btn" class="admin-only bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Admin Panel</button>
                     <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Logout</button>
