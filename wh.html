@@ -97,7 +97,6 @@
         let usersCache = [];
         let workersCache = [];
 
-        // --- UI HELPER FUNCTIONS ---
         const showLoader = () => document.getElementById('loader-overlay').classList.add('visible');
         const hideLoader = () => document.getElementById('loader-overlay').classList.remove('visible');
         const openModal = (id) => document.getElementById(id).classList.add('visible');
@@ -109,8 +108,8 @@
             notification.classList.add('show');
             setTimeout(() => { notification.classList.remove('show'); }, 5000);
         }
+        window.signOut = () => signOut(auth);
 
-        // --- AUTHENTICATION ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const userDocRef = doc(db, 'users', user.uid);
@@ -137,13 +136,7 @@
         async function loadInitialData() {
             const usersQuery = query(collection(db, 'users'));
             const userSnapshot = await getDocs(usersQuery);
-            usersCache = userSnapshot.docs.map(doc => {
-                const userData = doc.data();
-                if (!userData.pod_role) {
-                    userData.pod_role = (userData.role === 'admin' || userData.role === 'supervisor') ? 'supervisor' : 'worker';
-                }
-                return { id: doc.id, ...userData };
-            });
+            usersCache = userSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             workersCache = usersCache.filter(u => u.pod_role === 'worker').map(u => u.displayName);
             renderUIBasedOnRole();
         }
@@ -154,12 +147,14 @@
                 appContainer.innerHTML = getAdminDashboardShell();
                 document.getElementById('dashboard-tab-btn').addEventListener('click', () => switchTab('dashboard'));
                 document.getElementById('warehouse-tab-btn').addEventListener('click', () => switchTab('warehouse'));
-                document.getElementById('admin-tab-btn').addEventListener('click', () => switchTab('admin'));
-                document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+                if(currentUser.role === 'admin') { // Main role check for Admin tab
+                    document.getElementById('admin-tab-btn').addEventListener('click', () => switchTab('admin'));
+                }
+                document.getElementById('logout-btn').addEventListener('click', window.signOut);
                 switchTab('dashboard');
             } else { // Worker
                 appContainer.innerHTML = getWorkerDashboardShell();
-                document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+                document.getElementById('logout-btn').addEventListener('click', window.signOut);
                 listenForJobFiles();
             }
         }
@@ -336,7 +331,7 @@
 
         function renderTable(view) {
             currentView = view;
-            if ((currentUser.role === 'admin' || currentUser.role === 'supervisor') && document.getElementById('admin-view-btn')) {
+            if ((currentUser.pod_role === 'supervisor') && document.getElementById('admin-view-btn')) {
                 document.getElementById('admin-view-btn').classList.toggle('bg-white', view === 'admin');
                 document.getElementById('worker-view-btn').classList.toggle('bg-white', view === 'worker');
             }
@@ -351,7 +346,7 @@
                 
                 let jobsToDisplay = [...jobsCache];
 
-                if (currentUser.role === 'admin' || currentUser.role === 'supervisor') {
+                if (currentUser.pod_role === 'supervisor') {
                     if(currentView === 'worker') {
                         jobsToDisplay = jobsToDisplay.filter(job => job.status === 'Out for Delivery');
                         displayWorkerView(jobsToDisplay, true);
@@ -405,7 +400,7 @@
             const deleteBtn = `<button onclick='confirmDeletePod("${job.jfn}")' class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded text-sm ml-2">Delete POD</button>`;
             const cancelBtn = `<button onclick='confirmCancelDelivery("${job.jfn}")' class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded text-sm ml-2">Cancel Delivery</button>`;
 
-            if (currentUser.role === 'admin' || currentUser.role === 'supervisor') {
+            if (currentUser.pod_role === 'supervisor') {
                 const manageBtn = `<button onclick='openJobDetailsModal("${job.id}")' class="bg-gray-200 hover:bg-gray-300 text-black font-bold py-2 px-4 rounded text-sm">Manage Job</button>`;
                 if (status === 'approved' || status === 'checked') actionButtons = manageBtn + `<button onclick='openAssignWorkerModal("${job.id}")' class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm ml-2">Prepare Delivery</button>`;
                 else if (status === 'Out for Delivery') actionButtons = `<button onclick='openViewPodModal("${job.jfn}")' class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded text-sm">View Order</button>` + cancelBtn;
@@ -421,7 +416,7 @@
             const modal = document.getElementById('confirm-modal');
             modal.querySelector('.modal-content').innerHTML = `
                 <h3 class="text-lg font-bold mb-4">Confirm POD Deletion</h3>
-                <p>Are you sure you want to delete the POD for job <strong>${jobFileNo}</strong>? This will revert the job's status to 'approved' and allow it to be re-assigned.</p>
+                <p>Are you sure you want to delete the POD for job <strong>${jobFileNo}</strong>? This will revert the job's status to its previous state.</p>
                 <div class="text-right mt-6 space-x-2">
                     <button onclick="closeModal('confirm-modal')" class="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button>
                     <button onclick="deletePod('${jobFileNo}')" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">Confirm Deletion</button>
@@ -433,7 +428,7 @@
             const modal = document.getElementById('confirm-modal');
             modal.querySelector('.modal-content').innerHTML = `
                 <h3 class="text-lg font-bold mb-4">Confirm Delivery Cancellation</h3>
-                <p>Are you sure you want to cancel the delivery for job <strong>${jobFileNo}</strong>? This will delete the POD record and return the job to the 'approved' state.</p>
+                <p>Are you sure you want to cancel the delivery for job <strong>${jobFileNo}</strong>? This will delete the POD record and return the job to its previous state.</p>
                 <div class="text-right mt-6 space-x-2">
                     <button onclick="closeModal('confirm-modal')" class="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button>
                     <button onclick="deletePod('${jobFileNo}')" class="bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded">Confirm Cancellation</button>
@@ -618,7 +613,8 @@
         }
         
         function getAdminDashboardShell() {
-            return `<div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"><div><h1 class="text-3xl font-bold" style="color: var(--theme-color);">QGO Logistics Platform</h1><p class="text-sm text-gray-500">Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role-display" class="capitalize"></span>)</p></div><button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Logout</button></div><div class="border-b border-gray-200 mb-4"><nav class="-mb-px flex space-x-8" aria-label="Tabs"><button id="dashboard-tab-btn" class="dashboard-tab">Dashboard</button><button id="warehouse-tab-btn" class="dashboard-tab">Warehouse</button><button id="admin-tab-btn" class="dashboard-tab">Admin</button></nav></div><div id="dashboard-content" class="tab-content hidden"><div class="flex items-center justify-between mb-4"><div id="view-toggle-container" class="flex items-center space-x-2 bg-gray-200 p-1 rounded-lg"><button id="admin-view-btn" class="px-4 py-1 text-sm font-semibold rounded-md">Admin View</button><button id="worker-view-btn" class="px-4 py-1 text-sm font-semibold rounded-md">Worker View</button></div></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="stat-card"><p class="text-sm text-gray-500">Ready for Delivery</p><p id="ready-count" class="text-3xl font-bold text-blue-600">0</p></div><div class="stat-card"><p class="text-sm text-gray-500">In Transit</p><p id="transit-count" class="text-3xl font-bold text-amber-600">0</p></div><div class="stat-card"><p class="text-sm text-gray-500">Completed Today</p><p id="completed-count" class="text-3xl font-bold text-green-600">0</p></div></div><div><input type="text" id="job-search-input" placeholder="Search by Job No, Shipper, Consignee..." class="w-full p-2 border rounded-md mb-4"></div><div id="job-list-container"></div></div><div id="warehouse-content" class="tab-content hidden"><div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-bold">Warehouse Inventory</h2><button id="add-item-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Add New Item</button></div><div id="inventory-list"></div></div><div id="admin-content" class="tab-content hidden"><h2 class="text-2xl font-bold mb-4">User Permissions</h2></div>`;
+            const adminTab = currentUser.role === 'admin' ? `<button id="admin-tab-btn" class="dashboard-tab">Admin</button>` : '';
+            return `<div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"><div><h1 class="text-3xl font-bold" style="color: var(--theme-color);">QGO Logistics Platform</h1><p class="text-sm text-gray-500">Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role-display" class="capitalize"></span>)</p></div><button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Logout</button></div><div class="border-b border-gray-200 mb-4"><nav class="-mb-px flex space-x-8" aria-label="Tabs"><button id="dashboard-tab-btn" class="dashboard-tab">Dashboard</button><button id="warehouse-tab-btn" class="dashboard-tab">Warehouse</button>${adminTab}</nav></div><div id="dashboard-content" class="tab-content hidden"><div class="flex items-center justify-between mb-4"><div id="view-toggle-container" class="flex items-center space-x-2 bg-gray-200 p-1 rounded-lg"><button id="admin-view-btn" class="px-4 py-1 text-sm font-semibold rounded-md">Admin View</button><button id="worker-view-btn" class="px-4 py-1 text-sm font-semibold rounded-md">Worker View</button></div></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="stat-card"><p class="text-sm text-gray-500">Ready for Delivery</p><p id="ready-count" class="text-3xl font-bold text-blue-600">0</p></div><div class="stat-card"><p class="text-sm text-gray-500">In Transit</p><p id="transit-count" class="text-3xl font-bold text-amber-600">0</p></div><div class="stat-card"><p class="text-sm text-gray-500">Completed Today</p><p id="completed-count" class="text-3xl font-bold text-green-600">0</p></div></div><div><input type="text" id="job-search-input" placeholder="Search by Job No, Shipper, Consignee..." class="w-full p-2 border rounded-md mb-4"></div><div id="job-list-container"></div></div><div id="warehouse-content" class="tab-content hidden"><div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-bold">Warehouse Inventory</h2><button id="add-item-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Add New Item</button></div><div id="inventory-list"></div></div><div id="admin-content" class="tab-content hidden"><h2 class="text-2xl font-bold mb-4">User Permissions</h2></div>`;
         }
         
         function getWorkerDashboardShell() {
