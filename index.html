@@ -6,6 +6,7 @@
     <title>Job File Management System with Database</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root { --theme-color: #4f46e5; }
@@ -229,6 +230,7 @@
                     Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role" class="capitalize"></span>)
                 </div>
                 <div>
+                    <button onclick="openAnalyticsDashboard()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-1 px-3 rounded text-sm mr-2">Analytics</button>
                     <button id="activity-log-btn" class="admin-only bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Activity Log</button>
                     <button id="admin-panel-btn" class="admin-only bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Admin Panel</button>
                     <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Logout</button>
@@ -361,10 +363,6 @@
 
             <!-- Action Buttons -->
             <div class="text-center mt-10 no-print flex flex-wrap justify-center gap-2 sm:gap-4">
-                 <button onclick="openAnalyticsDashboard()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
-                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" /></svg>
-                     <span>Analytics</span>
-                 </button>
                  <button onclick="openClientManager()" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" /></svg>
                      <span>Clients</span>
@@ -672,8 +670,9 @@
         let jobFilesCache = [];
         let clientsCache = [];
         let analyticsDataCache = null;
-        let currentlyViewedUser = null; // For refreshing user jobs modal
-        let fileIdToReject = null; // For rejecting files from modals
+        let currentFilteredJobs = [];
+        let fileIdToReject = null; 
+        let profitChartInstance = null;
 
         // --- Firebase Configuration ---
         const firebaseConfig = {
@@ -1334,43 +1333,73 @@
 
         // --- Analytics Dashboard Logic ---
         function openAnalyticsDashboard() {
-            filterAnalyticsByTimeframe('all');
+            const dateType = document.getElementById('analytics-date-type')?.value || 'bd';
+            filterAnalyticsByTimeframe('all', dateType);
             document.getElementById('app-container').style.display = 'none';
             document.getElementById('analytics-container').style.display = 'block';
             window.scrollTo(0, 0);
         }
 
-        function filterAnalyticsByTimeframe(timeframe) {
-            let filteredJobs = jobFilesCache;
+        function filterAnalyticsByTimeframe(timeframe, dateType = 'bd') {
+            currentFilteredJobs = jobFilesCache;
             const now = new Date();
             const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth();
+            const lastYear = currentYear - 1;
 
-            if (timeframe === 'year') {
-                filteredJobs = jobFilesCache.filter(job => {
-                    const jobDate = job.bd ? new Date(job.bd) : null; // Use billing date
-                    return jobDate && jobDate.getFullYear() === currentYear;
-                });
-            } else if (timeframe === 'month') {
-                filteredJobs = jobFilesCache.filter(job => {
-                    const jobDate = job.bd ? new Date(job.bd) : null; // Use billing date
-                    return jobDate && jobDate.getFullYear() === currentYear && jobDate.getMonth() === currentMonth;
+            if (timeframe !== 'all') {
+                currentFilteredJobs = jobFilesCache.filter(job => {
+                    const dateField = dateType === 'bd' ? job.bd : job.d;
+                    if (!dateField) return false;
+                    const jobDate = new Date(dateField);
+                    if (timeframe === 'thisYear') {
+                        return jobDate.getFullYear() === currentYear;
+                    }
+                    if (timeframe === 'lastYear') {
+                        return jobDate.getFullYear() === lastYear;
+                    }
+                    if (timeframe.includes('-')) { // Monthly filter like '2025-01'
+                        const [year, month] = timeframe.split('-').map(Number);
+                        return jobDate.getFullYear() === year && jobDate.getMonth() === month - 1;
+                    }
+                    return true;
                 });
             }
-            
-            calculateAndDisplayAnalytics(filteredJobs);
+            calculateAndDisplayAnalytics(currentFilteredJobs);
         }
 
+
         function calculateAndDisplayAnalytics(jobs) {
+            const body = document.getElementById('analytics-body');
              if (jobs.length === 0) {
-                 document.getElementById('analytics-body').innerHTML = `
+                 body.innerHTML = `
                  <!-- Timeframe Filters -->
-                 <div class="flex justify-center mb-4 space-x-2">
-                     <button onclick="filterAnalyticsByTimeframe('all')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">All Time</button>
-                     <button onclick="filterAnalyticsByTimeframe('year')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Year</button>
-                     <button onclick="filterAnalyticsByTimeframe('month')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Month</button>
-                 </div>
-                 <p class="text-center text-gray-500">No data available for the selected period.</p>`;
+                <div class="space-y-3">
+                    <div class="flex items-center justify-center gap-4">
+                         <label for="analytics-date-type" class="text-sm font-medium">Report Date Type:</label>
+                         <select id="analytics-date-type" class="input-field w-auto">
+                            <option value="bd">Billing Date</option>
+                            <option value="d">Opening Date</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-center flex-wrap gap-2">
+                        <button data-timeframe="all" class="timeframe-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">All Time</button>
+                        <button data-timeframe="thisYear" class="timeframe-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Year</button>
+                        <button data-timeframe="lastYear" class="timeframe-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">Last Year</button>
+                    </div>
+                </div>
+                 <p class="text-center text-gray-500 mt-8">No data available for the selected period.</p>`;
+                 
+                document.querySelectorAll('.timeframe-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const timeframe = e.target.dataset.timeframe;
+                        const dateType = document.getElementById('analytics-date-type').value;
+                        filterAnalyticsByTimeframe(timeframe, dateType);
+                    });
+                });
+                 document.getElementById('analytics-date-type').addEventListener('change', (e) => {
+                     const activeTimeframeButton = document.querySelector('.timeframe-btn.bg-indigo-700') || document.querySelector('[data-timeframe="all"]');
+                     filterAnalyticsByTimeframe(activeTimeframeButton.dataset.timeframe, e.target.value);
+                });
                  return;
             }
 
@@ -1381,14 +1410,17 @@
             const profitByFile = [];
             const profitByShipper = {};
             const profitByConsignee = {};
-            const monthlyStats = {};
+            const monthlyStatsByBilling = {};
+            const monthlyStatsByOpening = {};
             const profitByUser = {};
+            const profitBySalesman = {};
 
             jobs.forEach(job => {
                 const profit = job.totalProfit || 0;
                 const revenue = job.totalSelling || 0;
                 const cost = job.totalCost || 0;
                 const creator = job.createdBy || 'Unknown';
+                const salesman = job.sm || 'N/A';
                 let status = 'Pending Check';
                 if (job.status === 'rejected') status = 'Rejected';
                 else if (job.status === 'approved') status = 'Approved';
@@ -1406,29 +1438,50 @@
                 if (job.co) {
                     profitByConsignee[job.co] = (profitByConsignee[job.co] || 0) + profit;
                 }
-                // *** CHANGED: Group by billing date (bd) instead of job date (d) ***
                 if (job.bd) {
-                    const month = job.bd.substring(0, 7); // YYYY-MM from billing date
-                    if (!monthlyStats[month]) {
-                        monthlyStats[month] = { profit: 0, count: 0 };
+                    const month = job.bd.substring(0, 7);
+                    if (!monthlyStatsByBilling[month]) {
+                        monthlyStatsByBilling[month] = { profit: 0, count: 0, jobs: [] };
                     }
-                    monthlyStats[month].profit += profit;
-                    monthlyStats[month].count++;
+                    monthlyStatsByBilling[month].profit += profit;
+                    monthlyStatsByBilling[month].count++;
+                    monthlyStatsByBilling[month].jobs.push(job);
+                }
+                if (job.d) {
+                    const month = job.d.substring(0, 7);
+                    if (!monthlyStatsByOpening[month]) {
+                        monthlyStatsByOpening[month] = { profit: 0, count: 0, jobs: [] };
+                    }
+                    monthlyStatsByOpening[month].profit += profit;
+                    monthlyStatsByOpening[month].count++;
+                    monthlyStatsByOpening[month].jobs.push(job);
                 }
                 
                 if (!profitByUser[creator]) {
-                    profitByUser[creator] = { count: 0, profit: 0 };
+                    profitByUser[creator] = { count: 0, profit: 0, jobs: [] };
                 }
                 profitByUser[creator].count++;
                 profitByUser[creator].profit += profit;
+                profitByUser[creator].jobs.push(job);
+
+                if (salesman !== 'N/A') {
+                    if (!profitBySalesman[salesman]) {
+                        profitBySalesman[salesman] = { count: 0, profit: 0, jobs: [] };
+                    }
+                    profitBySalesman[salesman].count++;
+                    profitBySalesman[salesman].profit += profit;
+                    profitBySalesman[salesman].jobs.push(job);
+                }
             });
 
             analyticsDataCache = {
                 totalJobs, totalRevenue, totalCost, totalProfit, profitByFile,
                 profitByShipper: Object.entries(profitByShipper).sort((a, b) => b[1] - a[1]),
                 profitByConsignee: Object.entries(profitByConsignee).sort((a, b) => b[1] - a[1]),
-                monthlyStats: Object.entries(monthlyStats).sort((a, b) => a[0].localeCompare(b[0])),
-                profitByUser: Object.entries(profitByUser).sort((a, b) => b[1].profit - a[1].profit)
+                monthlyStatsByBilling: Object.entries(monthlyStatsByBilling).sort((a, b) => a[0].localeCompare(b[0])),
+                monthlyStatsByOpening: Object.entries(monthlyStatsByOpening).sort((a, b) => a[0].localeCompare(b[0])),
+                profitByUser: Object.entries(profitByUser).sort((a, b) => b[1].profit - a[1].profit),
+                profitBySalesman: Object.entries(profitBySalesman).sort((a, b) => b[1].profit - a[1].profit)
             };
 
             displayAnalytics(analyticsDataCache);
@@ -1438,10 +1491,91 @@
             document.getElementById('analytics-container').style.display = 'none';
             document.getElementById('app-container').style.display = 'block';
         }
+        
+        function renderProfitChart(data, monthlyReportType) {
+            if (profitChartInstance) {
+                profitChartInstance.destroy();
+            }
 
-        function displayAnalytics(data, sortBy = 'profit-desc', searchTerm = '') {
+            const ctx = document.getElementById('profit-chart')?.getContext('2d');
+            if (!ctx) return;
+            
+            const monthlyStats = monthlyReportType === 'billing' ? data.monthlyStatsByBilling : data.monthlyStatsByOpening;
+            
+            let year;
+            if (currentFilteredJobs.length > 0) {
+                 const dateField = monthlyReportType === 'billing' ? currentFilteredJobs[0].bd : currentFilteredJobs[0].d;
+                 if(dateField) year = new Date(dateField).getFullYear();
+            }
+            if (!year) year = new Date().getFullYear();
+
+
+            const labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const profits = Array(12).fill(0);
+            
+            monthlyStats.forEach(([monthStr, stats]) => {
+                const [statYear, statMonth] = monthStr.split('-').map(Number);
+                if (statYear === year) {
+                    profits[statMonth - 1] = stats.profit;
+                }
+            });
+
+            const maxProfit = Math.max(...profits.map(p => Math.abs(p)));
+
+            const backgroundColors = profits.map(p => {
+                if (p === 0) return 'rgba(201, 203, 207, 0.6)';
+                const alpha = Math.max(0.2, Math.abs(p) / (maxProfit || 1));
+                return p > 0 ? `rgba(75, 192, 192, ${alpha})` : `rgba(255, 99, 132, ${alpha})`;
+            });
+
+            profitChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: `Monthly Profit for ${year}`,
+                        data: profits,
+                        backgroundColor: backgroundColors,
+                        borderColor: backgroundColors.map(c => c.replace('0.6', '1').replace('0.2','1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    return 'KD ' + value;
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                             callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += 'KD ' + context.parsed.y.toFixed(2);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+
+        function displayAnalytics(data, sortBy = 'profit-desc', searchTerm = '', monthlyReportType = 'billing') {
             const body = document.getElementById('analytics-body');
-            const deleteButtonHtml = (fileId) => currentUser.role === 'admin' ? `<button onclick="confirmDelete('${fileId}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>` : '';
             
             let filteredFiles = data.profitByFile;
 
@@ -1455,6 +1589,20 @@
                     (file.createdBy || '').toLowerCase().includes(lowerCaseSearchTerm)
                 );
             }
+            
+            const monthlyStats = monthlyReportType === 'billing' ? data.monthlyStatsByBilling : data.monthlyStatsByOpening;
+            const monthlyReportTitle = monthlyReportType === 'billing' ? 'Profit By Month (Billing Date)' : 'Profit By Month (Opening Date)';
+
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const lastYear = currentYear - 1;
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            let monthButtons = '';
+            for(let i=0; i < 12; i++) {
+                const monthStr = `${currentYear}-${String(i + 1).padStart(2, '0')}`;
+                monthButtons += `<button data-timeframe="${monthStr}" class="timeframe-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded text-sm">${months[i]}</button>`;
+            }
+
 
             const sortedFiles = [...filteredFiles];
             if (sortBy === 'profit-desc') {
@@ -1470,21 +1618,39 @@
 
             body.innerHTML = `
                 <!-- Timeframe Filters -->
-                <div class="flex justify-center mb-4 space-x-2">
-                    <button onclick="filterAnalyticsByTimeframe('all')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">All Time</button>
-                    <button onclick="filterAnalyticsByTimeframe('year')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Year</button>
-                    <button onclick="filterAnalyticsByTimeframe('month')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Month</button>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-center gap-4">
+                         <label for="analytics-date-type" class="text-sm font-medium">Report Date Type:</label>
+                         <select id="analytics-date-type" class="input-field w-auto">
+                            <option value="bd" ${monthlyReportType === 'bd' ? 'selected' : ''}>Billing Date</option>
+                            <option value="d" ${monthlyReportType === 'd' ? 'selected' : ''}>Opening Date</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-center flex-wrap gap-2">
+                        <button data-timeframe="all" class="timeframe-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">All Time</button>
+                        <button data-timeframe="thisYear" class="timeframe-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Year</button>
+                        <button data-timeframe="lastYear" class="timeframe-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">Last Year</button>
+                    </div>
+                    <div class="flex justify-center flex-wrap gap-1">
+                        ${monthButtons}
+                    </div>
                 </div>
                 <!-- Overall Summary -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-center mt-6">
                     <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Total Jobs</p><p class="text-2xl font-bold">${data.totalJobs}</p></div>
                     <div class="bg-blue-100 p-4 rounded-lg"><p class="text-sm text-blue-800">Total Revenue</p><p class="text-2xl font-bold text-blue-900">KD ${data.totalRevenue.toFixed(2)}</p></div>
                     <div class="bg-red-100 p-4 rounded-lg"><p class="text-sm text-red-800">Total Cost</p><p class="text-2xl font-bold text-red-900">KD ${data.totalCost.toFixed(2)}</p></div>
                     <div class="bg-green-100 p-4 rounded-lg"><p class="text-sm text-green-800">Total Profit</p><p class="text-2xl font-bold text-green-900">KD ${data.totalProfit.toFixed(2)}</p></div>
                 </div>
+                 <!-- Profit Chart -->
+                 <div class="bg-white p-4 rounded-lg shadow-sm">
+                    <div style="position: relative; height:300px;">
+                        <canvas id="profit-chart"></canvas>
+                    </div>
+                </div>
 
                 <!-- Detailed Breakdowns -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div id="analytics-tables" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div>
                         <h4 class="text-lg font-semibold mb-2">Top Profitable Shippers</h4>
                         <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>Shipper</th><th>Total Profit</th></tr></thead>
@@ -1495,15 +1661,20 @@
                         <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>Consignee</th><th>Total Profit</th></tr></thead>
                         <tbody>${data.profitByConsignee.slice(0, 5).map(([name, profit]) => `<tr><td>${name}</td><td>KD ${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table></div>
                     </div>
-                    <div>
-                        <h4 class="text-lg font-semibold mb-2">Top Users by Profit</h4>
-                        <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>User</th><th>Files</th><th>Profit</th><th>Actions</th></tr></thead>
-                        <tbody>${data.profitByUser.slice(0, 5).map(([name, stats]) => `<tr><td>${name}</td><td>${stats.count}</td><td>KD ${stats.profit.toFixed(2)}</td><td><button onclick="showUserJobs('${name}')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-2 rounded text-xs">View Jobs</button></td></tr>`).join('')}</tbody></table></div>
+                     <div>
+                        <h4 class="text-lg font-semibold mb-2">Top Salesmen by Profit</h4>
+                        <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>Salesman</th><th>Files</th><th>Profit</th><th>Actions</th></tr></thead>
+                        <tbody>${data.profitBySalesman.slice(0, 5).map(([name, stats]) => `<tr><td>${name}</td><td>${stats.count}</td><td>KD ${stats.profit.toFixed(2)}</td><td><button data-action="view-salesman-jobs" data-salesman="${name}" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-2 rounded text-xs">View Jobs</button></td></tr>`).join('')}</tbody></table></div>
                     </div>
                     <div class="lg:col-span-3">
-                        <h4 class="text-lg font-semibold mb-2">Profit By Month (Based on Billing Date)</h4>
+                         <h4 class="text-lg font-semibold mb-2">${monthlyReportTitle}</h4>
                         <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>Month</th><th>Total Jobs</th><th>Total Profit / Loss</th><th>Actions</th></tr></thead>
-                        <tbody>${data.monthlyStats.map(([month, stats]) => `<tr><td>${month}</td><td>${stats.count}</td><td>KD ${stats.profit.toFixed(2)}</td><td><button onclick="showMonthlyJobs('${month}')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-2 rounded text-xs">View Jobs</button></td></tr>`).join('')}</tbody></table></div>
+                        <tbody>${monthlyStats.map(([month, stats]) => `<tr><td>${month}</td><td>${stats.count}</td><td>KD ${stats.profit.toFixed(2)}</td><td><button data-action="view-monthly-jobs" data-month="${month}" data-datetype="${monthlyReportType}" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-2 rounded text-xs">View Jobs</button></td></tr>`).join('')}</tbody></table></div>
+                    </div>
+                     <div class="lg:col-span-3">
+                        <h4 class="text-lg font-semibold mb-2">Top Users by Profit</h4>
+                        <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>User</th><th>Files</th><th>Profit</th><th>Actions</th></tr></thead>
+                        <tbody>${data.profitByUser.map(([name, stats]) => `<tr><td>${name}</td><td>${stats.count}</td><td>KD ${stats.profit.toFixed(2)}</td><td><button data-action="view-user-jobs" data-user="${name}" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-2 rounded text-xs">View Jobs</button></td></tr>`).join('')}</tbody></table></div>
                     </div>
                 </div>
 
@@ -1514,7 +1685,7 @@
                         <div class="flex items-center gap-2 flex-grow">
                             <input type="text" id="analytics-search-bar" class="input-field w-full sm:w-auto flex-grow" placeholder="Search files..." value="${searchTerm}">
                             <label for="sort-analytics" class="text-sm ml-4 mr-2">Sort by:</label>
-                            <select id="sort-analytics" onchange="sortAnalyticsTable(this.value)" class="input-field w-auto inline-block text-sm">
+                            <select id="sort-analytics" class="input-field w-auto inline-block text-sm">
                                 <option value="profit-desc" ${sortBy === 'profit-desc' ? 'selected' : ''}>Profit (High to Low)</option>
                                 <option value="date-desc" ${sortBy === 'date-desc' ? 'selected' : ''}>Date (Newest First)</option>
                                 <option value="status" ${sortBy === 'status' ? 'selected' : ''}>Status</option>
@@ -1544,7 +1715,7 @@
                                     <td class="space-x-1">
                                         <button onclick="previewJobFileById('${file.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs">Preview</button>
                                         <button onclick="loadJobFileById('${file.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded text-xs">Load</button>
-                                        ${deleteButtonHtml(file.id)}
+                                        ${currentUser.role === 'admin' ? `<button onclick="confirmDelete('${file.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>` : ''}
                                     </td>
                                 </tr>`).join('') : `<tr><td colspan="4" class="text-center py-4">No files match your search.</td></tr>`}
                             </tbody>
@@ -1552,14 +1723,55 @@
                     </div>
                 </div>
             `;
+            
+            renderProfitChart(data, monthlyReportType);
+
             document.getElementById('analytics-search-bar').addEventListener('input', (e) => {
-                displayAnalytics(analyticsDataCache, document.getElementById('sort-analytics').value, e.target.value);
+                displayAnalytics(analyticsDataCache, document.getElementById('sort-analytics').value, e.target.value, document.getElementById('analytics-date-type').value);
             });
+            document.getElementById('sort-analytics').addEventListener('change', (e) => {
+                 displayAnalytics(analyticsDataCache, e.target.value, document.getElementById('analytics-search-bar').value, document.getElementById('analytics-date-type').value);
+            });
+             document.getElementById('analytics-date-type').addEventListener('change', (e) => {
+                 const activeTimeframeButton = document.querySelector('.timeframe-btn.bg-indigo-700') || document.querySelector('[data-timeframe="all"]');
+                 filterAnalyticsByTimeframe(activeTimeframeButton.dataset.timeframe, e.target.value);
+            });
+
+            document.querySelectorAll('.timeframe-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                     document.querySelectorAll('.timeframe-btn').forEach(b => {
+                        b.classList.remove('bg-indigo-700', 'text-white');
+                        if(!b.classList.contains('bg-gray-200')) {
+                           b.classList.add('bg-indigo-500');
+                        }
+                     });
+                     e.target.classList.remove('bg-indigo-500', 'bg-gray-200');
+                     e.target.classList.add('bg-indigo-700', 'text-white');
+                    const timeframe = e.target.dataset.timeframe;
+                    const dateType = document.getElementById('analytics-date-type').value;
+                    filterAnalyticsByTimeframe(timeframe, dateType);
+                });
+            });
+
+            document.getElementById('analytics-tables').addEventListener('click', (e) => {
+                const target = e.target;
+                if (target.tagName === 'BUTTON' && target.dataset.action) {
+                    const action = target.dataset.action;
+                    if (action === 'view-user-jobs') {
+                        showUserJobs(target.dataset.user);
+                    } else if (action === 'view-monthly-jobs') {
+                        showMonthlyJobs(target.dataset.month, target.dataset.datetype);
+                    } else if (action === 'view-salesman-jobs') {
+                        showSalesmanJobs(target.dataset.salesman);
+                    }
+                }
+            });
+
         }
         
         function sortAnalyticsTable(sortBy) {
             const searchTerm = document.getElementById('analytics-search-bar').value;
-            displayAnalytics(analyticsDataCache, sortBy, searchTerm);
+            displayAnalytics(analyticsDataCache, sortBy, searchTerm, document.getElementById('analytics-date-type').value);
         }
         
         function downloadAnalyticsCsv() {
@@ -2624,148 +2836,64 @@
 
         function refreshOpenModals() {
             if (document.getElementById('user-jobs-modal').classList.contains('visible')) {
-                if (currentlyViewedUser) {
-                    showUserJobs(currentlyViewedUser);
-                } else {
-                    const currentStatus = document.getElementById('user-jobs-modal-title').textContent.split(' - ')[1].toLowerCase();
-                    showStatusJobs(currentStatus);
+                const title = document.getElementById('user-jobs-modal-title').textContent;
+                if(title.includes('Created by')) {
+                    const userName = title.replace('Job Files Created by ', '');
+                    showUserJobs(userName);
+                } else if (title.includes('Salesman')) {
+                     const salesmanName = title.replace('Job Files for Salesman: ', '');
+                     showSalesmanJobs(salesmanName);
+                } else if (title.includes('for')) {
+                    const month = title.replace('Job Files for ', '');
+                    // We need to know the date type to refresh properly
+                    const dateType = document.getElementById('analytics-date-type')?.value || 'bd';
+                    showMonthlyJobs(month, dateType);
+                } else if (title.includes(' - ')) {
+                    const status = title.split(' - ')[1].toLowerCase();
+                    showStatusJobs(status);
                 }
             }
         }
+        
+        function showSalesmanJobs(salesmanName) {
+            const salesmanJobs = currentFilteredJobs.filter(job => (job.sm || 'N/A') === salesmanName);
+            displayJobsInModal(salesmanJobs, `Job Files for Salesman: ${salesmanName}`);
+        }
 
         function showUserJobs(userName) {
-            currentlyViewedUser = userName;
-            const userJobs = jobFilesCache.filter(job => job.createdBy === userName);
-            const modalTitle = document.getElementById('user-jobs-modal-title');
-            const list = document.getElementById('user-jobs-list');
-
-            modalTitle.textContent = `Job Files Created by ${userName}`;
-
-            if (userJobs.length === 0) {
-                list.innerHTML = `<p class="text-gray-500 text-center p-4">No job files found for this user.</p>`;
-            } else {
-                 let filesHtml = '';
-                 userJobs.forEach((docData) => {
-                    const deleteButton = currentUser.role === 'admin' ? `<button onclick="confirmDelete('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>` : '';
-                    
-                    let checkOrUncheckButton = '';
-                    if (currentUser.role === 'admin' || currentUser.role === 'checker') {
-                        if (docData.status === 'checked' || docData.status === 'approved') {
-                            checkOrUncheckButton = `<button onclick="uncheckJobFile('${docData.id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Uncheck</button>`;
-                        } else if (docData.status === 'pending' || !docData.status) {
-                            checkOrUncheckButton = `<button onclick="checkJobFile('${docData.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs">Check</button>`;
-                        }
-                    }
-
-                    let approveButton = '';
-                    let rejectButton = '';
-                    if (currentUser.role === 'admin' && docData.status === 'checked') {
-                        approveButton = `<button onclick="approveJobFile('${docData.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded text-xs">Approve</button>`;
-                        rejectButton = `<button onclick="promptForRejection('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Reject</button>`;
-                    }
-                    
-                    filesHtml += `
-                        <div class="job-file-item border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center bg-gray-50 hover:bg-gray-100 gap-2">
-                            <div class="w-full sm:w-2/5">
-                                <p class="font-bold text-indigo-700">${docData.jfn || 'No ID'}</p>
-                                <p class="text-sm text-gray-600">Shipper: ${docData.sh || 'N/A'}</p>
-                                <p class="text-sm text-gray-600">Consignee: ${docData.co || 'N/A'}</p>
-                            </div>
-                            <div class="w-full sm:w-1/5 text-xs text-gray-500">
-                                <p>Cost: <span class="font-medium text-red-600">KD ${(docData.totalCost || 0).toFixed(2)}</span></p>
-                                <p>Profit: <span class="font-medium text-green-600">KD ${(docData.totalProfit || 0).toFixed(2)}</span></p>
-                            </div>
-                            <div class="space-x-2 flex-shrink-0">
-                                <button onclick="previewJobFileById('${docData.id}')" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-2 rounded text-xs">Preview</button>
-                                <button onclick="loadJobFileById('${docData.id}')" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-1 px-2 rounded text-xs">Load</button>
-                                ${checkOrUncheckButton}
-                                ${approveButton}
-                                ${rejectButton}
-                                ${deleteButton}
-                            </div>
-                        </div>
-                    `;
-                });
-                list.innerHTML = filesHtml;
-            }
-            openModal('user-jobs-modal', true);
+            const userJobs = currentFilteredJobs.filter(job => job.createdBy === userName);
+            displayJobsInModal(userJobs, `Job Files Created by ${userName}`);
         }
         
-        function showMonthlyJobs(month) {
-            currentlyViewedUser = null;
-            // *** CHANGED: Filter by billing date (bd) instead of job date (d) ***
-            const monthlyJobs = jobFilesCache.filter(job => job.bd && job.bd.startsWith(month));
-            const modalTitle = document.getElementById('user-jobs-modal-title');
-            const list = document.getElementById('user-jobs-list');
-
-            modalTitle.textContent = `Job Files for ${month}`;
-
-            if (monthlyJobs.length === 0) {
-                list.innerHTML = `<p class="text-gray-500 text-center p-4">No job files found for this month.</p>`;
-            } else {
-                let filesHtml = '';
-                monthlyJobs.forEach((docData) => {
-                    const deleteButton = currentUser.role === 'admin' ? `<button onclick="confirmDelete('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>` : '';
-                    
-                    let checkOrUncheckButton = '';
-                    if (currentUser.role === 'admin' || currentUser.role === 'checker') {
-                        if (docData.status === 'checked' || docData.status === 'approved') {
-                            checkOrUncheckButton = `<button onclick="uncheckJobFile('${docData.id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Uncheck</button>`;
-                        } else if (docData.status === 'pending' || !docData.status) {
-                            checkOrUncheckButton = `<button onclick="checkJobFile('${docData.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs">Check</button>`;
-                        }
-                    }
-
-                    let approveButton = '';
-                    let rejectButton = '';
-                    if (currentUser.role === 'admin' && docData.status === 'checked') {
-                        approveButton = `<button onclick="approveJobFile('${docData.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded text-xs">Approve</button>`;
-                        rejectButton = `<button onclick="promptForRejection('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Reject</button>`;
-                    }
-                    
-                    filesHtml += `
-                        <div class="job-file-item border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center bg-gray-50 hover:bg-gray-100 gap-2">
-                            <div class="w-full sm:w-2/5">
-                                <p class="font-bold text-indigo-700">${docData.jfn || 'No ID'}</p>
-                                <p class="text-sm text-gray-600">Shipper: ${docData.sh || 'N/A'}</p>
-                                <p class="text-sm text-gray-600">Consignee: ${docData.co || 'N/A'}</p>
-                            </div>
-                            <div class="w-full sm:w-1/5 text-xs text-gray-500">
-                                <p>Cost: <span class="font-medium text-red-600">KD ${(docData.totalCost || 0).toFixed(2)}</span></p>
-                                <p>Profit: <span class="font-medium text-green-600">KD ${(docData.totalProfit || 0).toFixed(2)}</span></p>
-                            </div>
-                            <div class="space-x-2 flex-shrink-0">
-                                <button onclick="previewJobFileById('${docData.id}')" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-2 rounded text-xs">Preview</button>
-                                <button onclick="loadJobFileById('${docData.id}')" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-1 px-2 rounded text-xs">Load</button>
-                                ${checkOrUncheckButton}
-                                ${approveButton}
-                                ${rejectButton}
-                                ${deleteButton}
-                            </div>
-                        </div>
-                    `;
-                });
-                list.innerHTML = filesHtml;
-            }
-            openModal('user-jobs-modal', true);
+        function showMonthlyJobs(month, dateType) {
+            const monthlyJobs = currentFilteredJobs.filter(job => {
+                const dateField = dateType === 'billing' ? job.bd : job.d;
+                return dateField && dateField.startsWith(month);
+            });
+            displayJobsInModal(monthlyJobs, `Job Files for ${month}`);
         }
 
         function showStatusJobs(status) {
-            currentlyViewedUser = null;
-            const filteredJobs = status === 'pending'
-                ? jobFilesCache.filter(job => job.status === 'pending' || !job.status)
-                : jobFilesCache.filter(job => job.status === status);
+            const statusJobs = jobFilesCache.filter(job => {
+                if (status === 'pending') {
+                    return job.status === 'pending' || !job.status;
+                }
+                return job.status === status;
+            });
+            displayJobsInModal(statusJobs, `Job Files - ${status.charAt(0).toUpperCase() + status.slice(1)}`);
+        }
 
+        function displayJobsInModal(jobs, title) {
             const modalTitle = document.getElementById('user-jobs-modal-title');
             const list = document.getElementById('user-jobs-list');
 
-            modalTitle.textContent = `Job Files - ${status.charAt(0).toUpperCase() + status.slice(1)}`;
+            modalTitle.textContent = title;
 
-            if (filteredJobs.length === 0) {
-                list.innerHTML = `<p class="text-gray-500 text-center p-4">No job files with status "${status}".</p>`;
+            if (jobs.length === 0) {
+                list.innerHTML = `<p class="text-gray-500 text-center p-4">No job files found.</p>`;
             } else {
-                let filesHtml = '';
-                filteredJobs.forEach((docData) => {
+                 let filesHtml = '';
+                 jobs.forEach((docData) => {
                     const deleteButton = currentUser.role === 'admin' ? `<button onclick="confirmDelete('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>` : '';
                     
                     let checkOrUncheckButton = '';
@@ -2808,7 +2936,7 @@
                 });
                 list.innerHTML = filesHtml;
             }
-            openModal('user-jobs-modal');
+            openModal('user-jobs-modal', true);
         }
 
         // --- Recycle Bin Functions ---
@@ -3023,6 +3151,7 @@
             window.handleRestoreFile = handleRestoreFile;
             window.showUserJobs = showUserJobs;
             window.showMonthlyJobs = showMonthlyJobs;
+            window.showSalesmanJobs = showSalesmanJobs;
             window.showStatusJobs = showStatusJobs;
             window.checkJobFile = checkJobFile;
             window.approveJobFile = approveJobFile;
@@ -3032,6 +3161,7 @@
             window.confirmPermanentDelete = confirmPermanentDelete;
             window.filterAnalyticsByTimeframe = filterAnalyticsByTimeframe;
             window.promptForRejection = promptForRejection;
+            window.displayAnalytics = displayAnalytics; 
 
             populateTable();
             calculate();
@@ -3040,3 +3170,4 @@
     </script>
 </body>
 </html>
+
