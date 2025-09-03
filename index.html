@@ -370,28 +370,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     
-    <!-- Firebase Configuration -->
-    <script>
-        // Firebase configuration - YOU MUST REPLACE THESE WITH YOUR ACTUAL VALUES
-        const firebaseConfig = {
-            apiKey: "REPLACE_WITH_YOUR_ACTUAL_API_KEY",
-            authDomain: "REPLACE_WITH_YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "REPLACE_WITH_YOUR_PROJECT_ID",
-            storageBucket: "REPLACE_WITH_YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "REPLACE_WITH_YOUR_SENDER_ID",
-            appId: "REPLACE_WITH_YOUR_APP_ID"
-        };
-        
-        // Initialize Firebase with error handling
-        try {
-            firebase.initializeApp(firebaseConfig);
-            console.log('Firebase initialized successfully');
-        } catch (error) {
-            console.error('Firebase initialization failed:', error);
-            alert('Firebase configuration error. Please check your Firebase settings.');
-        }
-    </script>
-
     <!-- QR Code Library -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
