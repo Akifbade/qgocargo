@@ -5,6 +5,9 @@ export class JobFilePage {
     constructor() {
         this.jobFileService = new JobFileService(window.app.db);
         this.clientService = new ClientService(window.app.db);
+        this.saveTimeout = null;
+        this.memoryInterval = null;
+        this.boundSaveHandler = null;
         this.chargeDescriptions = [];
         this.currentJobFile = null;
         this.saveTimeout = null;
@@ -418,6 +421,9 @@ export class JobFilePage {
         this.setupEventListeners();
         this.setupFormMemory();
         
+        // Store bound handler reference for cleanup
+        this.boundSaveHandler = () => this.saveFormToMemory();
+        
         // Subscribe to clients for autocomplete
         this.clientService.subscribeToClients((clients) => {
             this.setupAutocomplete(clients);
@@ -455,17 +461,14 @@ export class JobFilePage {
 
     setupFormMemory() {
         // Save form data every 10 seconds
-        setInterval(() => {
+        this.memoryInterval = setInterval(() => {
             this.saveFormToMemory();
         }, 10000);
 
         // Save on input changes
-        document.addEventListener('input', (e) => {
-            if (e.target.matches('input, textarea, select')) {
-                this.showMemoryIndicator();
-                clearTimeout(this.saveTimeout);
-                this.saveTimeout = setTimeout(() => {
-                    this.saveFormToMemory();
+        if (this.boundSaveHandler) {
+            document.addEventListener('input', this.boundSaveHandler);
+        }
                 }, 2000);
             }
         });
@@ -483,6 +486,12 @@ export class JobFilePage {
     }
 
     showMemoryIndicator() {
+        // Check if we're still on the job file page
+        const indicator = document.getElementById('memory-indicator');
+        if (!indicator) {
+            return;
+        }
+        
         const indicator = document.getElementById('memory-indicator');
         indicator.classList.remove('hidden');
         setTimeout(() => {
@@ -491,6 +500,11 @@ export class JobFilePage {
     }
 
     saveFormToMemory() {
+        // Check if we're still on the job file page
+        if (!document.getElementById('job-file-no')) {
+            return;
+        }
+        
         try {
             const formData = this.getFormData();
             localStorage.setItem('jobFileFormData', JSON.stringify({
@@ -1073,14 +1087,29 @@ export class JobFilePage {
     }
 
     cleanup() {
+        // Clear intervals and timeouts
+        if (this.memoryInterval) {
+            clearInterval(this.memoryInterval);
+            this.memoryInterval = null;
+        }
+        
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+            this.saveTimeout = null;
+        }
+        
+        // Remove event listeners
+        if (this.boundSaveHandler) {
+            document.removeEventListener('input', this.boundSaveHandler);
+            this.boundSaveHandler = null;
+        }
+        
+        // Cleanup services
         if (this.jobFileService) {
             this.jobFileService.cleanup();
         }
         if (this.clientService) {
             this.clientService.cleanup();
-        }
-        if (this.saveTimeout) {
-            clearTimeout(this.saveTimeout);
         }
     }
 }
