@@ -362,7 +362,7 @@ async function approveJobFile(docId = null) {
          if (!jobFileNo) {
             showNotification("Please save or load a job file first.", true);
             return;
-        }
+                 }
         fileId = jobFileNo.replace(/\//g, '_');
     }
 
@@ -645,7 +645,7 @@ function confirmDelete(docId, type = 'jobfile') {
      if (currentUser.role !== 'admin') {
          showNotification("Only admins can delete files.", true);
          return;
-    }
+         }
     const modal = document.getElementById('confirm-modal');
     let message = '';
     let onOk;
@@ -749,9 +749,9 @@ function calculateAndDisplayAnalytics(jobs) {
          document.getElementById('analytics-date-type').addEventListener('change', (e) => {
              const activeTimeframeButton = document.querySelector('.timeframe-btn.bg-indigo-700') || document.querySelector('[data-timeframe="all"]');
              filterAnalyticsByTimeframe(activeTimeframeButton.dataset.timeframe, e.target.value);
-        });
+                 }         );
          return;
-    }
+         }
 
     let totalJobs = jobs.length;
     let totalRevenue = 0;
@@ -916,7 +916,7 @@ function renderProfitChart(data, monthlyReportType) {
                             }
                             return label;
                         }
-                    }
+                                         }
                 }
             }
         }
@@ -1085,7 +1085,7 @@ function displayAnalytics(data, sortBy = 'profit-desc', searchTerm = '', monthly
      document.getElementById('analytics-date-type').addEventListener('change', (e) => {
          const activeTimeframeButton = document.querySelector('.timeframe-btn.bg-indigo-700') || document.querySelector('[data-timeframe="all"]');
          filterAnalyticsByTimeframe(activeTimeframeButton.dataset.timeframe, e.target.value);
-    });
+         }     );
 
     document.querySelectorAll('.timeframe-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -1465,3 +1465,5 @@ const auth = firebase.auth();
 
 // Global variables for backward compatibility
 let currentFileId = null;
+    }
+}
