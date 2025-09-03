@@ -71,10 +71,59 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// Add timeout fallback for slow Firebase initialization
+// Immediate fallback for GitHub Pages deployment
+let authInitialized = false;
+
+// Set a flag when auth state changes
+const originalOnAuthStateChanged = onAuthStateChanged;
+onAuthStateChanged(auth, (user) => {
+    authInitialized = true;
+    // Call the original handler
+    return originalOnAuthStateChanged(auth, async (user) => {
+        console.log('Auth state changed:', user ? 'User logged in' : 'No user');
+        
+        if (user) {
+            try {
+                const userData = await authService.getCurrentUserData(user.uid);
+                if (userData && userData.status === 'active') {
+                    window.app.currentUser = { uid: user.uid, email: user.email, ...userData };
+                    router.navigate('dashboard');
+                } else {
+                    console.log('User inactive or not found, redirecting to login');
+                    router.navigate('login');
+                }
+            } catch (error) {
+                console.error('Error getting user data:', error);
+                router.navigate('login');
+            }
+        } else {
+            console.log('No user found, showing login');
+            window.app.currentUser = null;
+            router.navigate('login');
+        }
+    })(user);
+});
+
+// Multiple fallback strategies for GitHub Pages
 setTimeout(() => {
-    if (!window.app.currentUser && !document.querySelector('.login-form')) {
-        console.log('Fallback: Forcing navigation to login after timeout');
+    if (!authInitialized) {
+        console.log('Firebase auth not initialized after 1 second, forcing login');
+        router.navigate('login');
+    }
+}, 1000);
+
+setTimeout(() => {
+    if (!window.app.currentUser && !document.querySelector('#email-address')) {
+        console.log('Fallback: Forcing navigation to login after 2 seconds');
+        router.navigate('login');
+    }
+}, 2000);
+
+// Emergency fallback - always show login if still loading after 3 seconds
+setTimeout(() => {
+    const appContent = document.getElementById('app').innerHTML;
+    if (appContent.includes('Loading Management System') || appContent.includes('Loading...')) {
+        console.log('Emergency fallback: Still loading after 3 seconds, forcing login');
         router.navigate('login');
     }
 }, 3000);

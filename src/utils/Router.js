@@ -12,22 +12,24 @@ export class Router {
 
     async navigate(routeName, params = {}) {
         try {
-            // Show loading state
-            document.getElementById('app').innerHTML = `
-                <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-blue-50">
-                    <div class="text-center">
-                        <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                            <svg class="w-8 h-8 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                            </svg>
+            // Only show loading state for non-login routes to prevent infinite loading
+            if (routeName !== 'login') {
+                document.getElementById('app').innerHTML = `
+                    <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-blue-50">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                                <svg class="w-8 h-8 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                            </div>
+                            <div class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                                Loading ${routeName}...
+                            </div>
+                            <p class="text-gray-600">Please wait</p>
                         </div>
-                        <div class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
-                            Loading...
-                        </div>
-                        <p class="text-gray-600">Please wait</p>
                     </div>
-                </div>
-            `;
+                `;
+            }
 
             // Handle external HTML pages that don't have JS modules yet
             const externalPages = ['clients', 'admin', 'activity-log'];
@@ -38,6 +40,7 @@ export class Router {
 
             // Security check for protected routes
             if (routeName !== 'login' && !window.app.currentUser) {
+                console.log('No current user, redirecting to login');
                 this.navigate('login');
                 return;
             }
@@ -48,6 +51,7 @@ export class Router {
             }
 
             // Load and render new page
+            console.log('Loading page:', routeName);
             const PageClass = await this.routes[routeName]();
             this.currentPage = PageClass;
             
@@ -63,8 +67,16 @@ export class Router {
             const newUrl = routeName === 'dashboard' ? '/' : `/${routeName}`;
             window.history.pushState({ route: routeName, params }, '', newUrl);
             
+            console.log('Page loaded successfully:', routeName);
+            
         } catch (error) {
             console.error('Navigation error:', error);
+            // Force login on any navigation error
+            if (routeName !== 'login') {
+                console.log('Navigation error, forcing login');
+                this.navigate('login');
+                return;
+            }
             document.getElementById('app').innerHTML = `
                 <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100">
                     <div class="text-center bg-white p-8 rounded-2xl shadow-xl">
@@ -75,9 +87,9 @@ export class Router {
                         </div>
                         <h1 class="text-2xl font-bold text-red-600 mb-4">Error Loading Page</h1>
                         <p class="text-gray-600 mb-6">${error.message}</p>
-                        <button onclick="window.app.router.navigate('dashboard')" 
+                        <button onclick="window.app.router.navigate('login')" 
                                 class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-bold transition-all transform hover:scale-105">
-                            Return to Dashboard
+                            Go to Login
                         </button>
                     </div>
                 </div>
