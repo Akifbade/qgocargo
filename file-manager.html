@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Manager - Q'go Cargo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <div class="text-2xl font-bold" style="color: #0E639C;">
+                        Q'go<span style="color: #4FB8AF;">Cargo</span>
+                    </div>
+                    <span class="text-gray-400">|</span>
+                    <span class="text-lg font-semibold text-gray-700">File Manager</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900">Dashboard</a>
+                    <a href="job-file.html" class="text-gray-600 hover:text-gray-900">Job Files</a>
+                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-900">File Manager</h1>
+                <p class="mt-2 text-gray-600">Browse and manage your job files</p>
+            </div>
+
+            <!-- Search and Filter Controls -->
+            <div class="bg-white p-6 rounded-lg shadow mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div class="md:col-span-2">
+                        <label for="search-bar" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                        <input type="text" id="search-bar" class="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="Job No, Shipper, etc.">
+                    </div>
+                    <div>
+                        <label for="filter-status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="filter-status" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            <option value="">All Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="checked">Checked</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter-date-from" class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                        <input type="date" id="filter-date-from" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    </div>
+                    <div>
+                        <label for="filter-date-to" class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                        <input type="date" id="filter-date-to" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-between">
+                    <button id="clear-filters-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">Clear Filters</button>
+                    <div id="admin-controls" class="space-x-2" style="display: none;">
+                        <button onclick="openRecycleBin()" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Recycle Bin</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job Files List -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">Job Files</h3>
+                </div>
+                <div id="job-files-list" class="divide-y divide-gray-200">
+                    <div class="p-6 text-center">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                        <p class="mt-2 text-gray-600">Loading job files...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="preview-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">Job File Preview</h3>
+                <div class="space-x-2">
+                    <button onclick="printPreview()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">Print</button>
+                    <button onclick="closeModal('preview-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+                </div>
+            </div>
+            <div id="preview-body" class="max-h-96 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- Recycle Bin Modal -->
+    <div id="recycle-bin-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-5xl shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">Recycle Bin</h3>
+                <button onclick="closeModal('recycle-bin-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div id="recycle-bin-list" class="space-y-2 max-h-96 overflow-y-auto">
+                <div class="text-center py-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                    <p class="mt-2 text-gray-600">Loading deleted files...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, getDocs, doc, getDoc, setDoc, deleteDoc, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
+            authDomain: "my-job-file-system.firebaseapp.com",
+            projectId: "my-job-file-system",
+            storageBucket: "my-job-file-system.appspot.com",
+            messagingSenderId: "145307873304",
+            appId: "1:145307873304:web:d661ea6ec118801b4a136d",
+            measurementId: "G-8EHX5K7YHL"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let jobFilesCache = [];
+
+        // Check authentication
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+            
+            if (!userDoc.exists() || userDoc.data().status === 'inactive') {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            currentUser = { uid: user.uid, email: user.email, ...userDoc.data() };
+            
+            // Show admin controls if user is admin
+            if (currentUser.role === 'admin') {
+                document.getElementById('admin-controls').style.display = 'block';
+            }
+            
+            loadJobFiles();
+        });
+
+        function loadJobFiles() {
+            const jobFilesCollection = collection(db, 'jobfiles');
+            const q = query(jobFilesCollection);
+
+            onSnapshot(q, (querySnapshot) => {
+                jobFilesCache = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                const sortedDocs = [...jobFilesCache].sort((a,b) => (b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : 0) - (a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : 0));
+                
+                displayJobFiles(sortedDocs);
+            }, (error) => {
+                console.error("Error fetching job files: ", error);
+                document.getElementById('job-files-list').innerHTML = '<div class="p-6 text-center text-red-600">Error loading job files</div>';
+            });
+        }
+
+        function displayJobFiles(files) {
+            const list = document.getElementById('job-files-list');
+            if (files.length === 0) {
+                list.innerHTML = '<div class="p-6 text-center text-gray-500">No job files match the current filters.</div>';
+                return;
+            }
+
+            const html = files.map(docData => {
+                const deleteButton = currentUser.role === 'admin' ? 
+                    `<button onclick="confirmDelete('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Delete</button>` : '';
+                
+                const lastUpdated = docData.updatedAt?.toDate ? docData.updatedAt.toDate().toLocaleString() : 'N/A';
+                
+                const statusColor = {
+                    'approved': 'bg-green-100 text-green-800',
+                    'rejected': 'bg-red-100 text-red-800',
+                    'checked': 'bg-blue-100 text-blue-800',
+                    'pending': 'bg-yellow-100 text-yellow-800'
+                }[docData.status] || 'bg-gray-100 text-gray-800';
+
+                return `
+                    <div class="p-6 hover:bg-gray-50">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h4 class="text-lg font-semibold text-indigo-700">${docData.jfn || 'No ID'}</h4>
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">
+                                        ${(docData.status || 'pending').charAt(0).toUpperCase() + (docData.status || 'pending').slice(1)}
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
+                                    <div><strong>Shipper:</strong> ${docData.sh || 'N/A'}</div>
+                                    <div><strong>Consignee:</strong> ${docData.co || 'N/A'}</div>
+                                    <div><strong>MAWB:</strong> ${docData.mawb || 'N/A'}</div>
+                                    <div><strong>Last Updated:</strong> ${lastUpdated}</div>
+                                </div>
+                                ${docData.totalProfit ? `
+                                    <div class="mt-2 text-sm">
+                                        <span class="text-green-600 font-semibold">Profit: KD ${docData.totalProfit.toFixed(2)}</span>
+                                        <span class="text-gray-500 ml-4">Cost: KD ${(docData.totalCost || 0).toFixed(2)}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="previewJobFile('${docData.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded text-sm">Preview</button>
+                                <a href="job-file.html?load=${docData.id}" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded text-sm inline-block">Load</a>
+                                ${deleteButton}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            list.innerHTML = html;
+        }
+
+        function applyFiltersAndDisplay() {
+            const searchTerm = document.getElementById('search-bar').value.toLowerCase();
+            const statusFilter = document.getElementById('filter-status').value;
+            const fromDate = document.getElementById('filter-date-from').value;
+            const toDate = document.getElementById('filter-date-to').value;
+
+            let filteredFiles = jobFilesCache.filter(file => {
+                const searchData = [file.jfn, file.sh, file.co, file.mawb].join(' ').toLowerCase();
+                if (searchTerm && !searchData.includes(searchTerm)) {
+                    return false;
+                }
+                if (statusFilter && file.status !== statusFilter) {
+                    return false;
+                }
+                if (fromDate && file.d < fromDate) {
+                    return false;
+                }
+                if (toDate && file.d > toDate) {
+                    return false;
+                }
+                return true;
+            });
+
+            displayJobFiles(filteredFiles);
+        }
+
+        async function previewJobFile(docId) {
+            try {
+                const docRef = doc(db, 'jobfiles', docId);
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const previewBody = document.getElementById('preview-body');
+                    previewBody.innerHTML = generatePreviewHtml(data);
+                    document.getElementById('preview-modal').classList.remove('hidden');
+                } else {
+                    alert("Document not found.");
+                }
+            } catch (error) {
+                console.error("Error previewing document:", error);
+                alert("Error previewing job file.");
+            }
+        }
+
+        function generatePreviewHtml(data) {
+            const totalCost = data.totalCost || 0;
+            const totalSelling = data.totalSelling || 0;
+            const totalProfit = data.totalProfit || 0;
+            
+            return `
+                <div class="border border-gray-300 p-4 bg-white">
+                    <div class="grid grid-cols-12 gap-1 text-sm">
+                        <div class="col-span-3 border p-2 font-bold" style="color: #0E639C;">
+                            Q'go<span style="color: #4FB8AF;">Cargo</span>
+                        </div>
+                        <div class="col-span-6 border p-2 text-center font-bold">JOB FILE</div>
+                        <div class="col-span-3 border p-2">
+                            <div><strong>Date:</strong> ${data.d || ''}</div>
+                            <div><strong>P.O. #:</strong> ${data.po || ''}</div>
+                        </div>
+                        
+                        <div class="col-span-12 border p-2"><strong>Job File No.:</strong> ${data.jfn || ''}</div>
+                        
+                        <div class="col-span-6 border p-2"><strong>Shipper:</strong> ${data.sh || ''}</div>
+                        <div class="col-span-6 border p-2"><strong>Consignee:</strong> ${data.co || ''}</div>
+                        
+                        <div class="col-span-6 border p-2"><strong>MAWB:</strong> ${data.mawb || ''}</div>
+                        <div class="col-span-6 border p-2"><strong>HAWB:</strong> ${data.hawb || ''}</div>
+                        
+                        <div class="col-span-12 border p-2"><strong>Description:</strong> ${data.dsc || ''}</div>
+                        
+                        <div class="col-span-12 border p-0">
+                            <table class="w-full text-xs">
+                                <thead>
+                                    <tr class="bg-gray-100">
+                                        <th class="border p-2">Description</th>
+                                        <th class="border p-2">Cost</th>
+                                        <th class="border p-2">Selling</th>
+                                        <th class="border p-2">Profit</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${(data.ch || []).map(c => `
+                                        <tr>
+                                            <td class="border p-2">${c.l}</td>
+                                            <td class="border p-2">${c.c}</td>
+                                            <td class="border p-2">${c.s}</td>
+                                            <td class="border p-2">${(parseFloat(c.s || 0) - parseFloat(c.c || 0)).toFixed(2)}</td>
+                                        </tr>
+                                    `).join('')}
+                                    <tr class="font-bold bg-gray-100">
+                                        <td class="border p-2">TOTAL:</td>
+                                        <td class="border p-2">${totalCost.toFixed(2)}</td>
+                                        <td class="border p-2">${totalSelling.toFixed(2)}</td>
+                                        <td class="border p-2">${totalProfit.toFixed(2)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="col-span-12 border p-2"><strong>REMARKS:</strong><br>${(data.re || '').replace(/\n/g, '<br>')}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function confirmDelete(docId) {
+            if (currentUser.role !== 'admin') {
+                alert("Only admins can delete files.");
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to move job file "${docId.replace(/_/g, '/')}" to the recycle bin?`)) {
+                moveToRecycleBin(docId);
+            }
+        }
+
+        async function moveToRecycleBin(docId) {
+            try {
+                const docRef = doc(db, 'jobfiles', docId);
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const dataToMove = docSnap.data();
+                    dataToMove.deletedAt = serverTimestamp();
+                    dataToMove.deletedBy = currentUser.displayName;
+                    
+                    const deletedDocRef = doc(db, 'deleted_jobfiles', docId);
+                    await setDoc(deletedDocRef, dataToMove);
+                    await deleteDoc(docRef);
+                    
+                    alert("Job file moved to recycle bin.");
+                } else {
+                    throw new Error("Document not found.");
+                }
+            } catch (error) {
+                console.error("Error moving to recycle bin:", error);
+                alert("Error deleting job file.");
+            }
+        }
+
+        async function openRecycleBin() {
+            try {
+                const deletedFilesRef = collection(db, 'deleted_jobfiles');
+                const q = query(deletedFilesRef);
+                const querySnapshot = await getDocs(q);
+                const deletedFiles = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                const list = document.getElementById('recycle-bin-list');
+                if (deletedFiles.length === 0) {
+                    list.innerHTML = '<div class="text-center py-4 text-gray-500">The recycle bin is empty.</div>';
+                } else {
+                    const html = deletedFiles.map(docData => {
+                        const deletedAt = docData.deletedAt?.toDate ? docData.deletedAt.toDate().toLocaleString() : 'N/A';
+                        return `
+                            <div class="border p-4 rounded-lg bg-gray-50">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <h4 class="font-bold text-indigo-700">${docData.jfn || 'No ID'}</h4>
+                                        <p class="text-sm text-gray-600">Shipper: ${docData.sh || 'N/A'}</p>
+                                        <p class="text-xs text-gray-400">Deleted by ${docData.deletedBy || 'Unknown'} on ${deletedAt}</p>
+                                    </div>
+                                    <div class="space-x-2">
+                                        <button onclick="restoreJobFile('${docData.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm">Restore</button>
+                                        <button onclick="permanentlyDelete('${docData.id}')" class="bg-red-700 hover:bg-red-800 text-white font-bold py-1 px-3 rounded text-sm">Delete Permanently</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    list.innerHTML = html;
+                }
+                document.getElementById('recycle-bin-modal').classList.remove('hidden');
+            } catch (error) {
+                console.error("Error opening recycle bin:", error);
+                alert("Could not open recycle bin.");
+            }
+        }
+
+        async function restoreJobFile(docId) {
+            try {
+                const deletedDocRef = doc(db, 'deleted_jobfiles', docId);
+                const docSnap = await getDoc(deletedDocRef);
+
+                if (docSnap.exists()) {
+                    const dataToRestore = docSnap.data();
+                    delete dataToRestore.deletedAt;
+                    delete dataToRestore.deletedBy;
+
+                    const newDocRef = doc(db, 'jobfiles', docId);
+                    await setDoc(newDocRef, dataToRestore);
+                    await deleteDoc(deletedDocRef);
+
+                    alert("Job file restored successfully.");
+                    openRecycleBin(); // Refresh the recycle bin view
+                } else {
+                    throw new Error("Document not found in recycle bin.");
+                }
+            } catch (error) {
+                console.error("Error restoring file:", error);
+                alert("Error restoring file.");
+            }
+        }
+
+        async function permanentlyDelete(docId) {
+            if (confirm(`Are you sure you want to permanently delete job file "${docId.replace(/_/g, '/')}"? This action cannot be undone.`)) {
+                try {
+                    const deletedDocRef = doc(db, 'deleted_jobfiles', docId);
+                    await deleteDoc(deletedDocRef);
+                    alert("Job file permanently deleted.");
+                    openRecycleBin(); // Refresh the recycle bin view
+                } catch (error) {
+                    console.error("Error permanently deleting file:", error);
+                    alert("Could not permanently delete file.");
+                }
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function printPreview() {
+            const previewBody = document.getElementById('preview-body').innerHTML;
+            const printWindow = window.open('', '', 'height=800,width=1200');
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Job File Preview</title>
+                        <style>
+                            body { padding: 0; margin: 0; font-family: Arial, sans-serif; }
+                            .border { border: 1px solid #000; }
+                            table { border-collapse: collapse; }
+                        </style>
+                    </head>
+                    <body>
+                        ${previewBody}
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+            setTimeout(() => {
+                printWindow.focus();
+                printWindow.print();
+                printWindow.close();
+            }, 750);
+        }
+
+        // Event listeners
+        document.getElementById('search-bar').addEventListener('input', applyFiltersAndDisplay);
+        document.getElementById('filter-status').addEventListener('change', applyFiltersAndDisplay);
+        document.getElementById('filter-date-from').addEventListener('change', applyFiltersAndDisplay);
+        document.getElementById('filter-date-to').addEventListener('change', applyFiltersAndDisplay);
+        document.getElementById('clear-filters-btn').addEventListener('click', () => {
+            document.getElementById('search-bar').value = '';
+            document.getElementById('filter-status').value = '';
+            document.getElementById('filter-date-from').value = '';
+            document.getElementById('filter-date-to').value = '';
+            applyFiltersAndDisplay();
+        });
+
+        // Global functions
+        window.previewJobFile = previewJobFile;
+        window.confirmDelete = confirmDelete;
+        window.openRecycleBin = openRecycleBin;
+        window.restoreJobFile = restoreJobFile;
+        window.permanentlyDelete = permanentlyDelete;
+        window.closeModal = closeModal;
+        window.printPreview = printPreview;
+        window.logout = async function() {
+            await signOut(auth);
+            window.location.href = 'login.html';
+        };
+    </script>
+</body>
+</html>

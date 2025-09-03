@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Management - Q'go Cargo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <div class="text-2xl font-bold" style="color: #0E639C;">
+                        Q'go<span style="color: #4FB8AF;">Cargo</span>
+                    </div>
+                    <span class="text-gray-400">|</span>
+                    <span class="text-lg font-semibold text-gray-700">Client Management</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900">Dashboard</a>
+                    <a href="job-file.html" class="text-gray-600 hover:text-gray-900">Job Files</a>
+                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-900">Client Management</h1>
+                <p class="mt-2 text-gray-600">Manage your shippers and consignees</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Add/Edit Client Form -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h2 id="client-form-title" class="text-xl font-semibold mb-4">Add New Client</h2>
+                    <form id="client-form" class="space-y-4">
+                        <input type="hidden" id="client-id">
+                        <div>
+                            <label for="client-name" class="block text-sm font-medium text-gray-700">Client Name</label>
+                            <input type="text" id="client-name" class="mt-1 w-full border border-gray-300 rounded-md px-3 py-2" required>
+                        </div>
+                        <div>
+                            <label for="client-address" class="block text-sm font-medium text-gray-700">Address</label>
+                            <textarea id="client-address" rows="2" class="mt-1 w-full border border-gray-300 rounded-md px-3 py-2"></textarea>
+                        </div>
+                        <div>
+                            <label for="client-contact-person" class="block text-sm font-medium text-gray-700">Contact Person</label>
+                            <input type="text" id="client-contact-person" class="mt-1 w-full border border-gray-300 rounded-md px-3 py-2">
+                        </div>
+                        <div>
+                            <label for="client-phone" class="block text-sm font-medium text-gray-700">Phone</label>
+                            <input type="text" id="client-phone" class="mt-1 w-full border border-gray-300 rounded-md px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Client Type</label>
+                            <select id="client-type" class="mt-1 w-full border border-gray-300 rounded-md px-3 py-2">
+                                <option value="Shipper">Shipper</option>
+                                <option value="Consignee">Consignee</option>
+                                <option value="Both">Both</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-4">
+                            <button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save Client</button>
+                            <button type="button" id="clear-client-form-btn" class="flex-1 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Clear</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Client List -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-xl font-semibold mb-4">Existing Clients</h2>
+                    <input type="text" id="client-search-bar" class="w-full border border-gray-300 rounded-md px-3 py-2 mb-4" placeholder="Search clients...">
+                    <div id="client-list" class="space-y-2 max-h-96 overflow-y-auto">
+                        <div class="text-center py-4">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                            <p class="mt-2 text-gray-600">Loading clients...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, getDoc, setDoc, serverTimestamp, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
+            authDomain: "my-job-file-system.firebaseapp.com",
+            projectId: "my-job-file-system",
+            storageBucket: "my-job-file-system.appspot.com",
+            messagingSenderId: "145307873304",
+            appId: "1:145307873304:web:d661ea6ec118801b4a136d",
+            measurementId: "G-8EHX5K7YHL"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let clientsCache = [];
+
+        // Check authentication
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+            
+            if (!userDoc.exists() || userDoc.data().status === 'inactive') {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            currentUser = { uid: user.uid, email: user.email, ...userDoc.data() };
+            loadClients();
+        });
+
+        function loadClients() {
+            const clientsCollection = collection(db, 'clients');
+            onSnapshot(query(clientsCollection), (snapshot) => {
+                clientsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                clientsCache.sort((a, b) => a.name.localeCompare(b.name));
+                displayClients(clientsCache);
+            }, (error) => {
+                console.error("Error loading clients:", error);
+                document.getElementById('client-list').innerHTML = '<div class="text-center py-4 text-red-600">Error loading clients</div>';
+            });
+        }
+
+        function displayClients(clients) {
+            const list = document.getElementById('client-list');
+            if (clients.length === 0) {
+                list.innerHTML = '<div class="text-center py-4 text-gray-500">No clients found.</div>';
+                return;
+            }
+
+            const html = clients.map(client => `
+                <div class="client-item border p-3 rounded-lg bg-gray-50 hover:bg-gray-100" data-search-term="${client.name.toLowerCase()}">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-lg">${client.name}</h4>
+                            <p class="text-sm text-gray-600 mb-1">${client.address || 'No address provided'}</p>
+                            <div class="text-xs text-gray-500">
+                                ${client.contactPerson ? `<div><strong>Contact:</strong> ${client.contactPerson}</div>` : ''}
+                                ${client.phone ? `<div><strong>Phone:</strong> ${client.phone}</div>` : ''}
+                                <div><strong>Type:</strong> ${client.type || 'Shipper'}</div>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 space-x-2 ml-4">
+                            <button onclick="editClient('${client.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded text-sm">Edit</button>
+                            <button onclick="confirmDeleteClient('${client.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            list.innerHTML = html;
+        }
+
+        async function saveClient(event) {
+            event.preventDefault();
+            const clientId = document.getElementById('client-id').value;
+            const clientName = document.getElementById('client-name').value.trim();
+
+            if (!clientName) {
+                alert("Client name is required.");
+                return;
+            }
+
+            const clientData = {
+                name: clientName,
+                address: document.getElementById('client-address').value.trim(),
+                contactPerson: document.getElementById('client-contact-person').value.trim(),
+                phone: document.getElementById('client-phone').value.trim(),
+                type: document.getElementById('client-type').value,
+                updatedAt: serverTimestamp()
+            };
+
+            try {
+                if (clientId) {
+                    const docRef = doc(db, 'clients', clientId);
+                    await setDoc(docRef, clientData, { merge: true });
+                    alert("Client updated successfully!");
+                } else {
+                    clientData.createdAt = serverTimestamp();
+                    await addDoc(collection(db, 'clients'), clientData);
+                    alert("Client added successfully!");
+                }
+                clearClientForm();
+            } catch (error) {
+                console.error("Error saving client:", error);
+                alert("Could not save client.");
+            }
+        }
+
+        function clearClientForm() {
+            document.getElementById('client-form').reset();
+            document.getElementById('client-id').value = '';
+            document.getElementById('client-form-title').textContent = 'Add New Client';
+        }
+
+        function editClient(clientId) {
+            const client = clientsCache.find(c => c.id === clientId);
+            if (client) {
+                document.getElementById('client-id').value = client.id;
+                document.getElementById('client-name').value = client.name;
+                document.getElementById('client-address').value = client.address || '';
+                document.getElementById('client-contact-person').value = client.contactPerson || '';
+                document.getElementById('client-phone').value = client.phone || '';
+                document.getElementById('client-type').value = client.type || 'Shipper';
+                document.getElementById('client-form-title').textContent = 'Edit Client';
+            }
+        }
+
+        function confirmDeleteClient(clientId) {
+            const client = clientsCache.find(c => c.id === clientId);
+            if (confirm(`Are you sure you want to delete the client "${client?.name || 'this client'}"? This action cannot be undone.`)) {
+                deleteClient(clientId);
+            }
+        }
+
+        async function deleteClient(clientId) {
+            try {
+                await deleteDoc(doc(db, 'clients', clientId));
+                alert("Client deleted successfully.");
+            } catch (error) {
+                console.error("Error deleting client:", error);
+                alert("Could not delete client.");
+            }
+        }
+
+        // Search functionality
+        document.getElementById('client-search-bar').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredClients = clientsCache.filter(client => 
+                client.name.toLowerCase().includes(searchTerm) ||
+                (client.address || '').toLowerCase().includes(searchTerm) ||
+                (client.contactPerson || '').toLowerCase().includes(searchTerm)
+            );
+            displayClients(filteredClients);
+        });
+
+        // Form submission
+        document.getElementById('client-form').addEventListener('submit', saveClient);
+        document.getElementById('clear-client-form-btn').addEventListener('click', clearClientForm);
+
+        // Global functions
+        window.editClient = editClient;
+        window.confirmDeleteClient = confirmDeleteClient;
+        window.logout = async function() {
+            await signOut(auth);
+            window.location.href = 'login.html';
+        };
+    </script>
+</body>
+</html>

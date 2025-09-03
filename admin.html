@@ -3,559 +3,305 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Admin Panel - Q'go Cargo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-        }
-
-        .header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 1rem 2rem;
-            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-
-        .nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-            list-style: none;
-        }
-
-        .nav-links a {
-            text-decoration: none;
-            color: #333;
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .nav-links a:hover, .nav-links a.active {
-            background: #667eea;
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 2rem;
-        }
-
-        .page-header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-            text-align: center;
-        }
-
-        .page-header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .admin-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .admin-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
-        }
-
-        .admin-card h3 {
-            margin-bottom: 1rem;
-            color: #333;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: #333;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-        }
-
-        .btn-danger:hover {
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
-        }
-
-        .system-status {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .status-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-
-        .status-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #28a745;
-        }
-
-        .status-indicator.warning {
-            background: #ffc107;
-        }
-
-        .status-indicator.error {
-            background: #dc3545;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-
-        .data-table th,
-        .data-table td {
-            padding: 1rem;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-
-        .data-table th {
-            background: #f8f9fa;
-            font-weight: 600;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .btn-small {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.875rem;
-        }
-
-        @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-            }
-            
-            .container {
-                padding: 0 1rem;
-            }
-            
-            .admin-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+        body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body>
-    <header class="header">
-        <nav class="nav">
-            <div class="logo">
-                <i class="fas fa-cog"></i> Admin Panel
+<body class="bg-gray-100">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <div class="text-2xl font-bold" style="color: #0E639C;">
+                        Q'go<span style="color: #4FB8AF;">Cargo</span>
+                    </div>
+                    <span class="text-gray-400">|</span>
+                    <span class="text-lg font-semibold text-gray-700">Admin Panel</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900">Dashboard</a>
+                    <a href="job-file.html" class="text-gray-600 hover:text-gray-900">Job Files</a>
+                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm">
+                        Logout
+                    </button>
+                </div>
             </div>
-            <ul class="nav-links">
-                <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
-                <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a></li>
-                <li><a href="admin.html" class="active"><i class="fas fa-cog"></i> Admin Panel</a></li>
-                <li><a href="filemanager.html"><i class="fas fa-folder"></i> File Manager</a></li>
-                <li><a href="users.html"><i class="fas fa-users"></i> Users</a></li>
-                <li><a href="jobs.html"><i class="fas fa-briefcase"></i> Jobs</a></li>
-                <li><a href="settings.html"><i class="fas fa-sliders-h"></i> Settings</a></li>
-            </ul>
-        </nav>
-    </header>
-
-    <div class="container">
-        <div class="page-header">
-            <h1>Admin Panel</h1>
-            <p>Manage your system settings and configurations</p>
         </div>
+    </nav>
 
-        <div class="admin-grid">
-            <div class="admin-card">
-                <h3><i class="fas fa-server"></i> System Status</h3>
-                <div class="system-status">
-                    <div class="status-item">
-                        <span>Database</span>
-                        <div class="status-indicator" id="dbStatus"></div>
-                    </div>
-                    <div class="status-item">
-                        <span>Storage</span>
-                        <div class="status-indicator" id="storageStatus"></div>
-                    </div>
-                    <div class="status-item">
-                        <span>API</span>
-                        <div class="status-indicator" id="apiStatus"></div>
-                    </div>
-                    <div class="status-item">
-                        <span>Auth</span>
-                        <div class="status-indicator" id="authStatus"></div>
-                    </div>
-                </div>
-                <button class="btn" onclick="checkSystemStatus()">
-                    <i class="fas fa-sync-alt"></i> Refresh Status
-                </button>
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-900">Admin Panel</h1>
+                <p class="mt-2 text-gray-600">Manage users and system settings</p>
             </div>
 
-            <div class="admin-card">
-                <h3><i class="fas fa-database"></i> Database Management</h3>
-                <div class="form-group">
-                    <label>Backup Database</label>
-                    <button class="btn" onclick="backupDatabase()">
-                        <i class="fas fa-download"></i> Create Backup
-                    </button>
+            <!-- User Management -->
+            <div class="bg-white p-6 rounded-lg shadow mb-8">
+                <h2 class="text-xl font-semibold mb-4">User Management</h2>
+                <div id="user-list" class="space-y-4">
+                    <div class="text-center py-4">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                        <p class="mt-2 text-gray-600">Loading users...</p>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Clear Cache</label>
-                    <button class="btn" onclick="clearCache()">
-                        <i class="fas fa-trash"></i> Clear All Cache
-                    </button>
-                </div>
-                <div class="form-group">
-                    <label>Optimize Database</label>
-                    <button class="btn" onclick="optimizeDatabase()">
-                        <i class="fas fa-tools"></i> Optimize
-                    </button>
+                <div class="mt-6 text-right">
+                    <button onclick="saveUserChanges()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save User Changes</button>
                 </div>
             </div>
 
-            <div class="admin-card">
-                <h3><i class="fas fa-shield-alt"></i> Security Settings</h3>
-                <div class="form-group">
-                    <label for="maxLoginAttempts">Max Login Attempts</label>
-                    <input type="number" id="maxLoginAttempts" value="5" min="1" max="10">
-                </div>
-                <div class="form-group">
-                    <label for="sessionTimeout">Session Timeout (minutes)</label>
-                    <input type="number" id="sessionTimeout" value="30" min="5" max="120">
-                </div>
-                <div class="form-group">
-                    <label for="enableTwoFactor">
-                        <input type="checkbox" id="enableTwoFactor"> Enable Two-Factor Authentication
+            <!-- Data Backup & Restore -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">Data Backup & Restore</h2>
+                <p class="text-sm text-gray-600 mb-4">Backup all job files and user data to a single JSON file. This can be used for offline storage or to restore the database to a previous state.</p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button onclick="backupAllData()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        Backup All Data
+                    </button>
+                    <label for="restore-file-input" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded flex items-center justify-center gap-2 cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                        Restore From File
+                        <input type="file" id="restore-file-input" class="hidden" accept=".json" onchange="handleRestoreFile(event)">
                     </label>
                 </div>
-                <button class="btn" onclick="updateSecuritySettings()">
-                    <i class="fas fa-save"></i> Save Security Settings
-                </button>
-            </div>
-
-            <div class="admin-card">
-                <h3><i class="fas fa-envelope"></i> Email Configuration</h3>
-                <div class="form-group">
-                    <label for="smtpServer">SMTP Server</label>
-                    <input type="text" id="smtpServer" placeholder="smtp.example.com">
-                </div>
-                <div class="form-group">
-                    <label for="smtpPort">SMTP Port</label>
-                    <input type="number" id="smtpPort" value="587">
-                </div>
-                <div class="form-group">
-                    <label for="emailFrom">From Email</label>
-                    <input type="email" id="emailFrom" placeholder="noreply@example.com">
-                </div>
-                <button class="btn" onclick="updateEmailSettings()">
-                    <i class="fas fa-save"></i> Save Email Settings
-                </button>
-            </div>
-        </div>
-
-        <div class="admin-card">
-            <h3><i class="fas fa-history"></i> Recent Admin Actions</h3>
-            <div id="adminActions">Loading admin actions...</div>
-        </div>
-
-        <div class="admin-card">
-            <h3><i class="fas fa-exclamation-triangle"></i> System Maintenance</h3>
-            <p style="margin-bottom: 1rem; color: #666;">
-                Use these tools carefully. Some actions cannot be undone.
-            </p>
-            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                <button class="btn btn-danger" onclick="confirmAction('maintenance')">
-                    <i class="fas fa-tools"></i> Enable Maintenance Mode
-                </button>
-                <button class="btn btn-danger" onclick="confirmAction('reset')">
-                    <i class="fas fa-redo"></i> Reset System Settings
-                </button>
-                <button class="btn btn-danger" onclick="confirmAction('logs')">
-                    <i class="fas fa-trash"></i> Clear System Logs
-                </button>
             </div>
         </div>
     </div>
 
     <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, writeBatch, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Use Firebase from main page or initialize if needed
-        const db = window.firebaseDb || getFirestore();
-
-        // Admin functions
-        window.checkSystemStatus = async function() {
-            try {
-                // Simulate system status checks
-                document.getElementById('dbStatus').className = 'status-indicator';
-                document.getElementById('storageStatus').className = 'status-indicator';
-                document.getElementById('apiStatus').className = 'status-indicator';
-                document.getElementById('authStatus').className = 'status-indicator';
-
-                // Log admin action
-                await logAdminAction('System status checked');
-            } catch (error) {
-                console.error('Error checking system status:', error);
-            }
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
+            authDomain: "my-job-file-system.firebaseapp.com",
+            projectId: "my-job-file-system",
+            storageBucket: "my-job-file-system.appspot.com",
+            messagingSenderId: "145307873304",
+            appId: "1:145307873304:web:d661ea6ec118801b4a136d",
+            measurementId: "G-8EHX5K7YHL"
         };
 
-        window.backupDatabase = async function() {
-            try {
-                // Simulate database backup
-                alert('Database backup initiated. You will receive an email when complete.');
-                await logAdminAction('Database backup initiated');
-            } catch (error) {
-                console.error('Error backing up database:', error);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+
+        // Check authentication and admin role
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
             }
-        };
 
-        window.clearCache = async function() {
-            try {
-                // Simulate cache clearing
-                alert('Cache cleared successfully.');
-                await logAdminAction('System cache cleared');
-            } catch (error) {
-                console.error('Error clearing cache:', error);
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+            
+            if (!userDoc.exists() || userDoc.data().status === 'inactive') {
+                window.location.href = 'login.html';
+                return;
             }
-        };
 
-        window.optimizeDatabase = async function() {
-            try {
-                // Simulate database optimization
-                alert('Database optimization completed.');
-                await logAdminAction('Database optimized');
-            } catch (error) {
-                console.error('Error optimizing database:', error);
+            currentUser = { uid: user.uid, email: user.email, ...userDoc.data() };
+            
+            if (currentUser.role !== 'admin') {
+                alert('Access denied. Admin privileges required.');
+                window.location.href = 'index.html';
+                return;
             }
-        };
 
-        window.updateSecuritySettings = async function() {
+            loadUsers();
+        });
+
+        async function loadUsers() {
             try {
-                const maxAttempts = document.getElementById('maxLoginAttempts').value;
-                const sessionTimeout = document.getElementById('sessionTimeout').value;
-                const twoFactor = document.getElementById('enableTwoFactor').checked;
+                const usersCollectionRef = collection(db, 'users');
+                const userQuerySnapshot = await getDocs(usersCollectionRef);
+                const userListDiv = document.getElementById('user-list');
+                let userListHtml = '';
 
-                // Save security settings to Firebase
-                await addDoc(collection(db, 'settings'), {
-                    type: 'security',
-                    maxLoginAttempts: parseInt(maxAttempts),
-                    sessionTimeout: parseInt(sessionTimeout),
-                    twoFactorEnabled: twoFactor,
-                    updatedAt: new Date()
+                userQuerySnapshot.forEach(doc => {
+                    const userData = doc.data();
+                    const userId = doc.id;
+                    const isCurrentUser = userId === currentUser.uid;
+                    
+                    userListHtml += `
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-center p-4 border rounded-lg ${isCurrentUser ? 'bg-blue-50' : 'bg-gray-50'}">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+                                <input type="text" data-uid="${userId}" class="display-name-input w-full border border-gray-300 rounded-md px-3 py-2" value="${userData.displayName}" ${isCurrentUser ? 'disabled' : ''}>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <input type="email" class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100" value="${userData.email}" disabled>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                                <select data-uid="${userId}" class="role-select w-full border border-gray-300 rounded-md px-3 py-2" ${isCurrentUser ? 'disabled' : ''}>
+                                    <option value="user" ${userData.role === 'user' ? 'selected' : ''}>User</option>
+                                    <option value="checker" ${userData.role === 'checker' ? 'selected' : ''}>Checker</option>
+                                    <option value="admin" ${userData.role === 'admin' ? 'selected' : ''}>Admin</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <select data-uid="${userId}" class="status-select w-full border border-gray-300 rounded-md px-3 py-2" ${isCurrentUser ? 'disabled' : ''}>
+                                    <option value="active" ${userData.status === 'active' ? 'selected' : ''}>Active</option>
+                                    <option value="inactive" ${userData.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                    `;
+                });
+                userListDiv.innerHTML = userListHtml;
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('user-list').innerHTML = '<div class="text-center py-4 text-red-600">Error loading users</div>';
+            }
+        }
+
+        async function saveUserChanges() {
+            try {
+                const batch = writeBatch(db);
+                const userRows = document.querySelectorAll('#user-list > div');
+                
+                userRows.forEach(row => {
+                    const nameInput = row.querySelector('.display-name-input');
+                    if (nameInput.disabled) return;
+
+                    const roleSelect = row.querySelector('.role-select');
+                    const statusSelect = row.querySelector('.status-select');
+                    const uid = nameInput.dataset.uid;
+                    
+                    const userDocRef = doc(db, 'users', uid);
+                    batch.update(userDocRef, { 
+                        displayName: nameInput.value,
+                        role: roleSelect.value,
+                        status: statusSelect.value
+                    });
                 });
 
-                alert('Security settings updated successfully.');
-                await logAdminAction('Security settings updated');
+                await batch.commit();
+                alert("User details updated successfully!");
             } catch (error) {
-                console.error('Error updating security settings:', error);
+                console.error("Error updating users: ", error);
+                alert("Failed to update user details.");
             }
-        };
+        }
 
-        window.updateEmailSettings = async function() {
+        async function backupAllData() {
             try {
-                const smtpServer = document.getElementById('smtpServer').value;
-                const smtpPort = document.getElementById('smtpPort').value;
-                const emailFrom = document.getElementById('emailFrom').value;
+                const jobFilesQuery = query(collection(db, 'jobfiles'));
+                const usersQuery = query(collection(db, 'users'));
 
-                // Save email settings to Firebase
-                await addDoc(collection(db, 'settings'), {
-                    type: 'email',
-                    smtpServer,
-                    smtpPort: parseInt(smtpPort),
-                    emailFrom,
-                    updatedAt: new Date()
-                });
+                const jobFilesSnapshot = await getDocs(jobFilesQuery);
+                const usersSnapshot = await getDocs(usersQuery);
 
-                alert('Email settings updated successfully.');
-                await logAdminAction('Email settings updated');
+                const jobfilesData = jobFilesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const usersData = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                const backupData = {
+                    version: "1.0",
+                    createdAt: new Date().toISOString(),
+                    data: {
+                        jobfiles: jobfilesData,
+                        users: usersData
+                    }
+                };
+
+                const jsonString = JSON.stringify(backupData, (key, value) => {
+                    if (value && typeof value.toDate === 'function') {
+                        return value.toDate().toISOString();
+                    }
+                    return value;
+                }, 2);
+
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                const date = new Date().toISOString().slice(0, 10);
+                link.download = `qgo-cargo-backup-${date}.json`;
+                link.href = url;
+                link.click();
+                URL.revokeObjectURL(url);
+
+                alert("Backup created and download started successfully.");
             } catch (error) {
-                console.error('Error updating email settings:', error);
+                console.error("Backup failed:", error);
+                alert("An error occurred during backup.");
             }
-        };
+        }
 
-        window.confirmAction = async function(action) {
-            const actions = {
-                maintenance: 'enable maintenance mode',
-                reset: 'reset all system settings',
-                logs: 'clear all system logs'
+        async function handleRestoreFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const content = e.target.result;
+                try {
+                    const backupData = JSON.parse(content);
+
+                    if (!backupData.data || !backupData.data.jobfiles || !backupData.data.users) {
+                        alert("Invalid backup file format.");
+                        return;
+                    }
+
+                    const jobFileCount = backupData.data.jobfiles.length;
+                    const userCount = backupData.data.users.length;
+
+                    if (confirm(`You are about to restore ${jobFileCount} job files and ${userCount} users. This will overwrite existing data. Continue?`)) {
+                        const { writeBatch, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                        
+                        const restoreBatch = writeBatch(db);
+                        
+                        backupData.data.jobfiles.forEach(jobFile => {
+                            const docRef = doc(db, 'jobfiles', jobFile.id);
+                            const { id, ...dataToRestore } = jobFile;
+                            restoreBatch.set(docRef, dataToRestore);
+                        });
+
+                        backupData.data.users.forEach(user => {
+                            const docRef = doc(db, 'users', user.id);
+                            const { id, ...dataToRestore } = user;
+                            restoreBatch.set(docRef, dataToRestore);
+                        });
+
+                        await restoreBatch.commit();
+                        alert("Data restored successfully! The page will now reload.");
+                        setTimeout(() => window.location.reload(), 2000);
+                    }
+                } catch (error) {
+                    console.error("Error reading restore file:", error);
+                    alert("Failed to read or parse the backup file.");
+                } finally {
+                    event.target.value = '';
+                }
             };
 
-            if (confirm(`Are you sure you want to ${actions[action]}? This action cannot be undone.`)) {
-                alert(`${actions[action]} completed.`);
-                await logAdminAction(`${actions[action]} executed`);
-            }
+            reader.readAsText(file);
+        }
+
+        // Global functions
+        window.saveUserChanges = saveUserChanges;
+        window.backupAllData = backupAllData;
+        window.handleRestoreFile = handleRestoreFile;
+        window.logout = async function() {
+            await signOut(auth);
+            window.location.href = 'login.html';
         };
-
-        async function logAdminAction(action) {
-            try {
-                await addDoc(collection(db, 'adminActions'), {
-                    action,
-                    timestamp: new Date(),
-                    user: 'admin@example.com' // Replace with actual user
-                });
-                loadAdminActions();
-            } catch (error) {
-                console.error('Error logging admin action:', error);
-            }
-        }
-
-        async function loadAdminActions() {
-            try {
-                const actionsQuery = query(
-                    collection(db, 'adminActions'),
-                    orderBy('timestamp', 'desc'),
-                    limit(10)
-                );
-                
-                const actionsSnapshot = await getDocs(actionsQuery);
-                const actions = [];
-                
-                actionsSnapshot.forEach(doc => {
-                    actions.push(doc.data());
-                });
-
-                const actionsContainer = document.getElementById('adminActions');
-                if (actions.length === 0) {
-                    actionsContainer.innerHTML = '<p>No recent admin actions.</p>';
-                    return;
-                }
-
-                const table = document.createElement('table');
-                table.className = 'data-table';
-                table.innerHTML = `
-                    <thead>
-                        <tr>
-                            <th>Action</th>
-                            <th>User</th>
-                            <th>Time</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${actions.map(action => `
-                            <tr>
-                                <td>${action.action}</td>
-                                <td>${action.user}</td>
-                                <td>${action.timestamp?.toDate?.()?.toLocaleString() || 'Unknown'}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                `;
-
-                actionsContainer.innerHTML = '';
-                actionsContainer.appendChild(table);
-            } catch (error) {
-                console.error('Error loading admin actions:', error);
-                document.getElementById('adminActions').innerHTML = 'Error loading admin actions.';
-            }
-        }
-
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', () => {
-            checkSystemStatus();
-            loadAdminActions();
-        });
     </script>
 </body>
 </html>
