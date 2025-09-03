@@ -372,19 +372,24 @@
     
     <!-- Firebase Configuration -->
     <script>
-        // Firebase configuration - Replace with your config
+        // Firebase configuration - YOU MUST REPLACE THESE WITH YOUR ACTUAL VALUES
         const firebaseConfig = {
-            apiKey: "your-api-key",
-            authDomain: "your-project.firebaseapp.com",
-            projectId: "your-project-id",
-            storageBucket: "your-project.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "your-app-id"
+            apiKey: "REPLACE_WITH_YOUR_ACTUAL_API_KEY",
+            authDomain: "REPLACE_WITH_YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "REPLACE_WITH_YOUR_PROJECT_ID",
+            storageBucket: "REPLACE_WITH_YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "REPLACE_WITH_YOUR_SENDER_ID",
+            appId: "REPLACE_WITH_YOUR_APP_ID"
         };
         
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        console.log('Firebase initialized:', firebase.apps.length > 0);
+        // Initialize Firebase with error handling
+        try {
+            firebase.initializeApp(firebaseConfig);
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            console.error('Firebase initialization failed:', error);
+            alert('Firebase configuration error. Please check your Firebase settings.');
+        }
     </script>
 
     <!-- QR Code Library -->
