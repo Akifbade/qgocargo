@@ -9,6 +9,197 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-100">
+    <!-- Login Screen -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <div>
+                <div class="mx-auto h-12 w-auto flex items-center justify-center">
+                    <div class="text-3xl font-bold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
+                </div>
+                <h2 id="auth-title" class="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
+            </div>
+            <div class="mt-8 space-y-6">
+                <div class="rounded-md shadow-sm -space-y-px">
+                    <div id="signup-name-field" style="display: none;">
+                        <label for="full-name" class="sr-only">Full name</label>
+                        <input id="full-name" name="name" type="text" autocomplete="name" class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="Full name">
+                    </div>
+                    <div>
+                        <label for="email-address" class="sr-only">Email address</label>
+                        <input id="email-address" name="email" type="email" autocomplete="email" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="Email address">
+                    </div>
+                    <div>
+                        <label for="password" class="sr-only">Password</label>
+                        <input id="password" name="password" type="password" autocomplete="current-password" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="Password">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <div class="text-sm">
+                        <a href="#" id="forgot-password-link" class="font-medium text-indigo-600 hover:text-indigo-500">Forgot your password?</a>
+                    </div>
+                </div>
+
+                <div>
+                    <button id="auth-btn" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Sign in</button>
+                </div>
+
+                <div class="text-center">
+                    <a href="#" id="auth-link" class="font-medium text-indigo-600 hover:text-indigo-500">Create a new account</a>
+                </div>
+
+                <div id="approval-message" class="text-center text-sm text-yellow-600 bg-yellow-100 p-3 rounded" style="display: none;">
+                    Your account is pending admin approval. Please contact your administrator.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app-container" style="display: none;">
+        <!-- Header -->
+        <div class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center">
+                        <div class="text-2xl font-bold mr-8" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
+                        <div class="text-sm text-gray-600">
+                            Welcome, <span id="user-display-name" class="font-medium"></span> 
+                            (<span id="user-role" class="capitalize"></span>)
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button onclick="openAnalyticsDashboard()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105">📊 Analytics</button>
+                        <button id="admin-panel-btn" class="admin-only bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105">⚙️ Admin</button>
+                        <button id="activity-log-btn" class="admin-only bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105">📋 Activity Log</button>
+                        <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Checker Info Banner -->
+        <div id="checker-info-banner" class="checker-only bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4" style="display: none;">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm">You have checker/admin privileges. You can check and approve job files.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rejection Banner -->
+        <div id="rejection-banner" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" style="display: none;">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm"><strong>This job file has been rejected.</strong></p>
+                    <p class="text-sm mt-1">Reason: <span id="rejection-reason" class="font-medium"></span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Container -->
+        <div id="main-container" class="container">
+            <!-- Status Summary -->
+            <div id="status-summary-main" class="mb-6">
+                <!-- Status cards will be populated by JS -->
+            </div>
+
+            <!-- Job File Form -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <div><label for="date" class="block mb-2 font-semibold text-gray-700">DATE:</label><input type="date" id="date" class="input-field"></div>
+                <div><label for="po-number" class="block mb-2 font-semibold text-gray-700">P.O. #:</label><input type="text" id="po-number" class="input-field"></div>
+                <div><label for="job-file-no" class="block mb-2 font-semibold text-gray-700">JOB FILE NO.:</label><input type="text" id="job-file-no" class="input-field"></div>
+            </div>
+
+            <!-- Clearance and Product Type -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label class="block mb-2 font-semibold text-gray-700">CLEARANCE:</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center"><input type="checkbox" data-clearance="Export" class="mr-2"> Export</label>
+                        <label class="flex items-center"><input type="checkbox" data-clearance="Import" class="mr-2"> Import</label>
+                        <label class="flex items-center"><input type="checkbox" data-clearance="Clearance" class="mr-2"> Clearance</label>
+                        <label class="flex items-center"><input type="checkbox" data-clearance="Local Move" class="mr-2"> Local Move</label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block mb-2 font-semibold text-gray-700">PRODUCT TYPE:</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center"><input type="checkbox" data-product="Air Freight" class="mr-2"> Air</label>
+                        <label class="flex items-center"><input type="checkbox" data-product="Sea Freight" class="mr-2"> Sea</label>
+                        <label class="flex items-center"><input type="checkbox" data-product="Land Freight" class="mr-2"> Land</label>
+                        <label class="flex items-center"><input type="checkbox" data-product="Others" class="mr-2"> Others</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Invoice and Billing Info -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <div><label for="invoice-no" class="block mb-2 font-semibold text-gray-700">INVOICE NO.:</label><input type="text" id="invoice-no" class="input-field"></div>
+                <div><label for="billing-date" class="block mb-2 font-semibold text-gray-700">BILLING DATE:</label><input type="date" id="billing-date" class="input-field"></div>
+                <div><label for="salesman" class="block mb-2 font-semibold text-gray-700">SALESMAN:</label><input type="text" id="salesman" class="input-field"></div>
+            </div>
+
+            <!-- Shipper and Consignee -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="relative">
+                    <label for="shipper-name" class="block mb-2 font-semibold text-gray-700">SHIPPER'S NAME:</label>
+                    <input type="text" id="shipper-name" class="input-field" autocomplete="off">
+                    <div id="shipper-suggestions" class="autocomplete-suggestions hidden"></div>
+                </div>
+                <div class="relative">
+                    <label for="consignee-name" class="block mb-2 font-semibold text-gray-700">CONSIGNEE'S NAME:</label>
+                    <input type="text" id="consignee-name" class="input-field" autocomplete="off">
+                    <div id="consignee-suggestions" class="autocomplete-suggestions hidden"></div>
+                </div>
+            </div>
+
+            <!-- Shipping Details -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div><label for="mawb" class="block mb-2 font-semibold text-gray-700">MAWB/OBL/TCN:</label><input type="text" id="mawb" class="input-field"></div>
+                <div><label for="teams-of-shipping" class="block mb-2 font-semibold text-gray-700">TEAMS OF SHIPPING:</label><input type="text" id="teams-of-shipping" class="input-field"></div>
+                <div><label for="hawb" class="block mb-2 font-semibold text-gray-700">HAWB/HBL:</label><input type="text" id="hawb" class="input-field"></div>
+                <div><label for="origin" class="block mb-2 font-semibold text-gray-700">ORIGIN:</label><input type="text" id="origin" class="input-field"></div>
+                <div><label for="destination" class="block mb-2 font-semibold text-gray-700">DESTINATION:</label><input type="text" id="destination" class="input-field"></div>
+            </div>
+
+            <!-- Weight and Pieces -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div><label for="no-of-pieces" class="block mb-2 font-semibold text-gray-700">NO. OF PIECES:</label><input type="text" id="no-of-pieces" class="input-field"></div>
+                <div><label for="gross-weight" class="block mb-2 font-semibold text-gray-700">GROSS WT:</label><input type="text" id="gross-weight" class="input-field"></div>
+                <div><label for="volume-weight" class="block mb-2 font-semibold text-gray-700">VOLUME WT:</label><input type="text" id="volume-weight" class="input-field"></div>
+            </div>
+
+            <!-- Description -->
+            <div class="mb-6">
+                <label for="description" class="block mb-2 font-semibold text-gray-700">DESCRIPTION:</label>
+                <textarea id="description" rows="3" class="input-field w-full"></textarea>
+            </div>
+
+            <!-- Carrier and Transport Details -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div><label for="carrier" class="block mb-2 font-semibold text-gray-700">CARRIER/LINE/TRUCKING:</label><input type="text" id="carrier" class="input-field"></div>
+                <div><label for="truck-no" class="block mb-2 font-semibold text-gray-700">TRUCK/DRIVER:</label><input type="text" id="truck-no" class="input-field"></div>
+            </div>
+
+            <!-- Vessel and Flight Details -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div><label for="vessel-name" class="block mb-2 font-semibold text-gray-700">VESSEL:</label><input type="text" id="vessel-name" class="input-field"></div>
+                <div><label for="flight-voyage-no" class="block mb-2 font-semibold text-gray-700">FLIGHT/VOYAGE:</label><input type="text" id="flight-voyage-no" class="input-field"></div>
+                <div><label for="container-no" class="block mb-2 font-semibold text-gray-700">CONTAINER NO:</label><input type="text" id="container-no" class="input-field"></div>
+            </div>
 
             <!-- Charges Table -->
             <div class="flex justify-between items-center mb-2">
