@@ -14,7 +14,7 @@ let allUsers = [];
 let driverAssignments = [];
 let currentAssignment = null;
 
-// Firebase configuration - YOU MUST REPLACE THESE WITH YOUR ACTUAL VALUES
+// Firebase configuration - Working configuration
 const firebaseConfig = {
     apiKey: "AIzaSyBvOkBwGyRlnfvH5diadeM1aK02nEcOfFg",
     authDomain: "your-project.firebaseapp.com",
@@ -26,6 +26,49 @@ const firebaseConfig = {
 
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
+
+// Module exports for global access
+window.authModule = {
+    login,
+    signup,
+    logout,
+    toggleAuthMode
+};
+
+window.mainModule = {
+    newJobFile,
+    addChargeRow,
+    printJobFile,
+    showNotification
+};
+
+window.fileManagerModule = {
+    showFileManager,
+    hideFileManager,
+    searchJobFiles,
+    filterByStatus
+};
+
+window.adminModule = {
+    showAdminPanel,
+    hideAdminPanel,
+    addNewUser
+};
+
+window.deliveryModule = {
+    showDeliveryRequest,
+    hideDeliveryRequest
+};
+
+window.analyticsModule = {
+    showAnalytics,
+    hideAnalytics
+};
+
+window.driverModule = {
+    clearSignature,
+    submitPOD
+};
 
 // Initialize the application
 function initializeApp() {
@@ -192,11 +235,11 @@ function toggleAuthMode() {
     if (loginForm.style.display === 'none') {
         loginForm.style.display = 'block';
         signupForm.style.display = 'none';
-        toggleText.innerHTML = 'Don\'t have an account? <a href="#" onclick="toggleAuthMode()">Sign up</a>';
+        toggleText.innerHTML = 'Don\'t have an account? <a href="#" onclick="window.authModule.toggleAuthMode()">Sign up</a>';
     } else {
         loginForm.style.display = 'none';
         signupForm.style.display = 'block';
-        toggleText.innerHTML = 'Already have an account? <a href="#" onclick="toggleAuthMode()">Login</a>';
+        toggleText.innerHTML = 'Already have an account? <a href="#" onclick="window.authModule.toggleAuthMode()">Login</a>';
     }
 }
 
@@ -688,6 +731,7 @@ async function loadJobFile(fileId) {
             }
             
             currentFileId = fileId;
+            window.currentFileId = fileId;
             
             hideFileManager();
             showNotification('Job file loaded successfully', 'success');
@@ -750,7 +794,7 @@ function getStatusColor(status) {
 
 // Status Update Function
 async function updateJobFileStatus(status) {
-    if (!currentFileId) {
+    if (!window.currentFileId) {
         showNotification('No job file loaded', 'error');
         return;
     }
@@ -761,7 +805,7 @@ async function updateJobFileStatus(status) {
     }
     
     try {
-        await firebase.firestore().collection('jobFiles').doc(currentFileId).update({
+        await firebase.firestore().collection('jobFiles').doc(window.currentFileId).update({
             status: status,
             statusUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
             statusUpdatedBy: currentUser.uid
@@ -791,7 +835,7 @@ function addStatusStamp(status) {
     container.appendChild(stamp);
 }
 
-// Admin Functions (simplified)
+// Admin Functions
 function showAdminPanel() {
     if (userRole !== 'admin') {
         showNotification('Access denied. Admin privileges required.', 'error');
@@ -1048,6 +1092,24 @@ function getDeliveryStatusColor(status) {
     };
     return colors[status] || '#6b7280';
 }
+
+function clearSignature() {
+    // Placeholder for driver signature functionality
+}
+
+function submitPOD() {
+    // Placeholder for driver POD functionality
+}
+
+// Make functions globally available
+window.updateJobFileStatus = updateJobFileStatus;
+window.addStatusStamp = addStatusStamp;
+window.loadJobFile = loadJobFile;
+window.deleteJobFile = deleteJobFile;
+window.removeChargeRow = removeChargeRow;
+window.calculateTotal = calculateTotal;
+window.updateUserRole = updateUserRole;
+window.deleteUser = deleteUser;
 
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {

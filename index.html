@@ -378,63 +378,7 @@
 
     <!-- Status Update Function -->
     <script>
-        async function updateJobFileStatus(status) {
-            if (!window.currentFileId) {
-                window.mainModule.showNotification('No job file loaded', 'error');
-                return;
-            }
-            
-            // Status update is now handled in script.js
-            updateJobFileStatus(status);
-        }
-        
-        function addStatusStamp(status) {
-            // Status stamp is now handled in script.js
-            addStatusStamp(status);
-        }
-    </script>
-</body>
-</html>
-
-            
-            if (userRole !== 'admin' && userRole !== 'checker') {
-                window.mainModule.showNotification('Access denied. Admin or Checker privileges required.', 'error');
-                return;
-            }
-            
-            try {
-                await firebase.firestore().collection('jobFiles').doc(window.currentFileId).update({
-                    status: status,
-                    statusUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    statusUpdatedBy: currentUser.uid
-                });
-                
-                window.mainModule.showNotification(`Job file ${status} successfully!`, 'success');
-                
-                // Add visual stamp
-                addStatusStamp(status);
-                
-            } catch (error) {
-                console.error('Error updating status:', error);
-                window.mainModule.showNotification('Error updating status', 'error');
-            }
-        }
-        
-        function addStatusStamp(status) {
-            // Remove existing stamps
-            const existingStamps = document.querySelectorAll('.stamp');
-            existingStamps.forEach(stamp => stamp.remove());
-            
-            // Add new stamp
-            const stamp = document.createElement('div');
-            stamp.className = `stamp stamp-${status}`;
-            stamp.textContent = status;
-            stamp.style.display = 'block';
-            
-            const container = document.querySelector('.container');
-            container.style.position = 'relative';
-            container.appendChild(stamp);
-        }
+        // All functions are now in script.js
     </script>
 </body>
 </html>
