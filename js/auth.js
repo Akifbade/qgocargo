@@ -51,7 +51,13 @@ function showMainApp() {
     
     // Update UI based on role
     updateUIForRole();
-    loadJobFiles();
+    
+    // Wait a bit for Firebase auth to fully initialize before loading data
+    setTimeout(() => {
+        if (window.mainModule && window.mainModule.loadJobFiles) {
+            window.mainModule.loadJobFiles();
+        }
+    }, 1000);
 }
 
 // Show driver dashboard

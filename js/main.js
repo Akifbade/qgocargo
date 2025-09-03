@@ -52,10 +52,17 @@ function autoSave() {
 
 // Load job files
 async function loadJobFiles() {
-    // Check if user is authenticated before loading
     const currentUser = window.authModule.getCurrentUser();
     if (!currentUser) {
         console.log('User not authenticated, skipping job files load');
+        return;
+    }
+    
+    // Double-check Firebase auth state
+    const firebaseUser = firebase.auth().currentUser;
+    if (!firebaseUser) {
+        console.log('Firebase user not ready, retrying...');
+        setTimeout(loadJobFiles, 500);
         return;
     }
     
@@ -444,6 +451,7 @@ function showNotification(message, type = 'info') {
 // Export main functions for global access
 window.mainModule = {
     initializeApp,
+    loadJobFiles,
     saveJobFile,
     newJobFile,
     printJobFile,
