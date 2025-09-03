@@ -13,6 +13,10 @@ let analyticsDataCache = null;
 let currentFilteredJobs = [];
 let fileIdToReject = null; 
 let profitChartInstance = null;
+let selectedJobForDelivery = null;
+let selectedDriver = null;
+let deliveryRequests = [];
+let signaturePad = null;
 
 // --- Firebase Configuration ---
 const firebaseConfig = {
@@ -63,9 +67,15 @@ async function initializeFirebase() {
                 }
                 
                 console.log("User logged in:", currentUser);
-                showApp();
-                loadJobFiles();
-                loadClients();
+                
+                if (currentUser.role === 'driver') {
+                    showDriverDashboard();
+                } else {
+                    showApp();
+                    loadJobFiles();
+                    loadClients();
+                }
+                loadDeliveryRequests();
             } else {
                 currentUser = null;
                 console.log("User logged out");
@@ -1344,12 +1354,17 @@ function showLogin() {
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('app-container').style.display = 'none';
     document.getElementById('analytics-container').style.display = 'none';
+    document.getElementById('driver-dashboard').style.display = 'none';
+    document.getElementById('delivery-request-page').style.display = 'none';
 }
 
 function showApp() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
     document.getElementById('analytics-container').style.display = 'none';
+    document.getElementById('driver-dashboard').style.display = 'none';
+    document.getElementById('delivery-request-page').style.display = 'none';
+    document.getElementById('main-container').style.display = 'block';
     document.getElementById('user-display-name').textContent = currentUser.displayName;
     document.getElementById('user-role').textContent = currentUser.role;
 
@@ -1366,6 +1381,542 @@ function showApp() {
     }
     
     clearForm();
+}
+
+function showDriverDashboard() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-container').style.display = 'none';
+    document.getElementById('analytics-container').style.display = 'none';
+    document.getElementById('driver-dashboard').style.display = 'block';
+    document.getElementById('delivery-request-page').style.display = 'none';
+    loadDriverAssignments();
+}
+
+// --- Delivery Request System ---
+function openDeliveryRequest() {
+    document.getElementById('main-container').style.display = 'none';
+    document.getElementById('delivery-request-page').style.display = 'block';
+    loadApprovedJobFiles();
+}
+
+function closeDeliveryRequest() {
+    document.getElementById('delivery-request-page').style.display = 'none';
+    document.getElementById('main-container').style.display = 'block';
+    resetDeliveryForm();
+}
+
+function resetDeliveryForm() {
+    document.getElementById('delivery-step-2').classList.add('hidden');
+    document.getElementById('delivery-step-3').classList.add('hidden');
+    document.getElementById('delivery-job-search').value = '';
+    document.getElementById('delivery-job-results').innerHTML = '';
+    selectedJobForDelivery = null;
+    selectedDriver = null;
+}
+
+function loadApprovedJobFiles() {
+    const approvedJobs = jobFilesCache.filter(job => job.status === 'approved');
+    displayJobFilesForDelivery(approvedJobs);
+}
+
+function displayJobFilesForDelivery(jobs) {
+    const resultsDiv = document.getElementById('delivery-job-results');
+    if (jobs.length === 0) {
+        resultsDiv.innerHTML = '<p class="text-gray-500 text-center p-4">No approved job files found.</p>';
+        return;
+    }
+
+    resultsDiv.innerHTML = jobs.map(job => `
+        <div class="border p-3 rounded-lg bg-gray-50 hover:bg-gray-100 cursor-pointer" onclick="selectJobForDelivery('${job.id}')">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="font-bold text-indigo-700">${job.jfn || 'No ID'}</p>
+                    <p class="text-sm text-gray-600">Shipper: ${job.sh || 'N/A'}</p>
+                    <p class="text-sm text-gray-600">Consignee: ${job.co || 'N/A'}</p>
+                    <p class="text-xs text-gray-500">MAWB: ${job.mawb || 'N/A'}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm font-medium">Destination: ${job.de || 'N/A'}</p>
+                    <p class="text-xs text-gray-500">Pieces: ${job.pc || 'N/A'}</p>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function selectJobForDelivery(jobId) {
+    selectedJobForDelivery = jobFilesCache.find(job => job.id === jobId);
+    if (selectedJobForDelivery) {
+        document.getElementById('selected-job-info').innerHTML = `
+            <h4 class="font-bold text-lg mb-2">Selected Job File: ${selectedJobForDelivery.jfn}</h4>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div><strong>Shipper:</strong> ${selectedJobForDelivery.sh || 'N/A'}</div>
+                <div><strong>Consignee:</strong> ${selectedJobForDelivery.co || 'N/A'}</div>
+                <div><strong>Origin:</strong> ${selectedJobForDelivery.or || 'N/A'}</div>
+                <div><strong>Destination:</strong> ${selectedJobForDelivery.de || 'N/A'}</div>
+                <div><strong>Pieces:</strong> ${selectedJobForDelivery.pc || 'N/A'}</div>
+                <div><strong>Weight:</strong> ${selectedJobForDelivery.gw || 'N/A'}</div>
+            </div>
+        `;
+        
+        // Pre-fill delivery address with consignee info if available
+        document.getElementById('delivery-address').value = selectedJobForDelivery.co || '';
+        document.getElementById('delivery-contact').value = selectedJobForDelivery.co || '';
+        
+        document.getElementById('delivery-step-2').classList.remove('hidden');
+    }
+}
+
+function showDriverSelection() {
+    loadAvailableDrivers();
+    document.getElementById('delivery-step-3').classList.remove('hidden');
+}
+
+async function loadAvailableDrivers() {
+    try {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('role', '==', 'driver'), where('status', '==', 'active'));
+        const querySnapshot = await getDocs(q);
+        
+        const driversDiv = document.getElementById('available-drivers-list');
+        if (querySnapshot.empty) {
+            driversDiv.innerHTML = '<p class="col-span-full text-center text-gray-500">No available drivers found.</p>';
+            return;
+        }
+
+        driversDiv.innerHTML = querySnapshot.docs.map(doc => {
+            const driver = doc.data();
+            return `
+                <div class="border p-4 rounded-lg bg-white hover:bg-blue-50 cursor-pointer driver-card" onclick="selectDriver('${doc.id}', '${driver.displayName}')">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <span class="text-2xl">🚚</span>
+                        </div>
+                        <h4 class="font-bold">${driver.displayName}</h4>
+                        <p class="text-sm text-gray-600">${driver.email}</p>
+                        <p class="text-xs text-green-600 mt-1">Available</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading drivers:', error);
+        showNotification('Could not load available drivers.', true);
+    }
+}
+
+function selectDriver(driverId, driverName) {
+    selectedDriver = { id: driverId, name: driverName };
+    
+    // Update UI to show selection
+    document.querySelectorAll('.driver-card').forEach(card => {
+        card.classList.remove('bg-blue-100', 'border-blue-500');
+        card.classList.add('bg-white');
+    });
+    
+    event.target.closest('.driver-card').classList.add('bg-blue-100', 'border-blue-500');
+    document.getElementById('create-delivery-request-btn').disabled = false;
+}
+
+async function createDeliveryRequest() {
+    if (!selectedJobForDelivery || !selectedDriver) {
+        showNotification('Please select both job file and driver.', true);
+        return;
+    }
+
+    showLoader();
+    try {
+        const deliveryRequest = {
+            jobFileId: selectedJobForDelivery.id,
+            jobFileNo: selectedJobForDelivery.jfn,
+            driverId: selectedDriver.id,
+            driverName: selectedDriver.name,
+            deliveryAddress: document.getElementById('delivery-address').value,
+            contactPerson: document.getElementById('delivery-contact').value,
+            contactPhone: document.getElementById('delivery-phone').value,
+            deliveryType: document.getElementById('delivery-type').value,
+            preferredDate: document.getElementById('delivery-date').value,
+            preferredTime: document.getElementById('delivery-time').value,
+            specialInstructions: document.getElementById('delivery-instructions').value,
+            status: 'assigned',
+            createdBy: currentUser.displayName,
+            createdAt: serverTimestamp(),
+            jobDetails: {
+                shipper: selectedJobForDelivery.sh,
+                consignee: selectedJobForDelivery.co,
+                origin: selectedJobForDelivery.or,
+                destination: selectedJobForDelivery.de,
+                pieces: selectedJobForDelivery.pc,
+                weight: selectedJobForDelivery.gw,
+                description: selectedJobForDelivery.dsc,
+                mawb: selectedJobForDelivery.mawb
+            }
+        };
+
+        const deliveryRef = collection(db, 'delivery_requests');
+        await addDoc(deliveryRef, deliveryRequest);
+        
+        hideLoader();
+        showNotification('Delivery request created successfully!');
+        closeDeliveryRequest();
+    } catch (error) {
+        hideLoader();
+        console.error('Error creating delivery request:', error);
+        showNotification('Could not create delivery request.', true);
+    }
+}
+
+// --- Driver Dashboard Functions ---
+async function loadDriverAssignments() {
+    if (!currentUser || currentUser.role !== 'driver') return;
+
+    try {
+        const deliveryRef = collection(db, 'delivery_requests');
+        const q = query(deliveryRef, where('driverId', '==', currentUser.uid));
+        
+        onSnapshot(q, (querySnapshot) => {
+            const assignments = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            displayDriverAssignments(assignments);
+            updateDriverStats(assignments);
+        });
+    } catch (error) {
+        console.error('Error loading driver assignments:', error);
+        showNotification('Could not load assignments.', true);
+    }
+}
+
+function displayDriverAssignments(assignments) {
+    const listDiv = document.getElementById('driver-assignments-list');
+    
+    if (assignments.length === 0) {
+        listDiv.innerHTML = '<p class="text-gray-500 text-center p-4">No delivery assignments yet.</p>';
+        return;
+    }
+
+    listDiv.innerHTML = assignments.map(assignment => {
+        const statusColor = {
+            'assigned': 'bg-blue-100 text-blue-800',
+            'in_transit': 'bg-yellow-100 text-yellow-800',
+            'delivered': 'bg-green-100 text-green-800'
+        };
+
+        const actionButton = assignment.status === 'assigned' 
+            ? `<button onclick="startDelivery('${assignment.id}')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm">Start Delivery</button>`
+            : assignment.status === 'in_transit'
+            ? `<button onclick="completeDeliveryProcess('${assignment.id}')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-sm">Complete Delivery</button>`
+            : `<button onclick="viewDeliveryReceipt('${assignment.id}')" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-1 px-3 rounded text-sm">View Receipt</button>`;
+
+        return `
+            <div class="border p-4 rounded-lg bg-white">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <h4 class="font-bold text-lg">${assignment.jobFileNo}</h4>
+                        <p class="text-sm text-gray-600 mb-2">${assignment.jobDetails.shipper} → ${assignment.jobDetails.consignee}</p>
+                        <div class="grid grid-cols-2 gap-2 text-xs text-gray-500 mb-2">
+                            <div><strong>Pieces:</strong> ${assignment.jobDetails.pieces || 'N/A'}</div>
+                            <div><strong>Weight:</strong> ${assignment.jobDetails.weight || 'N/A'}</div>
+                            <div><strong>MAWB:</strong> ${assignment.jobDetails.mawb || 'N/A'}</div>
+                            <div><strong>Contact:</strong> ${assignment.contactPhone || 'N/A'}</div>
+                        </div>
+                        <p class="text-sm"><strong>Address:</strong> ${assignment.deliveryAddress}</p>
+                        ${assignment.specialInstructions ? `<p class="text-xs text-gray-600 mt-1"><strong>Instructions:</strong> ${assignment.specialInstructions}</p>` : ''}
+                    </div>
+                    <div class="text-right">
+                        <span class="px-2 py-1 rounded text-xs font-medium ${statusColor[assignment.status] || 'bg-gray-100 text-gray-800'}">${assignment.status.replace('_', ' ').toUpperCase()}</span>
+                        <div class="mt-2">
+                            ${actionButton}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function updateDriverStats(assignments) {
+    const pending = assignments.filter(a => a.status === 'assigned').length;
+    const inTransit = assignments.filter(a => a.status === 'in_transit').length;
+    const deliveredToday = assignments.filter(a => {
+        if (a.status !== 'delivered' || !a.deliveredAt) return false;
+        const deliveredDate = a.deliveredAt.toDate ? a.deliveredAt.toDate() : new Date(a.deliveredAt);
+        const today = new Date();
+        return deliveredDate.toDateString() === today.toDateString();
+    }).length;
+    const totalDelivered = assignments.filter(a => a.status === 'delivered').length;
+
+    document.getElementById('pending-deliveries-count').textContent = pending;
+    document.getElementById('in-transit-count').textContent = inTransit;
+    document.getElementById('delivered-today-count').textContent = deliveredToday;
+    document.getElementById('total-delivered-count').textContent = totalDelivered;
+}
+
+async function startDelivery(assignmentId) {
+    showLoader();
+    try {
+        const assignmentRef = doc(db, 'delivery_requests', assignmentId);
+        await setDoc(assignmentRef, {
+            status: 'in_transit',
+            startedAt: serverTimestamp()
+        }, { merge: true });
+        
+        hideLoader();
+        showNotification('Delivery started!');
+    } catch (error) {
+        hideLoader();
+        console.error('Error starting delivery:', error);
+        showNotification('Could not start delivery.', true);
+    }
+}
+
+function completeDeliveryProcess(assignmentId) {
+    const assignment = deliveryRequests.find(req => req.id === assignmentId);
+    if (assignment) {
+        document.getElementById('pod-modal').dataset.assignmentId = assignmentId;
+        setupSignaturePad();
+        openModal('pod-modal');
+    }
+}
+
+function setupSignaturePad() {
+    const canvas = document.getElementById('signature-canvas');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    function getEventPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        return {
+            x: (clientX - rect.left) * (canvas.width / rect.width),
+            y: (clientY - rect.top) * (canvas.height / rect.height)
+        };
+    }
+
+    function startDrawing(e) {
+        isDrawing = true;
+        const pos = getEventPos(e);
+        lastX = pos.x;
+        lastY = pos.y;
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        
+        const pos = getEventPos(e);
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+        
+        lastX = pos.x;
+        lastY = pos.y;
+    }
+
+    function stopDrawing() {
+        isDrawing = false;
+    }
+
+    // Mouse events
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+
+    // Touch events
+    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchmove', draw);
+    canvas.addEventListener('touchend', stopDrawing);
+}
+
+function clearSignature() {
+    const canvas = document.getElementById('signature-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+async function completeDelivery() {
+    const assignmentId = document.getElementById('pod-modal').dataset.assignmentId;
+    const recipientName = document.getElementById('recipient-name').value.trim();
+    const recipientId = document.getElementById('recipient-id').value.trim();
+    const deliveryNotes = document.getElementById('delivery-notes').value.trim();
+    const canvas = document.getElementById('signature-canvas');
+    
+    if (!recipientName) {
+        showNotification('Recipient name is required.', true);
+        return;
+    }
+
+    // Check if signature exists
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const hasSignature = imageData.data.some(channel => channel !== 0);
+    
+    if (!hasSignature) {
+        showNotification('Digital signature is required.', true);
+        return;
+    }
+
+    showLoader();
+    try {
+        const signatureDataUrl = canvas.toDataURL();
+        const deliveryData = {
+            status: 'delivered',
+            deliveredAt: serverTimestamp(),
+            recipientName,
+            recipientId,
+            deliveryNotes,
+            signature: signatureDataUrl,
+            completedBy: currentUser.displayName
+        };
+
+        const assignmentRef = doc(db, 'delivery_requests', assignmentId);
+        await setDoc(assignmentRef, deliveryData, { merge: true });
+        
+        hideLoader();
+        closeModal('pod-modal');
+        showNotification('Delivery completed successfully!');
+        
+        // Generate and show delivery receipt
+        generateDeliveryReceipt(assignmentId);
+    } catch (error) {
+        hideLoader();
+        console.error('Error completing delivery:', error);
+        showNotification('Could not complete delivery.', true);
+    }
+}
+
+async function generateDeliveryReceipt(assignmentId) {
+    try {
+        const assignmentRef = doc(db, 'delivery_requests', assignmentId);
+        const assignmentDoc = await getDoc(assignmentRef);
+        
+        if (assignmentDoc.exists()) {
+            const assignment = assignmentDoc.data();
+            const receiptHtml = createDeliveryReceiptHtml(assignment);
+            
+            document.getElementById('delivery-receipt-content').innerHTML = receiptHtml;
+            
+            // Generate QR code for receipt
+            const qrContainer = document.querySelector('#delivery-receipt-content .qrcode-container');
+            if (qrContainer) {
+                qrContainer.innerHTML = '';
+                const baseUrl = window.location.href.split('?')[0];
+                const qrText = `${baseUrl}?deliveryId=${assignmentId}`;
+                new QRCode(qrContainer, {
+                    text: qrText,
+                    width: 96,
+                    height: 96,
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            }
+            
+            openModal('delivery-receipt-modal');
+        }
+    } catch (error) {
+        console.error('Error generating receipt:', error);
+        showNotification('Could not generate receipt.', true);
+    }
+}
+
+function createDeliveryReceiptHtml(assignment) {
+    const deliveredDate = assignment.deliveredAt?.toDate ? assignment.deliveredAt.toDate().toLocaleString() : 'N/A';
+    
+    return `
+        <div class="border border-gray-700 p-4 bg-white">
+            <div class="text-center mb-6">
+                <div class="text-2xl font-bold mb-2" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
+                <h2 class="text-xl font-bold">DELIVERY RECEIPT</h2>
+                <p class="text-sm text-gray-600">Proof of Delivery</p>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
+                <div>
+                    <p><strong>Job File No:</strong> ${assignment.jobFileNo}</p>
+                    <p><strong>MAWB:</strong> ${assignment.jobDetails.mawb || 'N/A'}</p>
+                    <p><strong>Shipper:</strong> ${assignment.jobDetails.shipper || 'N/A'}</p>
+                    <p><strong>Consignee:</strong> ${assignment.jobDetails.consignee || 'N/A'}</p>
+                </div>
+                <div>
+                    <p><strong>Delivered Date:</strong> ${deliveredDate}</p>
+                    <p><strong>Driver:</strong> ${assignment.driverName}</p>
+                    <p><strong>Pieces:</strong> ${assignment.jobDetails.pieces || 'N/A'}</p>
+                    <p><strong>Weight:</strong> ${assignment.jobDetails.weight || 'N/A'}</p>
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <p class="font-semibold mb-2">Delivery Address:</p>
+                <p class="text-sm bg-gray-50 p-2 rounded">${assignment.deliveryAddress}</p>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div>
+                    <p class="font-semibold mb-2">Recipient Details:</p>
+                    <p class="text-sm"><strong>Name:</strong> ${assignment.recipientName}</p>
+                    <p class="text-sm"><strong>ID:</strong> ${assignment.recipientId || 'N/A'}</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-semibold mb-2">QR Code:</p>
+                    <div class="qrcode-container inline-block"></div>
+                </div>
+            </div>
+            
+            ${assignment.deliveryNotes ? `
+            <div class="mb-6">
+                <p class="font-semibold mb-2">Delivery Notes:</p>
+                <p class="text-sm bg-gray-50 p-2 rounded">${assignment.deliveryNotes}</p>
+            </div>
+            ` : ''}
+            
+            <div class="mb-6">
+                <p class="font-semibold mb-2">Recipient Signature:</p>
+                <div class="border border-gray-300 p-2 bg-gray-50 h-32 flex items-center justify-center">
+                    <img src="${assignment.signature}" alt="Recipient Signature" class="max-h-full">
+                </div>
+            </div>
+            
+            <div class="text-center text-xs text-gray-500 mt-8">
+                <p>This is an electronically generated delivery receipt.</p>
+                <p>For verification, scan the QR code above.</p>
+            </div>
+        </div>
+    `;
+}
+
+function printDeliveryReceipt() {
+    const receiptContent = document.getElementById('delivery-receipt-content').innerHTML;
+    const printContent = `
+        <style>
+            body { padding: 0; margin: 0; background-color: white !important; }
+            .no-print { display: none !important; }
+        </style>
+        </head><body>
+        ${receiptContent}
+    `;
+    createPrintWindow('Delivery Receipt', printContent);
+}
+
+async function shareDeliveryReceipt() {
+    // This would typically integrate with a PDF generation service
+    // For now, we'll show a notification
+    showNotification('PDF sharing feature will be implemented with a PDF generation service.');
+}
+
+function loadDeliveryRequests() {
+    if (!db) return;
+    const deliveryRef = collection(db, 'delivery_requests');
+    
+    onSnapshot(query(deliveryRef), (querySnapshot) => {
+        deliveryRequests = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }, (error) => {
+        console.error("Error loading delivery requests:", error);
+    });
 }
 
 function closeAllModals() {
@@ -2588,6 +3139,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     document.getElementById('logout-btn').addEventListener('click', handleLogout);
+    document.getElementById('driver-logout-btn').addEventListener('click', handleLogout);
     document.getElementById('approve-btn').addEventListener('click', () => approveJobFile());
     document.getElementById('reject-btn').addEventListener('click', () => promptForRejection(null));
     document.getElementById('confirm-reject-btn').addEventListener('click', rejectJobFile);
@@ -2624,6 +3176,21 @@ document.addEventListener('DOMContentLoaded', () => {
     setupAutocomplete('shipper-name', 'shipper-suggestions', 'Shipper');
     setupAutocomplete('consignee-name', 'consignee-suggestions', 'Consignee');
 
+    // Delivery request search functionality
+    document.getElementById('delivery-job-search').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        if (searchTerm.length < 2) {
+            loadApprovedJobFiles();
+            return;
+        }
+        
+        const filteredJobs = jobFilesCache.filter(job => {
+            if (job.status !== 'approved') return false;
+            const searchData = [job.jfn, job.sh, job.co, job.mawb].join(' ').toLowerCase();
+            return searchData.includes(searchTerm);
+        });
+        displayJobFilesForDelivery(filteredJobs);
+    });
 
     window.addEventListener('afterprint', () => {
         document.getElementById('main-container').style.display = 'block';
@@ -2668,6 +3235,19 @@ document.addEventListener('DOMContentLoaded', () => {
     window.saveChargeDescription = saveChargeDescription;
     window.deleteChargeDescription = deleteChargeDescription;
     window.addChargeRow = addChargeRow;
+    window.openDeliveryRequest = openDeliveryRequest;
+    window.closeDeliveryRequest = closeDeliveryRequest;
+    window.selectJobForDelivery = selectJobForDelivery;
+    window.showDriverSelection = showDriverSelection;
+    window.selectDriver = selectDriver;
+    window.createDeliveryRequest = createDeliveryRequest;
+    window.startDelivery = startDelivery;
+    window.completeDeliveryProcess = completeDeliveryProcess;
+    window.clearSignature = clearSignature;
+    window.completeDelivery = completeDelivery;
+    window.printDeliveryReceipt = printDeliveryReceipt;
+    window.shareDeliveryReceipt = shareDeliveryReceipt;
+    window.viewDeliveryReceipt = (id) => generateDeliveryReceipt(id);
 
     populateTable();
     calculate();
