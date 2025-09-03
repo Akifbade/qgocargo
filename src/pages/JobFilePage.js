@@ -7,27 +7,33 @@ export class JobFilePage {
         this.clientService = new ClientService(window.app.db);
         this.chargeDescriptions = [];
         this.currentJobFile = null;
+        this.saveTimeout = null;
     }
 
     async render() {
         return `
-            <div class="min-h-screen bg-gray-100">
-                <!-- Navigation -->
-                <nav class="bg-white shadow-sm border-b">
+            <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+                <!-- Modern Navigation -->
+                <nav class="bg-white/80 backdrop-blur-lg shadow-lg border-b border-gray-200/50 sticky top-0 z-40">
                     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div class="flex justify-between items-center py-4">
                             <div class="flex items-center space-x-4">
-                                <div class="text-2xl font-bold" style="color: #0E639C;">
-                                    Q'go<span style="color: #4FB8AF;">Cargo</span>
+                                <div class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent">
+                                    Q'go Cargo
                                 </div>
-                                <span class="text-gray-400">|</span>
+                                <div class="h-6 w-px bg-gray-300"></div>
                                 <span class="text-lg font-semibold text-gray-700">Job File Management</span>
                             </div>
-                            <div class="flex items-center space-x-4">
-                                <a href="#" onclick="navigateToDashboard()" class="text-gray-600 hover:text-gray-900">Dashboard</a>
-                                <a href="#" onclick="navigateToFileManager()" class="text-gray-600 hover:text-gray-900">File Manager</a>
-                                <span class="text-sm text-gray-600">${window.app.currentUser.displayName} (${window.app.currentUser.role})</span>
-                                <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm">
+                            <div class="flex items-center space-x-6">
+                                <a href="#" onclick="navigateToDashboard()" class="text-gray-600 hover:text-blue-600 transition-colors font-medium">Dashboard</a>
+                                <a href="#" onclick="navigateToFileManager()" class="text-gray-600 hover:text-blue-600 transition-colors font-medium">File Manager</a>
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                        ${window.app.currentUser.displayName.charAt(0).toUpperCase()}
+                                    </div>
+                                    <span class="text-sm text-gray-600">${window.app.currentUser.displayName} (${window.app.currentUser.role})</span>
+                                </div>
+                                <button onclick="logout()" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all transform hover:scale-105">
                                     Logout
                                 </button>
                             </div>
@@ -36,196 +42,323 @@ export class JobFilePage {
                 </nav>
 
                 <!-- Main Content -->
-                <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-                    <div class="bg-white shadow rounded-lg p-6">
-                        <!-- Header Section -->
-                        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                            <div class="flex items-center">
-                                <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">JOB FILE</h1>
-                            </div>
-                            <div class="text-right w-full sm:w-auto">
-                                <div class="flex items-center mb-2">
-                                    <label for="date" class="mr-2 font-semibold text-gray-700">Date:</label>
-                                    <input type="date" id="date" class="border border-gray-300 rounded-md px-3 py-2 w-full sm:w-40">
+                <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+                    <!-- Header Card -->
+                    <div class="bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-gray-200/50 p-8 mb-8">
+                        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-teal-500 rounded-2xl flex items-center justify-center">
+                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
                                 </div>
-                                <div class="flex items-center">
-                                    <label for="po-number" class="mr-2 font-semibold text-gray-700">P.O. #:</label>
-                                    <input type="text" id="po-number" class="border border-gray-300 rounded-md px-3 py-2 w-full sm:w-40">
-                                </div>
-                            </div>
-                        </header>
-
-                        <!-- Status Banner -->
-                        <div id="rejection-banner" class="hidden p-3 mb-4 text-center text-red-800 bg-red-100 rounded-lg">
-                            <strong>This job file was rejected.</strong> Reason: <span id="rejection-reason"></span>
-                        </div>
-
-                        <!-- Form Fields -->
-                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                            <div class="lg:col-span-2">
-                                <label for="job-file-no" class="block mb-1 font-semibold text-gray-700">Job File No.:</label>
-                                <input type="text" id="job-file-no" class="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="Enter a unique ID here...">
-                            </div>
-                            <div class="flex items-end space-x-8 pb-1">
                                 <div>
-                                    <span class="font-semibold text-gray-700">Clearance</span>
-                                    <div class="mt-2 space-y-1">
-                                        <label class="flex items-center"><input type="checkbox" class="mr-2" data-clearance="Export"> Export</label>
-                                        <label class="flex items-center"><input type="checkbox" class="mr-2" data-clearance="Import"> Import</label>
-                                        <label class="flex items-center"><input type="checkbox" class="mr-2" data-clearance="Clearance"> Clearance</label>
-                                        <label class="flex items-center"><input type="checkbox" class="mr-2" data-clearance="Local Move"> Local Move</label>
+                                    <h1 class="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Job File</h1>
+                                    <p class="text-gray-600 mt-1">Create and manage job files</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-4">
+                                <div class="flex items-center space-x-3">
+                                    <label for="date" class="text-sm font-semibold text-gray-700">Date:</label>
+                                    <input type="date" id="date" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <label for="po-number" class="text-sm font-semibold text-gray-700">P.O. #:</label>
+                                    <input type="text" id="po-number" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status Banner -->
+                    <div id="rejection-banner" class="hidden mb-6 p-4 bg-red-50 border-l-4 border-red-400 rounded-lg">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-red-700">
+                                    <strong>This job file was rejected.</strong> Reason: <span id="rejection-reason"></span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Memory Indicator -->
+                    <div id="memory-indicator" class="hidden mb-6 p-4 bg-blue-50 border-l-4 border-blue-400 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-blue-700">
+                                        <strong>Unsaved changes detected.</strong> Your form data is being automatically saved.
+                                    </p>
+                                </div>
+                            </div>
+                            <button onclick="clearMemory()" class="text-blue-600 hover:text-blue-800 text-sm font-medium">Clear</button>
+                        </div>
+                    </div>
+
+                    <!-- Main Form Card -->
+                    <div class="bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-gray-200/50 p-8">
+                        <!-- Job File Number Section -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                            <div class="lg:col-span-2">
+                                <label for="job-file-no" class="block text-sm font-semibold text-gray-700 mb-2">Job File No.</label>
+                                <input type="text" id="job-file-no" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-lg font-medium" placeholder="Enter unique job file number...">
+                            </div>
+                            <div class="flex items-end space-x-8">
+                                <div class="space-y-3">
+                                    <span class="block text-sm font-semibold text-gray-700">Clearance Type</span>
+                                    <div class="space-y-2">
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="checkbox" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" data-clearance="Export">
+                                            <span class="text-sm text-gray-700">Export</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="checkbox" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" data-clearance="Import">
+                                            <span class="text-sm text-gray-700">Import</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="checkbox" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" data-clearance="Clearance">
+                                            <span class="text-sm text-gray-700">Clearance</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="checkbox" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" data-clearance="Local Move">
+                                            <span class="text-sm text-gray-700">Local Move</span>
+                                        </label>
                                     </div>
                                 </div>
-                                <div>
-                                    <span class="font-semibold text-gray-700">Product Type</span>
-                                    <div class="mt-2 space-y-1">
-                                        <label class="flex items-center"><input type="checkbox" class="mr-2" data-product="Air Freight"> Air Freight</label>
-                                        <label class="flex items-center"><input type="checkbox" class="mr-2" data-product="Sea Freight"> Sea Freight</label>
-                                        <label class="flex items-center"><input type="checkbox" class="mr-2" data-product="Land Freight"> Land Freight</label>
-                                        <label class="flex items-center"><input type="checkbox" class="mr-2" data-product="Others"> Others</label>
+                                <div class="space-y-3">
+                                    <span class="block text-sm font-semibold text-gray-700">Product Type</span>
+                                    <div class="space-y-2">
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="checkbox" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" data-product="Air Freight">
+                                            <span class="text-sm text-gray-700">Air Freight</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="checkbox" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" data-product="Sea Freight">
+                                            <span class="text-sm text-gray-700">Sea Freight</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="checkbox" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" data-product="Land Freight">
+                                            <span class="text-sm text-gray-700">Land Freight</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="checkbox" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" data-product="Others">
+                                            <span class="text-sm text-gray-700">Others</span>
+                                        </label>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Additional Fields -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                            <div><label for="invoice-no" class="block mb-1 font-semibold text-gray-700">Invoice No.:</label><input type="text" id="invoice-no" class="w-full border border-gray-300 rounded-md px-3 py-2"></div>
-                            <div><label for="billing-date" class="block mb-1 font-semibold text-gray-700">Billing Date:</label><input type="date" id="billing-date" class="w-full border border-gray-300 rounded-md px-3 py-2"></div>
-                            <div><label for="salesman" class="block mb-1 font-semibold text-gray-700">Salesman:</label><input type="text" id="salesman" class="w-full border border-gray-300 rounded-md px-3 py-2"></div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            <div class="relative">
-                                <label for="shipper-name" class="block mb-1 font-semibold text-gray-700">Shipper's Name:</label>
-                                <input type="text" id="shipper-name" class="w-full border border-gray-300 rounded-md px-3 py-2" autocomplete="off">
-                                <div id="shipper-suggestions" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-40 overflow-y-auto"></div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div>
+                                <label for="invoice-no" class="block text-sm font-semibold text-gray-700 mb-2">Invoice No.</label>
+                                <input type="text" id="invoice-no" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                             </div>
-                            <div class="relative">
-                                <label for="consignee-name" class="block mb-1 font-semibold text-gray-700">Consignee's Name:</label>
-                                <input type="text" id="consignee-name" class="w-full border border-gray-300 rounded-md px-3 py-2" autocomplete="off">
-                                <div id="consignee-suggestions" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-40 overflow-y-auto"></div>
+                            <div>
+                                <label for="billing-date" class="block text-sm font-semibold text-gray-700 mb-2">Billing Date</label>
+                                <input type="date" id="billing-date" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            </div>
+                            <div>
+                                <label for="salesman" class="block text-sm font-semibold text-gray-700 mb-2">Salesman</label>
+                                <input type="text" id="salesman" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                             </div>
                         </div>
 
-                        <!-- More form fields... -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                            <div><label for="mawb" class="block mb-1 font-semibold text-gray-700">MAWB / OBL / TCN No.:</label><input type="text" id="mawb" class="w-full border border-gray-300 rounded-md px-3 py-2"></div>
-                            <div><label for="hawb" class="block mb-1 font-semibold text-gray-700">HAWB / HBL:</label><input type="text" id="hawb" class="w-full border border-gray-300 rounded-md px-3 py-2"></div>
-                            <div><label for="teams-of-shipping" class="block mb-1 font-semibold text-gray-700">Teams of Shipping:</label><input type="text" id="teams-of-shipping" class="w-full border border-gray-300 rounded-md px-3 py-2"></div>
-                            <div><label for="origin" class="block mb-1 font-semibold text-gray-700">Origin:</label><input type="text" id="origin" class="w-full border border-gray-300 rounded-md px-3 py-2"></div>
-                            <div><label for="no-of-pieces" class="block mb-1 font-semibold text-gray-700">No. of Pieces:</label><input type="text" id="no-of-pieces" class="w-full border border-gray-300 rounded-md px-3 py-2"></div>
-                            <div><label for="gross-weight" class="block mb-1 font-semibold text-gray-700">Gross Weight:</label><input type="text" id="gross-weight" class="w-full border border-gray-300 rounded-md px-3 py-2"></div>
-                            <div><label for="destination" class="block mb-1 font-semibold text-gray-700">Destination:</label><input type="text" id="destination" class="w-full border border-gray-300 rounded-md px-3 py-2"></div>
-                            <div><label for="volume-weight" class="block mb-1 font-semibold text-gray-700">Volume Weight:</label><input type="text" id="volume-weight" class="w-full border border-gray-300 rounded-md px-3 py-2"></div>
+                        <!-- Shipper and Consignee -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <div class="relative">
+                                <label for="shipper-name" class="block text-sm font-semibold text-gray-700 mb-2">Shipper's Name</label>
+                                <input type="text" id="shipper-name" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" autocomplete="off">
+                                <div id="shipper-suggestions" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg hidden max-h-40 overflow-y-auto mt-1"></div>
+                            </div>
+                            <div class="relative">
+                                <label for="consignee-name" class="block text-sm font-semibold text-gray-700 mb-2">Consignee's Name</label>
+                                <input type="text" id="consignee-name" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" autocomplete="off">
+                                <div id="consignee-suggestions" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg hidden max-h-40 overflow-y-auto mt-1"></div>
+                            </div>
                         </div>
 
+                        <!-- Shipping Details -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <div>
+                                <label for="mawb" class="block text-sm font-semibold text-gray-700 mb-2">MAWB / OBL / TCN No.</label>
+                                <input type="text" id="mawb" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            </div>
+                            <div>
+                                <label for="hawb" class="block text-sm font-semibold text-gray-700 mb-2">HAWB / HBL</label>
+                                <input type="text" id="hawb" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            </div>
+                            <div>
+                                <label for="teams-of-shipping" class="block text-sm font-semibold text-gray-700 mb-2">Teams of Shipping</label>
+                                <input type="text" id="teams-of-shipping" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            </div>
+                            <div>
+                                <label for="origin" class="block text-sm font-semibold text-gray-700 mb-2">Origin</label>
+                                <input type="text" id="origin" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            </div>
+                            <div>
+                                <label for="no-of-pieces" class="block text-sm font-semibold text-gray-700 mb-2">No. of Pieces</label>
+                                <input type="text" id="no-of-pieces" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            </div>
+                            <div>
+                                <label for="gross-weight" class="block text-sm font-semibold text-gray-700 mb-2">Gross Weight</label>
+                                <input type="text" id="gross-weight" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            </div>
+                            <div>
+                                <label for="destination" class="block text-sm font-semibold text-gray-700 mb-2">Destination</label>
+                                <input type="text" id="destination" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            </div>
+                            <div>
+                                <label for="volume-weight" class="block text-sm font-semibold text-gray-700 mb-2">Volume Weight</label>
+                                <input type="text" id="volume-weight" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            </div>
+                        </div>
+
+                        <!-- More Details -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                             <div class="sm:col-span-2">
-                                <label for="description" class="block mb-1 font-semibold text-gray-700">Description:</label>
-                                <input type="text" id="description" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                                <label for="description" class="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                                <input type="text" id="description" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                             </div>
-                            <div><label for="carrier" class="block mb-1 font-semibold text-gray-700">Carrier / Shipping Line / Trucking Co:</label><input type="text" id="carrier" class="w-full border border-gray-300 rounded-md px-3 py-2"></div>
-                            <div><label for="truck-no" class="block mb-1 font-semibold text-gray-700">Truck No. / Driver's Name:</label><input type="text" id="truck-no" class="w-full border border-gray-300 rounded-md px-3 py-2"></div>
-                            <div><label for="vessel-name" class="block mb-1 font-semibold text-gray-700">Vessel's Name:</label><input type="text" id="vessel-name" class="w-full border border-gray-300 rounded-md px-3 py-2"></div>
-                            <div><label for="flight-voyage-no" class="block mb-1 font-semibold text-gray-700">Flight / Voyage No.:</label><input type="text" id="flight-voyage-no" class="w-full border border-gray-300 rounded-md px-3 py-2"></div>
-                            <div><label for="container-no" class="block mb-1 font-semibold text-gray-700">Container No.:</label><input type="text" id="container-no" class="w-full border border-gray-300 rounded-md px-3 py-2"></div>
+                            <div>
+                                <label for="carrier" class="block text-sm font-semibold text-gray-700 mb-2">Carrier / Shipping Line</label>
+                                <input type="text" id="carrier" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            </div>
+                            <div>
+                                <label for="truck-no" class="block text-sm font-semibold text-gray-700 mb-2">Truck No. / Driver</label>
+                                <input type="text" id="truck-no" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            </div>
+                            <div>
+                                <label for="vessel-name" class="block text-sm font-semibold text-gray-700 mb-2">Vessel's Name</label>
+                                <input type="text" id="vessel-name" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            </div>
+                            <div>
+                                <label for="flight-voyage-no" class="block text-sm font-semibold text-gray-700 mb-2">Flight / Voyage No.</label>
+                                <input type="text" id="flight-voyage-no" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            </div>
+                            <div>
+                                <label for="container-no" class="block text-sm font-semibold text-gray-700 mb-2">Container No.</label>
+                                <input type="text" id="container-no" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            </div>
                         </div>
 
-                        <!-- Charges Table -->
-                        <div class="flex justify-between items-center mb-2">
-                            <h2 class="text-xl font-semibold text-gray-800">Charges</h2>
-                            <button onclick="addChargeRow()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
-                                + Add Charge
-                            </button>
-                        </div>
-                        <div class="mb-6 overflow-x-auto border border-gray-200 rounded-lg">
-                            <table id="charges-table" class="w-full border-collapse">
-                                <thead>
-                                    <tr class="bg-gray-100">
-                                        <th class="border border-gray-300 p-3 font-semibold w-2/5">Description</th>
-                                        <th class="border border-gray-300 p-3 font-semibold">Cost</th>
-                                        <th class="border border-gray-300 p-3 font-semibold">Selling</th>
-                                        <th class="border border-gray-300 p-3 font-semibold">Profit</th>
-                                        <th class="border border-gray-300 p-3 font-semibold">Notes</th>
-                                        <th class="border border-gray-300 p-3 font-semibold"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="charges-table-body">
-                                </tbody>
-                                <tfoot>
-                                    <tr id="total-row" class="bg-gray-100 font-bold">
-                                        <td class="border border-gray-300 p-3 text-right">TOTAL:</td>
-                                        <td id="total-cost" class="border border-gray-300 p-3 text-right">0.00</td>
-                                        <td id="total-selling" class="border border-gray-300 p-3 text-right">0.00</td>
-                                        <td id="total-profit" class="border border-gray-300 p-3 text-right">0.00</td>
-                                        <td class="border border-gray-300 p-3" colspan="2"></td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                        <!-- Charges Section -->
+                        <div class="mb-8">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-2xl font-bold text-gray-800">Charges</h2>
+                                <button onclick="addChargeRow()" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-2 px-6 rounded-xl transition-all transform hover:scale-105 shadow-lg">
+                                    + Add Charge
+                                </button>
+                            </div>
+                            <div class="overflow-x-auto bg-white rounded-xl shadow-lg border border-gray-200">
+                                <table id="charges-table" class="w-full">
+                                    <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                                        <tr>
+                                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200">Description</th>
+                                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200">Cost</th>
+                                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200">Selling</th>
+                                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200">Profit</th>
+                                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200">Notes</th>
+                                            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700 border-b border-gray-200">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="charges-table-body">
+                                    </tbody>
+                                    <tfoot class="bg-gradient-to-r from-blue-50 to-indigo-50">
+                                        <tr class="font-bold text-lg">
+                                            <td class="px-6 py-4 text-right border-t-2 border-gray-300">TOTAL:</td>
+                                            <td id="total-cost" class="px-6 py-4 text-right border-t-2 border-gray-300 text-red-600">0.00</td>
+                                            <td id="total-selling" class="px-6 py-4 text-right border-t-2 border-gray-300 text-blue-600">0.00</td>
+                                            <td id="total-profit" class="px-6 py-4 text-right border-t-2 border-gray-300 text-green-600">0.00</td>
+                                            <td class="px-6 py-4 border-t-2 border-gray-300" colspan="2"></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
                         </div>
 
                         <!-- Remarks Section -->
                         <div class="mb-8">
-                            <label for="remarks" class="block mb-1 font-semibold text-gray-700">REMARKS:</label>
-                            <textarea id="remarks" rows="4" class="w-full border border-gray-300 rounded-md px-3 py-2"></textarea>
+                            <label for="remarks" class="block text-sm font-semibold text-gray-700 mb-2">Remarks</label>
+                            <textarea id="remarks" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"></textarea>
                         </div>
 
-                        <!-- Creator/Editor Info -->
-                        <div id="file-info" class="text-xs text-gray-500 mb-4 border-t pt-4">
-                            <span id="created-by-info"></span>
-                            <span id="last-updated-by-info" class="ml-4"></span>
+                        <!-- File Info -->
+                        <div id="file-info" class="text-sm text-gray-500 mb-6 p-4 bg-gray-50 rounded-xl border-l-4 border-blue-500">
+                            <div id="created-by-info" class="mb-1"></div>
+                            <div id="last-updated-by-info"></div>
                         </div>
 
-                        <!-- Footer Section -->
-                        <footer class="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6 border-t items-end">
-                            <div>
-                                <label class="block mb-2 font-semibold text-gray-700">PREPARED BY</label>
-                                <input type="text" id="prepared-by" class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100" readonly>
+                        <!-- Approval Section -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                            <div class="bg-gray-50 p-6 rounded-xl">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">PREPARED BY</label>
+                                <input type="text" id="prepared-by" class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-100" readonly>
                             </div>
-                            <div class="relative">
-                                <div id="checked-stamp" class="absolute top-0 right-0 bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold transform rotate-12 hidden">
-                                    Checked
+                            <div class="bg-gray-50 p-6 rounded-xl relative">
+                                <div id="checked-stamp" class="absolute -top-2 -right-2 bg-blue-500 text-white px-3 py-1 rounded-lg text-xs font-bold transform rotate-12 hidden shadow-lg">
+                                    ✓ Checked
                                 </div>
-                                <label class="block mb-2 font-semibold text-gray-700">CHECKED BY</label>
-                                <input type="text" id="checked-by" class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100" readonly>
-                                <button id="check-btn" class="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded hidden">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">CHECKED BY</label>
+                                <input type="text" id="checked-by" class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-100 mb-3" readonly>
+                                <button id="check-btn" class="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-2 px-4 rounded-xl transition-all transform hover:scale-105 shadow-lg hidden">
                                     Check Job File
                                 </button>
                             </div>
-                            <div class="relative">
-                                <div id="approved-stamp" class="absolute top-0 right-0 bg-green-500 text-white px-2 py-1 rounded text-xs font-bold transform rotate-12 hidden">
-                                    Approved
+                            <div class="bg-gray-50 p-6 rounded-xl relative">
+                                <div id="approved-stamp" class="absolute -top-2 -right-2 bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold transform rotate-12 hidden shadow-lg">
+                                    ✓ Approved
                                 </div>
-                                <div id="rejected-stamp" class="absolute top-0 right-0 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold transform rotate-12 hidden">
-                                    Rejected
+                                <div id="rejected-stamp" class="absolute -top-2 -right-2 bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold transform rotate-12 hidden shadow-lg">
+                                    ✗ Rejected
                                 </div>
-                                <label class="block mb-2 font-semibold text-gray-700">APPROVED BY</label>
-                                <input type="text" id="approved-by" class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100" readonly>
-                                <div id="approval-buttons" class="mt-2 w-full flex gap-2 hidden">
-                                    <button id="approve-btn" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Approve</button>
-                                    <button id="reject-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">Reject</button>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">APPROVED BY</label>
+                                <input type="text" id="approved-by" class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-100 mb-3" readonly>
+                                <div id="approval-buttons" class="flex gap-2 hidden">
+                                    <button id="approve-btn" class="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-2 px-4 rounded-xl transition-all transform hover:scale-105 shadow-lg">
+                                        Approve
+                                    </button>
+                                    <button id="reject-btn" class="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-2 px-4 rounded-xl transition-all transform hover:scale-105 shadow-lg">
+                                        Reject
+                                    </button>
                                 </div>
                             </div>
-                        </footer>
+                        </div>
 
                         <!-- Action Buttons -->
-                        <div class="text-center mt-10 flex flex-wrap justify-center gap-2 sm:gap-4">
-                            <button onclick="saveJobFile()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6a1 1 0 10-2 0v5.586L7.707 10.293z"></path>
+                        <div class="flex flex-wrap justify-center gap-4">
+                            <button onclick="navigateToFileManager()" class="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center space-x-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
                                 </svg>
-                                <span>Save to DB</span>
+                                <span>Browse Files</span>
                             </button>
-                            <button onclick="clearForm()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.898 0V3a1 1 0 112 0v2.101a7.002 7.002 0 01-11.898 0V3a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+                            <button onclick="saveJobFile()" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-8 rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center space-x-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                                </svg>
+                                <span>Save to Database</span>
+                            </button>
+                            <button onclick="clearForm()" class="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-bold py-3 px-8 rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center space-x-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
                                 </svg>
                                 <span>New Job</span>
                             </button>
-                            <button onclick="printJobFile()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2z" clip-rule="evenodd"></path>
+                            <button onclick="printJobFile()" class="bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-bold py-3 px-8 rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center space-x-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
                                 </svg>
                                 <span>Print</span>
                             </button>
@@ -233,13 +366,36 @@ export class JobFilePage {
                     </div>
                 </div>
             </div>
+
+            <!-- Preview Modal -->
+            <div id="preview-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+                    <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                        <h3 class="text-2xl font-bold text-gray-800">Job File Preview</h3>
+                        <div class="flex space-x-3">
+                            <button onclick="printPreview()" class="bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-all transform hover:scale-105">
+                                Print
+                            </button>
+                            <button onclick="closePreviewModal()" class="text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
+                        </div>
+                    </div>
+                    <div id="preview-body" class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]"></div>
+                </div>
+            </div>
+
+            <!-- Notification Toast -->
+            <div id="notification" class="fixed bottom-6 right-6 transform translate-x-full transition-transform duration-300 z-50">
+                <div class="bg-white rounded-xl shadow-2xl border border-gray-200 p-4 max-w-sm">
+                    <div class="flex items-center space-x-3">
+                        <div id="notification-icon" class="flex-shrink-0"></div>
+                        <div id="notification-message" class="text-sm font-medium text-gray-800"></div>
+                    </div>
+                </div>
+            </div>
         `;
     }
 
     async init(params) {
-        // Store form data in localStorage for memory
-        this.loadFormFromMemory();
-        
         // Load charge descriptions from localStorage
         const storedDescriptions = localStorage.getItem('chargeDescriptions');
         if (storedDescriptions) {
@@ -260,6 +416,7 @@ export class JobFilePage {
         // Initialize form
         this.initializeForm();
         this.setupEventListeners();
+        this.setupFormMemory();
         
         // Subscribe to clients for autocomplete
         this.clientService.subscribeToClients((clients) => {
@@ -273,11 +430,14 @@ export class JobFilePage {
             // Set current date and prepared by if not loading a file
             document.getElementById('date').valueAsDate = new Date();
             document.getElementById('prepared-by').value = window.app.currentUser.displayName;
+            
+            // Try to restore from memory
+            this.loadFormFromMemory();
         }
     }
 
     initializeForm() {
-        // Initialize charges table
+        // Initialize charges table with 5 empty rows
         for (let i = 0; i < 5; i++) {
             this.addChargeRow();
         }
@@ -293,177 +453,41 @@ export class JobFilePage {
         document.getElementById('approval-buttons').style.display = isAdmin ? 'flex' : 'none';
     }
 
-    setupEventListeners() {
-        // Auto-save form data to localStorage
-        this.setupFormMemory();
-        
-        // Save button
-        window.saveJobFile = async () => {
-            const jobData = this.getFormData();
-            if (!jobData.jfn) {
-                alert('Please enter a Job File No.');
-                return;
-            }
-
-            const isUpdate = document.getElementById('job-file-no').disabled;
-            const result = await this.jobFileService.saveJobFile(jobData, isUpdate);
-            
-            if (result.success) {
-                alert('Job file saved successfully!');
-                if (!isUpdate) {
-                    document.getElementById('job-file-no').disabled = true;
-                }
-                await this.loadJobFile(result.docId);
-            } else {
-                alert(result.error);
-            }
-        };
-
-        // Clear form
-        window.clearForm = () => {
-            // Clear localStorage memory
-            localStorage.removeItem('jobFileFormData');
-            
-            document.querySelectorAll('input[type="text"], input[type="date"], textarea').forEach(input => input.value = '');
-            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
-            document.getElementById('job-file-no').disabled = false;
-            document.getElementById('charges-table-body').innerHTML = '';
-            this.initializeForm();
-            document.getElementById('date').valueAsDate = new Date();
-            document.getElementById('prepared-by').value = window.app.currentUser.displayName;
-            alert('Form cleared. Ready for a new job file.');
-        };
-
-        // Print function
-        window.printJobFile = () => {
-            window.print();
-        };
-
-        // Navigation functions
-        window.navigateToDashboard = () => window.app.router.navigate('dashboard');
-        window.navigateToFileManager = () => window.app.router.navigate('file-manager');
-        window.logout = async () => {
-            await window.app.authService.logout();
-        };
-
-        // Add charge row function
-        window.addChargeRow = (data = {}) => this.addChargeRow(data);
-
-        // Approval functions
-        window.checkJobFile = async () => {
-            if (!window.app.authService.requireChecker()) return;
-            
-            const jobFileNo = document.getElementById('job-file-no').value.trim();
-            if (!jobFileNo) {
-                alert('Please save or load a job file first.');
-                return;
-            }
-            
-            const docId = jobFileNo.replace(/\//g, '_');
-            const result = await this.jobFileService.updateJobFileStatus(docId, 'checked', {
-                checkedBy: window.app.currentUser.displayName,
-                checkedAt: new Date()
-            });
-            
-            if (result.success) {
-                alert('Job File Checked!');
-                await this.loadJobFile(docId);
-            } else {
-                alert(result.error);
-            }
-        };
-
-        window.approveJobFile = async () => {
-            if (!window.app.authService.requireAdmin()) return;
-            
-            const jobFileNo = document.getElementById('job-file-no').value.trim();
-            if (!jobFileNo) {
-                alert('Please save or load a job file first.');
-                return;
-            }
-            
-            const docId = jobFileNo.replace(/\//g, '_');
-            const result = await this.jobFileService.updateJobFileStatus(docId, 'approved', {
-                approvedBy: window.app.currentUser.displayName,
-                approvedAt: new Date(),
-                rejectionReason: null,
-                rejectedBy: null,
-                rejectedAt: null
-            });
-            
-            if (result.success) {
-                alert('Job File Approved!');
-                await this.loadJobFile(docId);
-            } else {
-                alert(result.error);
-            }
-        };
-
-        window.rejectJobFile = async () => {
-            if (!window.app.authService.requireAdmin()) return;
-            
-            const reason = prompt('Please provide a reason for rejecting this job file:');
-            if (!reason) return;
-            
-            const jobFileNo = document.getElementById('job-file-no').value.trim();
-            if (!jobFileNo) {
-                alert('Please save or load a job file first.');
-                return;
-            }
-            
-            const docId = jobFileNo.replace(/\//g, '_');
-            const result = await this.jobFileService.updateJobFileStatus(docId, 'rejected', {
-                rejectedBy: window.app.currentUser.displayName,
-                rejectedAt: new Date(),
-                rejectionReason: reason
-            });
-            
-            if (result.success) {
-                alert('Job File Rejected!');
-                await this.loadJobFile(docId);
-            } else {
-                alert(result.error);
-            }
-        };
-
-        // Bind approval buttons
-        document.getElementById('check-btn').addEventListener('click', window.checkJobFile);
-        document.getElementById('approve-btn').addEventListener('click', window.approveJobFile);
-        document.getElementById('reject-btn').addEventListener('click', window.rejectJobFile);
-        
-        // Add file manager button
-        const fileManagerBtn = document.createElement('button');
-        fileManagerBtn.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1H8a3 3 0 00-3 3v1.586l.293.293a1 1 0 001.414 0L10.414 12l-1.293 1.293a1 1 0 000 1.414l.293.293V16a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"></path>
-            </svg>
-            <span>Browse Files</span>
-        `;
-        fileManagerBtn.className = 'bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2';
-        fileManagerBtn.onclick = () => window.app.router.navigate('file-manager');
-        
-        // Add to action buttons section
-        const actionButtons = document.querySelector('.text-center.mt-10');
-        if (actionButtons) {
-            actionButtons.insertBefore(fileManagerBtn, actionButtons.firstChild);
-        }
-    }
-
     setupFormMemory() {
-        // Save form data every 30 seconds
+        // Save form data every 10 seconds
         setInterval(() => {
             this.saveFormToMemory();
-        }, 30000);
+        }, 10000);
 
         // Save on input changes
         document.addEventListener('input', (e) => {
             if (e.target.matches('input, textarea, select')) {
+                this.showMemoryIndicator();
                 clearTimeout(this.saveTimeout);
                 this.saveTimeout = setTimeout(() => {
                     this.saveFormToMemory();
                 }, 2000);
             }
         });
+
+        // Save on checkbox changes
+        document.addEventListener('change', (e) => {
+            if (e.target.matches('input[type="checkbox"]')) {
+                this.showMemoryIndicator();
+                clearTimeout(this.saveTimeout);
+                this.saveTimeout = setTimeout(() => {
+                    this.saveFormToMemory();
+                }, 2000);
+            }
+        });
+    }
+
+    showMemoryIndicator() {
+        const indicator = document.getElementById('memory-indicator');
+        indicator.classList.remove('hidden');
+        setTimeout(() => {
+            indicator.classList.add('hidden');
+        }, 3000);
     }
 
     saveFormToMemory() {
@@ -490,8 +514,9 @@ export class JobFilePage {
                 // Only restore if saved within last 24 hours
                 if (hoursDiff < 24) {
                     setTimeout(() => {
-                        if (confirm('Found unsaved form data. Would you like to restore it?')) {
+                        if (confirm('Found unsaved form data from ' + savedAt.toLocaleString() + '. Would you like to restore it?')) {
                             this.populateFormFromData(data);
+                            this.showNotification('Form data restored successfully!', 'success');
                         } else {
                             localStorage.removeItem('jobFileFormData');
                         }
@@ -505,28 +530,208 @@ export class JobFilePage {
         }
     }
 
+    setupEventListeners() {
+        // Save button
+        window.saveJobFile = async () => {
+            const jobData = this.getFormData();
+            if (!jobData.jfn) {
+                this.showNotification('Please enter a Job File No.', 'error');
+                return;
+            }
+
+            const isUpdate = document.getElementById('job-file-no').disabled;
+            const result = await this.jobFileService.saveJobFile(jobData, isUpdate);
+            
+            if (result.success) {
+                this.showNotification('Job file saved successfully!', 'success');
+                if (!isUpdate) {
+                    document.getElementById('job-file-no').disabled = true;
+                }
+                await this.loadJobFile(result.docId);
+                // Clear memory after successful save
+                localStorage.removeItem('jobFileFormData');
+            } else {
+                this.showNotification(result.error, 'error');
+            }
+        };
+
+        // Clear form
+        window.clearForm = () => {
+            // Clear localStorage memory
+            localStorage.removeItem('jobFileFormData');
+            
+            document.querySelectorAll('input[type="text"], input[type="date"], textarea').forEach(input => input.value = '');
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
+            document.getElementById('job-file-no').disabled = false;
+            document.getElementById('charges-table-body').innerHTML = '';
+            this.initializeForm();
+            document.getElementById('date').valueAsDate = new Date();
+            document.getElementById('prepared-by').value = window.app.currentUser.displayName;
+            this.showNotification('Form cleared. Ready for a new job file.', 'success');
+        };
+
+        // Clear memory function
+        window.clearMemory = () => {
+            localStorage.removeItem('jobFileFormData');
+            document.getElementById('memory-indicator').classList.add('hidden');
+            this.showNotification('Form memory cleared.', 'success');
+        };
+
+        // Print function
+        window.printJobFile = () => {
+            const data = this.getFormData();
+            this.printJobFileData(data);
+        };
+
+        // Navigation functions
+        window.navigateToDashboard = () => window.app.router.navigate('dashboard');
+        window.navigateToFileManager = () => window.app.router.navigate('file-manager');
+        window.logout = async () => {
+            await window.app.authService.logout();
+        };
+
+        // Add charge row function
+        window.addChargeRow = (data = {}) => this.addChargeRow(data);
+
+        // Preview and close functions
+        window.closePreviewModal = () => {
+            document.getElementById('preview-modal').classList.add('hidden');
+        };
+
+        window.printPreview = () => {
+            const previewBody = document.getElementById('preview-body').innerHTML;
+            const printWindow = window.open('', '', 'height=800,width=1200');
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Job File Preview</title>
+                        <style>
+                            body { padding: 20px; font-family: Arial, sans-serif; }
+                            table { border-collapse: collapse; width: 100%; }
+                            td, th { border: 1px solid #000; padding: 8px; text-align: left; }
+                            .company-header { font-size: 24px; font-weight: bold; color: #0E639C; }
+                            .company-header span { color: #4FB8AF; }
+                        </style>
+                    </head>
+                    <body>
+                        ${previewBody}
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+            setTimeout(() => {
+                printWindow.focus();
+                printWindow.print();
+                printWindow.close();
+            }, 750);
+        };
+
+        // Approval functions
+        window.checkJobFile = async () => {
+            if (!window.app.authService.requireChecker()) return;
+            
+            const jobFileNo = document.getElementById('job-file-no').value.trim();
+            if (!jobFileNo) {
+                this.showNotification('Please save or load a job file first.', 'error');
+                return;
+            }
+            
+            const docId = jobFileNo.replace(/\//g, '_');
+            const result = await this.jobFileService.updateJobFileStatus(docId, 'checked', {
+                checkedBy: window.app.currentUser.displayName,
+                checkedAt: new Date()
+            });
+            
+            if (result.success) {
+                this.showNotification('Job File Checked!', 'success');
+                await this.loadJobFile(docId);
+            } else {
+                this.showNotification(result.error, 'error');
+            }
+        };
+
+        window.approveJobFile = async () => {
+            if (!window.app.authService.requireAdmin()) return;
+            
+            const jobFileNo = document.getElementById('job-file-no').value.trim();
+            if (!jobFileNo) {
+                this.showNotification('Please save or load a job file first.', 'error');
+                return;
+            }
+            
+            const docId = jobFileNo.replace(/\//g, '_');
+            const result = await this.jobFileService.updateJobFileStatus(docId, 'approved', {
+                approvedBy: window.app.currentUser.displayName,
+                approvedAt: new Date(),
+                rejectionReason: null,
+                rejectedBy: null,
+                rejectedAt: null
+            });
+            
+            if (result.success) {
+                this.showNotification('Job File Approved!', 'success');
+                await this.loadJobFile(docId);
+            } else {
+                this.showNotification(result.error, 'error');
+            }
+        };
+
+        window.rejectJobFile = async () => {
+            if (!window.app.authService.requireAdmin()) return;
+            
+            const reason = prompt('Please provide a reason for rejecting this job file:');
+            if (!reason) return;
+            
+            const jobFileNo = document.getElementById('job-file-no').value.trim();
+            if (!jobFileNo) {
+                this.showNotification('Please save or load a job file first.', 'error');
+                return;
+            }
+            
+            const docId = jobFileNo.replace(/\//g, '_');
+            const result = await this.jobFileService.updateJobFileStatus(docId, 'rejected', {
+                rejectedBy: window.app.currentUser.displayName,
+                rejectedAt: new Date(),
+                rejectionReason: reason
+            });
+            
+            if (result.success) {
+                this.showNotification('Job File Rejected!', 'success');
+                await this.loadJobFile(docId);
+            } else {
+                this.showNotification(result.error, 'error');
+            }
+        };
+
+        // Bind approval buttons
+        document.getElementById('check-btn').addEventListener('click', window.checkJobFile);
+        document.getElementById('approve-btn').addEventListener('click', window.approveJobFile);
+        document.getElementById('reject-btn').addEventListener('click', window.rejectJobFile);
+    }
+
     addChargeRow(data = {}) {
         const tableBody = document.getElementById('charges-table-body');
         const newRow = document.createElement('tr');
+        newRow.className = 'hover:bg-gray-50 transition-colors';
 
         newRow.innerHTML = `
-            <td class="border border-gray-300 p-2">
-                <input type="text" class="description-input w-full border-none p-0 bg-transparent" value="${data.l || ''}" autocomplete="off">
+            <td class="px-6 py-4 border-b border-gray-200">
+                <input type="text" class="description-input w-full border-none p-0 bg-transparent focus:outline-none" value="${data.l || ''}" autocomplete="off" placeholder="Enter charge description...">
             </td>
-            <td class="border border-gray-300 p-2">
-                <input type="number" class="cost-input w-full border-none p-0 bg-transparent" value="${data.c || ''}" step="0.01">
+            <td class="px-6 py-4 border-b border-gray-200">
+                <input type="number" class="cost-input w-full border-none p-0 bg-transparent focus:outline-none text-right" value="${data.c || ''}" step="0.01" placeholder="0.00">
             </td>
-            <td class="border border-gray-300 p-2">
-                <input type="number" class="selling-input w-full border-none p-0 bg-transparent" value="${data.s || ''}" step="0.01">
+            <td class="px-6 py-4 border-b border-gray-200">
+                <input type="number" class="selling-input w-full border-none p-0 bg-transparent focus:outline-none text-right" value="${data.s || ''}" step="0.01" placeholder="0.00">
             </td>
-            <td class="border border-gray-300 p-2 profit-output bg-gray-50 text-right">
+            <td class="px-6 py-4 border-b border-gray-200 profit-output bg-gray-50 text-right font-semibold">
                 ${((data.s || 0) - (data.c || 0)).toFixed(2)}
             </td>
-            <td class="border border-gray-300 p-2">
-                <input type="text" class="notes-input w-full border-none p-0 bg-transparent" value="${data.n || ''}">
+            <td class="px-6 py-4 border-b border-gray-200">
+                <input type="text" class="notes-input w-full border-none p-0 bg-transparent focus:outline-none" value="${data.n || ''}" placeholder="Notes...">
             </td>
-            <td class="border border-gray-300 p-2 text-center">
-                <button class="text-red-500 hover:text-red-700 font-bold">&times;</button>
+            <td class="px-6 py-4 border-b border-gray-200 text-center">
+                <button class="text-red-500 hover:text-red-700 font-bold text-xl transition-colors">&times;</button>
             </td>
         `;
 
@@ -607,9 +812,11 @@ export class JobFilePage {
         if (result.success) {
             this.populateFormFromData(result.data);
             document.getElementById('job-file-no').disabled = true;
-            alert('Job file loaded successfully.');
+            this.showNotification('Job file loaded successfully.', 'success');
+            // Clear memory after loading
+            localStorage.removeItem('jobFileFormData');
         } else {
-            alert(result.error);
+            this.showNotification(result.error, 'error');
         }
     }
 
@@ -722,7 +929,7 @@ export class JobFilePage {
 
             if (filteredClients.length > 0) {
                 suggestionsPanel.innerHTML = filteredClients.map(client => 
-                    `<div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectClient('${inputId}', '${client.name}')">${client.name}</div>`
+                    `<div class="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0" onclick="selectClient('${inputId}', '${client.name}')">${client.name}</div>`
                 ).join('');
                 suggestionsPanel.classList.remove('hidden');
             } else {
@@ -737,12 +944,143 @@ export class JobFilePage {
         };
     }
 
+    printJobFileData(data) {
+        const printContent = this.generatePrintHTML(data);
+        const printWindow = window.open('', '', 'height=800,width=1200');
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        setTimeout(() => {
+            printWindow.focus();
+            printWindow.print();
+            printWindow.close();
+        }, 750);
+    }
+
+    generatePrintHTML(data) {
+        const totalCost = data.totalCost || 0;
+        const totalSelling = data.totalSelling || 0;
+        const totalProfit = data.totalProfit || 0;
+
+        return `
+            <html>
+                <head>
+                    <title>Job File - ${data.jfn}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+                        td, th { border: 1px solid #000; padding: 8px; text-align: left; vertical-align: top; }
+                        .header { font-size: 24px; font-weight: bold; text-align: center; }
+                        .company { color: #0E639C; }
+                        .company span { color: #4FB8AF; }
+                        .field-label { font-weight: bold; }
+                        .total-row { background-color: #f0f0f0; font-weight: bold; }
+                    </style>
+                </head>
+                <body>
+                    <table>
+                        <tr>
+                            <td colspan="3" class="company header">Q'go<span>Cargo</span></td>
+                            <td colspan="3" class="header">JOB FILE</td>
+                            <td colspan="2">
+                                <div><strong>Date:</strong> ${data.d || ''}</div>
+                                <div><strong>P.O. #:</strong> ${data.po || ''}</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="8"><strong>Job File No.:</strong> ${data.jfn || ''}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Shipper:</strong> ${data.sh || ''}</td>
+                            <td colspan="4"><strong>Consignee:</strong> ${data.co || ''}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>MAWB:</strong> ${data.mawb || ''}</td>
+                            <td colspan="4"><strong>HAWB:</strong> ${data.hawb || ''}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="8"><strong>Description:</strong> ${data.dsc || ''}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="8">
+                                <table style="width: 100%; margin: 0;">
+                                    <thead>
+                                        <tr style="background-color: #f0f0f0;">
+                                            <th>Description</th>
+                                            <th>Cost</th>
+                                            <th>Selling</th>
+                                            <th>Profit</th>
+                                            <th>Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${(data.ch || []).map(c => `
+                                            <tr>
+                                                <td>${c.l}</td>
+                                                <td>${c.c}</td>
+                                                <td>${c.s}</td>
+                                                <td>${(parseFloat(c.s || 0) - parseFloat(c.c || 0)).toFixed(2)}</td>
+                                                <td>${c.n || ''}</td>
+                                            </tr>
+                                        `).join('')}
+                                        <tr class="total-row">
+                                            <td><strong>TOTAL:</strong></td>
+                                            <td><strong>${totalCost.toFixed(2)}</strong></td>
+                                            <td><strong>${totalSelling.toFixed(2)}</strong></td>
+                                            <td><strong>${totalProfit.toFixed(2)}</strong></td>
+                                            <td></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="8"><strong>REMARKS:</strong><br>${(data.re || '').replace(/\n/g, '<br>')}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2"><strong>PREPARED BY:</strong><br>${data.pb || ''}</td>
+                            <td colspan="3"><strong>CHECKED BY:</strong><br>${data.checkedBy || 'Pending'}</td>
+                            <td colspan="3"><strong>APPROVED BY:</strong><br>${data.approvedBy || 'Pending'}</td>
+                        </tr>
+                    </table>
+                </body>
+            </html>
+        `;
+    }
+
+    showNotification(message, type = 'info') {
+        const notification = document.getElementById('notification');
+        const icon = document.getElementById('notification-icon');
+        const messageEl = document.getElementById('notification-message');
+
+        // Set icon based on type
+        if (type === 'success') {
+            icon.innerHTML = '<div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center"><svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div>';
+        } else if (type === 'error') {
+            icon.innerHTML = '<div class="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center"><svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></div>';
+        } else {
+            icon.innerHTML = '<div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center"><svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>';
+        }
+
+        messageEl.textContent = message;
+        
+        // Show notification
+        notification.classList.remove('translate-x-full');
+        
+        // Hide after 4 seconds
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+        }, 4000);
+    }
+
     cleanup() {
         if (this.jobFileService) {
             this.jobFileService.cleanup();
         }
         if (this.clientService) {
             this.clientService.cleanup();
+        }
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
         }
     }
 }
