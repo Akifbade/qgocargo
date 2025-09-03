@@ -237,6 +237,9 @@ export class JobFilePage {
     }
 
     async init(params) {
+        // Store form data in localStorage for memory
+        this.loadFormFromMemory();
+        
         // Load charge descriptions from localStorage
         const storedDescriptions = localStorage.getItem('chargeDescriptions');
         if (storedDescriptions) {
@@ -266,11 +269,11 @@ export class JobFilePage {
         // Load specific file if requested
         if (params.loadFile) {
             await this.loadJobFile(params.loadFile);
+        } else {
+            // Set current date and prepared by if not loading a file
+            document.getElementById('date').valueAsDate = new Date();
+            document.getElementById('prepared-by').value = window.app.currentUser.displayName;
         }
-
-        // Set current date
-        document.getElementById('date').valueAsDate = new Date();
-        document.getElementById('prepared-by').value = window.app.currentUser.displayName;
     }
 
     initializeForm() {
@@ -291,6 +294,9 @@ export class JobFilePage {
     }
 
     setupEventListeners() {
+        // Auto-save form data to localStorage
+        this.setupFormMemory();
+        
         // Save button
         window.saveJobFile = async () => {
             const jobData = this.getFormData();
@@ -315,6 +321,9 @@ export class JobFilePage {
 
         // Clear form
         window.clearForm = () => {
+            // Clear localStorage memory
+            localStorage.removeItem('jobFileFormData');
+            
             document.querySelectorAll('input[type="text"], input[type="date"], textarea').forEach(input => input.value = '');
             document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
             document.getElementById('job-file-no').disabled = false;
@@ -421,6 +430,79 @@ export class JobFilePage {
         document.getElementById('check-btn').addEventListener('click', window.checkJobFile);
         document.getElementById('approve-btn').addEventListener('click', window.approveJobFile);
         document.getElementById('reject-btn').addEventListener('click', window.rejectJobFile);
+        
+        // Add file manager button
+        const fileManagerBtn = document.createElement('button');
+        fileManagerBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1H8a3 3 0 00-3 3v1.586l.293.293a1 1 0 001.414 0L10.414 12l-1.293 1.293a1 1 0 000 1.414l.293.293V16a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"></path>
+            </svg>
+            <span>Browse Files</span>
+        `;
+        fileManagerBtn.className = 'bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2';
+        fileManagerBtn.onclick = () => window.app.router.navigate('file-manager');
+        
+        // Add to action buttons section
+        const actionButtons = document.querySelector('.text-center.mt-10');
+        if (actionButtons) {
+            actionButtons.insertBefore(fileManagerBtn, actionButtons.firstChild);
+        }
+    }
+
+    setupFormMemory() {
+        // Save form data every 30 seconds
+        setInterval(() => {
+            this.saveFormToMemory();
+        }, 30000);
+
+        // Save on input changes
+        document.addEventListener('input', (e) => {
+            if (e.target.matches('input, textarea, select')) {
+                clearTimeout(this.saveTimeout);
+                this.saveTimeout = setTimeout(() => {
+                    this.saveFormToMemory();
+                }, 2000);
+            }
+        });
+    }
+
+    saveFormToMemory() {
+        try {
+            const formData = this.getFormData();
+            localStorage.setItem('jobFileFormData', JSON.stringify({
+                ...formData,
+                savedAt: new Date().toISOString()
+            }));
+        } catch (error) {
+            console.error('Error saving form to memory:', error);
+        }
+    }
+
+    loadFormFromMemory() {
+        try {
+            const savedData = localStorage.getItem('jobFileFormData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                const savedAt = new Date(data.savedAt);
+                const now = new Date();
+                const hoursDiff = (now - savedAt) / (1000 * 60 * 60);
+                
+                // Only restore if saved within last 24 hours
+                if (hoursDiff < 24) {
+                    setTimeout(() => {
+                        if (confirm('Found unsaved form data. Would you like to restore it?')) {
+                            this.populateFormFromData(data);
+                        } else {
+                            localStorage.removeItem('jobFileFormData');
+                        }
+                    }, 1000);
+                } else {
+                    localStorage.removeItem('jobFileFormData');
+                }
+            }
+        } catch (error) {
+            console.error('Error loading form from memory:', error);
+        }
     }
 
     addChargeRow(data = {}) {

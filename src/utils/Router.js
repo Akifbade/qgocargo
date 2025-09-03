@@ -3,15 +3,17 @@ export class Router {
         this.routes = {
             'login': () => import('../pages/LoginPage.js').then(m => new m.LoginPage()),
             'dashboard': () => import('../pages/DashboardPage.js').then(m => new m.DashboardPage()),
-            'job-file': () => import('../pages/JobFilePage.js').then(m => new m.JobFilePage())
+            'job-file': () => import('../pages/JobFilePage.js').then(m => new m.JobFilePage()),
+            'analytics': () => import('../pages/AnalyticsPage.js').then(m => new m.AnalyticsPage()),
+            'file-manager': () => import('../pages/FileManagerPage.js').then(m => new m.FileManagerPage())
         };
         this.currentPage = null;
     }
 
     async navigate(routeName, params = {}) {
         try {
-            // Handle external HTML pages
-            const externalPages = ['analytics', 'file-manager', 'clients', 'admin', 'activity-log'];
+            // Handle external HTML pages that don't have JS modules yet
+            const externalPages = ['clients', 'admin', 'activity-log'];
             if (externalPages.includes(routeName)) {
                 window.location.href = `${routeName}.html`;
                 return;
