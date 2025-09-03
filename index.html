@@ -3,38 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Job File Management System with Database</title>
+    <title>Job File Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css">
-    
-    <!-- Firebase Configuration -->
-    <script>
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "your-api-key",
-            authDomain: "your-project.firebaseapp.com",
-            projectId: "your-project-id",
-            storageBucket: "your-project.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "your-app-id"
-        };
-        
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-    </script>
-    
-    <!-- Load modular JavaScript files -->
-    <script src="js/auth.js"></script>
-    <script src="js/analytics.js"></script>
-    <script src="js/admin.js"></script>
-    <script src="js/fileManager.js"></script>
-    <script src="js/delivery.js"></script>
-    <script src="js/driver.js"></script>
-    <script src="js/main.js"></script>
 </head>
 <body class="bg-gray-100">
     <!-- Login Screen -->
@@ -783,6 +758,32 @@
         </div>
     </div>
 
-    <!-- Firebase SDK and App Logic -->
+    <!-- Firebase SDKs - Load before custom scripts -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
+    
+    <!-- Firebase Configuration -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "your-api-key",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+    </script>
+    
+    <!-- Custom JavaScript Modules -->
+    <script src="js/auth.js"></script>
+    <script src="js/analytics.js"></script>
+    <script src="js/admin.js"></script>
+    <script src="js/fileManager.js"></script>
+    <script src="js/delivery.js"></script>
+    <script src="js/driver.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
