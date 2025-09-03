@@ -48,6 +48,8 @@ initializeChargeDescriptions();
 
 // Authentication state listener
 onAuthStateChanged(auth, async (user) => {
+    console.log('Auth state changed:', user ? 'User logged in' : 'No user');
+    
     if (user) {
         try {
             const userData = await authService.getCurrentUserData(user.uid);
@@ -55,6 +57,7 @@ onAuthStateChanged(auth, async (user) => {
                 window.app.currentUser = { uid: user.uid, email: user.email, ...userData };
                 router.navigate('dashboard');
             } else {
+                console.log('User inactive or not found, redirecting to login');
                 router.navigate('login');
             }
         } catch (error) {
@@ -62,10 +65,19 @@ onAuthStateChanged(auth, async (user) => {
             router.navigate('login');
         }
     } else {
+        console.log('No user found, showing login');
         window.app.currentUser = null;
         router.navigate('login');
     }
 });
+
+// Add timeout fallback for slow Firebase initialization
+setTimeout(() => {
+    if (!window.app.currentUser && !document.querySelector('.login-form')) {
+        console.log('Fallback: Forcing navigation to login after timeout');
+        router.navigate('login');
+    }
+}, 3000);
 
 // Initialize router
 router.init();
