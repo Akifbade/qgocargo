@@ -52,6 +52,13 @@ function autoSave() {
 
 // Load job files
 async function loadJobFiles() {
+    // Check if user is authenticated before loading
+    const currentUser = window.authModule.getCurrentUser();
+    if (!currentUser) {
+        console.log('User not authenticated, skipping job files load');
+        return;
+    }
+    
     try {
         const snapshot = await firebase.firestore().collection('jobFiles').orderBy('createdAt', 'desc').limit(10).get();
         const jobFiles = [];
@@ -65,6 +72,10 @@ async function loadJobFiles() {
         
     } catch (error) {
         console.error('Error loading job files:', error);
+        // Only show notification if user is authenticated
+        if (currentUser) {
+            showNotification('Error loading job files: ' + error.message, 'error');
+        }
     }
 }
 
