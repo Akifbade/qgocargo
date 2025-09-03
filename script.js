@@ -1452,18 +1452,10 @@ function selectJobForDelivery(jobId) {
             <div class="grid grid-cols-2 gap-4 text-sm">
                 <div><strong>Shipper:</strong> ${selectedJobForDelivery.sh || 'N/A'}</div>
                 <div><strong>Consignee:</strong> ${selectedJobForDelivery.co || 'N/A'}</div>
-// Firebase configuration
-const firebaseConfig = {
-    // Your Firebase config will be here
-    // This is a placeholder - replace with your actual config
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
-
-// Global variables for backward compatibility
-let currentFileId = null;
+                <div><strong>Destination:</strong> ${selectedJobForDelivery.de || 'N/A'}</div>
+                <div><strong>Pieces:</strong> ${selectedJobForDelivery.pc || 'N/A'}</div>
+            </div>
+        `;
+        document.getElementById('delivery-step-2').classList.remove('hidden');
     }
 }
