@@ -3,323 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Q'go Cargo - Dashboard</title>
+    <title>Q'go Cargo Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --theme-color: #4f46e5; }
         body { font-family: 'Inter', sans-serif; }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-gray-100">
-    <!-- Check if user is logged in -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
-            authDomain: "my-job-file-system.firebaseapp.com",
-            projectId: "my-job-file-system",
-            storageBucket: "my-job-file-system.appspot.com",
-            messagingSenderId: "145307873304",
-            appId: "1:145307873304:web:d661ea6ec118801b4a136d",
-            measurementId: "G-8EHX5K7YHL"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                window.location.href = 'login.html';
-                return;
-            }
-
-            const userDocRef = doc(db, 'users', user.uid);
-            const userDoc = await getDoc(userDocRef);
-            
-            if (!userDoc.exists() || userDoc.data().status === 'inactive') {
-                window.location.href = 'login.html';
-                return;
-            }
-
-            // User is authenticated, show dashboard
-            showDashboard(userDoc.data());
-        });
-
-        function showDashboard(userData) {
-            document.body.innerHTML = `
-                <div class="min-h-screen bg-gray-100">
-                    <!-- Header -->
-                    <header class="bg-white shadow-sm border-b">
-                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                            <div class="flex justify-between items-center py-4">
-                                <div class="flex items-center">
-                                    <div class="text-2xl font-bold" style="color: #0E639C;">
-                                        Q'go<span style="color: #4FB8AF;">Cargo</span>
-                                    </div>
-                                </div>
-                                <div class="flex items-center space-x-4">
-                                    <span class="text-sm text-gray-600">Welcome, ${userData.displayName}</span>
-                                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm">
-                                        Logout
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </header>
-
-                    <!-- Main Content -->
-                    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-                        <div class="px-4 py-6 sm:px-0">
-                            <div class="text-center mb-8">
-                                <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
-                                <p class="mt-2 text-gray-600">Manage your job files and system operations</p>
-                            </div>
-
-                            <!-- Quick Actions Grid -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                                <div class="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow cursor-pointer" onclick="window.location.href='job-file.html'">
-                                    <div class="p-6">
-                                        <div class="flex items-center">
-                                            <div class="flex-shrink-0">
-                                                <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                                    </svg>
-                                                </div>
-                                            </div>
-                                            <div class="ml-5 w-0 flex-1">
-                                                <dl>
-                                                    <dt class="text-sm font-medium text-gray-500 truncate">Job File Management</dt>
-                                                    <dd class="text-lg font-medium text-gray-900">Create & Manage</dd>
-                                                </dl>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow cursor-pointer" onclick="window.location.href='analytics.html'">
-                                    <div class="p-6">
-                                        <div class="flex items-center">
-                                            <div class="flex-shrink-0">
-                                                <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                                                    </svg>
-                                                </div>
-                                            </div>
-                                            <div class="ml-5 w-0 flex-1">
-                                                <dl>
-                                                    <dt class="text-sm font-medium text-gray-500 truncate">Analytics</dt>
-                                                    <dd class="text-lg font-medium text-gray-900">View Reports</dd>
-                                                </dl>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow cursor-pointer" onclick="window.location.href='file-manager.html'">
-                                    <div class="p-6">
-                                        <div class="flex items-center">
-                                            <div class="flex-shrink-0">
-                                                <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
-                                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z"></path>
-                                                    </svg>
-                                                </div>
-                                            </div>
-                                            <div class="ml-5 w-0 flex-1">
-                                                <dl>
-                                                    <dt class="text-sm font-medium text-gray-500 truncate">File Manager</dt>
-                                                    <dd class="text-lg font-medium text-gray-900">Browse Files</dd>
-                                                </dl>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow cursor-pointer" onclick="window.location.href='clients.html'">
-                                    <div class="p-6">
-                                        <div class="flex items-center">
-                                            <div class="flex-shrink-0">
-                                                <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
-                                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                                    </svg>
-                                                </div>
-                                            </div>
-                                            <div class="ml-5 w-0 flex-1">
-                                                <dl>
-                                                    <dt class="text-sm font-medium text-gray-500 truncate">Client Management</dt>
-                                                    <dd class="text-lg font-medium text-gray-900">Manage Clients</dd>
-                                                </dl>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                ${userData.role === 'admin' ? `
-                                <div class="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow cursor-pointer" onclick="window.location.href='admin.html'">
-                                    <div class="p-6">
-                                        <div class="flex items-center">
-                                            <div class="flex-shrink-0">
-                                                <div class="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
-                                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                    </svg>
-                                                </div>
-                                            </div>
-                                            <div class="ml-5 w-0 flex-1">
-                                                <dl>
-                                                    <dt class="text-sm font-medium text-gray-500 truncate">Admin Panel</dt>
-                                                    <dd class="text-lg font-medium text-gray-900">System Settings</dd>
-                                                </dl>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                ` : ''}
-
-                                <div class="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow cursor-pointer" onclick="window.location.href='activity-log.html'">
-                                    <div class="p-6">
-                                        <div class="flex items-center">
-                                            <div class="flex-shrink-0">
-                                                <div class="w-8 h-8 bg-indigo-500 rounded-md flex items-center justify-center">
-                                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-                                                    </svg>
-                                                </div>
-                                            </div>
-                                            <div class="ml-5 w-0 flex-1">
-                                                <dl>
-                                                    <dt class="text-sm font-medium text-gray-500 truncate">Activity Log</dt>
-                                                    <dd class="text-lg font-medium text-gray-900">View Activity</dd>
-                                                </dl>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Recent Activity or Stats can go here -->
-                            <div class="bg-white shadow rounded-lg">
-                                <div class="px-4 py-5 sm:p-6">
-                                    <h3 class="text-lg leading-6 font-medium text-gray-900">Quick Stats</h3>
-                                    <div class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
-                                        <div class="bg-gray-50 overflow-hidden shadow rounded-lg">
-                                            <div class="p-5">
-                                                <div class="flex items-center">
-                                                    <div class="flex-shrink-0">
-                                                        <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                                                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                                            </svg>
-                                                        </div>
-                                                    </div>
-                                                    <div class="ml-5 w-0 flex-1">
-                                                        <dl>
-                                                            <dt class="text-sm font-medium text-gray-500 truncate">Total Job Files</dt>
-                                                            <dd class="text-lg font-medium text-gray-900" id="totalJobs">Loading...</dd>
-                                                        </dl>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="bg-gray-50 overflow-hidden shadow rounded-lg">
-                                            <div class="p-5">
-                                                <div class="flex items-center">
-                                                    <div class="flex-shrink-0">
-                                                        <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                                                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                            </svg>
-                                                        </div>
-                                                    </div>
-                                                    <div class="ml-5 w-0 flex-1">
-                                                        <dl>
-                                                            <dt class="text-sm font-medium text-gray-500 truncate">Approved Files</dt>
-                                                            <dd class="text-lg font-medium text-gray-900" id="approvedJobs">Loading...</dd>
-                                                        </dl>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="bg-gray-50 overflow-hidden shadow rounded-lg">
-                                            <div class="p-5">
-                                                <div class="flex items-center">
-                                                    <div class="flex-shrink-0">
-                                                        <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
-                                                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                            </svg>
-                                                        </div>
-                                                    </div>
-                                                    <div class="ml-5 w-0 flex-1">
-                                                        <dl>
-                                                            <dt class="text-sm font-medium text-gray-500 truncate">Pending Files</dt>
-                                                            <dd class="text-lg font-medium text-gray-900" id="pendingJobs">Loading...</dd>
-                                                        </dl>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </main>
-                </div>
-            `;
-
-            // Load stats
-            loadDashboardStats();
-        }
-
-        async function loadDashboardStats() {
-            try {
-                const { collection, query, getDocs } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-                
-                const jobFilesQuery = query(collection(db, 'jobfiles'));
-                const querySnapshot = await getDocs(jobFilesQuery);
-                
-                let totalJobs = 0;
-                let approvedJobs = 0;
-                let pendingJobs = 0;
-                
-                querySnapshot.forEach(doc => {
-                    const data = doc.data();
-                    totalJobs++;
-                    if (data.status === 'approved') {
-                        approvedJobs++;
-                    } else if (data.status === 'pending' || !data.status) {
-                        pendingJobs++;
-                    }
-                });
-
-                document.getElementById('totalJobs').textContent = totalJobs;
-                document.getElementById('approvedJobs').textContent = approvedJobs;
-                document.getElementById('pendingJobs').textContent = pendingJobs;
-            } catch (error) {
-                console.error('Error loading stats:', error);
-                document.getElementById('totalJobs').textContent = 'Error';
-                document.getElementById('approvedJobs').textContent = 'Error';
-                document.getElementById('pendingJobs').textContent = 'Error';
-            }
-        }
-
-        window.logout = async function() {
-            const { signOut } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
-            await signOut(auth);
-            window.location.href = 'login.html';
-        };
-    </script>
+    <div id="app">
+        <div class="min-h-screen flex items-center justify-center">
+            <div class="text-center">
+                <div class="loader mx-auto mb-4"></div>
+                <p class="text-gray-600">Loading Q'go Cargo Management System...</p>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
 </body>
 </html>
