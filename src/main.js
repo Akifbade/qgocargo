@@ -20,8 +20,31 @@ window.app = {
     db,
     authService,
     router,
-    currentUser: null
+    currentUser: null,
+    chargeDescriptions: []
 };
+
+// Initialize charge descriptions from localStorage or defaults
+function initializeChargeDescriptions() {
+    const storedDescriptions = localStorage.getItem('chargeDescriptions');
+    if (storedDescriptions) {
+        window.app.chargeDescriptions = JSON.parse(storedDescriptions);
+    } else {
+        window.app.chargeDescriptions = [
+            'Ex-works Charges:', 'Land/Air / Sea Freight:', 'Fuel Security / War Surcharge:', 
+            'Formalities:', 'Delivery Order Fee:', 'Transportation Charges:', 
+            'Inspection / Computer Print Charges:', 'Handling Charges:', 'Labor / Forklift Charges:', 
+            'Documentation Charges:', 'Clearance Charges:', 'Customs Duty:', 
+            'Terminal Handling Charges:', 'Legalization Charges:', 'Demurrage Charges:', 
+            'Loading / Offloading Charges:', 'Destination Clearance Charges:', 'Packing Charges:', 
+            'Port Charges:', 'Other Charges:', 'PAI Approval:', 'Insurance Fee:', 'EPA Charges:'
+        ];
+        localStorage.setItem('chargeDescriptions', JSON.stringify(window.app.chargeDescriptions));
+    }
+}
+
+// Initialize charge descriptions
+initializeChargeDescriptions();
 
 // Authentication state listener
 onAuthStateChanged(auth, async (user) => {
