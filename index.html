@@ -71,6 +71,7 @@
                         </div>
                     </div>
                     <div class="flex items-center space-x-4">
+                        <button onclick="openDeliveryRequest()" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105">🚚 Delivery Request</button>
                         <button onclick="openAnalyticsDashboard()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105">📊 Analytics</button>
                         <button id="admin-panel-btn" class="admin-only bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105">⚙️ Admin</button>
                         <button id="activity-log-btn" class="admin-only bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105">📋 Activity Log</button>
@@ -110,7 +111,7 @@
         </div>
 
         <!-- Main Container -->
-        <div id="main-container" class="container">
+        <div id="main-container" class="container" style="display: none;">
             <!-- Status Summary -->
             <div id="status-summary-main" class="mb-6">
                 <!-- Status cards will be populated by JS -->
@@ -276,6 +277,122 @@
                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" /></svg>
                      <span>Print</span>
                  </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Driver Dashboard -->
+    <div id="driver-dashboard" class="hidden">
+        <div class="container">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800">Driver Dashboard</h2>
+                <button id="driver-logout-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Logout</button>
+            </div>
+            
+            <!-- Driver Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-blue-100 p-4 rounded-lg text-center">
+                    <p class="text-sm text-blue-800">Pending Deliveries</p>
+                    <p id="pending-deliveries-count" class="text-2xl font-bold text-blue-900">0</p>
+                </div>
+                <div class="bg-yellow-100 p-4 rounded-lg text-center">
+                    <p class="text-sm text-yellow-800">In Transit</p>
+                    <p id="in-transit-count" class="text-2xl font-bold text-yellow-900">0</p>
+                </div>
+                <div class="bg-green-100 p-4 rounded-lg text-center">
+                    <p class="text-sm text-green-800">Delivered Today</p>
+                    <p id="delivered-today-count" class="text-2xl font-bold text-green-900">0</p>
+                </div>
+                <div class="bg-purple-100 p-4 rounded-lg text-center">
+                    <p class="text-sm text-purple-800">Total Delivered</p>
+                    <p id="total-delivered-count" class="text-2xl font-bold text-purple-900">0</p>
+                </div>
+            </div>
+
+            <!-- Delivery Assignments -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-xl font-semibold mb-4">My Delivery Assignments</h3>
+                <div id="driver-assignments-list" class="space-y-4">
+                    <!-- Driver assignments will be populated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delivery Request Page -->
+    <div id="delivery-request-page" class="hidden">
+        <div class="container">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800">Delivery Request</h2>
+                <button onclick="closeDeliveryRequest()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">Back to Dashboard</button>
+            </div>
+
+            <!-- Step 1: Search and Select Job File -->
+            <div id="delivery-step-1" class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4">Step 1: Select Job File for Delivery</h3>
+                <div class="mb-4">
+                    <input type="text" id="delivery-job-search" class="input-field" placeholder="Search by Job File No, Shipper, Consignee, or MAWB...">
+                </div>
+                <div id="delivery-job-results" class="space-y-2 max-h-96 overflow-y-auto">
+                    <!-- Search results will be populated by JS -->
+                </div>
+            </div>
+
+            <!-- Step 2: Delivery Details (Hidden initially) -->
+            <div id="delivery-step-2" class="bg-white rounded-lg shadow-sm p-6 mb-6 hidden">
+                <h3 class="text-xl font-semibold mb-4">Step 2: Delivery Details</h3>
+                <div id="selected-job-info" class="bg-gray-50 p-4 rounded-lg mb-4">
+                    <!-- Selected job info will be displayed here -->
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="delivery-address" class="block mb-2 font-semibold text-gray-700">Delivery Address:</label>
+                        <textarea id="delivery-address" rows="3" class="input-field" placeholder="Enter complete delivery address"></textarea>
+                    </div>
+                    <div>
+                        <label for="delivery-contact" class="block mb-2 font-semibold text-gray-700">Contact Person:</label>
+                        <input type="text" id="delivery-contact" class="input-field" placeholder="Contact person name">
+                        <input type="tel" id="delivery-phone" class="input-field mt-2" placeholder="Phone number">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label for="delivery-type" class="block mb-2 font-semibold text-gray-700">Delivery Type:</label>
+                        <select id="delivery-type" class="input-field">
+                            <option value="standard">Standard Delivery</option>
+                            <option value="express">Express Delivery</option>
+                            <option value="scheduled">Scheduled Delivery</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="delivery-date" class="block mb-2 font-semibold text-gray-700">Preferred Date:</label>
+                        <input type="date" id="delivery-date" class="input-field">
+                    </div>
+                    <div>
+                        <label for="delivery-time" class="block mb-2 font-semibold text-gray-700">Preferred Time:</label>
+                        <input type="time" id="delivery-time" class="input-field">
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="delivery-instructions" class="block mb-2 font-semibold text-gray-700">Special Instructions:</label>
+                    <textarea id="delivery-instructions" rows="2" class="input-field" placeholder="Any special delivery instructions..."></textarea>
+                </div>
+                
+                <button onclick="showDriverSelection()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Continue to Driver Selection</button>
+            </div>
+
+            <!-- Step 3: Driver Selection (Hidden initially) -->
+            <div id="delivery-step-3" class="bg-white rounded-lg shadow-sm p-6 hidden">
+                <h3 class="text-xl font-semibold mb-4">Step 3: Select Driver</h3>
+                <div id="available-drivers-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                    <!-- Available drivers will be populated by JS -->
+                </div>
+                <div class="text-center">
+                    <button id="create-delivery-request-btn" onclick="createDeliveryRequest()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg" disabled>Create Delivery Request</button>
+                </div>
             </div>
         </div>
     </div>
@@ -574,6 +691,71 @@
         </div>
     </div>
 
+    <!-- Delivery Assignment Modal -->
+    <div id="delivery-assignment-modal" class="overlay">
+        <div class="modal-content max-w-4xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">Delivery Assignment</h3>
+                <button onclick="closeModal('delivery-assignment-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div id="delivery-assignment-content">
+                <!-- Delivery assignment details will be populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- POD (Proof of Delivery) Modal -->
+    <div id="pod-modal" class="overlay">
+        <div class="modal-content max-w-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">Proof of Delivery</h3>
+                <button onclick="closeModal('pod-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div id="pod-content">
+                <div class="mb-4">
+                    <label for="recipient-name" class="block mb-2 font-semibold text-gray-700">Recipient Name:</label>
+                    <input type="text" id="recipient-name" class="input-field" placeholder="Name of person receiving the shipment">
+                </div>
+                <div class="mb-4">
+                    <label for="recipient-id" class="block mb-2 font-semibold text-gray-700">Recipient ID/Document:</label>
+                    <input type="text" id="recipient-id" class="input-field" placeholder="ID number or document reference">
+                </div>
+                <div class="mb-4">
+                    <label for="delivery-notes" class="block mb-2 font-semibold text-gray-700">Delivery Notes:</label>
+                    <textarea id="delivery-notes" rows="3" class="input-field" placeholder="Any notes about the delivery..."></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2 font-semibold text-gray-700">Digital Signature:</label>
+                    <div class="border border-gray-300 rounded-lg p-4">
+                        <canvas id="signature-canvas" width="400" height="200" class="border border-gray-200 w-full" style="touch-action: none;"></canvas>
+                        <div class="mt-2 text-center">
+                            <button onclick="clearSignature()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-sm">Clear Signature</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <button onclick="completeDelivery()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg">Complete Delivery</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delivery Receipt Modal -->
+    <div id="delivery-receipt-modal" class="overlay">
+        <div class="modal-content max-w-3xl">
+            <div class="flex justify-between items-center mb-4 no-print">
+                <h3 class="text-2xl font-bold">Delivery Receipt</h3>
+                <div>
+                    <button onclick="printDeliveryReceipt()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded mr-2">🖨️ Print</button>
+                    <button onclick="shareDeliveryReceipt()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">📤 Share PDF</button>
+                    <button onclick="closeModal('delivery-receipt-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+                </div>
+            </div>
+            <div id="delivery-receipt-content">
+                <!-- Delivery receipt will be populated by JS -->
+            </div>
+        </div>
+    </div>
 
     <!-- Firebase SDK and App Logic -->
     <script type="module" src="script.js"></script>
