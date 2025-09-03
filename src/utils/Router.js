@@ -12,6 +12,23 @@ export class Router {
 
     async navigate(routeName, params = {}) {
         try {
+            // Show loading state
+            document.getElementById('app').innerHTML = `
+                <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-blue-50">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                            <svg class="w-8 h-8 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                        </div>
+                        <div class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                            Loading...
+                        </div>
+                        <p class="text-gray-600">Please wait</p>
+                    </div>
+                </div>
+            `;
+
             // Handle external HTML pages that don't have JS modules yet
             const externalPages = ['clients', 'admin', 'activity-log'];
             if (externalPages.includes(routeName)) {

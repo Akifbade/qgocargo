@@ -420,6 +420,7 @@ export class JobFilePage {
         this.initializeForm();
         this.setupEventListeners();
         this.setupFormMemory();
+        this.setupChargeAutocomplete();
         
         // Store bound handler reference for cleanup
         this.boundSaveHandler = () => this.saveFormToMemory();
@@ -440,6 +441,97 @@ export class JobFilePage {
             // Try to restore from memory
             this.loadFormFromMemory();
         }
+    }
+
+    setupChargeAutocomplete() {
+        // Setup autocomplete for existing charge description inputs
+        document.querySelectorAll('.description-input').forEach(input => {
+            this.addAutocompleteToInput(input);
+        });
+    }
+
+    addAutocompleteToInput(input) {
+        let suggestionsPanel = input.parentElement.querySelector('.autocomplete-suggestions');
+        if (!suggestionsPanel) {
+            suggestionsPanel = document.createElement('div');
+            suggestionsPanel.className = 'autocomplete-suggestions absolute z-50 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto hidden';
+            input.parentElement.style.position = 'relative';
+            input.parentElement.appendChild(suggestionsPanel);
+        }
+
+        let activeSuggestionIndex = -1;
+
+        const showSuggestions = () => {
+            const value = input.value.toLowerCase();
+            if (!value) {
+                suggestionsPanel.classList.add('hidden');
+                return;
+            }
+
+            const filtered = this.chargeDescriptions.filter(d => 
+                d.toLowerCase().includes(value)
+            );
+
+            if (filtered.length > 0) {
+                suggestionsPanel.innerHTML = filtered.map(d => 
+                    `<div class="px-3 py-2 hover:bg-purple-50 cursor-pointer text-sm autocomplete-suggestion">${d}</div>`
+                ).join('');
+                suggestionsPanel.classList.remove('hidden');
+            } else {
+                suggestionsPanel.classList.add('hidden');
+            }
+            activeSuggestionIndex = -1;
+        };
+
+        const updateSelection = (suggestions) => {
+            suggestions.forEach((suggestion, index) => {
+                if (index === activeSuggestionIndex) {
+                    suggestion.classList.add('bg-purple-100');
+                } else {
+                    suggestion.classList.remove('bg-purple-100');
+                }
+            });
+        };
+
+        input.addEventListener('input', showSuggestions);
+        input.addEventListener('focus', showSuggestions);
+
+        input.addEventListener('keydown', (e) => {
+            const suggestions = suggestionsPanel.querySelectorAll('.autocomplete-suggestion');
+            if (suggestionsPanel.classList.contains('hidden') || suggestions.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                activeSuggestionIndex++;
+                if (activeSuggestionIndex >= suggestions.length) activeSuggestionIndex = 0;
+                updateSelection(suggestions);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeSuggestionIndex--;
+                if (activeSuggestionIndex < 0) activeSuggestionIndex = suggestions.length - 1;
+                updateSelection(suggestions);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (activeSuggestionIndex > -1) {
+                    suggestions[activeSuggestionIndex].click();
+                }
+            } else if (e.key === 'Escape') {
+                suggestionsPanel.classList.add('hidden');
+            }
+        });
+
+        suggestionsPanel.addEventListener('click', (e) => {
+            if (e.target.classList.contains('autocomplete-suggestion')) {
+                input.value = e.target.textContent;
+                suggestionsPanel.classList.add('hidden');
+                activeSuggestionIndex = -1;
+                input.focus();
+            }
+        });
+
+        input.addEventListener('blur', () => {
+            setTimeout(() => suggestionsPanel.classList.add('hidden'), 150);
+        });
     }
 
     initializeForm() {
@@ -760,6 +852,7 @@ export class JobFilePage {
         const costInput = newRow.querySelector('.cost-input');
         const sellingInput = newRow.querySelector('.selling-input');
         const deleteButton = newRow.querySelector('button');
+        const descriptionInput = newRow.querySelector('.description-input');
 
         costInput.addEventListener('input', () => this.calculate());
         sellingInput.addEventListener('input', () => this.calculate());
@@ -767,6 +860,9 @@ export class JobFilePage {
             newRow.remove();
             this.calculate();
         });
+
+        // Add autocomplete to the new description input
+        this.addAutocompleteToInput(descriptionInput);
 
         tableBody.appendChild(newRow);
     }
