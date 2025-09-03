@@ -16,12 +16,12 @@ let currentAssignment = null;
 
 // Firebase configuration - YOU MUST REPLACE THESE WITH YOUR ACTUAL VALUES
 const firebaseConfig = {
-    apiKey: "your-api-key-here",
+    apiKey: "AIzaSyBvOkBwGyRlnfvH5diadeM1aK02nEcOfFg",
     authDomain: "your-project.firebaseapp.com",
-    projectId: "your-project-id",
+    projectId: "your-project",
     storageBucket: "your-project.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "your-app-id"
+    messagingSenderId: "123456789012",
+    appId: "1:123456789012:web:abcdef123456"
 };
 
 // Initialize Firebase
