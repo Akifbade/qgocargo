@@ -469,6 +469,14 @@ export class JobFilePage {
         if (this.boundSaveHandler) {
             document.addEventListener('input', this.boundSaveHandler);
         }
+
+        // Save on input changes with debounce
+        document.addEventListener('input', (e) => {
+            if (e.target.matches('input, textarea')) {
+                this.showMemoryIndicator();
+                clearTimeout(this.saveTimeout);
+                this.saveTimeout = setTimeout(() => {
+                    this.saveFormToMemory();
                 }, 2000);
             }
         });
@@ -492,7 +500,6 @@ export class JobFilePage {
             return;
         }
         
-        const indicator = document.getElementById('memory-indicator');
         indicator.classList.remove('hidden');
         setTimeout(() => {
             indicator.classList.add('hidden');
