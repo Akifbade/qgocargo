@@ -1,0 +1,13 @@
+{
+  "name": "job-file-management-system",
+  "version": "1.0.0",
+  "description": "Job File Management System with Firebase",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python -m http.server 8000",
+    "start": "python -m http.server 8000"
+  },
+  "keywords": ["job-file", "management", "firebase"],
+  "author": "",
+  "license": "ISC"
+}
