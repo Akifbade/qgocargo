@@ -4,792 +4,450 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Job File Management System</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css">
-    
-    <!-- Firebase SDK Scripts -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="bg-gray-100">
+<body>
     <!-- Login Screen -->
-    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-md w-full space-y-8">
-            <div>
-                <div class="mx-auto h-12 w-auto flex items-center justify-center">
-                    <div class="text-3xl font-bold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
+    <div id="login-screen" style="display: none;">
+        <div class="container" style="max-width: 400px; margin-top: 5rem;">
+            <h1 style="text-align: center; margin-bottom: 2rem; color: var(--theme-color);">Job File Management</h1>
+            
+            <!-- Login Form -->
+            <div id="login-form">
+                <h2 style="text-align: center; margin-bottom: 1.5rem;">Login</h2>
+                <div style="margin-bottom: 1rem;">
+                    <input type="email" id="login-email" placeholder="Email" class="input-field" required>
                 </div>
-                <h2 id="auth-title" class="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
-            </div>
-            <div class="mt-8 space-y-6">
-                <div class="rounded-md shadow-sm -space-y-px">
-                    <div id="signup-name-field" style="display: none;">
-                        <label for="full-name" class="sr-only">Full name</label>
-                        <input id="full-name" name="name" type="text" autocomplete="name" class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="Full name">
-                    </div>
-                    <div>
-                        <label for="email-address" class="sr-only">Email address</label>
-                        <input id="email-address" name="email" type="email" autocomplete="email" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="Email address">
-                    </div>
-                    <div>
-                        <label for="password" class="sr-only">Password</label>
-                        <input id="password" name="password" type="password" autocomplete="current-password" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="Password">
-                    </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <input type="password" id="login-password" placeholder="Password" class="input-field" required>
                 </div>
-
-                <div class="flex items-center justify-between">
-                    <div class="text-sm">
-                        <a href="#" id="forgot-password-link" class="font-medium text-indigo-600 hover:text-indigo-500">Forgot your password?</a>
-                    </div>
+                <button onclick="window.authModule.login()" style="width: 100%; background: var(--theme-color); color: white; padding: 0.75rem; border: none; border-radius: 0.375rem; cursor: pointer; font-weight: 500;">
+                    Login
+                </button>
+            </div>
+            
+            <!-- Signup Form -->
+            <div id="signup-form" style="display: none;">
+                <h2 style="text-align: center; margin-bottom: 1.5rem;">Sign Up</h2>
+                <div style="margin-bottom: 1rem;" id="signup-name-field">
+                    <input type="text" id="signup-name" placeholder="Full Name" class="input-field" required>
                 </div>
-
-                <div>
-                    <button id="auth-btn" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Sign in</button>
+                <div style="margin-bottom: 1rem;">
+                    <input type="email" id="signup-email" placeholder="Email" class="input-field" required>
                 </div>
-
-                <div class="text-center">
-                    <a href="#" id="auth-link" class="font-medium text-indigo-600 hover:text-indigo-500">Create a new account</a>
+                <div style="margin-bottom: 1.5rem;">
+                    <input type="password" id="signup-password" placeholder="Password" class="input-field" required>
                 </div>
-
-                <div id="approval-message" class="text-center text-sm text-yellow-600 bg-yellow-100 p-3 rounded" style="display: none;">
-                    Your account is pending admin approval. Please contact your administrator.
-                </div>
+                <button onclick="window.authModule.signup()" style="width: 100%; background: var(--theme-color); color: white; padding: 0.75rem; border: none; border-radius: 0.375rem; cursor: pointer; font-weight: 500;">
+                    Sign Up
+                </button>
             </div>
-        </div>
-    </div>
-
-    <!-- Main App Container -->
-    <div id="app-container" style="display: none;">
-        <!-- Header -->
-        <div class="bg-white shadow-sm border-b">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center py-4">
-                    <div class="flex items-center">
-                        <div class="text-2xl font-bold mr-8" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
-                        <div class="text-sm text-gray-600">
-                            Welcome, <span id="user-display-name" class="font-medium"></span> 
-                            (<span id="user-role" class="capitalize"></span>)
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <button onclick="openDeliveryRequest()" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105">🚚 Delivery Request</button>
-                        <button onclick="openAnalyticsDashboard()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105">📊 Analytics</button>
-                        <button id="admin-panel-btn" class="admin-only bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105">⚙️ Admin</button>
-                        <button id="activity-log-btn" class="admin-only bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105">📋 Activity Log</button>
-                        <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105">Logout</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Rejection Banner -->
-        <div id="rejection-banner" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" style="display: none;">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                    </svg>
-                </div>
-                <div class="ml-3">
-                    <p class="text-sm"><strong>This job file has been rejected.</strong></p>
-                    <p class="text-sm mt-1">Reason: <span id="rejection-reason" class="font-medium"></span></p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Checker Info Banner -->
-        <div id="checker-info-banner" class="checker-only bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4 text-center" style="display: none;">
-            <div class="flex justify-center">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                    </svg>
-                </div>
-                <div class="ml-3">
-                    <p class="text-sm">You have checker/admin privileges. You can check and approve job files.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Container -->
-        <div id="main-container" class="container" style="display: none;">
-            <!-- Status Summary -->
-            <div id="status-summary-main" class="mb-6">
-                <!-- Status cards will be populated by JS -->
-            </div>
-
-            <!-- Job File Form -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                <div><label for="date" class="block mb-2 font-semibold text-gray-700">DATE:</label><input type="date" id="date" class="input-field"></div>
-                <div><label for="po-number" class="block mb-2 font-semibold text-gray-700">P.O. #:</label><input type="text" id="po-number" class="input-field"></div>
-                <div><label for="job-file-no" class="block mb-2 font-semibold text-gray-700">JOB FILE NO.:</label><input type="text" id="job-file-no" class="input-field"></div>
-            </div>
-
-            <!-- Clearance and Product Type -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                    <label class="block mb-2 font-semibold text-gray-700">CLEARANCE:</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <label class="flex items-center"><input type="checkbox" data-clearance="Export" class="mr-2"> Export</label>
-                        <label class="flex items-center"><input type="checkbox" data-clearance="Import" class="mr-2"> Import</label>
-                        <label class="flex items-center"><input type="checkbox" data-clearance="Clearance" class="mr-2"> Clearance</label>
-                        <label class="flex items-center"><input type="checkbox" data-clearance="Local Move" class="mr-2"> Local Move</label>
-                    </div>
-                </div>
-                <div>
-                    <label class="block mb-2 font-semibold text-gray-700">PRODUCT TYPE:</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <label class="flex items-center"><input type="checkbox" data-product="Air Freight" class="mr-2"> Air</label>
-                        <label class="flex items-center"><input type="checkbox" data-product="Sea Freight" class="mr-2"> Sea</label>
-                        <label class="flex items-center"><input type="checkbox" data-product="Land Freight" class="mr-2"> Land</label>
-                        <label class="flex items-center"><input type="checkbox" data-product="Others" class="mr-2"> Others</label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Invoice and Billing Info -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                <div><label for="invoice-no" class="block mb-2 font-semibold text-gray-700">INVOICE NO.:</label><input type="text" id="invoice-no" class="input-field"></div>
-                <div><label for="billing-date" class="block mb-2 font-semibold text-gray-700">BILLING DATE:</label><input type="date" id="billing-date" class="input-field"></div>
-                <div><label for="salesman" class="block mb-2 font-semibold text-gray-700">SALESMAN:</label><input type="text" id="salesman" class="input-field"></div>
-            </div>
-
-            <!-- Shipper and Consignee -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div class="relative">
-                    <label for="shipper-name" class="block mb-2 font-semibold text-gray-700">SHIPPER'S NAME:</label>
-                    <input type="text" id="shipper-name" class="input-field" autocomplete="off">
-                    <div id="shipper-suggestions" class="autocomplete-suggestions hidden"></div>
-                </div>
-                <div class="relative">
-                    <label for="consignee-name" class="block mb-2 font-semibold text-gray-700">CONSIGNEE'S NAME:</label>
-                    <input type="text" id="consignee-name" class="input-field" autocomplete="off">
-                    <div id="consignee-suggestions" class="autocomplete-suggestions hidden"></div>
-                </div>
-            </div>
-
-            <!-- Shipping Details -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div><label for="mawb" class="block mb-2 font-semibold text-gray-700">MAWB/OBL/TCN:</label><input type="text" id="mawb" class="input-field"></div>
-                <div><label for="teams-of-shipping" class="block mb-2 font-semibold text-gray-700">TEAMS OF SHIPPING:</label><input type="text" id="teams-of-shipping" class="input-field"></div>
-                <div><label for="hawb" class="block mb-2 font-semibold text-gray-700">HAWB/HBL:</label><input type="text" id="hawb" class="input-field"></div>
-                <div><label for="origin" class="block mb-2 font-semibold text-gray-700">ORIGIN:</label><input type="text" id="origin" class="input-field"></div>
-                <div><label for="destination" class="block mb-2 font-semibold text-gray-700">DESTINATION:</label><input type="text" id="destination" class="input-field"></div>
-            </div>
-
-            <!-- Weight and Pieces -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div><label for="no-of-pieces" class="block mb-2 font-semibold text-gray-700">NO. OF PIECES:</label><input type="text" id="no-of-pieces" class="input-field"></div>
-                <div><label for="gross-weight" class="block mb-2 font-semibold text-gray-700">GROSS WT:</label><input type="text" id="gross-weight" class="input-field"></div>
-                <div><label for="volume-weight" class="block mb-2 font-semibold text-gray-700">VOLUME WT:</label><input type="text" id="volume-weight" class="input-field"></div>
-            </div>
-
-            <!-- Description -->
-            <div class="mb-6">
-                <label for="description" class="block mb-2 font-semibold text-gray-700">DESCRIPTION:</label>
-                <textarea id="description" rows="3" class="input-field w-full"></textarea>
-            </div>
-
-            <!-- Carrier and Transport Details -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div><label for="carrier" class="block mb-2 font-semibold text-gray-700">CARRIER/LINE/TRUCKING:</label><input type="text" id="carrier" class="input-field"></div>
-                <div><label for="truck-no" class="block mb-2 font-semibold text-gray-700">TRUCK/DRIVER:</label><input type="text" id="truck-no" class="input-field"></div>
-            </div>
-
-            <!-- Vessel and Flight Details -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div><label for="vessel-name" class="block mb-2 font-semibold text-gray-700">VESSEL:</label><input type="text" id="vessel-name" class="input-field"></div>
-                <div><label for="flight-voyage-no" class="block mb-2 font-semibold text-gray-700">FLIGHT/VOYAGE:</label><input type="text" id="flight-voyage-no" class="input-field"></div>
-                <div><label for="container-no" class="block mb-2 font-semibold text-gray-700">CONTAINER NO:</label><input type="text" id="container-no" class="input-field"></div>
-            </div>
-
-            <!-- Charges Table -->
-            <div class="flex justify-between items-center mb-2">
-                 <h2 class="text-xl font-semibold text-gray-800">Charges</h2>
-                 <div>
-                    <button onclick="openChargeManager()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded-lg text-sm transition-transform transform hover:scale-105 mr-2">Manage Descriptions</button>
-                    <button onclick="suggestCharges()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1 px-3 rounded-lg text-sm transition-transform transform hover:scale-105">Suggest Charges ✨</button>
-                 </div>
-            </div>
-            <div class="mb-6 overflow-x-auto border border-gray-200 rounded-lg">
-                <table id="charges-table" class="w-full border-collapse">
-                    <!-- JS will populate this -->
-                </table>
-            </div>
-            <div class="text-right mb-6">
-                 <button onclick="addChargeRow()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg text-sm">+ Add Charge</button>
-            </div>
-
-            <!-- Remarks Section -->
-            <div class="flex justify-between items-center mb-2">
-                <label for="remarks" class="block font-semibold text-gray-700">REMARKS:</label>
-                <button onclick="generateRemarks()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1 px-3 rounded-lg text-sm transition-transform transform hover:scale-105">Generate Remarks ✨</button>
-            </div>
-            <div class="mb-8">
-                <textarea id="remarks" rows="4" class="input-field w-full"></textarea>
-            </div>
-
-            <!-- Creator/Editor Info -->
-            <div id="file-info" class="text-xs text-gray-500 mb-4 border-t pt-4">
-                <span id="created-by-info"></span>
-                <span id="last-updated-by-info" class="ml-4"></span>
-            </div>
-
-            <!-- Footer Section -->
-            <footer class="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6 border-t items-end">
-                <div><label class="block mb-2 font-semibold text-gray-700">PREPARED BY</label><input type="text" id="prepared-by" class="input-field bg-gray-100" readonly></div>
-                <div class="relative">
-                    <div id="checked-stamp" class="stamp stamp-checked">Checked</div>
-                    <label class="block mb-2 font-semibold text-gray-700">CHECKED BY</label>
-                    <input type="text" id="checked-by" class="input-field bg-gray-100" readonly>
-                    <button id="check-btn" class="checker-only mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Check Job File</button>
-                </div>
-                <div class="relative">
-                    <div id="approved-stamp" class="stamp stamp-approved">Approved</div>
-                    <div id="rejected-stamp" class="stamp stamp-rejected">Rejected</div>
-                    <label class="block mb-2 font-semibold text-gray-700">APPROVED BY</label>
-                    <input type="text" id="approved-by" class="input-field bg-gray-100" readonly>
-                    <div id="approval-buttons" class="admin-only mt-2 w-full flex gap-2">
-                        <button id="approve-btn" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Approve</button>
-                        <button id="reject-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">Reject</button>
-                    </div>
-                </div>
-            </footer>
-
-            <!-- Action Buttons -->
-            <div class="text-center mt-10 no-print flex flex-wrap justify-center gap-2 sm:gap-4">
-                 <button onclick="openClientManager()" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
-                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" /></svg>
-                     <span>Clients</span>
-                 </button>
-                 <button onclick="openFileManager()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
-                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1H8a3 3 0 00-3 3v1.586l.293.293a1 1 0 001.414 0L10.414 12l-1.293 1.293a1 1 0 000 1.414l.293.293V16a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm8 2a1 1 0 000-2H4a1 1 0 00-1 1v10a1 1 0 001 1h4a1 1 0 001-1v-1.586l-.293-.293a1 1 0 01-1.414 0L6.586 12l1.293-1.293a1 1 0 011.414 0l.293-.293V8z" clip-rule="evenodd" /><path d="M18 8a2 2 0 00-2-2h-4l-2-2h-4a2 2 0 00-2 2v.5a1 1 0 002 0V6a1 1 0 011-1h2.586l2 2H16a1 1 0 011 1v8a1 1 0 01-1 1h-2.5a1 1 0 100 2H16a2 2 0 002-2V8z" /></svg>
-                     <span>File Manager</span>
-                 </button>
-                 <button onclick="saveJobFile()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
-                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6a1 1 0 10-2 0v5.586L7.707 10.293zM3 4a1 1 0 011-1h12a1 1 0 011 1v4a1 1 0 01-1 1h-2a1 1 0 00-1 1v4a1 1 0 001 1h2a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 001-1V9a1 1 0 00-1-1H4a1 1 0 01-1-1V4z" /></svg>
-                     <span>Save to DB</span>
-                 </button>
-                 <button onclick="clearForm()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
-                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.898 0V3a1 1 0 112 0v2.101a7.002 7.002 0 01-11.898 0V3a1 1 0 01-1-1zM12 10a2 2 0 11-4 0 2 2 0 014 0zM4 10a2 2 0 00-2 2v2a2 2 0 002 2h12a2 2 0 002-2v-2a2 2 0 00-2-2h-1.101A7.002 7.002 0 0010 12c-2.256 0-4.233-.996-5.5-2.543A7.002 7.002 0 004 10z" clip-rule="evenodd" /></svg>
-                     <span>New Job</span>
-                 </button>
-                 <button onclick="printPage()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
-                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" /></svg>
-                     <span>Print</span>
-                 </button>
-            </div>
+            
+            <p id="auth-toggle" style="text-align: center; margin-top: 1rem;">
+                Don't have an account? <a href="#" onclick="window.authModule.toggleAuthMode()" style="color: var(--theme-color);">Sign up</a>
+            </p>
         </div>
     </div>
 
     <!-- Driver Dashboard -->
-    <div id="driver-dashboard" class="hidden">
+    <div id="driver-dashboard" style="display: none;">
         <div class="container">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-bold text-gray-800">Driver Dashboard</h2>
-                <button id="driver-logout-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Logout</button>
+            <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 2rem;">
+                <h1>Driver Dashboard</h1>
+                <button onclick="window.authModule.logout()" style="background: #ef4444; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">
+                    Logout
+                </button>
             </div>
             
             <!-- Driver Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div class="bg-blue-100 p-4 rounded-lg text-center">
-                    <p class="text-sm text-blue-800">Pending Deliveries</p>
-                    <p id="pending-deliveries-count" class="text-2xl font-bold text-blue-900">0</p>
-                </div>
-                <div class="bg-yellow-100 p-4 rounded-lg text-center">
-                    <p class="text-sm text-yellow-800">In Transit</p>
-                    <p id="in-transit-count" class="text-2xl font-bold text-yellow-900">0</p>
-                </div>
-                <div class="bg-green-100 p-4 rounded-lg text-center">
-                    <p class="text-sm text-green-800">Delivered Today</p>
-                    <p id="delivered-today-count" class="text-2xl font-bold text-green-900">0</p>
-                </div>
-                <div class="bg-purple-100 p-4 rounded-lg text-center">
-                    <p class="text-sm text-purple-800">Total Delivered</p>
-                    <p id="total-delivered-count" class="text-2xl font-bold text-purple-900">0</p>
-                </div>
-            </div>
-
-            <!-- Delivery Assignments -->
-            <div class="bg-white rounded-lg shadow-sm p-6">
-                <h3 class="text-xl font-semibold mb-4">My Delivery Assignments</h3>
-                <div id="driver-assignments-list" class="space-y-4">
-                    <!-- Driver assignments will be populated by JS -->
-                </div>
+            <div id="driver-stats" style="margin-bottom: 2rem;"></div>
+            
+            <!-- Driver Assignments -->
+            <div>
+                <h2 style="margin-bottom: 1rem;">My Assignments</h2>
+                <div id="driver-assignments"></div>
             </div>
         </div>
     </div>
 
-    <!-- Delivery Request Page -->
-    <div id="delivery-request-page" class="hidden">
+    <!-- Main Application -->
+    <div id="main-container" style="display: none;">
         <div class="container">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-bold text-gray-800">Delivery Request</h2>
-                <button onclick="closeDeliveryRequest()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">Back to Dashboard</button>
-            </div>
-
-            <!-- Step 1: Search and Select Job File -->
-            <div id="delivery-step-1" class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                <h3 class="text-xl font-semibold mb-4">Step 1: Select Job File for Delivery</h3>
-                <div class="mb-4">
-                    <input type="text" id="delivery-job-search" class="input-field" placeholder="Search by Job File No, Shipper, Consignee, or MAWB...">
-                </div>
-                <div id="delivery-job-results" class="space-y-2 max-h-96 overflow-y-auto">
-                    <!-- Search results will be populated by JS -->
+            <!-- Header -->
+            <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                <h1 style="margin: 0; color: var(--theme-color);">Job File Management</h1>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button onclick="window.mainModule.newJobFile()" style="background: var(--theme-color); color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">New</button>
+                    <button onclick="window.fileManagerModule.showFileManager()" style="background: #10b981; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">Load</button>
+                    <button onclick="window.mainModule.printJobFile()" style="background: #8b5cf6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">Print</button>
+                    <button onclick="window.deliveryModule.showDeliveryRequest()" class="admin-only" style="background: #f59e0b; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">Delivery</button>
+                    <button onclick="window.adminModule.showAdminPanel()" class="admin-only" style="background: #ef4444; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">Admin</button>
+                    <button onclick="window.analyticsModule.showAnalytics()" class="admin-only" style="background: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">Analytics</button>
+                    <button onclick="window.authModule.logout()" style="background: #6b7280; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">Logout</button>
                 </div>
             </div>
 
-            <!-- Step 2: Delivery Details (Hidden initially) -->
-            <div id="delivery-step-2" class="bg-white rounded-lg shadow-sm p-6 mb-6 hidden">
-                <h3 class="text-xl font-semibold mb-4">Step 2: Delivery Details</h3>
-                <div id="selected-job-info" class="bg-gray-50 p-4 rounded-lg mb-4">
-                    <!-- Selected job info will be displayed here -->
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <!-- Job File Form -->
+            <form id="job-file-form">
+                <!-- Basic Information -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
                     <div>
-                        <label for="delivery-address" class="block mb-2 font-semibold text-gray-700">Delivery Address:</label>
-                        <textarea id="delivery-address" rows="3" class="input-field" placeholder="Enter complete delivery address"></textarea>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Job File No.</label>
+                        <input type="text" id="jobFileNo" class="input-field" required>
                     </div>
                     <div>
-                        <label for="delivery-contact" class="block mb-2 font-semibold text-gray-700">Contact Person:</label>
-                        <input type="text" id="delivery-contact" class="input-field" placeholder="Contact person name">
-                        <input type="tel" id="delivery-phone" class="input-field mt-2" placeholder="Phone number">
-                    </div>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                        <label for="delivery-type" class="block mb-2 font-semibold text-gray-700">Delivery Type:</label>
-                        <select id="delivery-type" class="input-field">
-                            <option value="standard">Standard Delivery</option>
-                            <option value="express">Express Delivery</option>
-                            <option value="scheduled">Scheduled Delivery</option>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Service Type</label>
+                        <select id="serviceType" class="input-field">
+                            <option value="">Select Service</option>
+                            <option value="consultation">Consultation</option>
+                            <option value="documentation">Documentation</option>
+                            <option value="legal">Legal Services</option>
+                            <option value="other">Other</option>
                         </select>
                     </div>
                     <div>
-                        <label for="delivery-date" class="block mb-2 font-semibold text-gray-700">Preferred Date:</label>
-                        <input type="date" id="delivery-date" class="input-field">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Priority</label>
+                        <select id="priority" class="input-field">
+                            <option value="normal">Normal</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Client Information -->
+                <h3 style="margin: 2rem 0 1rem 0; color: var(--theme-color);">Client Information</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Client Name</label>
+                        <input type="text" id="clientName" class="input-field" required>
                     </div>
                     <div>
-                        <label for="delivery-time" class="block mb-2 font-semibold text-gray-700">Preferred Time:</label>
-                        <input type="time" id="delivery-time" class="input-field">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Email</label>
+                        <input type="email" id="clientEmail" class="input-field">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Phone</label>
+                        <input type="tel" id="clientPhone" class="input-field">
                     </div>
                 </div>
-                
-                <div class="mb-4">
-                    <label for="delivery-instructions" class="block mb-2 font-semibold text-gray-700">Special Instructions:</label>
-                    <textarea id="delivery-instructions" rows="2" class="input-field" placeholder="Any special delivery instructions..."></textarea>
+                <div style="margin-bottom: 2rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Address</label>
+                    <textarea id="clientAddress" class="input-field" rows="3"></textarea>
                 </div>
-                
-                <button onclick="showDriverSelection()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Continue to Driver Selection</button>
-            </div>
 
-            <!-- Step 3: Driver Selection (Hidden initially) -->
-            <div id="delivery-step-3" class="bg-white rounded-lg shadow-sm p-6 hidden">
-                <h3 class="text-xl font-semibold mb-4">Step 3: Select Driver</h3>
-                <div id="available-drivers-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                    <!-- Available drivers will be populated by JS -->
+                <!-- Service Description -->
+                <h3 style="margin: 2rem 0 1rem 0; color: var(--theme-color);">Service Description</h3>
+                <div style="margin-bottom: 2rem;">
+                    <textarea id="description" class="input-field" rows="4" placeholder="Describe the service requirements..."></textarea>
                 </div>
-                <div class="text-center">
-                    <button id="create-delivery-request-btn" onclick="createDeliveryRequest()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg" disabled>Create Delivery Request</button>
+
+                <!-- Charges Table -->
+                <h3 style="margin: 2rem 0 1rem 0; color: var(--theme-color);">Charges</h3>
+                <div style="overflow-x: auto; margin-bottom: 1rem;">
+                    <table id="charges-table" style="width: 100%; min-width: 600px;">
+                        <thead>
+                            <tr style="background: #f3f4f6;">
+                                <th class="table-cell" style="font-weight: 600;">Description</th>
+                                <th class="table-cell" style="font-weight: 600;">Quantity</th>
+                                <th class="table-cell" style="font-weight: 600;">Rate (₹)</th>
+                                <th class="table-cell" style="font-weight: 600;">Amount (₹)</th>
+                                <th class="table-cell" style="font-weight: 600;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
-            </div>
+                <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                    <button type="button" onclick="window.mainModule.addChargeRow()" style="background: var(--theme-color); color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">Add Row</button>
+                    <div style="font-weight: 600; font-size: 1.1rem;">
+                        Total: ₹<input type="number" id="totalAmount" readonly style="border: none; background: transparent; font-weight: 600; font-size: 1.1rem; width: 100px;">
+                    </div>
+                </div>
+
+                <!-- Remarks -->
+                <h3 style="margin: 2rem 0 1rem 0; color: var(--theme-color);">Remarks</h3>
+                <div style="margin-bottom: 2rem;">
+                    <textarea id="remarks" class="input-field" rows="3" placeholder="Additional notes or remarks..."></textarea>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+                    <button type="submit" style="background: var(--theme-color); color: white; padding: 0.75rem 2rem; border: none; border-radius: 0.375rem; cursor: pointer; font-weight: 500;">Save Job File</button>
+                    
+                    <!-- Status Update Buttons (Admin/Checker Only) -->
+                    <div class="checker-only" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button type="button" onclick="updateJobFileStatus('approved')" style="background: #10b981; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">Approve</button>
+                        <button type="button" onclick="updateJobFileStatus('rejected')" style="background: #ef4444; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">Reject</button>
+                        <button type="button" onclick="updateJobFileStatus('checked')" style="background: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">Mark as Checked</button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 
-    <!-- This container is hidden by default and will be populated for printing/preview -->
-    <div id="print-output" class="hidden"></div>
-    
-    <!-- This container is for the public QR code view -->
-    <div id="public-view-container"></div>
-
-    <!-- Analytics Full-Screen Page -->
-    <div id="analytics-container" class="hidden">
-        <div class="container">
-            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-2 no-print">
-                <h3 class="text-2xl font-bold">Analytics Dashboard</h3>
-                <div>
-                    <button onclick="printAnalytics()" title="Print Analytics" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded mr-4">🖨️ Print</button>
-                    <button onclick="closeAnalyticsDashboard()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-3 rounded">Back to Job File</button>
-                </div>
-            </div>
-            <div id="analytics-body" class="space-y-6"></div>
-        </div>
-    </div>
-
-
-    <!-- Modals -->
-    <div id="loader-overlay" class="overlay"><div class="loader"></div></div>
-    <div id="notification"></div>
-    
     <!-- File Manager Modal -->
     <div id="file-manager-modal" class="overlay">
-        <div class="modal-content max-w-5xl"> <!-- Increased width for filters -->
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-bold">File Manager</h3>
-                <div>
-                    <button onclick="openRecycleBin()" class="admin-only bg-gray-600 hover:bg-gray-700 text-white font-bold py-1 px-3 rounded text-sm mr-4">Recycle Bin</button>
-                    <button onclick="closeModal('file-manager-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
-                </div>
+        <div class="modal-content">
+            <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 1rem;">
+                <h2 style="margin: 0;">File Manager</h2>
+                <button onclick="window.fileManagerModule.hideFileManager()" style="background: #ef4444; color: white; border: none; padding: 0.5rem; border-radius: 0.25rem; cursor: pointer;">×</button>
             </div>
             
-            <!-- Search and Filter Controls -->
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
-                <div class="md:col-span-2">
-                    <label for="search-bar" class="text-sm font-medium text-gray-700">Search</label>
-                    <input type="text" id="search-bar" class="input-field mt-1" placeholder="Job No, Shipper, etc.">
-                </div>
-                <div>
-                    <label for="filter-status" class="text-sm font-medium text-gray-700">Status</label>
-                    <select id="filter-status" class="input-field mt-1">
-                        <option value="">All Statuses</option>
-                        <option value="pending">Pending</option>
-                        <option value="checked">Checked</option>
-                        <option value="approved">Approved</option>
-                        <option value="rejected">Rejected</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="filter-date-from" class="text-sm font-medium text-gray-700">From Date</label>
-                    <input type="date" id="filter-date-from" class="input-field mt-1">
-                </div>
-                <div>
-                    <label for="filter-date-to" class="text-sm font-medium text-gray-700">To Date</label>
-                    <input type="date" id="filter-date-to" class="input-field mt-1">
-                </div>
-                <div class="flex items-end">
-                    <button id="clear-filters-btn" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded text-sm">Clear Filters</button>
-                </div>
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                <input type="text" id="file-search" placeholder="Search job files..." onkeyup="window.fileManagerModule.searchJobFiles()" style="flex: 1; min-width: 200px;" class="input-field">
+                <select id="status-filter" onchange="window.fileManagerModule.filterByStatus()" class="input-field">
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="checked">Checked</option>
+                </select>
             </div>
-
-            <div id="job-files-list" class="space-y-2 max-h-[60vh] overflow-y-auto"></div>
-        </div>
-    </div>
-    
-    <!-- Confirmation Modal -->
-    <div id="confirm-modal" class="overlay">
-        <div class="modal-content max-w-sm">
-            <h3 class="text-lg font-bold mb-4" id="confirm-title">Confirm Action</h3>
-            <div id="confirm-message" class="mb-4 text-sm">Are you sure?</div>
-            <div class="text-right mt-6 space-x-2">
-                <button id="confirm-cancel" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Cancel</button>
-                <button id="confirm-ok" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Confirm</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Preview Modal -->
-    <div id="preview-modal" class="overlay">
-        <div class="modal-content max-w-4xl">
-            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 no-print gap-2">
-                <h3 class="text-2xl font-bold">Job File Preview</h3>
-                <div>
-                    <button onclick="printPreview()" title="Print Preview" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded mr-4">🖨️ Print</button>
-                    <button onclick="closeModal('preview-modal')" class="text-gray-500 hover:text-gray-800 text-3xl align-middle">&times;</button>
-                </div>
-            </div>
-            <div id="preview-body"></div>
+            
+            <div id="job-files-list" style="max-height: 400px; overflow-y: auto;"></div>
         </div>
     </div>
 
     <!-- Admin Panel Modal -->
-    <div id="admin-panel-modal" class="overlay">
-        <div class="modal-content max-w-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-bold">Admin Panel</h3>
-                <button onclick="closeModal('admin-panel-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+    <div id="admin-modal" class="overlay">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 1rem;">
+                <h2 style="margin: 0;">Admin Panel</h2>
+                <button onclick="window.adminModule.hideAdminPanel()" style="background: #ef4444; color: white; border: none; padding: 0.5rem; border-radius: 0.25rem; cursor: pointer;">×</button>
             </div>
-        
-            <!-- User Management -->
-            <div class="border rounded-lg p-4">
-                <h4 class="text-lg font-semibold mb-2">User Management</h4>
-                <div id="user-list" class="space-y-2 max-h-[40vh] overflow-y-auto"></div>
-                <div class="text-right mt-4">
-                    <button onclick="saveUserChanges()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save User Changes</button>
+            
+            <!-- Add New User -->
+            <div style="background: #f9fafb; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                <h3 style="margin: 0 0 1rem 0;">Add New User</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                    <input type="text" id="new-user-name" placeholder="Full Name" class="input-field">
+                    <input type="email" id="new-user-email" placeholder="Email" class="input-field">
+                    <input type="password" id="new-user-password" placeholder="Password" class="input-field">
+                    <select id="new-user-role" class="input-field">
+                        <option value="user">User</option>
+                        <option value="checker">Checker</option>
+                        <option value="admin">Admin</option>
+                        <option value="driver">Driver</option>
+                    </select>
                 </div>
+                <button onclick="window.adminModule.addNewUser()" style="background: var(--theme-color); color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">Add User</button>
             </div>
-        
-            <!-- Data Backup & Restore -->
-            <div class="border rounded-lg p-4 mt-6">
-                <h4 class="text-lg font-semibold mb-3">Data Backup & Restore</h4>
-                <p class="text-sm text-gray-600 mb-4">Backup all job files and user data to a single JSON file. This can be used for offline storage or to restore the database to a previous state.</p>
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <button onclick="backupAllData()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
-                        Backup All Data
-                    </button>
-                    <label for="restore-file-input" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 cursor-pointer">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                         Restore From File
-                         <input type="file" id="restore-file-input" class="hidden" accept=".json" onchange="handleRestoreFile(event)">
-                    </label>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Rejection Reason Modal -->
-    <div id="reject-reason-modal" class="overlay">
-        <div class="modal-content max-w-md">
-            <h3 class="text-lg font-bold mb-4">Rejection Reason</h3>
-            <p class="mb-4">Please provide a reason for rejecting this job file.</p>
-            <textarea id="rejection-reason-input" class="input-field w-full" rows="3"></textarea>
-            <div class="text-right mt-6 space-x-2">
-                <button onclick="closeModal('reject-reason-modal')" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Cancel</button>
-                <button id="confirm-reject-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Confirm Rejection</button>
-            </div>
+            
+            <!-- Users List -->
+            <div id="users-list" style="max-height: 400px; overflow-y: auto;"></div>
         </div>
     </div>
 
-    <!-- Forgot Password Modal -->
-    <div id="forgot-password-modal" class="overlay">
-        <div class="modal-content max-w-md">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold">Reset Password</h3>
-                <button onclick="closeModal('forgot-password-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+    <!-- Delivery Request Container -->
+    <div id="delivery-request-container" style="display: none;">
+        <div class="container">
+            <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 2rem;">
+                <h1>Create Delivery Request</h1>
+                <button onclick="window.deliveryModule.hideDeliveryRequest()" style="background: #6b7280; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">Back</button>
             </div>
-            <p class="mb-4 text-gray-600">Enter your email address and we will send you a link to reset your password.</p>
-            <div>
-                <label for="reset-email" class="sr-only">Email address</label>
-                <input id="reset-email" name="email" type="email" autocomplete="email" required class="input-field" placeholder="Email address">
-            </div>
-            <div class="text-right mt-6">
-                <button id="send-reset-link-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
-                    Send Password Reset Link
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Client Manager Modal -->
-    <div id="client-manager-modal" class="overlay">
-        <div class="modal-content max-w-4xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-bold">Client Management</h3>
-                <button onclick="closeModal('client-manager-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <!-- Add/Edit Client Form -->
-                <div>
-                    <h4 id="client-form-title" class="text-xl font-semibold mb-4">Add New Client</h4>
-                    <form id="client-form" class="space-y-4">
-                        <input type="hidden" id="client-id">
-                        <div>
-                            <label for="client-name" class="block text-sm font-medium text-gray-700">Client Name</label>
-                            <input type="text" id="client-name" class="input-field mt-1" required>
-                        </div>
-                        <div>
-                            <label for="client-address" class="block text-sm font-medium text-gray-700">Address</label>
-                            <textarea id="client-address" rows="2" class="input-field mt-1"></textarea>
-                        </div>
-                        <div>
-                            <label for="client-contact-person" class="block text-sm font-medium text-gray-700">Contact Person</label>
-                            <input type="text" id="client-contact-person" class="input-field mt-1">
-                        </div>
-                        <div>
-                            <label for="client-phone" class="block text-sm font-medium text-gray-700">Phone</label>
-                            <input type="text" id="client-phone" class="input-field mt-1">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Client Type</label>
-                            <select id="client-type" class="input-field mt-1">
-                                <option value="Shipper">Shipper</option>
-                                <option value="Consignee">Consignee</option>
-                                <option value="Both">Both</option>
-                            </select>
-                        </div>
-                        <div class="flex gap-4">
-                            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save Client</button>
-                            <button type="button" id="clear-client-form-btn" class="w-full bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Clear</button>
-                        </div>
-                    </form>
+            
+            <!-- Step 1: Select Job File -->
+            <div id="delivery-step-1">
+                <h2>Step 1: Select Job File</h2>
+                <div style="margin-bottom: 1rem;">
+                    <input type="text" id="job-file-search" placeholder="Search by Job File No. or Client Name..." onkeyup="window.deliveryModule.searchJobFiles()" class="input-field">
                 </div>
-                <!-- Client List -->
-                <div>
-                    <h4 class="text-xl font-semibold mb-4">Existing Clients</h4>
-                    <input type="text" id="client-search-bar" class="input-field mb-4" placeholder="Search clients...">
-                    <div id="client-list" class="space-y-2 max-h-[50vh] overflow-y-auto">
-                        <!-- Client list will be populated by JS -->
+                <div id="job-file-search-results" style="max-height: 300px; overflow-y: auto;"></div>
+            </div>
+            
+            <!-- Step 2: Delivery Details -->
+            <div id="delivery-step-2" style="display: none;">
+                <h2>Step 2: Delivery Details</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Delivery Address</label>
+                        <textarea id="delivery-address" class="input-field" rows="3" required></textarea>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Contact Number</label>
+                        <input type="tel" id="delivery-contact" class="input-field" required>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Delivery Type</label>
+                        <select id="delivery-type" class="input-field">
+                            <option value="standard">Standard</option>
+                            <option value="express">Express</option>
+                            <option value="same-day">Same Day</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Scheduled Date</label>
+                        <input type="date" id="delivery-date" class="input-field">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Scheduled Time</label>
+                        <input type="time" id="delivery-time" class="input-field">
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-     <!-- Charge Manager Modal -->
-    <div id="charge-manager-modal" class="overlay">
-        <div class="modal-content max-w-lg">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-bold">Manage Charge Descriptions</h3>
-                <button onclick="closeModal('charge-manager-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <h4 class="text-lg font-semibold mb-2">Add New Description</h4>
-                    <div class="flex gap-2">
-                        <input type="text" id="new-charge-description" class="input-field" placeholder="E.g., Customs Duty">
-                        <button onclick="saveChargeDescription()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Add</button>
-                    </div>
+                <div style="margin-bottom: 2rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Special Instructions</label>
+                    <textarea id="delivery-instructions" class="input-field" rows="3"></textarea>
                 </div>
+                <div style="display: flex; gap: 1rem;">
+                    <button onclick="window.deliveryModule.prevDeliveryStep(2)" style="background: #6b7280; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">Previous</button>
+                    <button onclick="window.deliveryModule.nextDeliveryStep()" style="background: var(--theme-color); color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">Next</button>
+                </div>
+            </div>
+            
+            <!-- Step 3: Select Driver -->
+            <div id="delivery-step-3" style="display: none;">
+                <h2>Step 3: Assign Driver</h2>
+                <div id="driver-selection" style="max-height: 300px; overflow-y: auto; margin-bottom: 2rem;"></div>
                 <div>
-                    <h4 class="text-lg font-semibold mb-2">Existing Descriptions</h4>
-                    <div id="charge-description-list" class="space-y-2 max-h-[50vh] overflow-y-auto">
-                        <!-- JS will populate this list -->
-                    </div>
+                    <button onclick="window.deliveryModule.prevDeliveryStep(3)" style="background: #6b7280; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">Previous</button>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Activity Log Modal -->
-    <div id="activity-log-modal" class="overlay">
-        <div class="modal-content max-w-4xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-bold">User Activity Log</h3>
-                <button onclick="closeModal('activity-log-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+
+    <!-- Analytics Container -->
+    <div id="analytics-container" style="display: none;">
+        <div class="container">
+            <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 2rem;">
+                <h1>Analytics Dashboard</h1>
+                <button onclick="window.analyticsModule.hideAnalytics()" style="background: #6b7280; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">Back</button>
             </div>
-            <div class="max-h-[70vh] overflow-y-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="table-cell font-semibold text-left">User Name</th>
-                            <th class="table-cell font-semibold text-left">Job File No.</th>
-                            <th class="table-cell font-semibold text-left">Time Opened</th>
-                        </tr>
-                    </thead>
-                    <tbody id="activity-log-body">
-                        <!-- JS will populate this -->
-                    </tbody>
-                </table>
-            </div>
+            <div id="analytics-content"></div>
         </div>
     </div>
 
-    <!-- User-Specific Jobs Modal -->
-    <div id="user-jobs-modal" class="overlay">
-        <div class="modal-content max-w-5xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 id="user-jobs-modal-title" class="text-2xl font-bold">User's Job Files</h3>
-                <button onclick="closeModal('user-jobs-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
-            </div>
-            <div id="user-jobs-list" class="space-y-2 max-h-[70vh] overflow-y-auto">
-                <!-- JS will populate this list -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Recycle Bin Modal -->
-    <div id="recycle-bin-modal" class="overlay">
-        <div class="modal-content max-w-5xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-bold">Recycle Bin</h3>
-                <button onclick="closeModal('recycle-bin-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
-            </div>
-            <div id="recycle-bin-list" class="space-y-2 max-h-[70vh] overflow-y-auto">
-                <!-- JS will populate this list -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Delivery Assignment Modal -->
-    <div id="delivery-assignment-modal" class="overlay">
-        <div class="modal-content max-w-4xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-bold">Delivery Assignment</h3>
-                <button onclick="closeModal('delivery-assignment-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
-            </div>
-            <div id="delivery-assignment-content">
-                <!-- Delivery assignment details will be populated by JS -->
-            </div>
-        </div>
-    </div>
-
-    <!-- POD (Proof of Delivery) Modal -->
+    <!-- POD Modal -->
     <div id="pod-modal" class="overlay">
-        <div class="modal-content max-w-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-bold">Proof of Delivery</h3>
-                <button onclick="closeModal('pod-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+        <div class="modal-content">
+            <h2 style="margin-bottom: 1rem;">Proof of Delivery</h2>
+            
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Recipient Name *</label>
+                <input type="text" id="recipient-name" class="input-field" required>
             </div>
-            <div id="pod-content">
-                <div class="mb-4">
-                    <label for="recipient-name" class="block mb-2 font-semibold text-gray-700">Recipient Name:</label>
-                    <input type="text" id="recipient-name" class="input-field" placeholder="Name of person receiving the shipment">
-                </div>
-                <div class="mb-4">
-                    <label for="recipient-id" class="block mb-2 font-semibold text-gray-700">Recipient ID/Document:</label>
-                    <input type="text" id="recipient-id" class="input-field" placeholder="ID number or document reference">
-                </div>
-                <div class="mb-4">
-                    <label for="delivery-notes" class="block mb-2 font-semibold text-gray-700">Delivery Notes:</label>
-                    <textarea id="delivery-notes" rows="3" class="input-field" placeholder="Any notes about the delivery..."></textarea>
-                </div>
-                <div class="mb-4">
-                    <label class="block mb-2 font-semibold text-gray-700">Digital Signature:</label>
-                    <div class="border border-gray-300 rounded-lg p-4">
-                        <canvas id="signature-canvas" width="400" height="200" class="border border-gray-200 w-full" style="touch-action: none;"></canvas>
-                        <div class="mt-2 text-center">
-                            <button onclick="clearSignature()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-sm">Clear Signature</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="text-center">
-                    <button onclick="completeDelivery()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg">Complete Delivery</button>
-                </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Recipient ID (Optional)</label>
+                <input type="text" id="recipient-id" class="input-field">
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Signature *</label>
+                <canvas id="signature-canvas" width="400" height="200" style="border: 1px solid #d1d5db; border-radius: 0.25rem; cursor: crosshair;"></canvas>
+                <button onclick="window.driverModule.clearSignature()" style="background: #6b7280; color: white; padding: 0.25rem 0.5rem; border: none; border-radius: 0.25rem; cursor: pointer; margin-top: 0.5rem;">Clear</button>
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Delivery Notes</label>
+                <textarea id="delivery-notes" class="input-field" rows="3"></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; justify-content: end;">
+                <button onclick="document.getElementById('pod-modal').style.display='none'" style="background: #6b7280; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">Cancel</button>
+                <button onclick="window.driverModule.submitPOD()" style="background: #10b981; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">Complete Delivery</button>
             </div>
         </div>
     </div>
 
-    <!-- Delivery Receipt Modal -->
-    <div id="delivery-receipt-modal" class="overlay">
-        <div class="modal-content max-w-3xl">
-            <div class="flex justify-between items-center mb-4 no-print">
-                <h3 class="text-2xl font-bold">Delivery Receipt</h3>
-                <div>
-                    <button onclick="printDeliveryReceipt()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded mr-2">🖨️ Print</button>
-                    <button onclick="shareDeliveryReceipt()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">📤 Share PDF</button>
-                    <button onclick="closeModal('delivery-receipt-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
-                </div>
+    <!-- Receipt Modal -->
+    <div id="receipt-modal" class="overlay">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 1rem;">
+                <h2 style="margin: 0;">Delivery Receipt</h2>
+                <button onclick="document.getElementById('receipt-modal').style.display='none'" style="background: #ef4444; color: white; border: none; padding: 0.5rem; border-radius: 0.25rem; cursor: pointer;">×</button>
             </div>
-            <div id="delivery-receipt-content">
-                <!-- Delivery receipt will be populated by JS -->
-            </div>
+            <div id="receipt-content"></div>
         </div>
     </div>
 
-    <!-- Firebase SDKs - Load before custom scripts -->
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
+    <!-- Notification -->
+    <div id="notification"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     
     <!-- Firebase Configuration -->
     <script>
+        // Firebase configuration - Replace with your config
         const firebaseConfig = {
-          apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
-          authDomain: "my-job-file-system.firebaseapp.com",
-          projectId: "my-job-file-system",
-          storageBucket: "my-job-file-system.firebasestorage.app",
-          messagingSenderId: "145307873304",
-          appId: "1:145307873304:web:d661ea6ec118801b4a136d",
-          measurementId: "G-8EHX5K7YHL"
+            apiKey: "your-api-key",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id"
         };
         
+        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
+        console.log('Firebase initialized:', firebase.apps.length > 0);
     </script>
-    
-    <!-- Custom JavaScript Modules -->
+
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+    <!-- Application Scripts -->
     <script src="js/auth.js"></script>
-    <script src="js/analytics.js"></script>
-    <script src="js/admin.js"></script>
+    <script src="js/main.js"></script>
     <script src="js/fileManager.js"></script>
+    <script src="js/admin.js"></script>
     <script src="js/delivery.js"></script>
     <script src="js/driver.js"></script>
-    <script src="js/main.js"></script>
+    <script src="js/analytics.js"></script>
+
+    <!-- Status Update Function -->
+    <script>
+        async function updateJobFileStatus(status) {
+            if (!window.currentFileId) {
+                window.mainModule.showNotification('No job file loaded', 'error');
+                return;
+            }
+            
+            const currentUser = window.authModule.getCurrentUser();
+            const userRole = window.authModule.getUserRole();
+            
+            if (userRole !== 'admin' && userRole !== 'checker') {
+                window.mainModule.showNotification('Access denied. Admin or Checker privileges required.', 'error');
+                return;
+            }
+            
+            try {
+                await firebase.firestore().collection('jobFiles').doc(window.currentFileId).update({
+                    status: status,
+                    statusUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    statusUpdatedBy: currentUser.uid
+                });
+                
+                window.mainModule.showNotification(`Job file ${status} successfully!`, 'success');
+                
+                // Add visual stamp
+                addStatusStamp(status);
+                
+            } catch (error) {
+                console.error('Error updating status:', error);
+                window.mainModule.showNotification('Error updating status', 'error');
+            }
+        }
+        
+        function addStatusStamp(status) {
+            // Remove existing stamps
+            const existingStamps = document.querySelectorAll('.stamp');
+            existingStamps.forEach(stamp => stamp.remove());
+            
+            // Add new stamp
+            const stamp = document.createElement('div');
+            stamp.className = `stamp stamp-${status}`;
+            stamp.textContent = status;
+            stamp.style.display = 'block';
+            
+            const container = document.querySelector('.container');
+            container.style.position = 'relative';
+            container.appendChild(stamp);
+        }
+    </script>
 </body>
 </html>

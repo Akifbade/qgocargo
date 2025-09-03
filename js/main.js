@@ -52,7 +52,25 @@ function autoSave() {
 
 // Load job files
 async function loadJobFiles() {
+    console.log('loadJobFiles called');
+    
+    // Check if Firebase is initialized
+    if (typeof firebase === 'undefined') {
+        console.error('Firebase is not loaded');
+        showNotification('Firebase is not loaded. Please refresh the page.', 'error');
+        return;
+    }
+    
+    // Check if Firestore is available
+    if (!firebase.firestore) {
+        console.error('Firestore is not available');
+        showNotification('Firestore is not available. Please check Firebase configuration.', 'error');
+        return;
+    }
+    
     const currentUser = window.authModule.getCurrentUser();
+    console.log('Current user from authModule:', currentUser);
+    
     if (!currentUser) {
         console.log('User not authenticated, skipping job files load');
         return;
@@ -60,6 +78,8 @@ async function loadJobFiles() {
     
     // Double-check Firebase auth state
     const firebaseUser = firebase.auth().currentUser;
+    console.log('Firebase auth currentUser:', firebaseUser);
+    
     if (!firebaseUser) {
         console.log('Firebase user not ready, retrying...');
         setTimeout(loadJobFiles, 500);
@@ -67,21 +87,29 @@ async function loadJobFiles() {
     }
     
     try {
+        console.log('Attempting to load job files from Firestore...');
         const snapshot = await firebase.firestore().collection('jobFiles').orderBy('createdAt', 'desc').limit(10).get();
+        console.log('Firestore query successful, snapshot:', snapshot);
+        
         const jobFiles = [];
         
         snapshot.forEach(doc => {
             jobFiles.push({ id: doc.id, ...doc.data() });
         });
         
+        console.log('Job files loaded:', jobFiles);
+        
         // Update recent files dropdown or display
         updateRecentFiles(jobFiles);
         
     } catch (error) {
-        console.error('Error loading job files:', error);
+        console.error('Detailed error loading job files:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        
         // Only show notification if user is authenticated
         if (currentUser) {
-            showNotification('Error loading job files: ' + error.message, 'error');
+            showNotification('Error loading job files: ' + error.message + ' (Code: ' + error.code + ')', 'error');
         }
     }
 }
