@@ -395,14 +395,8 @@
     <!-- QR Code Library -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
-    <!-- Application Scripts -->
-    <script src="js/auth.js"></script>
-    <script src="js/main.js"></script>
-    <script src="js/fileManager.js"></script>
-    <script src="js/admin.js"></script>
-    <script src="js/delivery.js"></script>
-    <script src="js/driver.js"></script>
-    <script src="js/analytics.js"></script>
+    <!-- Single Application Script -->
+    <script src="script.js"></script>
 
     <!-- Status Update Function -->
     <script>
@@ -412,8 +406,18 @@
                 return;
             }
             
-            const currentUser = window.authModule.getCurrentUser();
-            const userRole = window.authModule.getUserRole();
+            // Status update is now handled in script.js
+            updateJobFileStatus(status);
+        }
+        
+        function addStatusStamp(status) {
+            // Status stamp is now handled in script.js
+            addStatusStamp(status);
+        }
+    </script>
+</body>
+</html>
+
             
             if (userRole !== 'admin' && userRole !== 'checker') {
                 window.mainModule.showNotification('Access denied. Admin or Checker privileges required.', 'error');
