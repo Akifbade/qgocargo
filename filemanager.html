@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Manager</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .page-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .file-manager-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .file-toolbar {
+            padding: 1.5rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .toolbar-left {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .toolbar-right {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        }
+
+        .search-box {
+            padding: 0.75rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            width: 250px;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .breadcrumb {
+            padding: 1rem 1.5rem;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .breadcrumb a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            padding: 1.5rem;
+        }
+
+        .file-list {
+            padding: 0;
+        }
+
+        .file-item {
+            background: white;
+            border: 2px solid #f1f3f4;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .file-item:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-item.selected {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .file-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #667eea;
+        }
+
+        .file-icon.folder {
+            color: #ffc107;
+        }
+
+        .file-icon.image {
+            color: #28a745;
+        }
+
+        .file-icon.document {
+            color: #dc3545;
+        }
+
+        .file-name {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            word-break: break-word;
+        }
+
+        .file-info {
+            font-size: 0.875rem;
+            color: #666;
+        }
+
+        .file-checkbox {
+            position: absolute;
+            top: 0.5rem;
+            left: 0.5rem;
+            width: 20px;
+            height: 20px;
+        }
+
+        .file-actions {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .file-item:hover .file-actions {
+            opacity: 1;
+        }
+
+        .action-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-left: 0.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            margin: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .upload-area input[type="file"] {
+            display: none;
+        }
+
+        .view-toggle {
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .view-toggle button {
+            background: none;
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .view-toggle button.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .list-view .file-grid {
+            display: block;
+        }
+
+        .list-view .file-item {
+            display: flex;
+            align-items: center;
+            text-align: left;
+            padding: 1rem 1.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+        }
+
+        .list-view .file-icon {
+            font-size: 1.5rem;
+            margin-right: 1rem;
+            margin-bottom: 0;
+        }
+
+        .list-view .file-info {
+            margin-left: auto;
+            display: flex;
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .file-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .toolbar-left,
+            .toolbar-right {
+                justify-content: center;
+            }
+            
+            .search-box {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <i class="fas fa-folder"></i> File Manager
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+                <li><a href="admin.html"><i class="fas fa-cog"></i> Admin Panel</a></li>
+                <li><a href="filemanager.html" class="active"><i class="fas fa-folder"></i> File Manager</a></li>
+                <li><a href="users.html"><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="settings.html"><i class="fas fa-sliders-h"></i> Settings</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>File Manager</h1>
+            <p>Upload, organize, and manage your files</p>
+        </div>
+
+        <div class="file-manager-container">
+            <div class="file-toolbar">
+                <div class="toolbar-left">
+                    <button class="btn" onclick="uploadFiles()">
+                        <i class="fas fa-upload"></i> Upload Files
+                    </button>
+                    <button class="btn btn-secondary" onclick="createFolder()">
+                        <i class="fas fa-folder-plus"></i> New Folder
+                    </button>
+                    <button class="btn btn-danger" onclick="deleteSelected()" id="deleteBtn" style="display: none;">
+                        <i class="fas fa-trash"></i> Delete Selected
+                    </button>
+                </div>
+                <div class="toolbar-right">
+                    <input type="text" class="search-box" placeholder="Search files..." id="searchBox" onkeyup="searchFiles()">
+                    <div class="view-toggle">
+                        <button class="active" onclick="toggleView('grid')">
+                            <i class="fas fa-th"></i>
+                        </button>
+                        <button onclick="toggleView('list')">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="breadcrumb" id="breadcrumb">
+                <i class="fas fa-home"></i>
+                <a href="#" onclick="navigateToFolder('')">Home</a>
+            </div>
+
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: #ccc; margin-bottom: 1rem;"></i>
+                <p>Click to upload files or drag and drop</p>
+                <input type="file" id="fileInput" multiple onchange="handleFileUpload(event)">
+            </div>
+
+            <div class="file-grid" id="fileGrid">
+                <!-- Files will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js';
+
+        // Use Firebase from main page or initialize if needed
+        const db = window.firebaseDb || getFirestore();
+        const storage = getStorage();
+
+        let currentFolder = '';
+        let selectedFiles = new Set();
+        let currentView = 'grid';
+
+        // File management functions
+        window.uploadFiles = function() {
+            document.getElementById('fileInput').click();
+        };
+
+        window.createFolder = async function() {
+            const folderName = prompt('Enter folder name:');
+            if (folderName) {
+                try {
+                    await addDoc(collection(db, 'files'), {
+                        name: folderName,
+                        type: 'folder',
+                        path: currentFolder,
+                        createdAt: new Date(),
+                        size: 0
+                    });
+                    loadFiles();
+                } catch (error) {
+                    console.error('Error creating folder:', error);
+                    alert('Error creating folder');
+                }
+            }
+        };
+
+        window.deleteSelected = async function() {
+            if (selectedFiles.size === 0) return;
+            
+            if (confirm(`Delete ${selectedFiles.size} selected items?`)) {
+                try {
+                    for (const fileId of selectedFiles) {
+                        await deleteDoc(doc(db, 'files', fileId));
+                    }
+                    selectedFiles.clear();
+                    loadFiles();
+                    updateDeleteButton();
+                } catch (error) {
+                    console.error('Error deleting files:', error);
+                    alert('Error deleting files');
+                }
+            }
+        };
+
+        window.searchFiles = function() {
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            const fileItems = document.querySelectorAll('.file-item');
+            
+            fileItems.forEach(item => {
+                const fileName = item.querySelector('.file-name').textContent.toLowerCase();
+                item.style.display = fileName.includes(searchTerm) ? 'block' : 'none';
+            });
+        };
+
+        window.toggleView = function(view) {
+            currentView = view;
+            const container = document.querySelector('.file-manager-container');
+            const buttons = document.querySelectorAll('.view-toggle button');
+            
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (view === 'list') {
+                container.classList.add('list-view');
+            } else {
+                container.classList.remove('list-view');
+            }
+        };
+
+        window.navigateToFolder = function(folderPath) {
+            currentFolder = folderPath;
+            loadFiles();
+            updateBreadcrumb();
+        };
+
+        window.handleFileUpload = async function(event) {
+            const files = event.target.files;
+            if (files.length === 0) return;
+
+            for (const file of files) {
+                try {
+                    // Upload file to Firebase Storage
+                    const storageRef = ref(storage, `files/${currentFolder}/${file.name}`);
+                    const snapshot = await uploadBytes(storageRef, file);
+                    const downloadURL = await getDownloadURL(snapshot.ref);
+
+                    // Save file metadata to Firestore
+                    await addDoc(collection(db, 'files'), {
+                        name: file.name,
+                        type: getFileType(file.name),
+                        path: currentFolder,
+                        size: file.size,
+                        downloadURL,
+                        createdAt: new Date()
+                    });
+                } catch (error) {
+                    console.error('Error uploading file:', error);
+                    alert(`Error uploading ${file.name}`);
+                }
+            }
+
+            loadFiles();
+            event.target.value = ''; // Reset file input
+        };
+
+        function getFileType(fileName) {
+            const extension = fileName.split('.').pop().toLowerCase();
+            const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'];
+            const documentTypes = ['pdf', 'doc', 'docx', 'txt', 'rtf'];
+            
+            if (imageTypes.includes(extension)) return 'image';
+            if (documentTypes.includes(extension)) return 'document';
+            return 'file';
+        }
+
+        function getFileIcon(type) {
+            switch (type) {
+                case 'folder': return 'fas fa-folder';
+                case 'image': return 'fas fa-image';
+                case 'document': return 'fas fa-file-alt';
+                default: return 'fas fa-file';
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function selectFile(fileId, event) {
+            event.stopPropagation();
+            const checkbox = event.target;
+            const fileItem = checkbox.closest('.file-item');
+            
+            if (checkbox.checked) {
+                selectedFiles.add(fileId);
+                fileItem.classList.add('selected');
+            } else {
+                selectedFiles.delete(fileId);
+                fileItem.classList.remove('selected');
+            }
+            
+            updateDeleteButton();
+        }
+
+        function updateDeleteButton() {
+            const deleteBtn = document.getElementById('deleteBtn');
+            deleteBtn.style.display = selectedFiles.size > 0 ? 'inline-flex' : 'none';
+        }
+
+        function updateBreadcrumb() {
+            const breadcrumb = document.getElementById('breadcrumb');
+            let html = '<i class="fas fa-home"></i><a href="#" onclick="navigateToFolder(\'\')">Home</a>';
+            
+            if (currentFolder) {
+                const folders = currentFolder.split('/').filter(f => f);
+                let path = '';
+                
+                folders.forEach(folder => {
+                    path += folder + '/';
+                    html += ` <i class="fas fa-chevron-right"></i> <a href="#" onclick="navigateToFolder('${path.slice(0, -1)}')">${folder}</a>`;
+                });
+            }
+            
+            breadcrumb.innerHTML = html;
+        }
+
+        async function loadFiles() {
+            try {
+                const filesQuery = query(
+                    collection(db, 'files'),
+                    where('path', '==', currentFolder)
+                );
+                
+                const filesSnapshot = await getDocs(filesQuery);
+                const files = [];
+                
+                filesSnapshot.forEach(doc => {
+                    files.push({ id: doc.id, ...doc.data() });
+                });
+
+                renderFiles(files);
+            } catch (error) {
+                console.error('Error loading files:', error);
+                document.getElementById('fileGrid').innerHTML = '<p>Error loading files</p>';
+            }
+        }
+
+        function renderFiles(files) {
+            const fileGrid = document.getElementById('fileGrid');
+            
+            if (files.length === 0) {
+                fileGrid.innerHTML = '<p style="text-align: center; padding: 2rem; color: #666;">No files in this folder</p>';
+                return;
+            }
+
+            const html = files.map(file => `
+                <div class="file-item" onclick="${file.type === 'folder' ? `navigateToFolder('${currentFolder}/${file.name}')` : `window.open('${file.downloadURL}', '_blank')`}">
+                    <input type="checkbox" class="file-checkbox" onclick="selectFile('${file.id}', event)">
+                    <div class="file-actions">
+                        <button class="action-btn" onclick="event.stopPropagation(); downloadFile('${file.downloadURL}', '${file.name}')" title="Download">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="action-btn" onclick="event.stopPropagation(); deleteFile('${file.id}')" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="file-icon ${file.type}">
+                        <i class="${getFileIcon(file.type)}"></i>
+                    </div>
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-info">
+                        <span>${formatFileSize(file.size || 0)}</span>
+                        <span>${file.createdAt?.toDate?.()?.toLocaleDateString() || 'Unknown'}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            fileGrid.innerHTML = html;
+        }
+
+        window.downloadFile = function(url, filename) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        };
+
+        window.deleteFile = async function(fileId) {
+            if (confirm('Delete this file?')) {
+                try {
+                    await deleteDoc(doc(db, 'files', fileId));
+                    loadFiles();
+                } catch (error) {
+                    console.error('Error deleting file:', error);
+                    alert('Error deleting file');
+                }
+            }
+        };
+
+        // Drag and drop functionality
+        const uploadArea = document.getElementById('uploadArea');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const fileInput = document.getElementById('fileInput');
+                fileInput.files = files;
+                handleFileUpload({ target: fileInput });
+            }
+        });
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFiles();
+            updateBreadcrumb();
+        });
+    </script>
+</body>
+</html>

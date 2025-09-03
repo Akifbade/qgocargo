@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .page-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .analytics-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 1rem;
+        }
+
+        .metric-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        .metric-change {
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .metric-change.positive {
+            color: #28a745;
+        }
+
+        .metric-change.negative {
+            color: #dc3545;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <i class="fas fa-chart-bar"></i> Analytics
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="analytics.html" class="active"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+                <li><a href="admin.html"><i class="fas fa-cog"></i> Admin Panel</a></li>
+                <li><a href="filemanager.html"><i class="fas fa-folder"></i> File Manager</a></li>
+                <li><a href="users.html"><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="settings.html"><i class="fas fa-sliders-h"></i> Settings</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>Analytics Dashboard</h1>
+            <p>Monitor your application's performance and user engagement</p>
+        </div>
+
+        <div class="analytics-grid">
+            <div class="analytics-card metric-card">
+                <div class="metric-value" id="totalVisitors">0</div>
+                <div class="metric-label">Total Visitors</div>
+                <div class="metric-change positive" id="visitorsChange">+0% from last month</div>
+            </div>
+
+            <div class="analytics-card metric-card">
+                <div class="metric-value" id="pageViews">0</div>
+                <div class="metric-label">Page Views</div>
+                <div class="metric-change positive" id="pageViewsChange">+0% from last month</div>
+            </div>
+
+            <div class="analytics-card metric-card">
+                <div class="metric-value" id="bounceRate">0%</div>
+                <div class="metric-label">Bounce Rate</div>
+                <div class="metric-change negative" id="bounceRateChange">-0% from last month</div>
+            </div>
+
+            <div class="analytics-card metric-card">
+                <div class="metric-value" id="avgSessionDuration">0m</div>
+                <div class="metric-label">Avg. Session Duration</div>
+                <div class="metric-change positive" id="sessionDurationChange">+0% from last month</div>
+            </div>
+        </div>
+
+        <div class="analytics-grid">
+            <div class="analytics-card">
+                <h3>Visitors Over Time</h3>
+                <div class="chart-container">
+                    <canvas id="visitorsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="analytics-card">
+                <h3>Page Views by Page</h3>
+                <div class="chart-container">
+                    <canvas id="pageViewsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="analytics-card">
+            <h3>Recent Activity</h3>
+            <div id="recentActivity" class="loading">Loading recent activity...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+        import { getFirestore, collection, getDocs, query, orderBy, limit, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+
+        // Use Firebase from main page or initialize if needed
+        const db = window.firebaseDb || getFirestore();
+
+        // Initialize Charts
+        let visitorsChart, pageViewsChart;
+
+        function initializeCharts() {
+            // Visitors Chart
+            const visitorsCtx = document.getElementById('visitorsChart').getContext('2d');
+            visitorsChart = new Chart(visitorsCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Visitors',
+                        data: [12, 19, 3, 5, 2, 3],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Page Views Chart
+            const pageViewsCtx = document.getElementById('pageViewsChart').getContext('2d');
+            pageViewsChart = new Chart(pageViewsCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Home', 'Analytics', 'Admin', 'Files', 'Users'],
+                    datasets: [{
+                        data: [30, 25, 20, 15, 10],
+                        backgroundColor: [
+                            '#667eea',
+                            '#764ba2',
+                            '#f093fb',
+                            '#f5576c',
+                            '#4facfe'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        async function loadAnalyticsData() {
+            try {
+                // Load analytics data from Firebase
+                const analyticsSnapshot = await getDocs(collection(db, 'analytics'));
+                
+                // Update metrics (example data)
+                document.getElementById('totalVisitors').textContent = '1,234';
+                document.getElementById('pageViews').textContent = '5,678';
+                document.getElementById('bounceRate').textContent = '32%';
+                document.getElementById('avgSessionDuration').textContent = '2m 45s';
+
+                // Load recent activity
+                loadRecentActivity();
+            } catch (error) {
+                console.error('Error loading analytics data:', error);
+            }
+        }
+
+        async function loadRecentActivity() {
+            try {
+                const activityContainer = document.getElementById('recentActivity');
+                
+                // Example recent activity data
+                const activities = [
+                    { action: 'User login', user: 'john@example.com', time: '2 minutes ago' },
+                    { action: 'File uploaded', user: 'jane@example.com', time: '5 minutes ago' },
+                    { action: 'Settings updated', user: 'admin@example.com', time: '10 minutes ago' }
+                ];
+
+                const table = document.createElement('table');
+                table.className = 'data-table';
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>User</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${activities.map(activity => `
+                            <tr>
+                                <td>${activity.action}</td>
+                                <td>${activity.user}</td>
+                                <td>${activity.time}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                `;
+
+                activityContainer.innerHTML = '';
+                activityContainer.appendChild(table);
+            } catch (error) {
+                console.error('Error loading recent activity:', error);
+                document.getElementById('recentActivity').innerHTML = 'Error loading activity data';
+            }
+        }
+
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeCharts();
+            loadAnalyticsData();
+        });
+    </script>
+</body>
+</html>

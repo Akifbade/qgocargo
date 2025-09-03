@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .page-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .admin-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .admin-card h3 {
+            margin-bottom: 1rem;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .system-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #28a745;
+        }
+
+        .status-indicator.warning {
+            background: #ffc107;
+        }
+
+        .status-indicator.error {
+            background: #dc3545;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-small {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .admin-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <i class="fas fa-cog"></i> Admin Panel
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+                <li><a href="admin.html" class="active"><i class="fas fa-cog"></i> Admin Panel</a></li>
+                <li><a href="filemanager.html"><i class="fas fa-folder"></i> File Manager</a></li>
+                <li><a href="users.html"><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="settings.html"><i class="fas fa-sliders-h"></i> Settings</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>Admin Panel</h1>
+            <p>Manage your system settings and configurations</p>
+        </div>
+
+        <div class="admin-grid">
+            <div class="admin-card">
+                <h3><i class="fas fa-server"></i> System Status</h3>
+                <div class="system-status">
+                    <div class="status-item">
+                        <span>Database</span>
+                        <div class="status-indicator" id="dbStatus"></div>
+                    </div>
+                    <div class="status-item">
+                        <span>Storage</span>
+                        <div class="status-indicator" id="storageStatus"></div>
+                    </div>
+                    <div class="status-item">
+                        <span>API</span>
+                        <div class="status-indicator" id="apiStatus"></div>
+                    </div>
+                    <div class="status-item">
+                        <span>Auth</span>
+                        <div class="status-indicator" id="authStatus"></div>
+                    </div>
+                </div>
+                <button class="btn" onclick="checkSystemStatus()">
+                    <i class="fas fa-sync-alt"></i> Refresh Status
+                </button>
+            </div>
+
+            <div class="admin-card">
+                <h3><i class="fas fa-database"></i> Database Management</h3>
+                <div class="form-group">
+                    <label>Backup Database</label>
+                    <button class="btn" onclick="backupDatabase()">
+                        <i class="fas fa-download"></i> Create Backup
+                    </button>
+                </div>
+                <div class="form-group">
+                    <label>Clear Cache</label>
+                    <button class="btn" onclick="clearCache()">
+                        <i class="fas fa-trash"></i> Clear All Cache
+                    </button>
+                </div>
+                <div class="form-group">
+                    <label>Optimize Database</label>
+                    <button class="btn" onclick="optimizeDatabase()">
+                        <i class="fas fa-tools"></i> Optimize
+                    </button>
+                </div>
+            </div>
+
+            <div class="admin-card">
+                <h3><i class="fas fa-shield-alt"></i> Security Settings</h3>
+                <div class="form-group">
+                    <label for="maxLoginAttempts">Max Login Attempts</label>
+                    <input type="number" id="maxLoginAttempts" value="5" min="1" max="10">
+                </div>
+                <div class="form-group">
+                    <label for="sessionTimeout">Session Timeout (minutes)</label>
+                    <input type="number" id="sessionTimeout" value="30" min="5" max="120">
+                </div>
+                <div class="form-group">
+                    <label for="enableTwoFactor">
+                        <input type="checkbox" id="enableTwoFactor"> Enable Two-Factor Authentication
+                    </label>
+                </div>
+                <button class="btn" onclick="updateSecuritySettings()">
+                    <i class="fas fa-save"></i> Save Security Settings
+                </button>
+            </div>
+
+            <div class="admin-card">
+                <h3><i class="fas fa-envelope"></i> Email Configuration</h3>
+                <div class="form-group">
+                    <label for="smtpServer">SMTP Server</label>
+                    <input type="text" id="smtpServer" placeholder="smtp.example.com">
+                </div>
+                <div class="form-group">
+                    <label for="smtpPort">SMTP Port</label>
+                    <input type="number" id="smtpPort" value="587">
+                </div>
+                <div class="form-group">
+                    <label for="emailFrom">From Email</label>
+                    <input type="email" id="emailFrom" placeholder="noreply@example.com">
+                </div>
+                <button class="btn" onclick="updateEmailSettings()">
+                    <i class="fas fa-save"></i> Save Email Settings
+                </button>
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <h3><i class="fas fa-history"></i> Recent Admin Actions</h3>
+            <div id="adminActions">Loading admin actions...</div>
+        </div>
+
+        <div class="admin-card">
+            <h3><i class="fas fa-exclamation-triangle"></i> System Maintenance</h3>
+            <p style="margin-bottom: 1rem; color: #666;">
+                Use these tools carefully. Some actions cannot be undone.
+            </p>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button class="btn btn-danger" onclick="confirmAction('maintenance')">
+                    <i class="fas fa-tools"></i> Enable Maintenance Mode
+                </button>
+                <button class="btn btn-danger" onclick="confirmAction('reset')">
+                    <i class="fas fa-redo"></i> Reset System Settings
+                </button>
+                <button class="btn btn-danger" onclick="confirmAction('logs')">
+                    <i class="fas fa-trash"></i> Clear System Logs
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+
+        // Use Firebase from main page or initialize if needed
+        const db = window.firebaseDb || getFirestore();
+
+        // Admin functions
+        window.checkSystemStatus = async function() {
+            try {
+                // Simulate system status checks
+                document.getElementById('dbStatus').className = 'status-indicator';
+                document.getElementById('storageStatus').className = 'status-indicator';
+                document.getElementById('apiStatus').className = 'status-indicator';
+                document.getElementById('authStatus').className = 'status-indicator';
+
+                // Log admin action
+                await logAdminAction('System status checked');
+            } catch (error) {
+                console.error('Error checking system status:', error);
+            }
+        };
+
+        window.backupDatabase = async function() {
+            try {
+                // Simulate database backup
+                alert('Database backup initiated. You will receive an email when complete.');
+                await logAdminAction('Database backup initiated');
+            } catch (error) {
+                console.error('Error backing up database:', error);
+            }
+        };
+
+        window.clearCache = async function() {
+            try {
+                // Simulate cache clearing
+                alert('Cache cleared successfully.');
+                await logAdminAction('System cache cleared');
+            } catch (error) {
+                console.error('Error clearing cache:', error);
+            }
+        };
+
+        window.optimizeDatabase = async function() {
+            try {
+                // Simulate database optimization
+                alert('Database optimization completed.');
+                await logAdminAction('Database optimized');
+            } catch (error) {
+                console.error('Error optimizing database:', error);
+            }
+        };
+
+        window.updateSecuritySettings = async function() {
+            try {
+                const maxAttempts = document.getElementById('maxLoginAttempts').value;
+                const sessionTimeout = document.getElementById('sessionTimeout').value;
+                const twoFactor = document.getElementById('enableTwoFactor').checked;
+
+                // Save security settings to Firebase
+                await addDoc(collection(db, 'settings'), {
+                    type: 'security',
+                    maxLoginAttempts: parseInt(maxAttempts),
+                    sessionTimeout: parseInt(sessionTimeout),
+                    twoFactorEnabled: twoFactor,
+                    updatedAt: new Date()
+                });
+
+                alert('Security settings updated successfully.');
+                await logAdminAction('Security settings updated');
+            } catch (error) {
+                console.error('Error updating security settings:', error);
+            }
+        };
+
+        window.updateEmailSettings = async function() {
+            try {
+                const smtpServer = document.getElementById('smtpServer').value;
+                const smtpPort = document.getElementById('smtpPort').value;
+                const emailFrom = document.getElementById('emailFrom').value;
+
+                // Save email settings to Firebase
+                await addDoc(collection(db, 'settings'), {
+                    type: 'email',
+                    smtpServer,
+                    smtpPort: parseInt(smtpPort),
+                    emailFrom,
+                    updatedAt: new Date()
+                });
+
+                alert('Email settings updated successfully.');
+                await logAdminAction('Email settings updated');
+            } catch (error) {
+                console.error('Error updating email settings:', error);
+            }
+        };
+
+        window.confirmAction = async function(action) {
+            const actions = {
+                maintenance: 'enable maintenance mode',
+                reset: 'reset all system settings',
+                logs: 'clear all system logs'
+            };
+
+            if (confirm(`Are you sure you want to ${actions[action]}? This action cannot be undone.`)) {
+                alert(`${actions[action]} completed.`);
+                await logAdminAction(`${actions[action]} executed`);
+            }
+        };
+
+        async function logAdminAction(action) {
+            try {
+                await addDoc(collection(db, 'adminActions'), {
+                    action,
+                    timestamp: new Date(),
+                    user: 'admin@example.com' // Replace with actual user
+                });
+                loadAdminActions();
+            } catch (error) {
+                console.error('Error logging admin action:', error);
+            }
+        }
+
+        async function loadAdminActions() {
+            try {
+                const actionsQuery = query(
+                    collection(db, 'adminActions'),
+                    orderBy('timestamp', 'desc'),
+                    limit(10)
+                );
+                
+                const actionsSnapshot = await getDocs(actionsQuery);
+                const actions = [];
+                
+                actionsSnapshot.forEach(doc => {
+                    actions.push(doc.data());
+                });
+
+                const actionsContainer = document.getElementById('adminActions');
+                if (actions.length === 0) {
+                    actionsContainer.innerHTML = '<p>No recent admin actions.</p>';
+                    return;
+                }
+
+                const table = document.createElement('table');
+                table.className = 'data-table';
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>User</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${actions.map(action => `
+                            <tr>
+                                <td>${action.action}</td>
+                                <td>${action.user}</td>
+                                <td>${action.timestamp?.toDate?.()?.toLocaleString() || 'Unknown'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                `;
+
+                actionsContainer.innerHTML = '';
+                actionsContainer.appendChild(table);
+            } catch (error) {
+                console.error('Error loading admin actions:', error);
+                document.getElementById('adminActions').innerHTML = 'Error loading admin actions.';
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            checkSystemStatus();
+            loadAdminActions();
+        });
+    </script>
+</body>
+</html>
