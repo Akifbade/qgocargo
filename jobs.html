@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Management</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .page-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .jobs-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .jobs-toolbar {
+            padding: 1.5rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        }
+
+        .job-form {
+            padding: 2rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .jobs-list {
+            padding: 0;
+        }
+
+        .job-item {
+            padding: 1.5rem;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.3s ease;
+        }
+
+        .job-item:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .job-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .job-company {
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .job-meta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .job-meta span {
+            background: #f8f9fa;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            color: #666;
+        }
+
+        .job-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .job-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-small {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-closed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-draft {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #333;
+        }
+
+        .close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .job-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .job-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <i class="fas fa-briefcase"></i> Job Management
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+                <li><a href="admin.html"><i class="fas fa-cog"></i> Admin Panel</a></li>
+                <li><a href="filemanager.html"><i class="fas fa-folder"></i> File Manager</a></li>
+                <li><a href="users.html"><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="jobs.html" class="active"><i class="fas fa-briefcase"></i> Jobs</a></li>
+                <li><a href="settings.html"><i class="fas fa-sliders-h"></i> Settings</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>Job Management</h1>
+            <p>Create, manage, and track job postings</p>
+        </div>
+
+        <div class="jobs-container">
+            <div class="jobs-toolbar">
+                <h3>Job Postings</h3>
+                <button class="btn" onclick="openJobModal()">
+                    <i class="fas fa-plus"></i> Create Job
+                </button>
+            </div>
+
+            <div class="jobs-list" id="jobsList">
+                <!-- Jobs will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Modal -->
+    <div id="jobModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Create Job</h2>
+                <button class="close" onclick="closeJobModal()">&times;</button>
+            </div>
+            <form id="jobForm" onsubmit="saveJob(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="jobTitle">Job Title</label>
+                        <input type="text" id="jobTitle" required placeholder="e.g. Senior Developer">
+                    </div>
+                    <div class="form-group">
+                        <label for="jobCompany">Company</label>
+                        <input type="text" id="jobCompany" required placeholder="Company name">
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="jobLocation">Location</label>
+                        <input type="text" id="jobLocation" placeholder="e.g. New York, NY">
+                    </div>
+                    <div class="form-group">
+                        <label for="jobType">Job Type</label>
+                        <select id="jobType" required>
+                            <option value="">Select Type</option>
+                            <option value="full-time">Full Time</option>
+                            <option value="part-time">Part Time</option>
+                            <option value="contract">Contract</option>
+                            <option value="freelance">Freelance</option>
+                            <option value="internship">Internship</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="jobSalary">Salary Range</label>
+                        <input type="text" id="jobSalary" placeholder="e.g. $80,000 - $120,000">
+                    </div>
+                    <div class="form-group">
+                        <label for="jobStatus">Status</label>
+                        <select id="jobStatus" required>
+                            <option value="draft">Draft</option>
+                            <option value="active">Active</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="jobDescription">Job Description</label>
+                    <textarea id="jobDescription" required placeholder="Describe the job responsibilities, requirements, and qualifications..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="jobRequirements">Requirements</label>
+                    <textarea id="jobRequirements" placeholder="List the required skills, experience, and qualifications..."></textarea>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeJobModal()">Cancel</button>
+                    <button type="submit" class="btn">Save Job</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
+
+        // Use Firebase from main page or initialize if needed
+        const db = window.firebaseDb || getFirestore();
+        const auth = getAuth();
+
+        let jobs = [];
+        let editingJobId = null;
+
+        // Check authentication
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+            } else {
+                loadJobs();
+            }
+        });
+
+        // Job management functions
+        window.openJobModal = function() {
+            editingJobId = null;
+            document.getElementById('modalTitle').textContent = 'Create Job';
+            document.getElementById('jobForm').reset();
+            document.getElementById('jobModal').style.display = 'block';
+        };
+
+        window.closeJobModal = function() {
+            document.getElementById('jobModal').style.display = 'none';
+            editingJobId = null;
+        };
+
+        window.editJob = function(jobId) {
+            const job = jobs.find(j => j.id === jobId);
+            if (job) {
+                editingJobId = jobId;
+                document.getElementById('modalTitle').textContent = 'Edit Job';
+                document.getElementById('jobTitle').value = job.title;
+                document.getElementById('jobCompany').value = job.company;
+                document.getElementById('jobLocation').value = job.location || '';
+                document.getElementById('jobType').value = job.type;
+                document.getElementById('jobSalary').value = job.salary || '';
+                document.getElementById('jobStatus').value = job.status;
+                document.getElementById('jobDescription').value = job.description;
+                document.getElementById('jobRequirements').value = job.requirements || '';
+                document.getElementById('jobModal').style.display = 'block';
+            }
+        };
+
+        window.deleteJob = async function(jobId) {
+            if (confirm('Are you sure you want to delete this job?')) {
+                try {
+                    await deleteDoc(doc(db, 'jobs', jobId));
+                    loadJobs();
+                } catch (error) {
+                    console.error('Error deleting job:', error);
+                    alert('Error deleting job');
+                }
+            }
+        };
+
+        window.saveJob = async function(event) {
+            event.preventDefault();
+            
+            const jobData = {
+                title: document.getElementById('jobTitle').value,
+                company: document.getElementById('jobCompany').value,
+                location: document.getElementById('jobLocation').value,
+                type: document.getElementById('jobType').value,
+                salary: document.getElementById('jobSalary').value,
+                status: document.getElementById('jobStatus').value,
+                description: document.getElementById('jobDescription').value,
+                requirements: document.getElementById('jobRequirements').value,
+                updatedAt: new Date()
+            };
+
+            if (!editingJobId) {
+                jobData.createdAt = new Date();
+                jobData.createdBy = auth.currentUser.uid;
+            }
+
+            try {
+                if (editingJobId) {
+                    await updateDoc(doc(db, 'jobs', editingJobId), jobData);
+                } else {
+                    await addDoc(collection(db, 'jobs'), jobData);
+                }
+                
+                closeJobModal();
+                loadJobs();
+            } catch (error) {
+                console.error('Error saving job:', error);
+                alert('Error saving job');
+            }
+        };
+
+        async function loadJobs() {
+            try {
+                const jobsQuery = query(collection(db, 'jobs'), orderBy('createdAt', 'desc'));
+                const jobsSnapshot = await getDocs(jobsQuery);
+                jobs = [];
+                
+                jobsSnapshot.forEach(doc => {
+                    jobs.push({ id: doc.id, ...doc.data() });
+                });
+
+                renderJobs();
+            } catch (error) {
+                console.error('Error loading jobs:', error);
+                document.getElementById('jobsList').innerHTML = '<div style="padding: 2rem; text-align: center; color: #666;">Error loading jobs</div>';
+            }
+        }
+
+        function renderJobs() {
+            const jobsList = document.getElementById('jobsList');
+            
+            if (jobs.length === 0) {
+                jobsList.innerHTML = '<div style="padding: 2rem; text-align: center; color: #666;">No jobs posted yet. Create your first job posting!</div>';
+                return;
+            }
+
+            const html = jobs.map(job => `
+                <div class="job-item">
+                    <div class="job-header">
+                        <div>
+                            <div class="job-title">${job.title}</div>
+                            <div class="job-company">${job.company}</div>
+                        </div>
+                        <span class="status-badge status-${job.status}">
+                            ${job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                        </span>
+                    </div>
+                    <div class="job-meta">
+                        ${job.location ? `<span><i class="fas fa-map-marker-alt"></i> ${job.location}</span>` : ''}
+                        <span><i class="fas fa-clock"></i> ${job.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                        ${job.salary ? `<span><i class="fas fa-dollar-sign"></i> ${job.salary}</span>` : ''}
+                        <span><i class="fas fa-calendar"></i> ${job.createdAt?.toDate?.()?.toLocaleDateString() || 'Unknown'}</span>
+                    </div>
+                    <div class="job-description">
+                        ${job.description.length > 200 ? job.description.substring(0, 200) + '...' : job.description}
+                    </div>
+                    <div class="job-actions">
+                        <button class="btn btn-small btn-secondary" onclick="editJob('${job.id}')">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-small btn-danger" onclick="deleteJob('${job.id}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            jobsList.innerHTML = html;
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('jobModal');
+            if (event.target === modal) {
+                closeJobModal();
+            }
+        };
+    </script>
+</body>
+</html>

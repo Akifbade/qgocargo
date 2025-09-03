@@ -378,6 +378,7 @@
                 <li><a href="admin.html"><i class="fas fa-cog"></i> Admin Panel</a></li>
                 <li><a href="filemanager.html" class="active"><i class="fas fa-folder"></i> File Manager</a></li>
                 <li><a href="users.html"><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="jobs.html"><i class="fas fa-briefcase"></i> Jobs</a></li>
                 <li><a href="settings.html"><i class="fas fa-sliders-h"></i> Settings</a></li>
             </ul>
         </nav>
@@ -436,10 +437,22 @@
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
         import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
 
         // Use Firebase from main page or initialize if needed
         const db = window.firebaseDb || getFirestore();
         const storage = getStorage();
+        const auth = getAuth();
+
+        // Check authentication
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+            } else {
+                loadFiles();
+                updateBreadcrumb();
+            }
+        });
 
         let currentFolder = '';
         let selectedFiles = new Set();
@@ -713,10 +726,6 @@
         });
 
         // Initialize page
-        document.addEventListener('DOMContentLoaded', () => {
-            loadFiles();
-            updateBreadcrumb();
-        });
     </script>
 </body>
 </html>

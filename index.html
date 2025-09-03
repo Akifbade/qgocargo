@@ -195,7 +195,9 @@
                 <li><a href="admin.html"><i class="fas fa-cog"></i> Admin Panel</a></li>
                 <li><a href="filemanager.html"><i class="fas fa-folder"></i> File Manager</a></li>
                 <li><a href="users.html"><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="jobs.html"><i class="fas fa-briefcase"></i> Jobs</a></li>
                 <li><a href="settings.html"><i class="fas fa-sliders-h"></i> Settings</a></li>
+                <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </nav>
     </header>
@@ -258,6 +260,14 @@
                 <p>Manage user accounts, permissions, and access controls</p>
             </div>
 
+            <div class="feature-card" onclick="window.location.href='jobs.html'">
+                <div class="feature-icon">
+                    <i class="fas fa-briefcase"></i>
+                </div>
+                <h3>Job Management</h3>
+                <p>Create, manage, and track job postings and applications</p>
+            </div>
+
             <div class="feature-card" onclick="window.location.href='reports.html'">
                 <div class="feature-icon">
                     <i class="fas fa-file-alt"></i>
@@ -280,7 +290,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
         import { getFirestore, collection, getDocs, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
-        import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
+        import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
 
         // Your Firebase configuration (keep your existing config)
         const firebaseConfig = {
@@ -297,6 +307,25 @@
         window.firebaseDb = db;
         window.firebaseAuth = auth;
 
+        // Check authentication
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+            } else {
+                loadDashboardStats();
+            }
+        });
+
+        // Logout function
+        window.logout = async function() {
+            try {
+                await signOut(auth);
+                window.location.href = 'login.html';
+            } catch (error) {
+                console.error('Error signing out:', error);
+            }
+        };
+
         // Load dashboard stats
         async function loadDashboardStats() {
             try {
@@ -308,14 +337,20 @@
                 const filesSnapshot = await getDocs(collection(db, 'files'));
                 document.getElementById('totalFiles').textContent = filesSnapshot.size;
 
-                // You can add more stats loading here
+                // Load jobs count
+                const jobsSnapshot = await getDocs(collection(db, 'jobs'));
+                document.getElementById('totalViews').textContent = jobsSnapshot.size;
+
+                // Update system status
+                document.getElementById('systemStatus').textContent = 'Online';
             } catch (error) {
                 console.error('Error loading dashboard stats:', error);
+                // Set default values on error
+                document.getElementById('totalUsers').textContent = '0';
+                document.getElementById('totalFiles').textContent = '0';
+                document.getElementById('totalViews').textContent = '0';
             }
         }
-
-        // Load stats when page loads
-        document.addEventListener('DOMContentLoaded', loadDashboardStats);
     </script>
 </body>
 </html>

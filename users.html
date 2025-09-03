@@ -408,6 +408,7 @@
                 <li><a href="admin.html"><i class="fas fa-cog"></i> Admin Panel</a></li>
                 <li><a href="filemanager.html"><i class="fas fa-folder"></i> File Manager</a></li>
                 <li><a href="users.html" class="active"><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="jobs.html"><i class="fas fa-briefcase"></i> Jobs</a></li>
                 <li><a href="settings.html"><i class="fas fa-sliders-h"></i> Settings</a></li>
             </ul>
         </nav>
@@ -504,9 +505,20 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
         import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, limit, startAfter } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
 
         // Use Firebase from main page or initialize if needed
         const db = window.firebaseDb || getFirestore();
+        const auth = getAuth();
+
+        // Check authentication
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+            } else {
+                loadUsers();
+            }
+        });
 
         let users = [];
         let filteredUsers = [];
@@ -735,9 +747,6 @@
         };
 
         // Initialize page
-        document.addEventListener('DOMContentLoaded', () => {
-            loadUsers();
-        });
     </script>
 </body>
 </html>
