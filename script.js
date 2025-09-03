@@ -1909,13 +1909,31 @@ async function shareDeliveryReceipt() {
 }
 
 function loadDeliveryRequests() {
-    if (!db) return;
-    const deliveryRef = collection(db, 'delivery_requests');
+    if (!db || !currentUser) return;
+    const deliveryRequestsCollection = collection(db, 'delivery_requests');
     
-    onSnapshot(query(deliveryRef), (querySnapshot) => {
+    // Only load delivery requests if user has appropriate role
+    if (!['admin', 'driver'].includes(currentUser.role)) {
+        return;
+    }
+    
+    let q;
+    if (currentUser.role === 'driver') {
+        // Drivers only see their assigned requests
+        q = query(deliveryRequestsCollection, where('assignedDriver', '==', currentUser.displayName));
+    } else {
+        // Admins see all requests
+        q = query(deliveryRequestsCollection);
+    }
+    
+    onSnapshot(q, (querySnapshot) => {
         deliveryRequests = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     }, (error) => {
         console.error("Error loading delivery requests:", error);
+        // Only show error if user should have access
+        if (['admin', 'driver'].includes(currentUser?.role)) {
+            showNotification("Error loading delivery requests.", true);
+        }
     });
 }
 
