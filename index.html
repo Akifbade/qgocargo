@@ -174,6 +174,9 @@
                 <div id="approval-message" class="hidden p-4 text-center text-yellow-800 bg-yellow-100 rounded-lg">
                     Your account is awaiting admin approval.
                 </div>
+                 <div id="blocked-message" class="hidden p-4 text-center text-red-800 bg-red-100 rounded-lg">
+                    Your account has been blocked by an administrator.
+                </div>
                 <div class="rounded-md shadow-sm -space-y-px">
                     <div id="signup-name-field">
                         <label for="full-name" class="sr-only">Full Name</label>
@@ -235,7 +238,7 @@
                 </div>
                  <div class="flex-grow text-center">
                      <button onclick="openAnalyticsDashboard()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-5 rounded-md text-base">Analytics</button>
-                </div>
+                 </div>
                 <div>
                     <button id="activity-log-btn" class="admin-only bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Activity Log</button>
                     <button id="admin-panel-btn" class="admin-only bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Admin Panel</button>
@@ -324,8 +327,8 @@
             <div class="flex justify-between items-center mb-2">
                  <h2 class="text-xl font-semibold text-gray-800">Charges</h2>
                  <div>
-                    <button onclick="openChargeManager()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded-lg text-sm transition-transform transform hover:scale-105 mr-2">Manage Descriptions</button>
-                    <button onclick="suggestCharges()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1 px-3 rounded-lg text-sm transition-transform transform hover:scale-105">Suggest Charges ✨</button>
+                     <button onclick="openChargeManager()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded-lg text-sm transition-transform transform hover:scale-105 mr-2">Manage Descriptions</button>
+                     <button onclick="suggestCharges()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1 px-3 rounded-lg text-sm transition-transform transform hover:scale-105">Suggest Charges ✨</button>
                  </div>
             </div>
             <div class="mb-6 overflow-x-auto border border-gray-200 rounded-lg">
@@ -756,6 +759,15 @@
                         if (currentUser.status === 'inactive') {
                             showLogin();
                             document.getElementById('approval-message').style.display = 'block';
+                            document.getElementById('blocked-message').style.display = 'none';
+                            signOut(auth);
+                            return;
+                        }
+
+                        if (currentUser.status === 'blocked') {
+                            showLogin();
+                            document.getElementById('approval-message').style.display = 'none';
+                            document.getElementById('blocked-message').style.display = 'block';
                             signOut(auth);
                             return;
                         }
@@ -1415,9 +1427,9 @@
                     <div class="flex items-center justify-center gap-4">
                          <label for="analytics-date-type" class="text-sm font-medium">Report Date Type:</label>
                          <select id="analytics-date-type" class="input-field w-auto">
-                            <option value="bd">Billing Date</option>
-                            <option value="d">Opening Date</option>
-                        </select>
+                             <option value="bd">Billing Date</option>
+                             <option value="d">Opening Date</option>
+                         </select>
                     </div>
                     <div class="flex justify-center flex-wrap gap-2">
                         <button data-timeframe="all" class="timeframe-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">All Time</button>
@@ -1427,17 +1439,17 @@
                 </div>
                  <p class="text-center text-gray-500 mt-8">No data available for the selected period.</p>`;
                 
-                document.querySelectorAll('.timeframe-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const timeframe = e.target.dataset.timeframe;
-                        const dateType = document.getElementById('analytics-date-type').value;
-                        filterAnalyticsByTimeframe(timeframe, dateType);
-                    });
-                });
+                 document.querySelectorAll('.timeframe-btn').forEach(btn => {
+                     btn.addEventListener('click', (e) => {
+                         const timeframe = e.target.dataset.timeframe;
+                         const dateType = document.getElementById('analytics-date-type').value;
+                         filterAnalyticsByTimeframe(timeframe, dateType);
+                     });
+                 });
                  document.getElementById('analytics-date-type').addEventListener('change', (e) => {
                       const activeTimeframeButton = document.querySelector('.timeframe-btn.bg-indigo-700') || document.querySelector('[data-timeframe="all"]');
                       filterAnalyticsByTimeframe(activeTimeframeButton.dataset.timeframe, e.target.value);
-                });
+                 });
                  return;
             }
 
@@ -1600,7 +1612,7 @@
                                         label += ': ';
                                     }
                                     if (context.parsed.y !== null) {
-                                        label += 'KD ' + context.parsed.y.toFixed(2);
+                                        label += 'KD ' + context.parsed.y.toFixed(3);
                                     }
                                     return label;
                                 }
@@ -1660,9 +1672,9 @@
                     <div class="flex items-center justify-center gap-4">
                          <label for="analytics-date-type" class="text-sm font-medium">Report Date Type:</label>
                          <select id="analytics-date-type" class="input-field w-auto">
-                            <option value="bd" ${monthlyReportType === 'bd' ? 'selected' : ''}>Billing Date</option>
-                            <option value="d" ${monthlyReportType === 'd' ? 'selected' : ''}>Opening Date</option>
-                        </select>
+                             <option value="bd" ${monthlyReportType === 'bd' ? 'selected' : ''}>Billing Date</option>
+                             <option value="d" ${monthlyReportType === 'd' ? 'selected' : ''}>Opening Date</option>
+                         </select>
                     </div>
                     <div class="flex justify-center flex-wrap gap-2">
                         <button data-timeframe="all" class="timeframe-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">All Time</button>
@@ -1676,9 +1688,9 @@
                 <!-- Overall Summary -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-center mt-6">
                     <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Total Jobs</p><p class="text-2xl font-bold">${data.totalJobs}</p></div>
-                    <div class="bg-blue-100 p-4 rounded-lg"><p class="text-sm text-blue-800">Total Revenue</p><p class="text-2xl font-bold text-blue-900">KD ${data.totalRevenue.toFixed(2)}</p></div>
-                    <div class="bg-red-100 p-4 rounded-lg"><p class="text-sm text-red-800">Total Cost</p><p class="text-2xl font-bold text-red-900">KD ${data.totalCost.toFixed(2)}</p></div>
-                    <div class="bg-green-100 p-4 rounded-lg"><p class="text-sm text-green-800">Total Profit</p><p class="text-2xl font-bold text-green-900">KD ${data.totalProfit.toFixed(2)}</p></div>
+                    <div class="bg-blue-100 p-4 rounded-lg"><p class="text-sm text-blue-800">Total Revenue</p><p class="text-2xl font-bold text-blue-900">KD ${data.totalRevenue.toFixed(3)}</p></div>
+                    <div class="bg-red-100 p-4 rounded-lg"><p class="text-sm text-red-800">Total Cost</p><p class="text-2xl font-bold text-red-900">KD ${data.totalCost.toFixed(3)}</p></div>
+                    <div class="bg-green-100 p-4 rounded-lg"><p class="text-sm text-green-800">Total Profit</p><p class="text-2xl font-bold text-green-900">KD ${data.totalProfit.toFixed(3)}</p></div>
                 </div>
                  <!-- Profit Chart -->
                  <div class="bg-white p-4 rounded-lg shadow-sm">
@@ -1692,27 +1704,27 @@
                     <div>
                         <h4 class="text-lg font-semibold mb-2">Top Profitable Shippers</h4>
                         <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>Shipper</th><th>Total Profit</th></tr></thead>
-                        <tbody>${data.profitByShipper.slice(0, 5).map(([name, profit]) => `<tr><td>${name}</td><td>KD ${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table></div>
+                        <tbody>${data.profitByShipper.slice(0, 5).map(([name, profit]) => `<tr><td>${name}</td><td>KD ${profit.toFixed(3)}</td></tr>`).join('')}</tbody></table></div>
                     </div>
                     <div>
                         <h4 class="text-lg font-semibold mb-2">Top Profitable Consignees</h4>
                         <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>Consignee</th><th>Total Profit</th></tr></thead>
-                        <tbody>${data.profitByConsignee.slice(0, 5).map(([name, profit]) => `<tr><td>${name}</td><td>KD ${profit.toFixed(2)}</td></tr>`).join('')}</tbody></table></div>
+                        <tbody>${data.profitByConsignee.slice(0, 5).map(([name, profit]) => `<tr><td>${name}</td><td>KD ${profit.toFixed(3)}</td></tr>`).join('')}</tbody></table></div>
                     </div>
                      <div>
                         <h4 class="text-lg font-semibold mb-2">Top Salesmen by Profit</h4>
                         <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>Salesman</th><th>Files</th><th>Profit</th><th>Actions</th></tr></thead>
-                        <tbody>${data.profitBySalesman.slice(0, 5).map(([name, stats]) => `<tr><td>${name}</td><td>${stats.count}</td><td>KD ${stats.profit.toFixed(2)}</td><td><button data-action="view-salesman-jobs" data-salesman="${name}" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-2 rounded text-xs">View Jobs</button></td></tr>`).join('')}</tbody></table></div>
+                        <tbody>${data.profitBySalesman.slice(0, 5).map(([name, stats]) => `<tr><td>${name}</td><td>${stats.count}</td><td>KD ${stats.profit.toFixed(3)}</td><td><button data-action="view-salesman-jobs" data-salesman="${name}" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-2 rounded text-xs">View Jobs</button></td></tr>`).join('')}</tbody></table></div>
                     </div>
                     <div class="lg:col-span-3">
                          <h4 class="text-lg font-semibold mb-2">${monthlyReportTitle}</h4>
                         <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>Month</th><th>Total Jobs</th><th>Total Profit / Loss</th><th>Actions</th></tr></thead>
-                        <tbody>${monthlyStats.map(([month, stats]) => `<tr><td>${month}</td><td>${stats.count}</td><td>KD ${stats.profit.toFixed(2)}</td><td><button data-action="view-monthly-jobs" data-month="${month}" data-datetype="${monthlyReportType}" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-2 rounded text-xs">View Jobs</button></td></tr>`).join('')}</tbody></table></div>
+                        <tbody>${monthlyStats.map(([month, stats]) => `<tr><td>${month}</td><td>${stats.count}</td><td>KD ${stats.profit.toFixed(3)}</td><td><button data-action="view-monthly-jobs" data-month="${month}" data-datetype="${monthlyReportType}" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-2 rounded text-xs">View Jobs</button></td></tr>`).join('')}</tbody></table></div>
                     </div>
                      <div class="lg:col-span-3">
                         <h4 class="text-lg font-semibold mb-2">Top Users by Profit</h4>
                         <div class="overflow-x-auto"><table class="analytics-table w-full"><thead><tr><th>User</th><th>Files</th><th>Profit</th><th>Actions</th></tr></thead>
-                        <tbody>${data.profitByUser.map(([name, stats]) => `<tr><td>${name}</td><td>${stats.count}</td><td>KD ${stats.profit.toFixed(2)}</td><td><button data-action="view-user-jobs" data-user="${name}" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-2 rounded text-xs">View Jobs</button></td></tr>`).join('')}</tbody></table></div>
+                        <tbody>${data.profitByUser.map(([name, stats]) => `<tr><td>${name}</td><td>${stats.count}</td><td>KD ${stats.profit.toFixed(3)}</td><td><button data-action="view-user-jobs" data-user="${name}" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-2 rounded text-xs">View Jobs</button></td></tr>`).join('')}</tbody></table></div>
                     </div>
                 </div>
 
@@ -1746,8 +1758,8 @@
                                         <p class="text-xs font-bold mt-1">Created by: ${file.createdBy || 'N/A'}</p>
                                     </td>
                                     <td>
-                                        <p class="font-bold text-green-600">KD ${file.profit.toFixed(2)}</p>
-                                        <p class="text-xs text-red-600">Cost: KD ${file.cost.toFixed(2)}</p>
+                                        <p class="font-bold text-green-600">KD ${file.profit.toFixed(3)}</p>
+                                        <p class="text-xs text-red-600">Cost: KD ${file.cost.toFixed(3)}</p>
                                     </td>
                                     <td>${file.status}</td>
                                     <td class="space-x-1">
@@ -1780,7 +1792,7 @@
                      document.querySelectorAll('.timeframe-btn').forEach(b => {
                          b.classList.remove('bg-indigo-700', 'text-white');
                          if(!b.classList.contains('bg-gray-200')) {
-                            b.classList.add('bg-indigo-500');
+                             b.classList.add('bg-indigo-500');
                          }
                      });
                      e.target.classList.remove('bg-indigo-500', 'bg-gray-200');
@@ -1817,7 +1829,7 @@
             const sortedFiles = [...analyticsDataCache.profitByFile].sort((a,b) => (b.profit || 0) - (a.profit || 0));
 
             sortedFiles.forEach(job => {
-                const rowData = [job.jfn, job.shipper || 'N/A', job.consignee || 'N/A', (job.profit || 0).toFixed(2), job.status, (job.cost || 0).toFixed(2), job.dsc || 'N/A', job.mawb || 'N/A', job.createdBy || 'N/A'];
+                const rowData = [job.jfn, job.shipper || 'N/A', job.consignee || 'N/A', (job.profit || 0).toFixed(3), job.status, (job.cost || 0).toFixed(3), job.dsc || 'N/A', job.mawb || 'N/A', job.createdBy || 'N/A'];
                 const row = rowData.map(d => `"${String(d).replace(/"/g, '""')}"`).join(",");
                 csvContent += row + "\n";
             });
@@ -1860,6 +1872,7 @@
                         <select data-uid="${userId}" class="status-select input-field col-span-1" ${isDisabled ? 'disabled' : ''}>
                             <option value="active" ${userData.status === 'active' ? 'selected' : ''}>Active</option>
                             <option value="inactive" ${userData.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                            <option value="blocked" ${userData.status === 'blocked' ? 'selected' : ''}>Blocked</option>
                         </select>
                     </div>
                 `;
@@ -2421,8 +2434,8 @@
                             <table class="print-table w-full text-xs">
                                 <thead><tr><th>Description</th><th>Cost</th><th>Selling</th><th>Profit</th><th>Notes</th></tr></thead>
                                 <tbody>
-                                    ${(data.ch || []).map(c => `<tr><td>${c.l}</td><td>${c.c}</td><td>${c.s}</td><td>${(parseFloat(c.s || 0) - parseFloat(c.c || 0)).toFixed(2)}</td><td>${c.n}</td></tr>`).join('')}
-                                    <tr class="font-bold bg-gray-100"><td>TOTAL:</td><td>${totalCost.toFixed(2)}</td><td>${totalSelling.toFixed(2)}</td><td>${totalProfit.toFixed(2)}</td><td></td></tr>
+                                    ${(data.ch || []).map(c => `<tr><td>${c.l}</td><td>${c.c}</td><td>${c.s}</td><td>${(parseFloat(c.s || 0) - parseFloat(c.c || 0)).toFixed(3)}</td><td>${c.n}</td></tr>`).join('')}
+                                    <tr class="font-bold bg-gray-100"><td>TOTAL:</td><td>${totalCost.toFixed(3)}</td><td>${totalSelling.toFixed(3)}</td><td>${totalProfit.toFixed(3)}</td><td></td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -2466,12 +2479,12 @@
                 const cost = parseFloat(row.querySelector('.cost-input').value) || 0;
                 const selling = parseFloat(row.querySelector('.selling-input').value) || 0;
                 const profit = selling - cost;
-                row.cells[3].textContent = profit.toFixed(2);
+                row.cells[3].textContent = profit.toFixed(3);
                 totalCost += cost; totalSelling += selling; totalProfit += profit;
             });
-            document.getElementById('total-cost').textContent = totalCost.toFixed(2);
-            document.getElementById('total-selling').textContent = totalSelling.toFixed(2);
-            document.getElementById('total-profit').textContent = totalProfit.toFixed(2);
+            document.getElementById('total-cost').textContent = totalCost.toFixed(3);
+            document.getElementById('total-selling').textContent = totalSelling.toFixed(3);
+            document.getElementById('total-profit').textContent = totalProfit.toFixed(3);
         }
         
         function populateTable() {
@@ -2492,9 +2505,9 @@
                 <tfoot>
                      <tr id="total-row" class="bg-gray-100 font-bold">
                         <td class="table-cell text-right">TOTAL:</td>
-                        <td id="total-cost" class="table-cell text-right">0.00</td>
-                        <td id="total-selling" class="table-cell text-right">0.00</td>
-                        <td id="total-profit" class="table-cell text-right">0.00</td>
+                        <td id="total-cost" class="table-cell text-right">0.000</td>
+                        <td id="total-selling" class="table-cell text-right">0.000</td>
+                        <td id="total-profit" class="table-cell text-right">0.000</td>
                         <td class="table-cell" colspan="2"></td>
                     </tr>
                 </tfoot>
@@ -2515,9 +2528,9 @@
 
             newRow.innerHTML = `
                 <td class="table-cell"><input type="text" class="description-input input-field" value="${data.l || ''}" autocomplete="off"></td>
-                <td class="table-cell"><input type="number" class="cost-input input-field" value="${data.c || ''}"></td>
-                <td class="table-cell"><input type="number" class="selling-input input-field" value="${data.s || ''}"></td>
-                <td class="table-cell profit-output bg-gray-50 text-right">${((data.s || 0) - (data.c || 0)).toFixed(2)}</td>
+                <td class="table-cell"><input type="number" step="0.001" class="cost-input input-field" value="${data.c || ''}"></td>
+                <td class="table-cell"><input type="number" step="0.001" class="selling-input input-field" value="${data.s || ''}"></td>
+                <td class="table-cell profit-output bg-gray-50 text-right">${((data.s || 0) - (data.c || 0)).toFixed(3)}</td>
                 <td class="table-cell"><input type="text" class="notes-input input-field" value="${data.n || ''}"></td>
                 <td class="table-cell text-center"><button class="text-red-500 hover:text-red-700">&times;</button></td>
             `;
@@ -2979,47 +2992,47 @@
             } else {
                  let filesHtml = '';
                  jobs.forEach((docData) => {
-                    const deleteButton = currentUser.role === 'admin' ? `<button onclick="confirmDelete('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>` : '';
-                    
-                    let checkOrUncheckButton = '';
-                    if (currentUser.role === 'admin' || currentUser.role === 'checker') {
-                        if (docData.status === 'checked' || docData.status === 'approved') {
-                            checkOrUncheckButton = `<button onclick="uncheckJobFile('${docData.id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Uncheck</button>`;
-                        } else if (docData.status === 'pending' || !docData.status) {
-                            checkOrUncheckButton = `<button onclick="checkJobFile('${docData.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs">Check</button>`;
-                        }
-                    }
+                     const deleteButton = currentUser.role === 'admin' ? `<button onclick="confirmDelete('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>` : '';
+                     
+                     let checkOrUncheckButton = '';
+                     if (currentUser.role === 'admin' || currentUser.role === 'checker') {
+                         if (docData.status === 'checked' || docData.status === 'approved') {
+                             checkOrUncheckButton = `<button onclick="uncheckJobFile('${docData.id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs">Uncheck</button>`;
+                         } else if (docData.status === 'pending' || !docData.status) {
+                             checkOrUncheckButton = `<button onclick="checkJobFile('${docData.id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs">Check</button>`;
+                         }
+                     }
 
-                    let approveButton = '';
-                    let rejectButton = '';
-                    if (currentUser.role === 'admin' && docData.status === 'checked') {
-                        approveButton = `<button onclick="approveJobFile('${docData.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded text-xs">Approve</button>`;
-                        rejectButton = `<button onclick="promptForRejection('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Reject</button>`;
-                    }
-                    
-                    filesHtml += `
-                        <div class="job-file-item border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center bg-gray-50 hover:bg-gray-100 gap-2">
-                            <div class="w-full sm:w-2/5">
-                                <p class="font-bold text-indigo-700">${docData.jfn || 'No ID'}</p>
-                                <p class="text-sm text-gray-600">Shipper: ${docData.sh || 'N/A'}</p>
-                                <p class="text-sm text-gray-600">Consignee: ${docData.co || 'N/A'}</p>
-                            </div>
-                            <div class="w-full sm:w-1/5 text-xs text-gray-500">
-                                <p>Cost: <span class="font-medium text-red-600">KD ${(docData.totalCost || 0).toFixed(2)}</span></p>
-                                <p>Profit: <span class="font-medium text-green-600">KD ${(docData.totalProfit || 0).toFixed(2)}</span></p>
-                            </div>
-                            <div class="space-x-2 flex-shrink-0">
-                                <button onclick="previewJobFileById('${docData.id}')" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-2 rounded text-xs">Preview</button>
-                                <button onclick="loadJobFileById('${docData.id}')" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-1 px-2 rounded text-xs">Load</button>
-                                ${checkOrUncheckButton}
-                                ${approveButton}
-                                ${rejectButton}
-                                ${deleteButton}
-                            </div>
-                        </div>
-                    `;
-                });
-                list.innerHTML = filesHtml;
+                     let approveButton = '';
+                     let rejectButton = '';
+                     if (currentUser.role === 'admin' && docData.status === 'checked') {
+                         approveButton = `<button onclick="approveJobFile('${docData.id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded text-xs">Approve</button>`;
+                         rejectButton = `<button onclick="promptForRejection('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs">Reject</button>`;
+                     }
+                     
+                     filesHtml += `
+                         <div class="job-file-item border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center bg-gray-50 hover:bg-gray-100 gap-2">
+                             <div class="w-full sm:w-2/5">
+                                 <p class="font-bold text-indigo-700">${docData.jfn || 'No ID'}</p>
+                                 <p class="text-sm text-gray-600">Shipper: ${docData.sh || 'N/A'}</p>
+                                 <p class="text-sm text-gray-600">Consignee: ${docData.co || 'N/A'}</p>
+                             </div>
+                             <div class="w-full sm:w-1/5 text-xs text-gray-500">
+                                 <p>Cost: <span class="font-medium text-red-600">KD ${(docData.totalCost || 0).toFixed(3)}</span></p>
+                                 <p>Profit: <span class="font-medium text-green-600">KD ${(docData.totalProfit || 0).toFixed(3)}</span></p>
+                             </div>
+                             <div class="space-x-2 flex-shrink-0">
+                                 <button onclick="previewJobFileById('${docData.id}')" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-2 rounded text-xs">Preview</button>
+                                 <button onclick="loadJobFileById('${docData.id}')" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-1 px-2 rounded text-xs">Load</button>
+                                 ${checkOrUncheckButton}
+                                 ${approveButton}
+                                 ${rejectButton}
+                                 ${deleteButton}
+                             </div>
+                         </div>
+                     `;
+                 });
+                 list.innerHTML = filesHtml;
             }
             openModal('user-jobs-modal', true);
         }
