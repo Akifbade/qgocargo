@@ -1794,7 +1794,13 @@
                     throw new Error('Delivery not found.');
                 }
             } catch (error) {
-                document.getElementById('feedback-form-container').innerHTML = '<p class="text-red-500">Error: Could not load delivery details.</p>';
+                // DEVELOPER NOTE: This error is often caused by Firestore security rules.
+                // For this public feedback page to work, unauthenticated users need read access
+                // to individual documents in the 'deliveries' and 'feedback' collections.
+                // Your rules should look something like this:
+                // match /deliveries/{deliveryId} { allow get: if true; ... }
+                // match /feedback/{feedbackId} { allow get: if true; ... }
+                document.getElementById('feedback-form-container').innerHTML = '<p class="text-red-500 font-semibold">COULD NOT LOAD DELIVERY DETAILS.</p><p class="text-xs text-gray-500 mt-2">This may be due to a network issue or a permissions problem. Please try again later.</p>';
                 console.error("Error loading for feedback:", error);
             } finally {
                 hideLoader();
