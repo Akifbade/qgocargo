@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -188,6 +189,7 @@
             <div class="text-sm mt-4 sm:mt-0 text-right">
                 <p class="font-medium">Welcome, <span id="user-display-name" class="font-bold text-gray-800"></span> (<span id="user-role" class="capitalize text-gray-600"></span>)</p>
                 <div class="flex items-center justify-end gap-4 mt-2">
+                    <button id="driver-dashboard-btn" class="btn btn-secondary text-xs hidden">Driver Dashboard</button>
                     <button id="admin-panel-btn" class="btn btn-primary text-xs hidden">Admin Panel</button>
                     <button id="logout-btn" class="btn btn-secondary text-xs">Logout</button>
                 </div>
@@ -221,22 +223,45 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
                         <span>Assign New Delivery</span>
                     </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8">
                         <div class="space-y-4">
                             <div class="relative">
                                 <label for="job-file-search" class="block text-sm font-medium text-gray-700 mb-1">Search Job File</label>
                                 <input type="text" id="job-file-search" class="input-field" placeholder="Job No, Shipper, or Consignee...">
                                 <div id="job-file-suggestions" class="suggestions-container hidden"></div>
                             </div>
-                        </div>
-                        <form id="delivery-form" class="space-y-4" novalidate>
-                            <div>
+                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Job Details</label>
                                 <div class="p-3 bg-gray-50 rounded-md text-sm border">
                                     <p><strong>Job No:</strong> <span id="form-job-file-no">Select a job</span></p>
                                     <p><strong>Details:</strong> <span id="form-job-shipper-consignee">N/A</span></p>
                                 </div>
                             </div>
+                        </div>
+                        <form id="delivery-form" class="space-y-4" novalidate>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="delivery-origin" class="block text-sm font-medium text-gray-700 mb-1">Country of Origin</label>
+                                    <input type="text" id="delivery-origin" class="input-field" placeholder="Auto-filled from Job">
+                                </div>
+                                <div>
+                                    <label for="delivery-destination" class="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+                                    <input type="text" id="delivery-destination" class="input-field" placeholder="Auto-filled from Job">
+                                </div>
+                                <div>
+                                    <label for="delivery-airlines" class="block text-sm font-medium text-gray-700 mb-1">Airlines</label>
+                                    <input type="text" id="delivery-airlines" class="input-field" placeholder="Auto-filled from Job">
+                                </div>
+                                 <div>
+                                    <label for="delivery-mawb" class="block text-sm font-medium text-gray-700 mb-1">AWB / MAWB</label>
+                                    <input type="text" id="delivery-mawb" class="input-field" placeholder="Auto-filled from Job">
+                                </div>
+                                <div class="col-span-2">
+                                    <label for="delivery-inv" class="block text-sm font-medium text-gray-700 mb-1">Invoice No.</label>
+                                    <input type="text" id="delivery-inv" class="input-field" placeholder="Auto-filled from Job">
+                                </div>
+                            </div>
+
                             <div>
                                 <label for="delivery-location" class="block text-sm font-medium text-gray-700 mb-1">Delivery Location</label>
                                 <textarea id="delivery-location" rows="2" class="input-field" placeholder="Enter the full delivery address"></textarea>
@@ -432,6 +457,35 @@
         </div>
     </div>
 
+    <!-- Driver Performance Modal -->
+    <div id="driver-performance-modal" class="overlay">
+        <div class="modal-content max-w-4xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">Driver Performance Dashboard</h3>
+                <button onclick="closeModal('driver-performance-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div id="driver-performance-body" class="space-y-6">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <canvas id="driver-chart"></canvas>
+                </div>
+                <div id="driver-stats-list" class="space-y-4 max-h-[50vh] overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
+
+     <!-- User-Specific Jobs Modal (For showing driver deliveries) -->
+    <div id="user-jobs-modal" class="overlay">
+        <div class="modal-content max-w-5xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="user-jobs-modal-title" class="text-2xl font-bold">Deliveries</h3>
+                <button onclick="closeModal('user-jobs-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div id="user-jobs-list" class="space-y-2 max-h-[70vh] overflow-y-auto">
+                <!-- JS will populate this list -->
+            </div>
+        </div>
+    </div>
+
 
     <!-- Firebase SDK and App Logic -->
     <script type="module">
@@ -452,6 +506,7 @@
         let completionSignaturePad;
         let activeDeliveryForReceipt = null;
         let activeDeliveryForCompletion = null;
+        let driverChartInstance = null;
 
 
         // --- Firebase Configuration ---
@@ -611,10 +666,12 @@
             document.getElementById('admin-staff-view').style.display = 'none';
             document.getElementById('driver-view').style.display = 'none';
             document.getElementById('admin-panel-btn').classList.add('hidden');
+            document.getElementById('driver-dashboard-btn').classList.add('hidden');
             
             if (currentUser.role === 'admin' || currentUser.role === 'staff') {
                 document.getElementById('admin-staff-view').style.display = 'block';
                 document.getElementById('header-subtitle').textContent = "Assign, track, and manage deliveries.";
+                 document.getElementById('driver-dashboard-btn').classList.remove('hidden');
                 if (currentUser.role === 'admin') {
                     document.getElementById('admin-panel-btn').classList.remove('hidden');
                 }
@@ -812,6 +869,12 @@
                     document.getElementById('form-job-file-no').textContent = selectedJobFile.jfn;
                     document.getElementById('form-job-shipper-consignee').textContent = `${selectedJobFile.sh} / ${selectedJobFile.co}`;
                     document.getElementById('job-file-search').value = selectedJobFile.jfn;
+                    // Corrected Auto-fill logic using keys from the main file
+                    document.getElementById('delivery-origin').value = selectedJobFile.or || '';
+                    document.getElementById('delivery-destination').value = selectedJobFile.de || '';
+                    document.getElementById('delivery-airlines').value = selectedJobFile.ca || '';
+                    document.getElementById('delivery-mawb').value = selectedJobFile.mawb || '';
+                    document.getElementById('delivery-inv').value = selectedJobFile.in || '';
                 }
                 document.getElementById('job-file-suggestions').classList.add('hidden');
             }
@@ -844,16 +907,17 @@
                 const driver = allUsersCache.find(d => d.id === driverId);
                 const deliveryData = {
                     jobFileId: selectedJobFile.id,
-                    jobFileData: { // Store a snapshot of key data
+                    jobFileData: { // Store a snapshot of key data, reading from the form and using main system keys
                         jfn: selectedJobFile.jfn || 'N/A',
                         sh: selectedJobFile.sh || 'N/A',
                         co: selectedJobFile.co || 'N/A',
                         dsc: selectedJobFile.dsc || 'N/A',
                         gw: selectedJobFile.gw || 'N/A',
-                        mawb: selectedJobFile.mawb || 'N/A',
-                        pol: selectedJobFile.pol || 'N/A', // Country of Origin
-                        poa: selectedJobFile.poa || 'N/A', // Destination
-                        al: selectedJobFile.al || 'N/A',   // Airlines
+                        mawb: document.getElementById('delivery-mawb').value.trim() || 'N/A',
+                        or: document.getElementById('delivery-origin').value.trim() || 'N/A', 
+                        de: document.getElementById('delivery-destination').value.trim() || 'N/A',
+                        ca: document.getElementById('delivery-airlines').value.trim() || 'N/A',
+                        in: document.getElementById('delivery-inv').value.trim() || 'N/A',
                     },
                     deliveryLocation: location,
                     deliveryNotes: document.getElementById('additional-notes')?.value.trim(),
@@ -867,8 +931,8 @@
 
                 showNotification("Delivery assigned successfully!");
                 document.getElementById('delivery-form').reset();
-                 document.getElementById('form-job-file-no').textContent = 'Select a job';
-                 document.getElementById('form-job-shipper-consignee').textContent = 'N/A';
+                document.getElementById('form-job-file-no').textContent = 'Select a job';
+                document.getElementById('form-job-shipper-consignee').textContent = 'N/A';
                 document.getElementById('job-file-search').value = '';
                 selectedJobFile = null;
 
@@ -1137,12 +1201,13 @@
                     <!-- Job Details -->
                     <div class="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
                         <div><strong class="text-gray-500 block">Job File No:</strong> <span class="font-mono">${jobData.jfn || 'N/A'}</span></div>
-                        <div><strong class="text-gray-500 block">MAWB / OBL:</strong> <span class="font-mono">${jobData.mawb || 'N/A'}</span></div>
+                        <div><strong class="text-gray-500 block">Invoice No:</strong> <span class="font-mono">${jobData.in || 'N/A'}</span></div>
+                        <div><strong class="text-gray-500 block">AWB / MAWB:</strong> <span class="font-mono">${jobData.mawb || 'N/A'}</span></div>
+                        <div><strong class="text-gray-500 block">Airlines:</strong> ${jobData.ca || 'N/A'}</div>
                         <div><strong class="text-gray-500 block">Shipper:</strong> ${jobData.sh || 'N/A'}</div>
                         <div><strong class="text-gray-500 block">Consignee:</strong> ${jobData.co || 'N/A'}</div>
-                        <div><strong class="text-gray-500 block">Airlines:</strong> ${jobData.al || 'N/A'}</div>
-                        <div><strong class="text-gray-500 block">Origin:</strong> ${jobData.pol || 'N/A'}</div>
-                        <div><strong class="text-gray-500 block">Destination:</strong> ${jobData.poa || 'N/A'}</div>
+                        <div><strong class="text-gray-500 block">Origin:</strong> ${jobData.or || 'N/A'}</div>
+                        <div><strong class="text-gray-500 block">Destination:</strong> ${jobData.de || 'N/A'}</div>
                         <div class="col-span-2"><strong class="text-gray-500 block">Description:</strong> ${jobData.dsc || 'N/A'}</div>
                         <div class="col-span-2"><strong class="text-gray-500 block">Gross Weight:</strong> ${jobData.gw || 'N/A'}</div>
                     </div>
@@ -1195,10 +1260,29 @@
                 const pdf = new jsPDF({
                     orientation: 'portrait',
                     unit: 'pt',
-                    format: [canvas.width / 2, canvas.height / 2]
+                    format: 'a4'
                 });
                 
-                pdf.addImage(imgData, 'PNG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                const ratio = canvasWidth / canvasHeight;
+                const pdfRatio = pdfWidth / pdfHeight;
+
+                let finalWidth, finalHeight;
+                if(ratio > pdfRatio){
+                    finalWidth = pdfWidth;
+                    finalHeight = pdfWidth / ratio;
+                } else {
+                    finalHeight = pdfHeight;
+                    finalWidth = pdfHeight * ratio;
+                }
+                
+                const x = (pdfWidth - finalWidth) / 2;
+                const y = (pdfHeight - finalHeight) / 2;
+
+                pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
                 pdf.save(`Receipt-${activeDeliveryForReceipt.jobFileData.jfn}.pdf`);
 
             } catch (error) {
@@ -1211,22 +1295,40 @@
 
         function printReceipt() {
             const receiptHTML = document.getElementById('receipt-content').innerHTML;
-            const printWindow = window.open('', '', 'height=600,width=800');
+            const printWindow = window.open('', '', 'height=842,width=595');
             printWindow.document.write('<html><head><title>Delivery Receipt</title>');
             printWindow.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
             printWindow.document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>');
-            printWindow.document.write('</head><body class="p-6">');
+            printWindow.document.write(`
+                <style>
+                    @media print {
+                        @page {
+                            size: A4;
+                            margin: 15mm;
+                        }
+                    }
+                    body {
+                        font-family: 'Inter', sans-serif;
+                    }
+                </style>
+            `);
+            printWindow.document.write('</head><body>');
             printWindow.document.write(receiptHTML);
             printWindow.document.write(`
                 <script>
-                    const qrContainer = document.getElementById('receipt-qrcode');
-                    if (qrContainer) {
-                         new QRCode(qrContainer, {
-                             text: "${window.location.origin + window.location.pathname + '?podId=' + activeDeliveryForReceipt.deliveryId}",
-                             width: 80,
-                             height: 80,
-                         });
-                         setTimeout(() => window.print(), 500);
+                    window.onload = function() {
+                        const qrContainer = document.getElementById('receipt-qrcode');
+                        if (qrContainer) {
+                            new QRCode(qrContainer, {
+                                text: "${window.location.origin + window.location.pathname + '?podId=' + activeDeliveryForReceipt.deliveryId}",
+                                width: 80,
+                                height: 80,
+                            });
+                            setTimeout(() => {
+                                window.print();
+                                window.close();
+                            }, 500);
+                        }
                     }
                 <\/script>
             `);
@@ -1405,6 +1507,122 @@
         }
 
 
+        // --- Driver Performance Dashboard ---
+        function openDriverPerformanceDashboard() {
+            if (currentUser.role !== 'admin' && currentUser.role !== 'staff') {
+                showNotification("Access denied.", true);
+                return;
+            }
+
+            const drivers = allUsersCache.filter(u => u.role === 'driver' && u.status === 'active');
+            const driverStats = drivers.map(driver => {
+                const completed = deliveriesCache.filter(d => d.driverUid === driver.id && d.status === 'Delivered').length;
+                const pending = deliveriesCache.filter(d => d.driverUid === driver.id && d.status !== 'Delivered').length;
+                return { ...driver, completed, pending };
+            });
+
+            driverStats.sort((a, b) => b.completed - a.completed); // Sort by most completed
+
+            const statsListEl = document.getElementById('driver-stats-list');
+            statsListEl.innerHTML = '';
+
+            if (driverStats.length > 0) {
+                driverStats.forEach(stat => {
+                    const statCard = document.createElement('div');
+                    statCard.className = 'p-4 border rounded-lg bg-white flex justify-between items-center';
+                    statCard.innerHTML = `
+                        <div>
+                            <p class="font-bold text-lg">${stat.displayName}</p>
+                            <p class="text-sm text-gray-600">${stat.email}</p>
+                        </div>
+                        <div class="flex items-center gap-4 text-center">
+                            <div>
+                                <p class="text-2xl font-bold text-green-600">${stat.completed}</p>
+                                <p class="text-xs text-gray-500">Completed</p>
+                            </div>
+                            <div>
+                                <p class="text-2xl font-bold text-yellow-600">${stat.pending}</p>
+                                <p class="text-xs text-gray-500">Pending</p>
+                            </div>
+                        </div>
+                        <div>
+                            <button onclick="showDriverDeliveries('${stat.id}')" class="btn btn-secondary btn-xs text-xs">View Deliveries</button>
+                        </div>
+                    `;
+                    statsListEl.appendChild(statCard);
+                });
+            } else {
+                statsListEl.innerHTML = '<p class="text-center text-gray-500">No active drivers found.</p>';
+            }
+
+            // Chart.js rendering
+            const chartCanvas = document.getElementById('driver-chart');
+            if (driverChartInstance) {
+                driverChartInstance.destroy();
+            }
+            
+            const chartLabels = driverStats.map(d => d.displayName);
+            const chartData = driverStats.map(d => d.completed);
+
+            driverChartInstance = new Chart(chartCanvas, {
+                type: 'bar',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Completed Deliveries',
+                        data: chartData,
+                        backgroundColor: 'rgba(79, 184, 175, 0.6)',
+                        borderColor: 'rgba(79, 184, 175, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Completed Deliveries per Driver'
+                        }
+                    }
+                }
+            });
+
+            openModal('driver-performance-modal');
+        }
+
+        function showDriverDeliveries(driverId) {
+            const driver = allUsersCache.find(u => u.id === driverId);
+            if (!driver) return;
+            const driverDeliveries = deliveriesCache.filter(d => d.driverUid === driverId);
+            
+            const modalTitle = document.getElementById('user-jobs-modal-title');
+            const list = document.getElementById('user-jobs-list');
+
+            modalTitle.textContent = `Deliveries for ${driver.displayName}`;
+            
+            if (driverDeliveries.length === 0) {
+                list.innerHTML = '<p class="text-gray-500 text-center p-4">This driver has no assigned deliveries.</p>';
+            } else {
+                list.innerHTML = '';
+                driverDeliveries.forEach(delivery => {
+                    const card = createDeliveryCard(delivery); 
+                    list.appendChild(card);
+                });
+            }
+            openModal('user-jobs-modal', true); 
+        }
+
+
         // --- General Functions ---
         function showLoader() { document.getElementById('loader-overlay').classList.add('visible'); }
         function hideLoader() { document.getElementById('loader-overlay').classList.remove('visible'); }
@@ -1461,6 +1679,7 @@
             document.getElementById('pdf-receipt-btn').addEventListener('click', downloadReceiptAsPDF);
             document.getElementById('print-receipt-btn').addEventListener('click', printReceipt);
             document.getElementById('admin-panel-btn').addEventListener('click', openAdminPanel);
+            document.getElementById('driver-dashboard-btn').addEventListener('click', openDriverPerformanceDashboard);
 
             const confirmCancelBtn = document.getElementById('confirm-cancel');
             confirmCancelBtn.addEventListener('click', () => {
@@ -1477,6 +1696,7 @@
         window.openReceiptModal = openReceiptModal;
         window.confirmUserDelete = confirmUserDelete;
         window.confirmPodCancel = confirmPodCancel;
+        window.showDriverDeliveries = showDriverDeliveries;
 
     </script>
 </body>
