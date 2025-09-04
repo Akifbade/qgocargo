@@ -364,10 +364,14 @@
         <!-- Driver View -->
         <div id="driver-view" class="hidden">
             <section class="bg-white p-6 rounded-xl shadow-md">
-                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-bold text-gray-800">My Assigned Deliveries</h2>
+                 <div class="flex justify-between items-center mb-6 pb-4 border-b">
+                    <h2 class="text-2xl font-bold text-gray-800">My Dashboard</h2>
                     <button id="my-feedback-btn" class="btn btn-primary text-sm">My Feedback & Ratings</button>
                 </div>
+                <div id="driver-performance-summary" class="mb-6">
+                    <!-- Driver performance summary will be loaded here -->
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-4">My Assigned Deliveries</h3>
                 <div id="driver-tasks-list" class="space-y-4"></div>
             </section>
         </div>
@@ -414,39 +418,60 @@
                 <h3 class="text-2xl font-bold">Complete Delivery</h3>
                 <button onclick="closeModal('delivery-completion-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
-            <form id="completion-form" class="space-y-4" novalidate>
-                <input type="hidden" id="delivery-id-input">
-                <div class="p-4 bg-gray-50 rounded-md">
-                    <p><strong>Job File:</strong> <span id="modal-job-no"></span></p>
-                    <p><strong>Location:</strong> <span id="modal-location"></span></p>
-                </div>
-                <div>
-                    <label for="receiver-name" class="block text-sm font-medium text-gray-700">Receiver's Name</label>
-                    <input type="text" id="receiver-name" class="input-field mt-1">
-                </div>
-                <div>
-                    <label for="receiver-mobile" class="block text-sm font-medium text-gray-700">Receiver's Mobile Number</label>
-                    <input type="tel" id="receiver-mobile" class="input-field mt-1">
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Receiver's Signature</label>
-                    <div class="relative w-full h-48 mt-1">
-                        <canvas id="completion-signature-pad" class="signature-pad-canvas absolute top-0 left-0 w-full h-full"></canvas>
+            <div id="completion-form-wrapper">
+                <form id="completion-form" class="space-y-4" novalidate>
+                    <input type="hidden" id="delivery-id-input">
+                    <div class="p-4 bg-gray-50 rounded-md">
+                        <p><strong>Job File:</strong> <span id="modal-job-no"></span></p>
+                        <p><strong>Location:</strong> <span id="modal-location"></span></p>
                     </div>
-                    <div class="text-right mt-1">
-                         <button type="button" id="clear-completion-signature-btn" class="btn btn-secondary text-xs">Clear</button>
+                    <div>
+                        <label for="receiver-name" class="block text-sm font-medium text-gray-700">Receiver's Name</label>
+                        <input type="text" id="receiver-name" class="input-field mt-1">
                     </div>
-                </div>
-
+                    <div>
+                        <label for="receiver-mobile" class="block text-sm font-medium text-gray-700">Receiver's Mobile Number</label>
+                        <input type="tel" id="receiver-mobile" class="input-field mt-1">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Receiver's Signature</label>
+                        <div class="relative w-full h-48 mt-1">
+                            <canvas id="completion-signature-pad" class="signature-pad-canvas absolute top-0 left-0 w-full h-full"></canvas>
+                        </div>
+                        <div class="text-right mt-1">
+                             <button type="button" id="clear-completion-signature-btn" class="btn btn-secondary text-xs">Clear</button>
+                        </div>
+                    </div>
+                     <div>
+                        <button type="button" id="get-location-btn" class="btn btn-secondary text-sm w-full">Get Current Location</button>
+                        <p id="location-status" class="text-xs text-gray-500 mt-1 text-center"></p>
+                    </div>
+                    <div class="flex justify-end items-center gap-4 pt-4">
+                        <button type="submit" class="btn btn-success">Mark as Delivered</button>
+                    </div>
+                </form>
+            </div>
+            <div id="post-delivery-feedback-wrapper" class="hidden text-center">
+                 <h3 class="text-xl font-bold text-gray-800">Rate this Delivery</h3>
+                 <p class="text-gray-600 mt-2" id="feedback-recipient-name"></p>
+                 <div class="rating-stars my-4">
+                     <input type="radio" id="modal-star5" name="modal-rating" value="5" /><label for="modal-star5" title="5 stars">★</label>
+                     <input type="radio" id="modal-star4" name="modal-rating" value="4" /><label for="modal-star4" title="4 stars">★</label>
+                     <input type="radio" id="modal-star3" name="modal-rating" value="3" /><label for="modal-star3" title="3 stars">★</label>
+                     <input type="radio" id="modal-star2" name="modal-rating" value="2" /><label for="modal-star2" title="2 stars">★</label>
+                     <input type="radio" id="modal-star1" name="modal-rating" value="1" /><label for="modal-star1" title="1 star">★</label>
+                 </div>
                  <div>
-                    <button type="button" id="get-location-btn" class="btn btn-secondary text-sm w-full">Get Current Location</button>
-                    <p id="location-status" class="text-xs text-gray-500 mt-1 text-center"></p>
-                </div>
-                <div class="flex justify-end items-center gap-4 pt-4">
-                    <button type="submit" class="btn btn-success">Mark as Delivered</button>
-                </div>
-            </form>
+                     <label for="modal-feedback-comment" class="block text-sm font-medium text-gray-700">Comments (Optional)</label>
+                     <textarea id="modal-feedback-comment" rows="3" class="input-field mt-1" placeholder="Recipient's comments..."></textarea>
+                 </div>
+                 <p class="text-xs text-gray-500 mt-4 italic" id="feedback-confirmation-text"></p>
+                 <div class="flex justify-center items-center gap-4 pt-4">
+                     <button id="skip-feedback-btn" class="btn btn-secondary">Skip</button>
+                     <button id="submit-feedback-btn" class="btn btn-primary">Submit Rating</button>
+                 </div>
+            </div>
         </div>
     </div>
 
@@ -463,6 +488,8 @@
                      <!-- Receipt content will be generated here -->
                  </div>
                  <div class="text-right mt-4 flex justify-end gap-2">
+                     <button id="copy-link-btn" class="btn btn-secondary">Copy Link</button>
+                     <button id="share-btn" class="btn btn-primary">Share</button>
                      <button id="pdf-receipt-btn" class="btn btn-secondary">PDF</button>
                      <button id="print-receipt-btn" class="btn btn-primary">Print</button>
                  </div>
@@ -1081,6 +1108,10 @@
                 } else {
                      listEl.innerHTML = '<p class="text-gray-500">You have no assigned deliveries.</p>';
                 }
+                
+                // Display performance summary on driver page
+                displayDriverPerformanceSummary(currentUser.uid, tasks);
+
             }, (error) => {
                 console.error("Firestore Error (Driver Tasks):", error);
                 showNotification("Permission error: Could not load your assigned tasks.", true);
@@ -1093,6 +1124,11 @@
             document.getElementById('modal-job-no').textContent = delivery.jobFileData.jfn;
             document.getElementById('modal-location').textContent = delivery.deliveryLocation;
             document.getElementById('completion-form').reset();
+
+            // Reset modal to show completion form first
+            document.getElementById('completion-form-wrapper').style.display = 'block';
+            document.getElementById('post-delivery-feedback-wrapper').style.display = 'none';
+
             
             const canvas = document.getElementById('completion-signature-pad');
             const resizeCanvas = () => {
@@ -1171,9 +1207,14 @@
                     podId: deliveryId,
                     receiverName: receiverName
                 });
-                
-                showNotification("Delivery completed successfully!");
-                closeModal('delivery-completion-modal');
+
+                // Transition to feedback view
+                document.getElementById('completion-form-wrapper').style.display = 'none';
+                document.getElementById('post-delivery-feedback-wrapper').style.display = 'block';
+                document.getElementById('feedback-recipient-name').textContent = `Recipient: ${receiverName}`;
+                document.getElementById('feedback-confirmation-text').innerHTML = `I, <strong>${receiverName}</strong>, confirm this shipment was delivered to me and the feedback and rating was given by me.`;
+                document.getElementById('submit-feedback-btn').onclick = () => handleModalFeedbackSubmit(deliveryId, receiverName);
+                document.getElementById('skip-feedback-btn').onclick = () => handleModalFeedbackSkip(deliveryId);
 
             } catch (error) {
                 console.error("Error completing delivery:", error);
@@ -1269,9 +1310,10 @@
                             <div class="text-3xl font-extrabold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
                             <p class="text-sm text-gray-500 font-semibold">PROOF OF DELIVERY</p>
                         </div>
-                        <div id="qr-code-section" class="text-right">
-                             <div id="receipt-qrcode" class="p-1 bg-white border rounded-md inline-block"></div>
-                             <p class="text-xs text-gray-500 mt-1">Scan for details or to rate</p>
+                         <div id="qr-code-section" class="text-center p-2 rounded-lg bg-gray-100">
+                             <p class="text-sm font-bold text-gray-800">Rate Your Delivery!</p>
+                             <div id="receipt-qrcode" class="p-1 bg-white border rounded-md inline-block mt-1"></div>
+                             <p class="text-xs text-gray-500 mt-1">Scan with your phone</p>
                         </div>
                     </div>
 
@@ -1298,7 +1340,7 @@
                             <div class="col-span-2"><strong class="text-gray-500 block">Date & Time:</strong> ${deliveryDate}</div>
                             <div class="col-span-2"><strong class="text-gray-500 block">Delivery Address:</strong> ${data.deliveryLocation}</div>
                             <div class="col-span-2"><strong class="text-gray-500 block">GPS Location:</strong> ${locationInfo}</div>
-                            <div class="col-span-2"><strong class="text-gray-500 block">Driver:</strong> ${data.driverName}</div>
+                            <div class="col-span-2"><strong class="text-gray-500 block">POD Confirmed By (Driver):</strong> ${data.driverName}</div>
                         </div>
                         <div class="mt-4 pt-4 border-t">
                              <p class="text-gray-600 text-sm italic mb-2">"I, <strong>${data.receiverName}</strong>, confirm I have received this shipment from the driver, <strong>${data.driverName}</strong>, in good condition on the date specified above."</p>
@@ -1596,16 +1638,17 @@
                 const feedbackSnapshot = await getDocs(feedbackQuery);
                 feedbackCache = feedbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                const drivers = allUsersCache.filter(u => u.role === 'driver' && u.status === 'active');
+                const drivers = allUsersCache.filter(u => u.role === 'driver');
                 const driverStats = drivers.map(driver => {
                     const completed = deliveriesCache.filter(d => d.driverUid === driver.id && d.status === 'Delivered').length;
                     const pending = deliveriesCache.filter(d => d.driverUid === driver.id && d.status !== 'Delivered').length;
+                    const skipped = deliveriesCache.filter(d => d.driverUid === driver.id && d.feedbackStatus === 'skipped').length;
                     
                     const driverFeedback = feedbackCache.filter(f => f.driverUid === driver.id);
                     const totalRatings = driverFeedback.length;
                     const averageRating = totalRatings > 0 ? (driverFeedback.reduce((sum, f) => sum + f.rating, 0) / totalRatings) : 0;
 
-                    return { ...driver, completed, pending, averageRating, totalRatings };
+                    return { ...driver, completed, pending, averageRating, totalRatings, skipped };
                 });
 
                 driverStats.sort((a, b) => b.completed - a.completed); // Sort by most completed
@@ -1635,6 +1678,10 @@
                                 <div>
                                     <p class="text-2xl font-bold text-yellow-600">${stat.pending}</p>
                                     <p class="text-xs text-gray-500">Pending</p>
+                                </div>
+                                 <div>
+                                    <p class="text-2xl font-bold text-red-500">${stat.skipped}</p>
+                                    <p class="text-xs text-gray-500">Skipped</p>
                                 </div>
                             </div>
                             <div>
@@ -1728,6 +1775,17 @@
             document.body.classList.remove('loading');
             showLoader();
             try {
+                 // First, check if feedback already exists
+                const feedbackRef = doc(db, 'feedback', feedbackId);
+                const feedbackSnap = await getDoc(feedbackRef);
+
+                if (feedbackSnap.exists()) {
+                    document.getElementById('feedback-form-container').style.display = 'none';
+                    document.getElementById('feedback-thanks-message').style.display = 'block';
+                    document.getElementById('feedback-thanks-message').innerHTML += '<p class="text-sm mt-2">You have already rated this delivery.</p>';
+                    return; 
+                }
+
                 const deliveryRef = doc(db, 'deliveries', feedbackId);
                 const deliverySnap = await getDoc(deliveryRef);
                 if (deliverySnap.exists()) {
@@ -1800,15 +1858,21 @@
             if (driverFeedback.length === 0) {
                 list.innerHTML = '<p class="text-gray-500 text-center p-4">This driver has not received any feedback yet.</p>';
             } else {
-                list.innerHTML = driverFeedback.map(feedback => `
+                list.innerHTML = driverFeedback.map(feedback => {
+                    const delivery = deliveriesCache.find(d => d.id === feedback.deliveryId);
+                    const jobFileNo = delivery?.jobFileData?.jfn || 'N/A';
+                    return `
                     <div class="p-3 border rounded-lg bg-gray-50">
                         <div class="flex justify-between items-center">
-                            <p class="text-xl text-yellow-500">${'★'.repeat(feedback.rating)}${'☆'.repeat(5 - feedback.rating)}</p>
+                           <div>
+                             <p class="text-xl text-yellow-500">${'★'.repeat(feedback.rating)}${'☆'.repeat(5 - feedback.rating)}</p>
+                             <p class="text-xs text-gray-500 mt-1">For Job: <strong>${jobFileNo}</strong></p>
+                           </div>
                             <p class="text-xs text-gray-400">${feedback.createdAt?.toDate().toLocaleString()}</p>
                         </div>
                         <p class="mt-2 text-gray-700">${feedback.comment || '<i>No comment left.</i>'}</p>
                     </div>
-                `).join('');
+                `}).join('');
             }
             
             openModal('view-feedback-modal', true);
@@ -1829,15 +1893,21 @@
                 if (myFeedback.length === 0) {
                     list.innerHTML = '<p class="text-gray-500 text-center p-4">You have not received any feedback yet.</p>';
                 } else {
-                    list.innerHTML = myFeedback.map(feedback => `
+                    list.innerHTML = myFeedback.map(feedback => {
+                        const delivery = deliveriesCache.find(d => d.id === feedback.deliveryId);
+                        const jobFileNo = delivery?.jobFileData?.jfn || 'N/A';
+                        return `
                         <div class="p-3 border rounded-lg bg-gray-50">
                             <div class="flex justify-between items-center">
-                                <p class="text-xl text-yellow-500">${'★'.repeat(feedback.rating)}${'☆'.repeat(5 - feedback.rating)}</p>
+                                <div>
+                                     <p class="text-xl text-yellow-500">${'★'.repeat(feedback.rating)}${'☆'.repeat(5 - feedback.rating)}</p>
+                                     <p class="text-xs text-gray-500 mt-1">For Job: <strong>${jobFileNo}</strong></p>
+                                </div>
                                 <p class="text-xs text-gray-400">${feedback.createdAt?.toDate().toLocaleString()}</p>
                             </div>
                             <p class="mt-2 text-gray-700">${feedback.comment || '<i>No comment left.</i>'}</p>
                         </div>
-                    `).join('');
+                    `}).join('');
                 }
                 openModal('view-feedback-modal');
 
@@ -1847,6 +1917,145 @@
              } finally {
                 hideLoader();
              }
+        }
+        
+        async function handleModalFeedbackSubmit(deliveryId, receiverName) {
+            const rating = document.querySelector('input[name="modal-rating"]:checked');
+            const comment = document.getElementById('modal-feedback-comment').value.trim();
+
+            if (!rating) {
+                showNotification("Please ask the recipient to select a star rating.", true);
+                return;
+            }
+            
+            showLoader();
+            try {
+                const deliveryRef = doc(db, 'deliveries', deliveryId);
+                const deliverySnap = await getDoc(deliveryRef);
+                if (!deliverySnap.exists()) throw new Error("Original delivery not found.");
+                const deliveryData = deliverySnap.data();
+
+                const feedbackData = {
+                    deliveryId: deliveryId,
+                    driverUid: deliveryData.driverUid,
+                    driverName: deliveryData.driverName,
+                    rating: parseInt(rating.value, 10),
+                    comment: comment,
+                    createdAt: serverTimestamp(),
+                    submittedBy: receiverName 
+                };
+                
+                await setDoc(doc(db, 'feedback', deliveryId), feedbackData);
+                await updateDoc(deliveryRef, { feedbackStatus: 'rated' });
+                
+                closeModal('delivery-completion-modal');
+                openReceiptModal(deliveryId);
+
+            } catch (error) {
+                console.error("Error submitting modal feedback:", error);
+                showNotification("Could not submit feedback.", true);
+            } finally {
+                hideLoader();
+            }
+        }
+        
+        async function handleModalFeedbackSkip(deliveryId) {
+            showLoader();
+            try {
+                const deliveryRef = doc(db, 'deliveries', deliveryId);
+                await updateDoc(deliveryRef, { feedbackStatus: 'skipped' });
+                closeModal('delivery-completion-modal');
+                openReceiptModal(deliveryId);
+            } catch (error) {
+                console.error("Error skipping feedback:", error);
+                showNotification("Could not skip feedback.", true);
+            } finally {
+                hideLoader();
+            }
+        }
+
+         async function shareReceipt() {
+            const receiptElement = document.getElementById('receipt-content');
+            const jobData = activeDeliveryForReceipt.jobFileData;
+            const publicUrl = `${window.location.origin}${window.location.pathname}?podId=${activeDeliveryForReceipt.deliveryId}`;
+
+            try {
+                const canvas = await html2canvas(receiptElement, { scale: 2 });
+                canvas.toBlob(async (blob) => {
+                    const file = new File([blob], `Receipt-${jobData.jfn}.png`, { type: 'image/png' });
+                    const shareData = {
+                        title: `Delivery Receipt for ${jobData.jfn}`,
+                        text: `View the delivery receipt for job file ${jobData.jfn}.`,
+                        url: publicUrl,
+                        files: [file]
+                    };
+
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share(shareData);
+                    } else if (navigator.canShare && navigator.canShare({url: publicUrl})) {
+                         await navigator.share({
+                            title: `Delivery Receipt for ${jobData.jfn}`,
+                            text: `View the delivery receipt for job file ${jobData.jfn}.`,
+                            url: publicUrl
+                        });
+                    } else {
+                        showNotification("Sharing is not supported on this browser.", true);
+                    }
+                }, 'image/png');
+
+            } catch (error) {
+                console.error('Error sharing receipt:', error);
+                showNotification('Could not share receipt.', true);
+            }
+        }
+
+        function copyReceiptLink() {
+             const publicUrl = `${window.location.origin}${window.location.pathname}?podId=${activeDeliveryForReceipt.deliveryId}`;
+             navigator.clipboard.writeText(publicUrl).then(() => {
+                showNotification("Link copied to clipboard!");
+             }, () => {
+                showNotification("Could not copy link.", true);
+             });
+        }
+
+        async function displayDriverPerformanceSummary(driverId, tasks) {
+            const summaryEl = document.getElementById('driver-performance-summary');
+            if (!summaryEl) return;
+
+            try {
+                const feedbackQuery = query(collection(db, "feedback"), where("driverUid", "==", driverId));
+                const feedbackSnapshot = await getDocs(feedbackQuery);
+                const driverFeedback = feedbackSnapshot.docs.map(doc => doc.data());
+
+                const completed = tasks.filter(d => d.status === 'Delivered').length;
+                const pending = tasks.length - completed;
+                
+                const totalRatings = driverFeedback.length;
+                const averageRating = totalRatings > 0 ? (driverFeedback.reduce((sum, f) => sum + f.rating, 0) / totalRatings) : 0;
+                
+                const starRating = '★'.repeat(Math.round(averageRating)) + '☆'.repeat(5 - Math.round(averageRating));
+
+                summaryEl.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                        <div class="bg-yellow-100 p-4 rounded-lg" title="Average Rating: ${averageRating.toFixed(2)} (${totalRatings} ratings)">
+                            <p class="text-sm text-yellow-800">My Average Rating</p>
+                            <p class="text-3xl font-bold text-yellow-500 mt-1">${starRating}</p>
+                        </div>
+                        <div class="bg-green-100 p-4 rounded-lg">
+                            <p class="text-sm text-green-800">Completed Deliveries</p>
+                            <p class="text-3xl font-bold text-green-900">${completed}</p>
+                        </div>
+                        <div class="bg-blue-100 p-4 rounded-lg">
+                            <p class="text-sm text-blue-800">Pending Deliveries</p>
+                            <p class="text-3xl font-bold text-blue-900">${pending}</p>
+                        </div>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error("Error displaying driver performance summary:", error);
+                summaryEl.innerHTML = '<p class="text-red-500 text-center">Could not load performance summary.</p>';
+            }
         }
 
 
@@ -1909,6 +2118,9 @@
             document.getElementById('driver-dashboard-btn').addEventListener('click', openDriverPerformanceDashboard);
             document.getElementById('feedback-form').addEventListener('submit', handleFeedbackSubmit);
             document.getElementById('my-feedback-btn').addEventListener('click', showMyFeedback);
+            document.getElementById('share-btn').addEventListener('click', shareReceipt);
+            document.getElementById('copy-link-btn').addEventListener('click', copyReceiptLink);
+
 
             const confirmCancelBtn = document.getElementById('confirm-cancel');
             confirmCancelBtn.addEventListener('click', () => {
