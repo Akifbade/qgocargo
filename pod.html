@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root { --theme-color: #4f46e5; }
@@ -155,9 +156,20 @@
                         Sign in
                     </button>
                 </div>
+                 <div class="flex items-center justify-between text-sm mt-4">
+                    <a href="#" id="forgot-password-link" class="font-medium text-indigo-600 hover:text-indigo-500">
+                        Forgot your password?
+                    </a>
+                     <a href="#" id="create-driver-account-link" class="font-medium text-green-600 hover:text-green-500">
+                        Create a Driver Account
+                    </a>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Public POD View -->
+    <div id="public-pod-view" class="hidden"></div>
 
 
     <!-- Main Application Container (Hidden by default) -->
@@ -312,6 +324,50 @@
             </div>
         </div>
     </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgot-password-modal" class="overlay">
+        <div class="modal-content max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Reset Password</h3>
+                <button onclick="closeModal('forgot-password-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <p class="mb-4 text-gray-600">Enter your email and we'll send a password reset link.</p>
+            <form id="forgot-password-form" novalidate>
+                <input id="reset-email" type="email" class="input-field" placeholder="Email address">
+                <div class="text-right mt-4">
+                    <button type="submit" class="btn btn-primary">Send Reset Link</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Driver Sign-Up Modal -->
+    <div id="signup-modal" class="overlay">
+        <div class="modal-content max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">Create Driver Account</h3>
+                <button onclick="closeModal('signup-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <form id="signup-form" class="space-y-4" novalidate>
+                <div>
+                    <label for="signup-name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                    <input type="text" id="signup-name" class="input-field mt-1">
+                </div>
+                <div>
+                    <label for="signup-email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                    <input type="email" id="signup-email" class="input-field mt-1">
+                </div>
+                <div>
+                    <label for="signup-password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="signup-password" class="input-field mt-1">
+                </div>
+                <div class="text-right pt-4">
+                    <button type="submit" class="btn btn-primary w-full">Create Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
     
     <!-- Admin Panel Modal -->
     <div id="admin-panel-modal" class="overlay">
@@ -399,8 +455,8 @@
     <!-- Firebase SDK and App Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, serverTimestamp, getDocs, writeBatch, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, serverTimestamp, getDocs, writeBatch, addDoc, updateDoc, deleteDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- Global variables ---
         let db, auth;
@@ -434,32 +490,36 @@
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                const podId = urlParams.get('podId');
 
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        const userDocRef = doc(db, 'users', user.uid);
-                        const userDoc = await getDoc(userDocRef);
+                if (podId) {
+                    showPublicPodView(podId);
+                } else {
+                    onAuthStateChanged(auth, async (user) => {
+                        if (user) {
+                            const userDocRef = doc(db, 'users', user.uid);
+                            const userDoc = await getDoc(userDocRef);
 
-                        if (userDoc.exists() && userDoc.data().status === 'active') {
-                            currentUser = { uid: user.uid, ...userDoc.data() };
-                            console.log("User logged in:", currentUser);
-                            showApp();
-                        } else {
-                            if (userDoc.exists()) {
-                                showNotification("Your account is pending admin approval.", true);
+                            if (userDoc.exists() && userDoc.data().status === 'active') {
+                                currentUser = { uid: user.uid, ...userDoc.data() };
+                                showApp();
+                            } else {
+                                if (userDoc.exists()) {
+                                    showNotification("Your account is pending admin approval.", true);
+                                }
+                                currentUser = null;
+                                await signOut(auth);
+                                showLogin();
                             }
+                        } else {
                             currentUser = null;
-                            await signOut(auth);
                             showLogin();
                         }
-                    } else {
-                        currentUser = null;
-                        console.log("No user signed in.");
-                        showLogin();
-                    }
-                    document.body.classList.remove('loading');
-                });
-
+                        document.body.classList.remove('loading');
+                    });
+                }
             } catch (error) {
                 console.error("Firebase initialization failed:", error);
                 showNotification("Could not connect to the database.", true);
@@ -489,6 +549,74 @@
                 hideLoader();
             }
         }
+        
+         async function handleForgotPassword(e) {
+            e.preventDefault();
+            const email = document.getElementById('reset-email').value.trim();
+            if (!email) {
+                showNotification("Please enter your email address.", true);
+                return;
+            }
+            showLoader();
+            try {
+                await sendPasswordResetEmail(auth, email);
+                hideLoader();
+                closeModal('forgot-password-modal');
+                showNotification("Password reset link sent! Check your email inbox.", false);
+            } catch (error) {
+                hideLoader();
+                console.error("Password reset error:", error);
+                showNotification("Could not send reset link. Please try again.", true);
+            }
+        }
+        
+        async function handleDriverSignUp(e) {
+            e.preventDefault();
+            const name = document.getElementById('signup-name').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value;
+
+            if (!name || !email || !password) {
+                showNotification("Please fill in all fields.", true);
+                return;
+            }
+            if (password.length < 6) {
+                showNotification("Password should be at least 6 characters.", true);
+                return;
+            }
+
+            showLoader();
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                const userDocRef = doc(db, 'users', user.uid);
+                const newUser = {
+                    displayName: name,
+                    email: email,
+                    role: 'driver',
+                    status: 'inactive', // Admin must approve
+                    createdAt: serverTimestamp()
+                };
+                await setDoc(userDocRef, newUser);
+
+                await signOut(auth);
+
+                closeModal('signup-modal');
+                showNotification("Account created. Please wait for admin approval.", false);
+
+            } catch (error) {
+                console.error("Sign up error:", error);
+                let message = "Could not create account. Please try again.";
+                if (error.code === 'auth/email-already-in-use') {
+                    message = "An account with this email already exists.";
+                }
+                showNotification(message, true);
+            } finally {
+                hideLoader();
+            }
+        }
+
 
         // --- UI & View Management ---
         function showLogin() {
@@ -498,6 +626,7 @@
 
         function showApp() {
             document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('public-pod-view').style.display = 'none';
             document.getElementById('app-container').style.display = 'block';
             
             document.getElementById('user-display-name').textContent = currentUser.displayName;
@@ -656,18 +785,26 @@
             const card = document.createElement('div');
             card.className = 'border p-3 rounded-lg bg-gray-50';
             const jobData = delivery.jobFileData || {};
-            let deliveredInfo = '';
+            let actionButtons = '';
+
             if (delivery.status === 'Delivered') {
-                 deliveredInfo = `
+                if (currentUser.role === 'admin') {
+                     actionButtons += `<button class="btn btn-danger btn-xs text-xs" onclick="confirmPodCancel('${delivery.id}', '${jobData.jfn}')">Cancel POD</button>`;
+                }
+                actionButtons += `${delivery.podId ? `<button class="btn btn-secondary btn-xs text-xs" onclick="openReceiptModal('${delivery.id}')">View Receipt</button>` : ''}`;
+            }
+
+            const deliveredInfo = delivery.status === 'Delivered' ? `
                     <div class="mt-2 pt-2 border-t flex justify-between items-center">
                         <div>
                             <p class="text-xs"><strong>Receiver:</strong> ${delivery.receiverName || 'N/A'}</p>
                             <p class="text-xs"><strong>Completed:</strong> ${delivery.completedAt?.toDate().toLocaleString() || 'N/A'}</p>
                         </div>
-                        ${delivery.podId ? `<button class="btn btn-secondary btn-xs text-xs" onclick="openReceiptModal('${delivery.id}')">View Receipt</button>` : ''}
+                        <div class="flex gap-2">
+                           ${actionButtons}
+                        </div>
                     </div>
-                `;
-            }
+                ` : '';
 
             card.innerHTML = `
                 <div class="flex justify-between items-start">
@@ -682,12 +819,6 @@
                 </div>
                 ${deliveredInfo}
             `;
-
-            // Re-attach event listener since innerHTML removes it
-            const viewReceiptBtn = card.querySelector('button');
-            if (viewReceiptBtn) {
-                viewReceiptBtn.onclick = () => openReceiptModal(delivery.id);
-            }
 
             return card;
         }
@@ -1023,16 +1154,28 @@
                         <p><strong>Delivery Location:</strong> ${activeDeliveryForReceipt.deliveryLocation || activeDeliveryForReceipt.jobFileData.de}</p>
                         <p><strong>Receiver Mobile:</strong> ${activeDeliveryForReceipt.receiverMobile || 'N/A'}</p>
                      </div>
-                     <div class="bg-gray-50 p-3 rounded-md">
-                        <p class="text-sm font-semibold">Recipient Confirmation</p>
-                        <p class="text-xs mt-1">I, <strong>${receiverName}</strong>, confirm the receipt of the goods on <strong>${deliveryDate}</strong>.</p>
-                        <div class="mt-2">
-                            <p class="text-xs mb-1 text-gray-600">Signature:</p>
-                            <img src="${activeDeliveryForReceipt.signatureDataUrl}" alt="Signature" class="w-40 bg-white border p-1 rounded-md"/>
+                     <div class="bg-gray-50 p-3 rounded-md flex justify-between items-end">
+                        <div>
+                            <p class="text-sm font-semibold">Recipient Confirmation</p>
+                            <p class="text-xs mt-1">I, <strong>${receiverName}</strong>, confirm the receipt of the goods on <strong>${deliveryDate}</strong>.</p>
+                            <div class="mt-2">
+                                <p class="text-xs mb-1 text-gray-600">Signature:</p>
+                                <img src="${activeDeliveryForReceipt.signatureDataUrl}" alt="Signature" class="w-40 bg-white border p-1 rounded-md"/>
+                            </div>
                         </div>
+                        <div id="receipt-qrcode" class="p-1 bg-white border rounded-md"></div>
                     </div>
                 </div>
             `;
+            
+            // Generate QR Code
+            const qrContainer = document.getElementById('receipt-qrcode');
+            qrContainer.innerHTML = '';
+            new QRCode(qrContainer, {
+                text: window.location.origin + window.location.pathname + '?podId=' + activeDeliveryForReceipt.deliveryId,
+                width: 80,
+                height: 80,
+            });
         }
         
         async function downloadReceiptAsPDF() {
@@ -1066,13 +1209,24 @@
             const printWindow = window.open('', '', 'height=600,width=800');
             printWindow.document.write('<html><head><title>Delivery Receipt</title>');
             printWindow.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
+            printWindow.document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>');
             printWindow.document.write('</head><body class="p-6">');
             printWindow.document.write(receiptHTML);
+            printWindow.document.write(`
+                <script>
+                    const qrContainer = document.getElementById('receipt-qrcode');
+                    if (qrContainer) {
+                         new QRCode(qrContainer, {
+                            text: "${window.location.origin + window.location.pathname + '?podId=' + activeDeliveryForReceipt.deliveryId}",
+                            width: 80,
+                            height: 80,
+                        });
+                        setTimeout(() => window.print(), 500);
+                    }
+                <\/script>
+            `);
             printWindow.document.write('</body></html>');
             printWindow.document.close();
-            setTimeout(() => {
-                printWindow.print();
-            }, 500);
         }
         
         function renderUserSimulationView() {
