@@ -171,9 +171,9 @@
 <body class="bg-gray-100 loading">
 
     <!-- Login Screen -->
-     <div id="login-screen" class="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+    <div id="login-screen" class="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <div class="max-w-md w-full space-y-8">
-             <div class="text-center">
+            <div class="text-center">
                 <h1 class="qg-logo text-5xl">Q'go<span>Cargo</span></h1>
                 <h2 class="mt-4 text-center text-2xl font-bold text-gray-700">Delivery Management Portal</h2>
             </div>
@@ -188,7 +188,7 @@
                 <div>
                     <button id="auth-btn" class="btn btn-primary w-full text-lg">Sign in</button>
                 </div>
-                 <div class="text-center text-sm text-gray-600">
+                <div class="text-center text-sm text-gray-600">
                     <p>New Driver? <a href="#" id="driver-signup-link" class="font-medium text-indigo-600 hover:text-indigo-500">Sign up here</a></p>
                 </div>
             </div>
@@ -200,38 +200,38 @@
 
     <!-- Public Feedback View -->
     <div id="public-feedback-view" class="hidden min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-         <div class="max-w-lg w-full space-y-6 bg-white p-8 rounded-xl shadow-lg text-center">
+        <div class="max-w-lg w-full space-y-6 bg-white p-8 rounded-xl shadow-lg text-center">
             <h1 class="qg-logo text-4xl">Q'go<span>Cargo</span></h1>
             <div id="feedback-form-container">
-                 <h2 class="text-2xl font-bold text-gray-800">Rate Your Delivery</h2>
-                 <p class="text-gray-500 mt-2">Job File: <span id="feedback-job-no" class="font-medium"></span></p>
-                 <p class="text-gray-500">Driver: <span id="feedback-driver-name" class="font-medium"></span></p>
-                 <form id="feedback-form" class="mt-6 space-y-6">
+                <h2 class="text-2xl font-bold text-gray-800">Rate Your Delivery</h2>
+                <p class="text-gray-500 mt-2">Job File: <span id="feedback-job-no" class="font-medium"></span></p>
+                <p class="text-gray-500">Driver: <span id="feedback-driver-name" class="font-medium"></span></p>
+                <form id="feedback-form" class="mt-6 space-y-6">
                     <input type="hidden" id="feedback-delivery-id">
-                     <div>
-                         <label class="block text-sm font-medium text-gray-700 mb-2">Your Rating</label>
-                         <div class="rating-stars">
-                             <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="5 stars">★</label>
-                             <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 stars">★</label>
-                             <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="3 stars">★</label>
-                             <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="2 stars">★</label>
-                             <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="1 star">★</label>
-                         </div>
-                     </div>
-                     <div>
-                         <label for="feedback-comment" class="block text-sm font-medium text-gray-700">Comments (Optional)</label>
-                         <textarea id="feedback-comment" rows="4" class="input-field mt-1" placeholder="Tell us about your experience..."></textarea>
-                     </div>
-                     <div>
-                         <button type="submit" class="btn btn-primary w-full">Submit Feedback</button>
-                     </div>
-                 </form>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Your Rating</label>
+                        <div class="rating-stars">
+                            <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="5 stars">★</label>
+                            <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 stars">★</label>
+                            <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="3 stars">★</label>
+                            <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="2 stars">★</label>
+                            <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="1 star">★</label>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="feedback-comment" class="block text-sm font-medium text-gray-700">Comments (Optional)</label>
+                        <textarea id="feedback-comment" rows="4" class="input-field mt-1" placeholder="Tell us about your experience..."></textarea>
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-primary w-full">Submit Feedback</button>
+                    </div>
+                </form>
             </div>
             <div id="feedback-thanks-message" class="hidden">
-                 <h2 class="text-2xl font-bold text-gray-800">Thank You!</h2>
-                 <p class="text-gray-600 mt-2">Your feedback has been submitted successfully.</p>
+                <h2 class="text-2xl font-bold text-gray-800">Thank You!</h2>
+                <p class="text-gray-600 mt-2">Your feedback has been submitted successfully.</p>
             </div>
-         </div>
+        </div>
     </div>
 
 
@@ -255,116 +255,116 @@
 
         <!-- Admin / Staff View -->
         <div id="admin-staff-view" class="hidden space-y-12">
-                <!-- 1. Dashboard / Overview -->
-                <section id="dashboard-section" class="space-y-6">
-                    <!-- Stat Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-5 border-l-4 border-yellow-400 delivery-card">
-                            <div class="bg-yellow-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
-                            <div><p class="text-base text-gray-500">Pending</p><p id="stat-pending" class="text-3xl font-extrabold text-gray-800">0</p></div>
+            <!-- 1. Dashboard / Overview -->
+            <section id="dashboard-section" class="space-y-6">
+                <!-- Stat Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-5 border-l-4 border-yellow-400 delivery-card">
+                        <div class="bg-yellow-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
+                        <div><p class="text-base text-gray-500">Pending</p><p id="stat-pending" class="text-3xl font-extrabold text-gray-800">0</p></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-5 border-l-4 border-green-400 delivery-card">
+                        <div class="bg-green-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
+                        <div><p class="text-base text-gray-500">Completed</p><p id="stat-completed" class="text-3xl font-extrabold text-gray-800">0</p></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-5 border-l-4 border-blue-400 delivery-card">
+                        <div class="bg-blue-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h8a1 1 0 001-1z" /></svg></div>
+                        <div><p class="text-base text-gray-500">Total Deliveries</p><p id="stat-total" class="text-3xl font-extrabold text-gray-800">0</p></div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 2. Assign New Delivery -->
+            <section class="bg-white p-6 rounded-xl shadow-md">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                    <span>Assign New Delivery</span>
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8">
+                    <div class="space-y-4">
+                        <div class="relative">
+                            <label for="job-file-search" class="block text-sm font-medium text-gray-700 mb-1">Search Job File</label>
+                            <input type="text" id="job-file-search" class="input-field" placeholder="Job No, Shipper, or Consignee...">
+                            <div id="job-file-suggestions" class="suggestions-container hidden"></div>
                         </div>
-                        <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-5 border-l-4 border-green-400 delivery-card">
-                            <div class="bg-green-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
-                            <div><p class="text-base text-gray-500">Completed</p><p id="stat-completed" class="text-3xl font-extrabold text-gray-800">0</p></div>
-                        </div>
-                        <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-5 border-l-4 border-blue-400 delivery-card">
-                            <div class="bg-blue-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h8a1 1 0 001-1z" /></svg></div>
-                            <div><p class="text-base text-gray-500">Total Deliveries</p><p id="stat-total" class="text-3xl font-extrabold text-gray-800">0</p></div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Job Details</label>
+                            <div class="p-3 bg-gray-50 rounded-md text-sm border">
+                                <p><strong>Job No:</strong> <span id="form-job-file-no">Select a job</span></p>
+                                <p><strong>Details:</strong> <span id="form-job-shipper-consignee">N/A</span></p>
+                            </div>
                         </div>
                     </div>
-                </section>
-                
-                <!-- 2. Assign New Delivery -->
-                <section class="bg-white p-6 rounded-xl shadow-md">
+                    <form id="delivery-form" class="space-y-4" novalidate>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="delivery-origin" class="block text-sm font-medium text-gray-700 mb-1">Country of Origin</label>
+                                <input type="text" id="delivery-origin" class="input-field" placeholder="Auto-filled from Job">
+                            </div>
+                            <div>
+                                <label for="delivery-destination" class="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+                                <input type="text" id="delivery-destination" class="input-field" placeholder="Auto-filled from Job">
+                            </div>
+                            <div>
+                                <label for="delivery-airlines" class="block text-sm font-medium text-gray-700 mb-1">Airlines</label>
+                                <input type="text" id="delivery-airlines" class="input-field" placeholder="Auto-filled from Job">
+                            </div>
+                            <div>
+                                <label for="delivery-mawb" class="block text-sm font-medium text-gray-700 mb-1">AWB / MAWB</label>
+                                <input type="text" id="delivery-mawb" class="input-field" placeholder="Auto-filled from Job">
+                            </div>
+                            <div class="col-span-2">
+                                <label for="delivery-inv" class="block text-sm font-medium text-gray-700 mb-1">Invoice No.</label>
+                                <input type="text" id="delivery-inv" class="input-field" placeholder="Auto-filled from Job">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="delivery-location" class="block text-sm font-medium text-gray-700 mb-1">Delivery Location</label>
+                            <textarea id="delivery-location" rows="2" class="input-field" placeholder="Enter the full delivery address"></textarea>
+                        </div>
+                        <div>
+                            <label for="additional-notes" class="block text-sm font-medium text-gray-700 mb-1">Additional Notes (Optional)</label>
+                            <textarea id="additional-notes" rows="2" class="input-field" placeholder="e.g., Contact person, delivery instructions"></textarea>
+                        </div>
+                        <div>
+                            <label for="driver-select" class="block text-sm font-medium text-gray-700 mb-1">Assign Driver</label>
+                            <select id="driver-select" class="input-field">
+                                <option value="">-- Select a Driver --</option>
+                            </select>
+                        </div>
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-primary">Assign Delivery</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- 3. Delivery Lists -->
+            <section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-md">
                     <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
-                        <span>Assign New Delivery</span>
+                       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                       <span>Pending Deliveries</span>
                     </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8">
-                        <div class="space-y-4">
-                            <div class="relative">
-                                <label for="job-file-search" class="block text-sm font-medium text-gray-700 mb-1">Search Job File</label>
-                                <input type="text" id="job-file-search" class="input-field" placeholder="Job No, Shipper, or Consignee...">
-                                <div id="job-file-suggestions" class="suggestions-container hidden"></div>
-                            </div>
-                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Job Details</label>
-                                <div class="p-3 bg-gray-50 rounded-md text-sm border">
-                                    <p><strong>Job No:</strong> <span id="form-job-file-no">Select a job</span></p>
-                                    <p><strong>Details:</strong> <span id="form-job-shipper-consignee">N/A</span></p>
-                                </div>
-                            </div>
-                        </div>
-                        <form id="delivery-form" class="space-y-4" novalidate>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="delivery-origin" class="block text-sm font-medium text-gray-700 mb-1">Country of Origin</label>
-                                    <input type="text" id="delivery-origin" class="input-field" placeholder="Auto-filled from Job">
-                                </div>
-                                <div>
-                                    <label for="delivery-destination" class="block text-sm font-medium text-gray-700 mb-1">Destination</label>
-                                    <input type="text" id="delivery-destination" class="input-field" placeholder="Auto-filled from Job">
-                                </div>
-                                <div>
-                                    <label for="delivery-airlines" class="block text-sm font-medium text-gray-700 mb-1">Airlines</label>
-                                    <input type="text" id="delivery-airlines" class="input-field" placeholder="Auto-filled from Job">
-                                </div>
-                                 <div>
-                                    <label for="delivery-mawb" class="block text-sm font-medium text-gray-700 mb-1">AWB / MAWB</label>
-                                    <input type="text" id="delivery-mawb" class="input-field" placeholder="Auto-filled from Job">
-                                </div>
-                                <div class="col-span-2">
-                                    <label for="delivery-inv" class="block text-sm font-medium text-gray-700 mb-1">Invoice No.</label>
-                                    <input type="text" id="delivery-inv" class="input-field" placeholder="Auto-filled from Job">
-                                </div>
-                            </div>
-
-                            <div>
-                                <label for="delivery-location" class="block text-sm font-medium text-gray-700 mb-1">Delivery Location</label>
-                                <textarea id="delivery-location" rows="2" class="input-field" placeholder="Enter the full delivery address"></textarea>
-                            </div>
-                            <div>
-                                <label for="additional-notes" class="block text-sm font-medium text-gray-700 mb-1">Additional Notes (Optional)</label>
-                                <textarea id="additional-notes" rows="2" class="input-field" placeholder="e.g., Contact person, delivery instructions"></textarea>
-                            </div>
-                            <div>
-                                <label for="driver-select" class="block text-sm font-medium text-gray-700 mb-1">Assign Driver</label>
-                                <select id="driver-select" class="input-field">
-                                    <option value="">-- Select a Driver --</option>
-                                </select>
-                            </div>
-                            <div class="text-right">
-                                 <button type="submit" class="btn btn-primary">Assign Delivery</button>
-                            </div>
-                        </form>
-                    </div>
-                </section>
-
-                <!-- 3. Delivery Lists -->
-                <section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="bg-white p-6 rounded-xl shadow-md">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-3">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                           <span>Pending Deliveries</span>
-                        </h2>
-                        <input type="text" id="pending-search" class="input-field mb-4" placeholder="Search pending deliveries...">
-                        <div id="pending-deliveries-list" class="space-y-4 max-h-96 overflow-y-auto"></div>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-md">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            <span>Completed Deliveries</span>
-                        </h2>
-                        <input type="text" id="completed-search" class="input-field mb-4" placeholder="Search completed deliveries...">
-                        <div id="completed-deliveries-list" class="space-y-4 max-h-96 overflow-y-auto"></div>
-                    </div>
-                </section>
+                    <input type="text" id="pending-search" class="input-field mb-4" placeholder="Search pending deliveries...">
+                    <div id="pending-deliveries-list" class="space-y-4 max-h-96 overflow-y-auto"></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <span>Completed Deliveries</span>
+                    </h2>
+                    <input type="text" id="completed-search" class="input-field mb-4" placeholder="Search completed deliveries...">
+                    <div id="completed-deliveries-list" class="space-y-4 max-h-96 overflow-y-auto"></div>
+                </div>
+            </section>
         </div>
 
         <!-- Driver View -->
         <div id="driver-view" class="hidden">
             <section class="bg-white p-6 rounded-xl shadow-md">
-                 <div class="flex justify-between items-center mb-6 pb-4 border-b">
+                <div class="flex justify-between items-center mb-6 pb-4 border-b">
                     <h2 class="text-2xl font-bold text-gray-800">My Dashboard</h2>
                     <button id="my-feedback-btn" class="btn btn-primary text-sm">My Feedback & Ratings</button>
                 </div>
@@ -440,10 +440,10 @@
                             <canvas id="completion-signature-pad" class="signature-pad-canvas absolute top-0 left-0 w-full h-full"></canvas>
                         </div>
                         <div class="text-right mt-1">
-                             <button type="button" id="clear-completion-signature-btn" class="btn btn-secondary text-xs">Clear</button>
+                            <button type="button" id="clear-completion-signature-btn" class="btn btn-secondary text-xs">Clear</button>
                         </div>
                     </div>
-                     <div>
+                    <div>
                         <button type="button" id="get-location-btn" class="btn btn-secondary text-sm w-full">Get Current Location</button>
                         <p id="location-status" class="text-xs text-gray-500 mt-1 text-center"></p>
                     </div>
@@ -452,25 +452,17 @@
                     </div>
                 </form>
             </div>
-            <div id="post-delivery-feedback-wrapper" class="hidden text-center">
-                 <h3 class="text-xl font-bold text-gray-800">Rate this Delivery</h3>
-                 <p class="text-gray-600 mt-2" id="feedback-recipient-name"></p>
-                 <div class="rating-stars my-4">
-                     <input type="radio" id="modal-star5" name="modal-rating" value="5" /><label for="modal-star5" title="5 stars">★</label>
-                     <input type="radio" id="modal-star4" name="modal-rating" value="4" /><label for="modal-star4" title="4 stars">★</label>
-                     <input type="radio" id="modal-star3" name="modal-rating" value="3" /><label for="modal-star3" title="3 stars">★</label>
-                     <input type="radio" id="modal-star2" name="modal-rating" value="2" /><label for="modal-star2" title="2 stars">★</label>
-                     <input type="radio" id="modal-star1" name="modal-rating" value="1" /><label for="modal-star1" title="1 star">★</label>
-                 </div>
-                 <div>
-                     <label for="modal-feedback-comment" class="block text-sm font-medium text-gray-700">Comments (Optional)</label>
-                     <textarea id="modal-feedback-comment" rows="3" class="input-field mt-1" placeholder="Recipient's comments..."></textarea>
-                 </div>
-                 <p class="text-xs text-gray-500 mt-4 italic" id="feedback-confirmation-text"></p>
-                 <div class="flex justify-center items-center gap-4 pt-4">
-                     <button id="skip-feedback-btn" class="btn btn-secondary">Skip</button>
-                     <button id="submit-feedback-btn" class="btn btn-primary">Submit Rating</button>
-                 </div>
+            <!-- This new section will show the QR code after delivery is completed -->
+            <div id="post-delivery-qr-wrapper" class="hidden text-center">
+                <h3 class="text-xl font-bold text-gray-800">Delivery Complete!</h3>
+                <p class="text-gray-600 mt-2 mb-4">Please ask the customer to scan this QR code to rate their delivery experience.</p>
+                <div class="flex justify-center my-4">
+                    <div id="feedback-qrcode-container" class="p-2 bg-white border rounded-lg inline-block"></div>
+                </div>
+                <p class="text-xs text-gray-500">The customer will use their own device to provide feedback.</p>
+                <div class="mt-6 text-center">
+                    <button onclick="closeModal('delivery-completion-modal')" class="btn btn-primary">Finish & Close</button>
+                </div>
             </div>
         </div>
     </div>
@@ -483,16 +475,16 @@
                 <button onclick="closeModal('receipt-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
             
-             <div id="receipt-view">
-                 <div id="receipt-content" class="p-4 border rounded-md">
-                     <!-- Receipt content will be generated here -->
-                 </div>
-                 <div class="text-right mt-4 flex justify-end gap-2">
-                     <button id="copy-link-btn" class="btn btn-secondary">Copy Link</button>
-                     <button id="share-btn" class="btn btn-primary">Share</button>
-                     <button id="pdf-receipt-btn" class="btn btn-secondary">PDF</button>
-                     <button id="print-receipt-btn" class="btn btn-primary">Print</button>
-                 </div>
+            <div id="receipt-view">
+                <div id="receipt-content" class="p-4 border rounded-md">
+                    <!-- Receipt content will be generated here -->
+                </div>
+                <div class="text-right mt-4 flex justify-end gap-2">
+                    <button id="copy-link-btn" class="btn btn-secondary">Copy Link</button>
+                    <button id="share-btn" class="btn btn-primary">Share</button>
+                    <button id="pdf-receipt-btn" class="btn btn-secondary">PDF</button>
+                    <button id="print-receipt-btn" class="btn btn-primary">Print</button>
+                </div>
             </div>
         </div>
     </div>
@@ -560,7 +552,7 @@
         </div>
     </div>
 
-     <!-- User-Specific Jobs Modal (For showing driver deliveries) -->
+    <!-- User-Specific Jobs Modal (For showing driver deliveries) -->
     <div id="user-jobs-modal" class="overlay">
         <div class="modal-content max-w-5xl">
             <div class="flex justify-between items-center mb-4">
@@ -599,7 +591,7 @@
         let jobFilesCache = [];
         let allUsersCache = [];
         let deliveriesCache = [];
-        let feedbackCache = []; // New cache for feedback
+        let feedbackCache = [];
         let selectedJobFile = null;
         let currentGeolocation = null;
         let deliveriesUnsubscribe = () => {};
@@ -700,7 +692,7 @@
                 return;
             }
             if(password.length < 6) {
-                 showNotification("Password must be at least 6 characters long.", true);
+                showNotification("Password must be at least 6 characters long.", true);
                 return;
             }
             showLoader();
@@ -722,12 +714,12 @@
                 await signOut(auth);
 
             } catch (error) {
-                 console.error("Signup failed:", error);
-                 if (error.code === 'auth/email-already-in-use') {
+                console.error("Signup failed:", error);
+                if (error.code === 'auth/email-already-in-use') {
                     showNotification("This email address is already in use.", true);
-                 } else {
+                } else {
                     showNotification("Could not create account. Please try again.", true);
-                 }
+                }
             } finally {
                 hideLoader();
             }
@@ -746,8 +738,8 @@
                 closeModal('forgot-password-modal');
                 showNotification("Password reset link sent! Check your email.", false);
             } catch (error) {
-                 console.error("Password reset failed:", error);
-                 showNotification("Could not send reset link. Check the email address.", true);
+                console.error("Password reset failed:", error);
+                showNotification("Could not send reset link. Check the email address.", true);
             } finally {
                 hideLoader();
             }
@@ -903,7 +895,7 @@
 
             if (delivery.status === 'Delivered') {
                 if (currentUser.role === 'admin') {
-                     actionButtons += `<button class="btn btn-danger btn-xs text-xs" onclick="confirmPodCancel('${delivery.id}', '${jobData.jfn}')">Cancel POD</button>`;
+                    actionButtons += `<button class="btn btn-danger btn-xs text-xs" onclick="confirmPodCancel('${delivery.id}', '${jobData.jfn}')">Cancel POD</button>`;
                 }
                 actionButtons += `${delivery.podId ? `<button class="btn btn-secondary btn-xs text-xs" onclick="openReceiptModal('${delivery.id}')">View Receipt</button>` : ''}`;
             }
@@ -1056,8 +1048,8 @@
 
             let actionButton = '';
             if (task.status === 'Pending') {
-                 actionButton = `<button class="btn btn-primary text-sm">Complete Delivery</button>`;
-                 taskCard.classList.add('cursor-pointer', 'hover:bg-gray-50');
+                actionButton = `<button class="btn btn-primary text-sm">Complete Delivery</button>`;
+                taskCard.classList.add('cursor-pointer', 'hover:bg-gray-50');
             } else {
                 actionButton = `<button class="btn btn-secondary text-sm">View Receipt</button>`;
             }
@@ -1077,14 +1069,14 @@
                     </div>
                 </div>
             `;
-             taskCard.querySelector('button')?.addEventListener('click', (e) => {
+            taskCard.querySelector('button')?.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (task.status === 'Pending') {
                     openCompletionModal(task)
                 } else {
                     openReceiptModal(task.id)
                 }
-             });
+            });
             return taskCard;
         }
 
@@ -1106,7 +1098,7 @@
                 if (tasks.length > 0) {
                     tasks.forEach(task => listEl.appendChild(createDriverTaskCard(task)));
                 } else {
-                     listEl.innerHTML = '<p class="text-gray-500">You have no assigned deliveries.</p>';
+                    listEl.innerHTML = '<p class="text-gray-500">You have no assigned deliveries.</p>';
                 }
                 
                 // Display performance summary on driver page
@@ -1127,7 +1119,7 @@
 
             // Reset modal to show completion form first
             document.getElementById('completion-form-wrapper').style.display = 'block';
-            document.getElementById('post-delivery-feedback-wrapper').style.display = 'none';
+            document.getElementById('post-delivery-qr-wrapper').style.display = 'none';
 
             
             const canvas = document.getElementById('completion-signature-pad');
@@ -1166,7 +1158,7 @@
                 showNotification("Please enter the receiver's name and mobile number.", true);
                 return;
             }
-             if (completionSignaturePad.isEmpty()) {
+            if (completionSignaturePad.isEmpty()) {
                 showNotification("Please capture the receiver's signature.", true);
                 return;
             }
@@ -1192,7 +1184,7 @@
                     driverUid: currentUser.uid,
                     driverName: currentUser.displayName,
                 };
-                 if (currentGeolocation) {
+                if (currentGeolocation) {
                     podData.geolocation = currentGeolocation.coords;
                     podData.geolocationName = currentGeolocation.displayName;
                 }
@@ -1208,13 +1200,18 @@
                     receiverName: receiverName
                 });
 
-                // Transition to feedback view
+                // Transition to QR code view
                 document.getElementById('completion-form-wrapper').style.display = 'none';
-                document.getElementById('post-delivery-feedback-wrapper').style.display = 'block';
-                document.getElementById('feedback-recipient-name').textContent = `Recipient: ${receiverName}`;
-                document.getElementById('feedback-confirmation-text').innerHTML = `I, <strong>${receiverName}</strong>, confirm this shipment was delivered to me and the feedback and rating was given by me.`;
-                document.getElementById('submit-feedback-btn').onclick = () => handleModalFeedbackSubmit(deliveryId, receiverName);
-                document.getElementById('skip-feedback-btn').onclick = () => handleModalFeedbackSkip(deliveryId);
+                document.getElementById('post-delivery-qr-wrapper').style.display = 'block';
+
+                const qrContainer = document.getElementById('feedback-qrcode-container');
+                qrContainer.innerHTML = '';
+                new QRCode(qrContainer, {
+                    text: `${window.location.origin}${window.location.pathname}?feedbackId=${deliveryId}`,
+                    width: 150,
+                    height: 150,
+                });
+
 
             } catch (error) {
                 console.error("Error completing delivery:", error);
@@ -1247,8 +1244,8 @@
                         const displayName = data.display_name || 'Address not found';
                         
                         currentGeolocation = {
-                           coords: coords,
-                           displayName: displayName
+                            coords: coords,
+                            displayName: displayName
                         };
                         statusEl.textContent = `Location: ${displayName}`;
                         statusEl.style.color = '#16a34a';
@@ -1277,7 +1274,7 @@
                 if (podDoc.exists()) {
                     activeDeliveryForReceipt = podDoc.data();
                 } else {
-                     throw new Error("Receipt data not found in PODs collection.");
+                    throw new Error("Receipt data not found in PODs collection.");
                 }
 
                 openModal('receipt-modal', true);
@@ -1310,10 +1307,10 @@
                             <div class="text-3xl font-extrabold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
                             <p class="text-sm text-gray-500 font-semibold">PROOF OF DELIVERY</p>
                         </div>
-                         <div id="qr-code-section" class="text-center p-2 rounded-lg bg-gray-100">
-                             <p class="text-sm font-bold text-gray-800">Rate Your Delivery!</p>
-                             <div id="receipt-qrcode" class="p-1 bg-white border rounded-md inline-block mt-1"></div>
-                             <p class="text-xs text-gray-500 mt-1">Scan with your phone</p>
+                        <div id="qr-code-section" class="text-center p-2 rounded-lg bg-gray-100">
+                            <p class="text-sm font-bold text-gray-800">Verify POD</p>
+                            <div id="receipt-verification-qrcode" class="p-1 bg-white border rounded-md inline-block mt-1"></div>
+                            <p class="text-xs text-gray-500 mt-1">Scan to verify online</p>
                         </div>
                     </div>
 
@@ -1343,7 +1340,7 @@
                             <div class="col-span-2"><strong class="text-gray-500 block">POD Confirmed By (Driver):</strong> ${data.driverName}</div>
                         </div>
                         <div class="mt-4 pt-4 border-t">
-                             <p class="text-gray-600 text-sm italic mb-2">"I, <strong>${data.receiverName}</strong>, confirm I have received this shipment from the driver, <strong>${data.driverName}</strong>, in good condition on the date specified above."</p>
+                            <p class="text-gray-600 text-sm italic mb-2">"I, <strong>${data.receiverName}</strong>, confirm I have received this shipment from the driver, <strong>${data.driverName}</strong>, in good condition on the date specified above."</p>
                             <p class="text-gray-500 text-sm font-bold mb-1">Receiver's Signature:</p>
                             <img src="${data.signatureDataUrl}" alt="Signature" class="w-48 bg-white border-2 p-1 rounded-md shadow-inner"/>
                         </div>
@@ -1355,11 +1352,11 @@
                 </div>
             `;
             
-            // Separate QR Code for feedback
-            const qrContainer = document.getElementById('receipt-qrcode');
+            // Separate QR Code for verification
+            const qrContainer = document.getElementById('receipt-verification-qrcode');
             qrContainer.innerHTML = '';
             new QRCode(qrContainer, {
-                text: window.location.origin + window.location.pathname + '?feedbackId=' + data.deliveryId,
+                text: window.location.origin + window.location.pathname + '?podId=' + data.deliveryId,
                 width: 80,
                 height: 80,
                 colorDark : "#000000",
@@ -1406,8 +1403,8 @@
                 pdf.save(`Receipt-${activeDeliveryForReceipt.jobFileData.jfn}.pdf`);
 
             } catch (error) {
-                 console.error("Error generating PDF:", error);
-                 showNotification("Could not generate PDF.", true);
+                console.error("Error generating PDF:", error);
+                showNotification("Could not generate PDF.", true);
             } finally {
                 hideLoader();
             }
@@ -1437,10 +1434,10 @@
             printWindow.document.write(`
                 <script>
                     window.onload = function() {
-                        const qrContainer = document.getElementById('receipt-qrcode');
+                        const qrContainer = document.getElementById('receipt-verification-qrcode');
                         if (qrContainer) {
                             new QRCode(qrContainer, {
-                                text: "${window.location.origin + window.location.pathname + '?feedbackId=' + activeDeliveryForReceipt.deliveryId}",
+                                text: "${window.location.origin + window.location.pathname + '?podId=' + activeDeliveryForReceipt.deliveryId}",
                                 width: 80,
                                 height: 80,
                             });
@@ -1479,7 +1476,7 @@
                                 <p class="font-medium">${user.displayName}</p>
                                 <p class="text-xs text-gray-500">${user.email}</p>
                             </div>
-                             <div>
+                            <div>
                                 <select data-uid="${user.id}" class="input-field status-select">
                                     <option value="active" ${user.status === 'active' ? 'selected' : ''}>Active</option>
                                     <option value="inactive" ${user.status === 'inactive' ? 'selected' : ''}>Inactive</option>
@@ -1528,7 +1525,7 @@
         }
         
         window.confirmUserDelete = (userId, userName) => {
-             const modal = document.getElementById('confirm-modal');
+            const modal = document.getElementById('confirm-modal');
             modal.querySelector('#confirm-title').textContent = 'Confirm User Deletion';
             modal.querySelector('#confirm-message').innerHTML = `Are you sure you want to delete the user "${userName}"? This will only remove them from the application database, not from Firebase Authentication.`;
             openModal('confirm-modal', true);
@@ -1548,7 +1545,7 @@
             openModal('confirm-modal', true);
 
             const okButton = modal.querySelector('#confirm-ok');
-              const handleOkClick = () => {
+            const handleOkClick = () => {
                 cancelPod(deliveryId);
                 closeModal('confirm-modal');
             };
@@ -1596,7 +1593,7 @@
             }
         }
         
-         async function showPublicPodView(podId) {
+        async function showPublicPodView(podId) {
             showLoader();
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-container').style.display = 'none';
@@ -1679,7 +1676,7 @@
                                     <p class="text-2xl font-bold text-yellow-600">${stat.pending}</p>
                                     <p class="text-xs text-gray-500">Pending</p>
                                 </div>
-                                 <div>
+                                <div>
                                     <p class="text-2xl font-bold text-red-500">${stat.skipped}</p>
                                     <p class="text-xs text-gray-500">Skipped</p>
                                 </div>
@@ -1775,7 +1772,7 @@
             document.body.classList.remove('loading');
             showLoader();
             try {
-                 // First, check if feedback already exists
+                // First, check if feedback already exists
                 const feedbackRef = doc(db, 'feedback', feedbackId);
                 const feedbackSnap = await getDoc(feedbackRef);
 
@@ -1794,15 +1791,33 @@
                     document.getElementById('feedback-job-no').textContent = deliveryData.jobFileData.jfn;
                     document.getElementById('feedback-driver-name').textContent = deliveryData.driverName;
                 } else {
-                     throw new Error('Delivery not found.');
+                    throw new Error('Delivery not found.');
                 }
             } catch (error) {
-                 document.getElementById('feedback-form-container').innerHTML = '<p class="text-red-500">Error: Could not load delivery details.</p>';
-                 console.error("Error loading for feedback:", error);
+                document.getElementById('feedback-form-container').innerHTML = '<p class="text-red-500">Error: Could not load delivery details.</p>';
+                console.error("Error loading for feedback:", error);
             } finally {
                 hideLoader();
             }
         }
+        
+        // --- Feedback Helpers to get Device and IP ---
+        function getDeviceDetails() {
+            return navigator.userAgent || 'Unknown';
+        }
+
+        async function getIPAddress() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                if (!response.ok) return 'Unavailable';
+                const data = await response.json();
+                return data.ip || 'Unavailable';
+            } catch (error) {
+                console.error("Could not fetch IP address:", error);
+                return 'Unavailable';
+            }
+        }
+
 
         async function handleFeedbackSubmit(event) {
             event.preventDefault();
@@ -1823,16 +1838,24 @@
                 if(!deliverySnap.exists()) throw new Error("Original delivery not found.");
                 const deliveryData = deliverySnap.data();
 
+                // Get device info and IP
+                const deviceInfo = getDeviceDetails();
+                const ipAddress = await getIPAddress();
+
                 const feedbackData = {
                     deliveryId: deliveryId,
                     driverUid: deliveryData.driverUid,
                     driverName: deliveryData.driverName,
                     rating: parseInt(rating.value, 10),
                     comment: comment,
-                    createdAt: serverTimestamp()
+                    createdAt: serverTimestamp(),
+                    deviceInfo: deviceInfo,
+                    ipAddress: ipAddress
                 };
 
                 await setDoc(doc(db, 'feedback', deliveryId), feedbackData);
+                await updateDoc(deliveryRef, { feedbackStatus: 'rated' });
+
                 document.getElementById('feedback-form-container').style.display = 'none';
                 document.getElementById('feedback-thanks-message').style.display = 'block';
 
@@ -1861,16 +1884,28 @@
                 list.innerHTML = driverFeedback.map(feedback => {
                     const delivery = deliveriesCache.find(d => d.id === feedback.deliveryId);
                     const jobFileNo = delivery?.jobFileData?.jfn || 'N/A';
+                    
+                    let adminInfo = '';
+                    if (currentUser.role === 'admin') {
+                        adminInfo = `
+                        <div class="mt-2 pt-2 border-t text-xs text-gray-500 space-y-1">
+                            <p><strong>Device:</strong> ${feedback.deviceInfo || 'N/A'}</p>
+                            <p><strong>IP Address:</strong> ${feedback.ipAddress || 'N/A'}</p>
+                        </div>
+                        `;
+                    }
+
                     return `
                     <div class="p-3 border rounded-lg bg-gray-50">
                         <div class="flex justify-between items-center">
-                           <div>
-                             <p class="text-xl text-yellow-500">${'★'.repeat(feedback.rating)}${'☆'.repeat(5 - feedback.rating)}</p>
-                             <p class="text-xs text-gray-500 mt-1">For Job: <strong>${jobFileNo}</strong></p>
-                           </div>
+                            <div>
+                               <p class="text-xl text-yellow-500">${'★'.repeat(feedback.rating)}${'☆'.repeat(5 - feedback.rating)}</p>
+                               <p class="text-xs text-gray-500 mt-1">For Job: <strong>${jobFileNo}</strong></p>
+                            </div>
                             <p class="text-xs text-gray-400">${feedback.createdAt?.toDate().toLocaleString()}</p>
                         </div>
                         <p class="mt-2 text-gray-700">${feedback.comment || '<i>No comment left.</i>'}</p>
+                        ${adminInfo}
                     </div>
                 `}).join('');
             }
@@ -1879,8 +1914,8 @@
         }
 
         async function showMyFeedback() {
-             showLoader();
-             try {
+            showLoader();
+            try {
                 const q = query(collection(db, "feedback"), where("driverUid", "==", currentUser.uid));
                 const feedbackSnapshot = await getDocs(q);
                 const myFeedback = feedbackSnapshot.docs.map(doc => doc.data())
@@ -1900,8 +1935,8 @@
                         <div class="p-3 border rounded-lg bg-gray-50">
                             <div class="flex justify-between items-center">
                                 <div>
-                                     <p class="text-xl text-yellow-500">${'★'.repeat(feedback.rating)}${'☆'.repeat(5 - feedback.rating)}</p>
-                                     <p class="text-xs text-gray-500 mt-1">For Job: <strong>${jobFileNo}</strong></p>
+                                    <p class="text-xl text-yellow-500">${'★'.repeat(feedback.rating)}${'☆'.repeat(5 - feedback.rating)}</p>
+                                    <p class="text-xs text-gray-500 mt-1">For Job: <strong>${jobFileNo}</strong></p>
                                 </div>
                                 <p class="text-xs text-gray-400">${feedback.createdAt?.toDate().toLocaleString()}</p>
                             </div>
@@ -1911,70 +1946,15 @@
                 }
                 openModal('view-feedback-modal');
 
-             } catch(error) {
+            } catch(error) {
                 console.error("Error fetching driver feedback:", error);
                 showNotification("Could not load your feedback.", true);
-             } finally {
-                hideLoader();
-             }
-        }
-        
-        async function handleModalFeedbackSubmit(deliveryId, receiverName) {
-            const rating = document.querySelector('input[name="modal-rating"]:checked');
-            const comment = document.getElementById('modal-feedback-comment').value.trim();
-
-            if (!rating) {
-                showNotification("Please ask the recipient to select a star rating.", true);
-                return;
-            }
-            
-            showLoader();
-            try {
-                const deliveryRef = doc(db, 'deliveries', deliveryId);
-                const deliverySnap = await getDoc(deliveryRef);
-                if (!deliverySnap.exists()) throw new Error("Original delivery not found.");
-                const deliveryData = deliverySnap.data();
-
-                const feedbackData = {
-                    deliveryId: deliveryId,
-                    driverUid: deliveryData.driverUid,
-                    driverName: deliveryData.driverName,
-                    rating: parseInt(rating.value, 10),
-                    comment: comment,
-                    createdAt: serverTimestamp(),
-                    submittedBy: receiverName 
-                };
-                
-                await setDoc(doc(db, 'feedback', deliveryId), feedbackData);
-                await updateDoc(deliveryRef, { feedbackStatus: 'rated' });
-                
-                closeModal('delivery-completion-modal');
-                openReceiptModal(deliveryId);
-
-            } catch (error) {
-                console.error("Error submitting modal feedback:", error);
-                showNotification("Could not submit feedback.", true);
             } finally {
                 hideLoader();
             }
         }
         
-        async function handleModalFeedbackSkip(deliveryId) {
-            showLoader();
-            try {
-                const deliveryRef = doc(db, 'deliveries', deliveryId);
-                await updateDoc(deliveryRef, { feedbackStatus: 'skipped' });
-                closeModal('delivery-completion-modal');
-                openReceiptModal(deliveryId);
-            } catch (error) {
-                console.error("Error skipping feedback:", error);
-                showNotification("Could not skip feedback.", true);
-            } finally {
-                hideLoader();
-            }
-        }
-
-         async function shareReceipt() {
+        async function shareReceipt() {
             const receiptElement = document.getElementById('receipt-content');
             const jobData = activeDeliveryForReceipt.jobFileData;
             const publicUrl = `${window.location.origin}${window.location.pathname}?podId=${activeDeliveryForReceipt.deliveryId}`;
@@ -1993,7 +1973,7 @@
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
                         await navigator.share(shareData);
                     } else if (navigator.canShare && navigator.canShare({url: publicUrl})) {
-                         await navigator.share({
+                        await navigator.share({
                             title: `Delivery Receipt for ${jobData.jfn}`,
                             text: `View the delivery receipt for job file ${jobData.jfn}.`,
                             url: publicUrl
@@ -2010,12 +1990,12 @@
         }
 
         function copyReceiptLink() {
-             const publicUrl = `${window.location.origin}${window.location.pathname}?podId=${activeDeliveryForReceipt.deliveryId}`;
-             navigator.clipboard.writeText(publicUrl).then(() => {
+            const publicUrl = `${window.location.origin}${window.location.pathname}?podId=${activeDeliveryForReceipt.deliveryId}`;
+            navigator.clipboard.writeText(publicUrl).then(() => {
                 showNotification("Link copied to clipboard!");
-             }, () => {
+            }, () => {
                 showNotification("Could not copy link.", true);
-             });
+            });
         }
 
         async function displayDriverPerformanceSummary(driverId, tasks) {
@@ -2074,7 +2054,7 @@
         
         window.openModal = (id, keepParent = false) => {
             const modal = document.getElementById(id);
-             if (keepParent) {
+            if (keepParent) {
                 const highestZ = Array.from(document.querySelectorAll('.overlay.visible'))
                     .reduce((max, el) => Math.max(max, parseInt(window.getComputedStyle(el).zIndex || 1000)), 1000);
                 modal.style.zIndex = highestZ + 10;
@@ -2124,10 +2104,10 @@
 
             const confirmCancelBtn = document.getElementById('confirm-cancel');
             confirmCancelBtn.addEventListener('click', () => {
-                 const okButton = document.getElementById('confirm-ok');
-                 const newOkButton = okButton.cloneNode(true);
-                 okButton.parentNode.replaceChild(newOkButton, okButton);
-                 closeModal('confirm-modal');
+                const okButton = document.getElementById('confirm-ok');
+                const newOkButton = okButton.cloneNode(true);
+                okButton.parentNode.replaceChild(newOkButton, okButton);
+                closeModal('confirm-modal');
             });
 
         });
@@ -2143,4 +2123,3 @@
     </script>
 </body>
 </html>
-
