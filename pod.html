@@ -126,7 +126,7 @@
         .tab-content.active {
             display: block;
         }
-        #signature-pad {
+        .signature-pad-canvas {
             border: 2px dashed #d1d5db;
             border-radius: 0.375rem;
         }
@@ -387,7 +387,7 @@
 
     <!-- Delivery Completion Modal (for Driver) -->
     <div id="delivery-completion-modal" class="overlay">
-        <div class="modal-content">
+        <div class="modal-content max-w-lg">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-2xl font-bold">Complete Delivery</h3>
                 <button onclick="closeModal('delivery-completion-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
@@ -397,53 +397,46 @@
                 <div class="p-4 bg-gray-50 rounded-md">
                     <p><strong>Job File:</strong> <span id="modal-job-no"></span></p>
                     <p><strong>Location:</strong> <span id="modal-location"></span></p>
-                    <p><strong>Notes:</strong> <span id="modal-notes"></span></p>
                 </div>
                 <div>
                     <label for="receiver-name" class="block text-sm font-medium text-gray-700">Receiver's Name</label>
                     <input type="text" id="receiver-name" class="input-field mt-1" required>
                 </div>
                 <div>
-                    <label for="pod-image" class="block text-sm font-medium text-gray-700">Upload Signed POD Photo</label>
-                    <input type="file" id="pod-image" accept="image/*" class="input-field mt-1" required>
-                    <img id="image-preview" src="" alt="Image Preview" class="hidden mt-2 rounded-md max-h-40"/>
+                    <label for="receiver-mobile" class="block text-sm font-medium text-gray-700">Receiver's Mobile Number</label>
+                    <input type="tel" id="receiver-mobile" class="input-field mt-1" required>
                 </div>
+                 
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Receiver's Signature</label>
+                    <div class="relative w-full h-48 mt-1">
+                        <canvas id="completion-signature-pad" class="signature-pad-canvas absolute top-0 left-0 w-full h-full"></canvas>
+                    </div>
+                    <div class="text-right mt-1">
+                         <button type="button" id="clear-completion-signature-btn" class="btn btn-secondary text-xs">Clear</button>
+                    </div>
+                </div>
+
                  <div>
                     <button type="button" id="get-location-btn" class="btn btn-secondary text-sm w-full">Get Current Location</button>
                     <p id="location-status" class="text-xs text-gray-500 mt-1 text-center"></p>
                 </div>
                 <div class="flex justify-end items-center gap-4 pt-4">
-                    <button type="button" id="open-signature-modal-btn" class="btn btn-secondary">Get Signature</button>
                     <button type="submit" class="btn btn-success">Mark as Delivered</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- E-Signature Modal -->
+    <!-- E-Signature Modal (For Viewing Receipts) -->
     <div id="signature-modal" class="overlay">
         <div class="modal-content max-w-2xl">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-bold">Capture Signature & Generate Receipt</h3>
+                <h3 id="signature-modal-title" class="text-2xl font-bold">View Receipt</h3>
                 <button onclick="closeModal('signature-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
             
-            <div id="signature-pad-view">
-                <div>
-                    <label for="signature-receiver-name" class="block text-sm font-medium text-gray-700">Receiver's Name</label>
-                    <input type="text" id="signature-receiver-name" class="input-field mt-1 mb-4" placeholder="Enter name of person receiving delivery">
-                </div>
-                <p class="text-gray-600 mb-2">Please have the recipient sign below:</p>
-                <div class="relative w-full h-48">
-                    <canvas id="signature-pad" class="absolute top-0 left-0 w-full h-full"></canvas>
-                </div>
-                <div class="flex justify-end gap-2 mt-2">
-                    <button id="clear-signature-btn" class="btn btn-secondary text-sm">Clear</button>
-                    <button id="generate-receipt-btn" class="btn btn-primary text-sm">Generate Receipt</button>
-                </div>
-            </div>
-
-            <div id="receipt-view" class="hidden">
+             <div id="receipt-view">
                  <div id="receipt-content" class="p-4 border rounded-md">
                     <!-- Receipt content will be generated here -->
                  </div>
@@ -477,7 +470,7 @@
         let currentGeolocation = null;
         let deliveriesUnsubscribe = () => {};
         let driverTasksUnsubscribe = () => {};
-        let signaturePad;
+        let completionSignaturePad;
         let activeDeliveryForSignature = null;
 
 
@@ -972,9 +965,24 @@
             document.getElementById('delivery-id-input').value = delivery.id;
             document.getElementById('modal-job-no').textContent = delivery.jobFileData.jfn;
             document.getElementById('modal-location').textContent = delivery.deliveryLocation;
-            document.getElementById('modal-notes').textContent = delivery.deliveryNotes || 'N/A';
             document.getElementById('completion-form').reset();
-            document.getElementById('image-preview').classList.add('hidden');
+            
+            const canvas = document.getElementById('completion-signature-pad');
+            const resizeCanvas = () => {
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                canvas.width = canvas.offsetWidth * ratio;
+                canvas.height = canvas.offsetHeight * ratio;
+                canvas.getContext("2d").scale(ratio, ratio);
+                if (completionSignaturePad) completionSignaturePad.clear();
+            }
+            setTimeout(resizeCanvas, 10);
+            
+            if (!completionSignaturePad) {
+                completionSignaturePad = new SignaturePad(canvas);
+            } else {
+                completionSignaturePad.clear();
+            }
+
             document.getElementById('location-status').textContent = '';
             currentGeolocation = null;
             openModal('delivery-completion-modal');
@@ -984,24 +992,34 @@
             e.preventDefault();
             const deliveryId = document.getElementById('delivery-id-input').value;
             const receiverName = document.getElementById('receiver-name').value.trim();
-            const podImageFile = document.getElementById('pod-image').files[0];
+            const receiverMobile = document.getElementById('receiver-mobile').value.trim();
 
-            if (!receiverName || !podImageFile) {
-                showNotification("Please enter the receiver's name and upload a photo.", true);
+            if (!receiverName || !receiverMobile) {
+                showNotification("Please enter the receiver's name and mobile number.", true);
+                return;
+            }
+            if (completionSignaturePad.isEmpty()) {
+                showNotification("Please capture the receiver's signature.", true);
                 return;
             }
 
             showLoader();
             try {
-                const storageRef = ref(storage, `pods/${deliveryId}/${podImageFile.name}`);
-                const snapshot = await uploadBytes(storageRef, podImageFile);
+                // Get compressed signature image
+                const signatureDataUrl = completionSignaturePad.toDataURL('image/jpeg', 0.5);
+                const response = await fetch(signatureDataUrl);
+                const blob = await response.blob();
+                
+                const storageRef = ref(storage, `signatures/${deliveryId}/signature.jpg`);
+                const snapshot = await uploadBytes(storageRef, blob);
                 const downloadURL = await getDownloadURL(snapshot.ref);
 
                 const deliveryRef = doc(db, 'deliveries', deliveryId);
                 const updateData = {
                     status: 'Delivered',
                     receiverName: receiverName,
-                    podImageUrl: downloadURL,
+                    receiverMobile: receiverMobile,
+                    signatureImageUrl: downloadURL,
                     completedAt: serverTimestamp()
                 };
                 if (currentGeolocation) {
@@ -1067,8 +1085,10 @@
                     deliveryLocation: '123 Demo Street, Anytown',
                     driverName: 'Demo Driver'
                 };
+                document.getElementById('signature-modal-title').textContent = "Generate Demo Receipt";
             } else if (deliveryId) {
                  activeDeliveryForSignature = deliveriesCache.find(d => d.id === deliveryId);
+                 document.getElementById('signature-modal-title').textContent = "View Receipt";
             }
             
             if (!activeDeliveryForSignature) {
@@ -1078,50 +1098,24 @@
             
             openModal('signature-modal', true);
             
-            // If signature already exists, show receipt directly
+            document.getElementById('receipt-view').style.display = 'block';
+            document.getElementById('back-to-signature-btn').style.display = 'none';
+            document.getElementById('save-receipt-btn').style.display = 'none';
+
             if (activeDeliveryForSignature.signatureImageUrl && activeDeliveryForSignature.receiverName) {
                 generateReceipt(activeDeliveryForSignature.receiverName, activeDeliveryForSignature.signatureImageUrl);
-                document.getElementById('save-receipt-btn').style.display = 'none'; // Hide save button if already saved
             } else {
-                 // Otherwise, show signature pad
-                document.getElementById('signature-pad-view').style.display = 'block';
-                document.getElementById('receipt-view').style.display = 'none';
-                document.getElementById('save-receipt-btn').style.display = 'inline-flex';
-                document.getElementById('signature-receiver-name').value = receiverName; // Pre-fill name if passed
-
-                const canvas = document.getElementById('signature-pad');
-                // Debounce resize function
-                const resizeCanvas = () => {
-                    const ratio =  Math.max(window.devicePixelRatio || 1, 1);
-                    canvas.width = canvas.offsetWidth * ratio;
-                    canvas.height = canvas.offsetHeight * ratio;
-                    canvas.getContext("2d").scale(ratio, ratio);
-                    if (signaturePad) {
-                        signaturePad.clear();
-                    }
-                }
-                
-                // Ensure canvas is visible before resizing
-                setTimeout(resizeCanvas, 10);
-                
-                if (!signaturePad) {
-                    signaturePad = new SignaturePad(canvas);
-                } else {
-                    signaturePad.clear();
-                }
+                // This is for the demo task
+                document.getElementById('signature-modal-title').textContent = "Generate Demo Receipt";
+                generateReceipt('Demo Recipient', null); // Generate with placeholder
             }
         }
 
         function generateReceipt(predefinedReceiverName = null, predefinedSignatureUrl = null) {
-             if (!predefinedSignatureUrl && signaturePad.isEmpty()) {
-                showNotification("Please provide a signature first.", true);
-                return;
-            }
-            const signatureImage = predefinedSignatureUrl || signaturePad.toDataURL();
             const receiptContent = document.getElementById('receipt-content');
             const jobData = activeDeliveryForSignature.jobFileData;
 
-            const receiverName = predefinedReceiverName || document.getElementById('signature-receiver-name').value || 'N/A';
+            const receiverName = predefinedReceiverName;
             const deliveryDate = (activeDeliveryForSignature.completedAt?.toDate() || new Date()).toLocaleString();
 
             receiptContent.innerHTML = `
@@ -1150,61 +1144,18 @@
                         <p><strong>Description:</strong> ${jobData.dsc || 'N/A'}</p>
                         <p><strong>Gross Weight:</strong> ${jobData.gw || 'N/A'}</p>
                         <p><strong>Delivery Location:</strong> ${activeDeliveryForSignature.deliveryLocation}</p>
+                        <p><strong>Receiver Mobile:</strong> ${activeDeliveryForSignature.receiverMobile || 'N/A'}</p>
                      </div>
                      <div class="bg-gray-50 p-3 rounded-md">
                         <p class="text-sm font-semibold">Recipient Confirmation</p>
                         <p class="text-xs mt-1">I, <strong>${receiverName}</strong>, confirm the receipt of the goods on <strong>${deliveryDate}</strong>.</p>
                         <div class="mt-2">
                             <p class="text-xs mb-1 text-gray-600">Signature:</p>
-                            <img src="${signatureImage}" alt="Signature" class="w-40 bg-white border p-1 rounded-md"/>
+                            ${predefinedSignatureUrl ? `<img src="${predefinedSignatureUrl}" alt="Signature" class="w-40 bg-white border p-1 rounded-md"/>` : '<p class="text-xs text-red-500">Signature not captured for this demo.</p>'}
                         </div>
                     </div>
                 </div>
             `;
-            
-            document.getElementById('signature-pad-view').style.display = 'none';
-            document.getElementById('receipt-view').style.display = 'block';
-        }
-        
-        async function saveAndUploadReceipt() {
-             if (activeDeliveryForSignature.isDemo) {
-                showNotification("Signature saved for demo task!", false);
-                document.getElementById('save-receipt-btn').style.display = 'none';
-                return;
-            }
-
-            if (signaturePad.isEmpty()) {
-                showNotification("Cannot save an empty signature.", true);
-                return;
-            }
-            
-            showLoader();
-            try {
-                const receiverName = document.getElementById('signature-receiver-name').value || 'Unnamed Recipient';
-                const signatureDataUrl = signaturePad.toDataURL('image/png');
-                const response = await fetch(signatureDataUrl);
-                const blob = await response.blob();
-                
-                const storageRef = ref(storage, `signatures/${activeDeliveryForSignature.id}/signature.png`);
-                const snapshot = await uploadBytes(storageRef, blob);
-                const downloadURL = await getDownloadURL(snapshot.ref);
-
-                const deliveryRef = doc(db, 'deliveries', activeDeliveryForSignature.id);
-                await updateDoc(deliveryRef, {
-                    signatureImageUrl: downloadURL,
-                    receiverName: receiverName,
-                    receiptGeneratedAt: serverTimestamp()
-                });
-                
-                hideLoader();
-                showNotification("Signature and receipt saved successfully!", false);
-                document.getElementById('save-receipt-btn').style.display = 'none';
-
-            } catch(error) {
-                hideLoader();
-                console.error("Error saving signature:", error);
-                showNotification("Failed to save signature.", true);
-            }
         }
         
         async function downloadReceiptAsPDF() {
@@ -1383,15 +1334,9 @@
             document.getElementById('delivery-form').addEventListener('submit', handleAssignDelivery);
             document.getElementById('driver-simulation-select').addEventListener('change', renderDriverSimulationView);
             document.getElementById('completion-form').addEventListener('submit', handleCompleteDelivery);
-            document.getElementById('pod-image').addEventListener('change', handleImagePreview);
+            document.getElementById('clear-completion-signature-btn').addEventListener('click', () => completionSignaturePad.clear());
             document.getElementById('get-location-btn').addEventListener('click', handleGetLocation);
-            document.getElementById('open-signature-modal-btn').addEventListener('click', () => {
-                const receiverName = document.getElementById('receiver-name').value;
-                openSignatureModal(false, activeDeliveryForSignature.id, receiverName)
-            });
-            document.getElementById('clear-signature-btn').addEventListener('click', () => signaturePad.clear());
-            document.getElementById('generate-receipt-btn').addEventListener('click', () => generateReceipt());
-            document.getElementById('save-receipt-btn').addEventListener('click', saveAndUploadReceipt);
+            
             document.getElementById('pdf-receipt-btn').addEventListener('click', downloadReceiptAsPDF);
             document.getElementById('print-receipt-btn').addEventListener('click', printReceipt);
             document.getElementById('admin-panel-btn').addEventListener('click', openAdminPanel);
