@@ -144,6 +144,27 @@
             transform: translateY(-3px) scale(1.01);
             box-shadow: 0 8px 16px -4px rgba(0,0,0,0.1);
         }
+        
+        .rating-stars {
+            display: inline-flex;
+            flex-direction: row-reverse;
+            justify-content: center;
+        }
+        .rating-stars input[type="radio"] {
+            display: none;
+        }
+        .rating-stars label {
+            font-size: 2.5rem;
+            color: #d1d5db;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .rating-stars input[type="radio"]:checked ~ label,
+        .rating-stars label:hover,
+        .rating-stars label:hover ~ label {
+            color: #f59e0b;
+        }
+
 
     </style>
 </head>
@@ -176,6 +197,42 @@
 
     <!-- Public POD View -->
     <div id="public-pod-view" class="hidden"></div>
+
+    <!-- Public Feedback View -->
+    <div id="public-feedback-view" class="hidden min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+         <div class="max-w-lg w-full space-y-6 bg-white p-8 rounded-xl shadow-lg text-center">
+            <h1 class="qg-logo text-4xl">Q'go<span>Cargo</span></h1>
+            <div id="feedback-form-container">
+                 <h2 class="text-2xl font-bold text-gray-800">Rate Your Delivery</h2>
+                 <p class="text-gray-500 mt-2">Job File: <span id="feedback-job-no" class="font-medium"></span></p>
+                 <p class="text-gray-500">Driver: <span id="feedback-driver-name" class="font-medium"></span></p>
+                 <form id="feedback-form" class="mt-6 space-y-6">
+                    <input type="hidden" id="feedback-delivery-id">
+                     <div>
+                         <label class="block text-sm font-medium text-gray-700 mb-2">Your Rating</label>
+                         <div class="rating-stars">
+                             <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="5 stars">★</label>
+                             <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 stars">★</label>
+                             <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="3 stars">★</label>
+                             <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="2 stars">★</label>
+                             <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="1 star">★</label>
+                         </div>
+                     </div>
+                     <div>
+                         <label for="feedback-comment" class="block text-sm font-medium text-gray-700">Comments (Optional)</label>
+                         <textarea id="feedback-comment" rows="4" class="input-field mt-1" placeholder="Tell us about your experience..."></textarea>
+                     </div>
+                     <div>
+                         <button type="submit" class="btn btn-primary w-full">Submit Feedback</button>
+                     </div>
+                 </form>
+            </div>
+            <div id="feedback-thanks-message" class="hidden">
+                 <h2 class="text-2xl font-bold text-gray-800">Thank You!</h2>
+                 <p class="text-gray-600 mt-2">Your feedback has been submitted successfully.</p>
+            </div>
+         </div>
+    </div>
 
 
     <!-- Main Application Container (Hidden by default) -->
@@ -307,7 +364,10 @@
         <!-- Driver View -->
         <div id="driver-view" class="hidden">
             <section class="bg-white p-6 rounded-xl shadow-md">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">My Assigned Deliveries</h2>
+                 <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">My Assigned Deliveries</h2>
+                    <button id="my-feedback-btn" class="btn btn-primary text-sm">My Feedback & Ratings</button>
+                </div>
                 <div id="driver-tasks-list" class="space-y-4"></div>
             </section>
         </div>
@@ -333,7 +393,7 @@
     <div id="admin-panel-modal" class="overlay">
         <div class="modal-content max-w-3xl">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-bold">Driver Management</h3>
+                <h3 class="text-2xl font-bold">User Management</h3>
                 <button onclick="closeModal('admin-panel-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
             <div class="space-y-4">
@@ -486,6 +546,19 @@
         </div>
     </div>
 
+    <!-- View Feedback Modal -->
+    <div id="view-feedback-modal" class="overlay">
+        <div class="modal-content max-w-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="feedback-modal-title" class="text-2xl font-bold">Driver Feedback</h3>
+                <button onclick="closeModal('view-feedback-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div id="feedback-list" class="space-y-3 max-h-[60vh] overflow-y-auto">
+                <!-- Feedback list will be populated here -->
+            </div>
+        </div>
+    </div>
+
 
     <!-- Firebase SDK and App Logic -->
     <script type="module">
@@ -499,6 +572,7 @@
         let jobFilesCache = [];
         let allUsersCache = [];
         let deliveriesCache = [];
+        let feedbackCache = []; // New cache for feedback
         let selectedJobFile = null;
         let currentGeolocation = null;
         let deliveriesUnsubscribe = () => {};
@@ -529,8 +603,11 @@
                 
                 const urlParams = new URLSearchParams(window.location.search);
                 const podId = urlParams.get('podId');
+                const feedbackId = urlParams.get('feedbackId');
 
-                if (podId) {
+                if (feedbackId) {
+                    showPublicFeedbackView(feedbackId);
+                } else if (podId) {
                     showPublicPodView(podId);
                 } else {
                     onAuthStateChanged(auth, async (user) => {
@@ -668,22 +745,22 @@
             document.getElementById('admin-panel-btn').classList.add('hidden');
             document.getElementById('driver-dashboard-btn').classList.add('hidden');
             
-            if (currentUser.role === 'admin' || currentUser.role === 'staff') {
+            // Allow any active user to log in. The UI will adapt based on their role.
+            if (currentUser.role === 'driver') {
+                document.getElementById('driver-view').style.display = 'block';
+                document.getElementById('header-subtitle').textContent = "View and complete your assigned deliveries.";
+                loadDriverTasks();
+            } else { // Default view for admin, staff, and other roles
                 document.getElementById('admin-staff-view').style.display = 'block';
                 document.getElementById('header-subtitle').textContent = "Assign, track, and manage deliveries.";
-                 document.getElementById('driver-dashboard-btn').classList.remove('hidden');
+                if (currentUser.role === 'admin' || currentUser.role === 'staff') {
+                    document.getElementById('driver-dashboard-btn').classList.remove('hidden');
+                }
                 if (currentUser.role === 'admin') {
                     document.getElementById('admin-panel-btn').classList.remove('hidden');
                 }
                 loadAdminData();
-            } else if (currentUser.role === 'driver') {
-                document.getElementById('driver-view').style.display = 'block';
-                document.getElementById('header-subtitle').textContent = "View and complete your assigned deliveries.";
-                loadDriverTasks();
-            } else {
-                showNotification("You do not have permission to access the delivery system.", true);
-                setTimeout(handleLogout, 3000);
-            }
+            } 
         }
         
         // --- Admin / Staff Logic ---
@@ -1192,9 +1269,9 @@
                             <div class="text-3xl font-extrabold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
                             <p class="text-sm text-gray-500 font-semibold">PROOF OF DELIVERY</p>
                         </div>
-                        <div class="text-right">
-                            <div id="receipt-qrcode" class="p-1 bg-white border rounded-md inline-block"></div>
-                            <p class="text-xs text-gray-500 mt-1">Scan for details</p>
+                        <div id="qr-code-section" class="text-right">
+                             <div id="receipt-qrcode" class="p-1 bg-white border rounded-md inline-block"></div>
+                             <p class="text-xs text-gray-500 mt-1">Scan for details or to rate</p>
                         </div>
                     </div>
 
@@ -1235,11 +1312,12 @@
                     </div>
                 </div>
             `;
-
+            
+            // Separate QR Code for feedback
             const qrContainer = document.getElementById('receipt-qrcode');
             qrContainer.innerHTML = '';
             new QRCode(qrContainer, {
-                text: window.location.origin + window.location.pathname + '?podId=' + data.deliveryId,
+                text: window.location.origin + window.location.pathname + '?feedbackId=' + data.deliveryId,
                 width: 80,
                 height: 80,
                 colorDark : "#000000",
@@ -1320,7 +1398,7 @@
                         const qrContainer = document.getElementById('receipt-qrcode');
                         if (qrContainer) {
                             new QRCode(qrContainer, {
-                                text: "${window.location.origin + window.location.pathname + '?podId=' + activeDeliveryForReceipt.deliveryId}",
+                                text: "${window.location.origin + window.location.pathname + '?feedbackId=' + activeDeliveryForReceipt.deliveryId}",
                                 width: 80,
                                 height: 80,
                             });
@@ -1340,34 +1418,32 @@
         async function openAdminPanel() {
             showLoader();
             try {
-                // Fetch all users and filter for drivers
                 const snapshot = await getDocs(collection(db, 'users'));
                 const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                const drivers = users.filter(user => user.role === 'driver');
 
                 const listEl = document.getElementById('user-list-admin');
                 listEl.innerHTML = '';
-                if(drivers.length === 0) {
-                    listEl.innerHTML = `<p class="text-gray-500 text-center p-4">No drivers found.</p>`;
+                if(users.length === 0) {
+                    listEl.innerHTML = `<p class="text-gray-500 text-center p-4">No users found.</p>`;
                 } else {
-                    drivers.forEach(driver => {
-                        const canDelete = currentUser.uid !== driver.id;
-                        const deleteButton = canDelete ? `<button onclick="confirmUserDelete('${driver.id}', '${driver.displayName}')" class="btn btn-danger text-xs">Delete</button>` : '';
+                    users.forEach(user => {
+                        const canDelete = currentUser.uid !== user.id;
+                        const deleteButton = canDelete ? `<button onclick="confirmUserDelete('${user.id}', '${user.displayName}')" class="btn btn-danger text-xs">Delete</button>` : '';
                         
                         const userEl = document.createElement('div');
                         userEl.className = "grid grid-cols-4 gap-4 items-center p-2 border-b";
                         userEl.innerHTML = `
                             <div>
-                                <p class="font-medium">${driver.displayName}</p>
-                                <p class="text-xs text-gray-500">${driver.email}</p>
+                                <p class="font-medium">${user.displayName}</p>
+                                <p class="text-xs text-gray-500">${user.email}</p>
                             </div>
                              <div>
-                                <select data-uid="${driver.id}" class="input-field status-select">
-                                    <option value="active" ${driver.status === 'active' ? 'selected' : ''}>Active</option>
-                                    <option value="inactive" ${driver.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                                <select data-uid="${user.id}" class="input-field status-select">
+                                    <option value="active" ${user.status === 'active' ? 'selected' : ''}>Active</option>
+                                    <option value="inactive" ${user.status === 'inactive' ? 'selected' : ''}>Inactive</option>
                                 </select>
                             </div>
-                            <div class="text-sm text-gray-600 capitalize">${driver.role}</div>
+                            <div class="text-sm text-gray-600 capitalize">${user.role}</div>
                             <div class="text-right">
                                 ${deleteButton}
                             </div>
@@ -1398,7 +1474,7 @@
 
             try {
                 await batch.commit();
-                showNotification("Driver statuses updated successfully!", false);
+                showNotification("User statuses updated successfully!", false);
                 closeModal('admin-panel-modal');
                 loadAdminData();
             } catch (error) {
@@ -1506,98 +1582,121 @@
             }
         }
 
-
         // --- Driver Performance Dashboard ---
-        function openDriverPerformanceDashboard() {
+        async function openDriverPerformanceDashboard() {
             if (currentUser.role !== 'admin' && currentUser.role !== 'staff') {
                 showNotification("Access denied.", true);
                 return;
             }
 
-            const drivers = allUsersCache.filter(u => u.role === 'driver' && u.status === 'active');
-            const driverStats = drivers.map(driver => {
-                const completed = deliveriesCache.filter(d => d.driverUid === driver.id && d.status === 'Delivered').length;
-                const pending = deliveriesCache.filter(d => d.driverUid === driver.id && d.status !== 'Delivered').length;
-                return { ...driver, completed, pending };
-            });
+            showLoader();
+            try {
+                // Fetch feedback on demand
+                const feedbackQuery = query(collection(db, 'feedback'));
+                const feedbackSnapshot = await getDocs(feedbackQuery);
+                feedbackCache = feedbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            driverStats.sort((a, b) => b.completed - a.completed); // Sort by most completed
+                const drivers = allUsersCache.filter(u => u.role === 'driver' && u.status === 'active');
+                const driverStats = drivers.map(driver => {
+                    const completed = deliveriesCache.filter(d => d.driverUid === driver.id && d.status === 'Delivered').length;
+                    const pending = deliveriesCache.filter(d => d.driverUid === driver.id && d.status !== 'Delivered').length;
+                    
+                    const driverFeedback = feedbackCache.filter(f => f.driverUid === driver.id);
+                    const totalRatings = driverFeedback.length;
+                    const averageRating = totalRatings > 0 ? (driverFeedback.reduce((sum, f) => sum + f.rating, 0) / totalRatings) : 0;
 
-            const statsListEl = document.getElementById('driver-stats-list');
-            statsListEl.innerHTML = '';
-
-            if (driverStats.length > 0) {
-                driverStats.forEach(stat => {
-                    const statCard = document.createElement('div');
-                    statCard.className = 'p-4 border rounded-lg bg-white flex justify-between items-center';
-                    statCard.innerHTML = `
-                        <div>
-                            <p class="font-bold text-lg">${stat.displayName}</p>
-                            <p class="text-sm text-gray-600">${stat.email}</p>
-                        </div>
-                        <div class="flex items-center gap-4 text-center">
-                            <div>
-                                <p class="text-2xl font-bold text-green-600">${stat.completed}</p>
-                                <p class="text-xs text-gray-500">Completed</p>
-                            </div>
-                            <div>
-                                <p class="text-2xl font-bold text-yellow-600">${stat.pending}</p>
-                                <p class="text-xs text-gray-500">Pending</p>
-                            </div>
-                        </div>
-                        <div>
-                            <button onclick="showDriverDeliveries('${stat.id}')" class="btn btn-secondary btn-xs text-xs">View Deliveries</button>
-                        </div>
-                    `;
-                    statsListEl.appendChild(statCard);
+                    return { ...driver, completed, pending, averageRating, totalRatings };
                 });
-            } else {
-                statsListEl.innerHTML = '<p class="text-center text-gray-500">No active drivers found.</p>';
-            }
 
-            // Chart.js rendering
-            const chartCanvas = document.getElementById('driver-chart');
-            if (driverChartInstance) {
-                driverChartInstance.destroy();
-            }
-            
-            const chartLabels = driverStats.map(d => d.displayName);
-            const chartData = driverStats.map(d => d.completed);
+                driverStats.sort((a, b) => b.completed - a.completed); // Sort by most completed
 
-            driverChartInstance = new Chart(chartCanvas, {
-                type: 'bar',
-                data: {
-                    labels: chartLabels,
-                    datasets: [{
-                        label: 'Completed Deliveries',
-                        data: chartData,
-                        backgroundColor: 'rgba(79, 184, 175, 0.6)',
-                        borderColor: 'rgba(79, 184, 175, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
+                const statsListEl = document.getElementById('driver-stats-list');
+                statsListEl.innerHTML = '';
+
+                if (driverStats.length > 0) {
+                    driverStats.forEach(stat => {
+                        const starRating = '★'.repeat(Math.round(stat.averageRating)) + '☆'.repeat(5 - Math.round(stat.averageRating));
+                        const statCard = document.createElement('div');
+                        statCard.className = 'p-4 border rounded-lg bg-white flex justify-between items-center';
+                        statCard.innerHTML = `
+                            <div>
+                                <p class="font-bold text-lg">${stat.displayName}</p>
+                                <p class="text-sm text-gray-600">${stat.email}</p>
+                            </div>
+                            <div class="flex items-center gap-4 text-center">
+                                <div title="Average Rating: ${stat.averageRating.toFixed(2)} (${stat.totalRatings} ratings)">
+                                    <p class="text-2xl font-bold text-yellow-500">${starRating}</p>
+                                    <p class="text-xs text-gray-500">Avg. Rating</p>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold text-green-600">${stat.completed}</p>
+                                    <p class="text-xs text-gray-500">Completed</p>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold text-yellow-600">${stat.pending}</p>
+                                    <p class="text-xs text-gray-500">Pending</p>
+                                </div>
+                            </div>
+                            <div>
+                                <button onclick="showDriverFeedback('${stat.id}')" class="btn btn-primary btn-xs text-xs mr-2">View Feedback</button>
+                                <button onclick="showDriverDeliveries('${stat.id}')" class="btn btn-secondary btn-xs text-xs">View Deliveries</button>
+                            </div>
+                        `;
+                        statsListEl.appendChild(statCard);
+                    });
+                } else {
+                    statsListEl.innerHTML = '<p class="text-center text-gray-500">No active drivers found.</p>';
+                }
+
+                // Chart.js rendering
+                const chartCanvas = document.getElementById('driver-chart');
+                if (driverChartInstance) {
+                    driverChartInstance.destroy();
+                }
+                
+                const chartLabels = driverStats.map(d => d.displayName);
+                const chartData = driverStats.map(d => d.completed);
+
+                driverChartInstance = new Chart(chartCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{
+                            label: 'Completed Deliveries',
+                            data: chartData,
+                            backgroundColor: 'rgba(79, 184, 175, 0.6)',
+                            borderColor: 'rgba(79, 184, 175, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'Completed Deliveries per Driver'
                             }
                         }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        title: {
-                            display: true,
-                            text: 'Completed Deliveries per Driver'
-                        }
                     }
-                }
-            });
+                });
 
-            openModal('driver-performance-modal');
+                openModal('driver-performance-modal');
+            } catch (error) {
+                console.error("Error opening driver dashboard:", error);
+                showNotification("Could not load driver performance data.", true);
+            } finally {
+                hideLoader();
+            }
         }
 
         function showDriverDeliveries(driverId) {
@@ -1620,6 +1719,134 @@
                 });
             }
             openModal('user-jobs-modal', true); 
+        }
+
+        // --- Public Feedback Logic ---
+        async function showPublicFeedbackView(feedbackId) {
+            document.querySelectorAll('body > div').forEach(el => el.style.display = 'none');
+            document.getElementById('public-feedback-view').style.display = 'flex';
+            document.body.classList.remove('loading');
+            showLoader();
+            try {
+                const deliveryRef = doc(db, 'deliveries', feedbackId);
+                const deliverySnap = await getDoc(deliveryRef);
+                if (deliverySnap.exists()) {
+                    const deliveryData = deliverySnap.data();
+                    document.getElementById('feedback-delivery-id').value = feedbackId;
+                    document.getElementById('feedback-job-no').textContent = deliveryData.jobFileData.jfn;
+                    document.getElementById('feedback-driver-name').textContent = deliveryData.driverName;
+                } else {
+                     throw new Error('Delivery not found.');
+                }
+            } catch (error) {
+                 document.getElementById('feedback-form-container').innerHTML = '<p class="text-red-500">Error: Could not load delivery details.</p>';
+                 console.error("Error loading for feedback:", error);
+            } finally {
+                hideLoader();
+            }
+        }
+
+        async function handleFeedbackSubmit(event) {
+            event.preventDefault();
+            const deliveryId = document.getElementById('feedback-delivery-id').value;
+            const rating = document.querySelector('input[name="rating"]:checked');
+            const comment = document.getElementById('feedback-comment').value.trim();
+
+            if (!rating) {
+                showNotification("Please select a star rating.", true);
+                return;
+            }
+            
+            showLoader();
+            try {
+                const deliveryRef = doc(db, 'deliveries', deliveryId);
+                const deliverySnap = await getDoc(deliveryRef);
+
+                if(!deliverySnap.exists()) throw new Error("Original delivery not found.");
+                const deliveryData = deliverySnap.data();
+
+                const feedbackData = {
+                    deliveryId: deliveryId,
+                    driverUid: deliveryData.driverUid,
+                    driverName: deliveryData.driverName,
+                    rating: parseInt(rating.value, 10),
+                    comment: comment,
+                    createdAt: serverTimestamp()
+                };
+
+                await setDoc(doc(db, 'feedback', deliveryId), feedbackData);
+                document.getElementById('feedback-form-container').style.display = 'none';
+                document.getElementById('feedback-thanks-message').style.display = 'block';
+
+            } catch (error) {
+                console.error("Error submitting feedback:", error);
+                showNotification("Could not submit feedback. Please try again.", true);
+            } finally {
+                hideLoader();
+            }
+        }
+        
+        async function showDriverFeedback(driverId) {
+            const driver = allUsersCache.find(u => u.id === driverId);
+            if (!driver) return;
+            
+            const driverFeedback = feedbackCache.filter(f => f.driverUid === driverId)
+                .sort((a,b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+
+            const modalTitle = document.getElementById('feedback-modal-title');
+            const list = document.getElementById('feedback-list');
+            modalTitle.textContent = `Feedback for ${driver.displayName}`;
+            
+            if (driverFeedback.length === 0) {
+                list.innerHTML = '<p class="text-gray-500 text-center p-4">This driver has not received any feedback yet.</p>';
+            } else {
+                list.innerHTML = driverFeedback.map(feedback => `
+                    <div class="p-3 border rounded-lg bg-gray-50">
+                        <div class="flex justify-between items-center">
+                            <p class="text-xl text-yellow-500">${'★'.repeat(feedback.rating)}${'☆'.repeat(5 - feedback.rating)}</p>
+                            <p class="text-xs text-gray-400">${feedback.createdAt?.toDate().toLocaleString()}</p>
+                        </div>
+                        <p class="mt-2 text-gray-700">${feedback.comment || '<i>No comment left.</i>'}</p>
+                    </div>
+                `).join('');
+            }
+            
+            openModal('view-feedback-modal', true);
+        }
+
+        async function showMyFeedback() {
+             showLoader();
+             try {
+                const q = query(collection(db, "feedback"), where("driverUid", "==", currentUser.uid));
+                const feedbackSnapshot = await getDocs(q);
+                const myFeedback = feedbackSnapshot.docs.map(doc => doc.data())
+                    .sort((a,b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+
+                const modalTitle = document.getElementById('feedback-modal-title');
+                const list = document.getElementById('feedback-list');
+                modalTitle.textContent = `My Feedback & Ratings`;
+                
+                if (myFeedback.length === 0) {
+                    list.innerHTML = '<p class="text-gray-500 text-center p-4">You have not received any feedback yet.</p>';
+                } else {
+                    list.innerHTML = myFeedback.map(feedback => `
+                        <div class="p-3 border rounded-lg bg-gray-50">
+                            <div class="flex justify-between items-center">
+                                <p class="text-xl text-yellow-500">${'★'.repeat(feedback.rating)}${'☆'.repeat(5 - feedback.rating)}</p>
+                                <p class="text-xs text-gray-400">${feedback.createdAt?.toDate().toLocaleString()}</p>
+                            </div>
+                            <p class="mt-2 text-gray-700">${feedback.comment || '<i>No comment left.</i>'}</p>
+                        </div>
+                    `).join('');
+                }
+                openModal('view-feedback-modal');
+
+             } catch(error) {
+                console.error("Error fetching driver feedback:", error);
+                showNotification("Could not load your feedback.", true);
+             } finally {
+                hideLoader();
+             }
         }
 
 
@@ -1680,6 +1907,8 @@
             document.getElementById('print-receipt-btn').addEventListener('click', printReceipt);
             document.getElementById('admin-panel-btn').addEventListener('click', openAdminPanel);
             document.getElementById('driver-dashboard-btn').addEventListener('click', openDriverPerformanceDashboard);
+            document.getElementById('feedback-form').addEventListener('submit', handleFeedbackSubmit);
+            document.getElementById('my-feedback-btn').addEventListener('click', showMyFeedback);
 
             const confirmCancelBtn = document.getElementById('confirm-cancel');
             confirmCancelBtn.addEventListener('click', () => {
@@ -1697,6 +1926,7 @@
         window.confirmUserDelete = confirmUserDelete;
         window.confirmPodCancel = confirmPodCancel;
         window.showDriverDeliveries = showDriverDeliveries;
+        window.showDriverFeedback = showDriverFeedback;
 
     </script>
 </body>
