@@ -313,7 +313,7 @@
                                 <label for="delivery-mawb" class="block text-sm font-medium text-gray-700 mb-1">AWB / MAWB</label>
                                 <input type="text" id="delivery-mawb" class="input-field" placeholder="Auto-filled from Job">
                             </div>
-                            <div class="col-span-2">
+                            <div class="col-span-1 sm:col-span-2">
                                 <label for="delivery-inv" class="block text-sm font-medium text-gray-700 mb-1">Invoice No.</label>
                                 <input type="text" id="delivery-inv" class="input-field" placeholder="Auto-filled from Job">
                             </div>
@@ -363,10 +363,10 @@
 
         <!-- Driver View -->
         <div id="driver-view" class="hidden">
-            <section class="bg-white p-6 rounded-xl shadow-md">
-                <div class="flex justify-between items-center mb-6 pb-4 border-b">
+            <section class="bg-white p-4 sm:p-6 rounded-xl shadow-md">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 border-b">
                     <h2 class="text-2xl font-bold text-gray-800">My Dashboard</h2>
-                    <button id="my-feedback-btn" class="btn btn-primary text-sm">My Feedback & Ratings</button>
+                    <button id="my-feedback-btn" class="btn btn-primary text-sm mt-3 sm:mt-0">My Feedback & Ratings</button>
                 </div>
                 <div id="driver-performance-summary" class="mb-6">
                     <!-- Driver performance summary will be loaded here -->
@@ -479,7 +479,7 @@
                 <div id="receipt-content" class="p-4 border rounded-md">
                     <!-- Receipt content will be generated here -->
                 </div>
-                <div class="text-right mt-4 flex justify-end gap-2">
+                <div class="text-right mt-4 flex flex-wrap justify-end gap-2">
                     <button id="copy-link-btn" class="btn btn-secondary">Copy Link</button>
                     <button id="share-btn" class="btn btn-primary">Share</button>
                     <button id="pdf-receipt-btn" class="btn btn-secondary">PDF</button>
@@ -901,8 +901,8 @@
             }
 
             const deliveredInfo = delivery.status === 'Delivered' ? `
-                <div class="mt-2 pt-2 border-t flex justify-between items-center">
-                    <div>
+                <div class="mt-2 pt-2 border-t flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                    <div class="mb-2 sm:mb-0">
                         <p class="text-xs"><strong>Receiver:</strong> ${delivery.receiverName || 'N/A'}</p>
                         <p class="text-xs"><strong>Completed:</strong> ${delivery.completedAt?.toDate().toLocaleString() || 'N/A'}</p>
                     </div>
@@ -1055,13 +1055,13 @@
             }
 
             taskCard.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <div>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                    <div class="mb-3 sm:mb-0">
                         <p class="font-bold text-lg">${jobData.jfn}</p>
                         <p class="text-sm text-gray-700"><strong>To:</strong> ${task.deliveryLocation}</p>
                         <p class="text-xs text-gray-500"><strong>Assigned:</strong> ${task.createdAt?.toDate().toLocaleString()}</p>
                     </div>
-                    <div class="flex flex-col items-end gap-2">
+                    <div class="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto">
                         <span class="text-sm font-semibold px-2 py-1 rounded-full ${task.status === 'Delivered' ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}">
                             ${task.status}
                         </span>
@@ -1302,8 +1302,8 @@
             receiptContent.innerHTML = `
                 <div class="space-y-6 text-gray-800">
                     <!-- Header -->
-                    <div class="flex justify-between items-start pb-4 border-b-2 border-gray-200">
-                        <div>
+                    <div class="flex flex-col sm:flex-row justify-between items-start pb-4 border-b-2 border-gray-200">
+                        <div class="mb-4 sm:mb-0">
                             <div class="text-3xl font-extrabold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
                             <p class="text-sm text-gray-500 font-semibold">PROOF OF DELIVERY</p>
                         </div>
@@ -1315,7 +1315,7 @@
                     </div>
 
                     <!-- Job Details -->
-                    <div class="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
                         <div><strong class="text-gray-500 block">Job File No:</strong> <span class="font-mono">${jobData.jfn || 'N/A'}</span></div>
                         <div><strong class="text-gray-500 block">Invoice No:</strong> <span class="font-mono">${jobData.in || 'N/A'}</span></div>
                         <div><strong class="text-gray-500 block">AWB / MAWB:</strong> <span class="font-mono">${jobData.mawb || 'N/A'}</span></div>
@@ -1324,20 +1324,20 @@
                         <div><strong class="text-gray-500 block">Consignee:</strong> ${jobData.co || 'N/A'}</div>
                         <div><strong class="text-gray-500 block">Origin:</strong> ${jobData.or || 'N/A'}</div>
                         <div><strong class="text-gray-500 block">Destination:</strong> ${jobData.de || 'N/A'}</div>
-                        <div class="col-span-2"><strong class="text-gray-500 block">Description:</strong> ${jobData.dsc || 'N/A'}</div>
-                        <div class="col-span-2"><strong class="text-gray-500 block">Gross Weight:</strong> ${jobData.gw || 'N/A'}</div>
+                        <div class="col-span-1 sm:col-span-2"><strong class="text-gray-500 block">Description:</strong> ${jobData.dsc || 'N/A'}</div>
+                        <div class="col-span-1 sm:col-span-2"><strong class="text-gray-500 block">Gross Weight:</strong> ${jobData.gw || 'N/A'}</div>
                     </div>
 
                     <!-- Delivery Details -->
                     <div class="bg-gray-50 p-4 rounded-lg border">
                         <h4 class="font-bold text-lg mb-3">Delivery Confirmation</h4>
-                        <div class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
                             <div><strong class="text-gray-500 block">Delivered To:</strong> ${data.receiverName}</div>
                             <div><strong class="text-gray-500 block">Contact:</strong> ${data.receiverMobile}</div>
-                            <div class="col-span-2"><strong class="text-gray-500 block">Date & Time:</strong> ${deliveryDate}</div>
-                            <div class="col-span-2"><strong class="text-gray-500 block">Delivery Address:</strong> ${data.deliveryLocation}</div>
-                            <div class="col-span-2"><strong class="text-gray-500 block">GPS Location:</strong> ${locationInfo}</div>
-                            <div class="col-span-2"><strong class="text-gray-500 block">POD Confirmed By (Driver):</strong> ${data.driverName}</div>
+                            <div class="col-span-1 sm:col-span-2"><strong class="text-gray-500 block">Date & Time:</strong> ${deliveryDate}</div>
+                            <div class="col-span-1 sm:col-span-2"><strong class="text-gray-500 block">Delivery Address:</strong> ${data.deliveryLocation}</div>
+                            <div class="col-span-1 sm:col-span-2"><strong class="text-gray-500 block">GPS Location:</strong> ${locationInfo}</div>
+                            <div class="col-span-1 sm:col-span-2"><strong class="text-gray-500 block">POD Confirmed By (Driver):</strong> ${data.driverName}</div>
                         </div>
                         <div class="mt-4 pt-4 border-t">
                             <p class="text-gray-600 text-sm italic mb-2">"I, <strong>${data.receiverName}</strong>, confirm I have received this shipment from the driver, <strong>${data.driverName}</strong>, in good condition on the date specified above."</p>
@@ -1385,21 +1385,12 @@
                 const canvasWidth = canvas.width;
                 const canvasHeight = canvas.height;
                 const ratio = canvasWidth / canvasHeight;
-                const pdfRatio = pdfWidth / pdfHeight;
-
-                let finalWidth, finalHeight;
-                if(ratio > pdfRatio){
-                    finalWidth = pdfWidth;
-                    finalHeight = pdfWidth / ratio;
-                } else {
-                    finalHeight = pdfHeight;
-                    finalWidth = pdfHeight * ratio;
-                }
                 
-                const x = (pdfWidth - finalWidth) / 2;
-                const y = (pdfHeight - finalHeight) / 2;
-
-                pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+                // Fit image to page width
+                const finalWidth = pdfWidth - 40; // with some margin
+                const finalHeight = finalWidth / ratio;
+                
+                pdf.addImage(imgData, 'PNG', 20, 20, finalWidth, finalHeight);
                 pdf.save(`Receipt-${activeDeliveryForReceipt.jobFileData.jfn}.pdf`);
 
             } catch (error) {
@@ -1470,20 +1461,29 @@
                         const deleteButton = canDelete ? `<button onclick="confirmUserDelete('${user.id}', '${user.displayName}')" class="btn btn-danger text-xs">Delete</button>` : '';
                         
                         const userEl = document.createElement('div');
-                        userEl.className = "grid grid-cols-4 gap-4 items-center p-2 border-b";
+                        // Mobile-first responsive design for the user list
+                        userEl.className = "p-3 border-b space-y-2 md:space-y-0 md:grid md:grid-cols-4 md:gap-4 md:items-center";
                         userEl.innerHTML = `
-                            <div>
-                                <p class="font-medium">${user.displayName}</p>
-                                <p class="text-xs text-gray-500">${user.email}</p>
+                             <!-- User Info (always visible) -->
+                            <div class="flex justify-between items-center md:block col-span-1">
+                                <div>
+                                    <p class="font-medium">${user.displayName}</p>
+                                    <p class="text-xs text-gray-500">${user.email}</p>
+                                </div>
+                                <div class="md:hidden text-sm text-gray-600 capitalize p-1 bg-gray-100 rounded">${user.role}</div>
                             </div>
-                            <div>
-                                <select data-uid="${user.id}" class="input-field status-select">
+                            <!-- Status Select (always visible) -->
+                            <div class="col-span-1">
+                                <label class="text-xs font-semibold text-gray-500 md:hidden">Status</label>
+                                <select data-uid="${user.id}" class="input-field status-select text-sm p-2">
                                     <option value="active" ${user.status === 'active' ? 'selected' : ''}>Active</option>
                                     <option value="inactive" ${user.status === 'inactive' ? 'selected' : ''}>Inactive</option>
                                 </select>
                             </div>
-                            <div class="text-sm text-gray-600 capitalize">${user.role}</div>
-                            <div class="text-right">
+                             <!-- Role (visible on medium screens and up) -->
+                            <div class="hidden md:block text-sm text-gray-600 capitalize col-span-1">${user.role}</div>
+                             <!-- Actions (always visible) -->
+                            <div class="text-right col-span-1">
                                 ${deleteButton}
                             </div>
                         `;
@@ -1657,13 +1657,13 @@
                     driverStats.forEach(stat => {
                         const starRating = '★'.repeat(Math.round(stat.averageRating)) + '☆'.repeat(5 - Math.round(stat.averageRating));
                         const statCard = document.createElement('div');
-                        statCard.className = 'p-4 border rounded-lg bg-white flex justify-between items-center';
+                        statCard.className = 'p-4 border rounded-lg bg-white space-y-4 md:space-y-0 md:flex md:justify-between md:items-center';
                         statCard.innerHTML = `
-                            <div>
+                             <div class="flex-shrink-0">
                                 <p class="font-bold text-lg">${stat.displayName}</p>
                                 <p class="text-sm text-gray-600">${stat.email}</p>
                             </div>
-                            <div class="flex items-center gap-4 text-center">
+                            <div class="flex flex-wrap justify-center md:justify-end items-center gap-4 text-center flex-grow">
                                 <div title="Average Rating: ${stat.averageRating.toFixed(2)} (${stat.totalRatings} ratings)">
                                     <p class="text-2xl font-bold text-yellow-500">${starRating}</p>
                                     <p class="text-xs text-gray-500">Avg. Rating</p>
@@ -1677,12 +1677,12 @@
                                     <p class="text-xs text-gray-500">Pending</p>
                                 </div>
                                 <div>
-                                    <p class="text-2xl font-bold text-red-500">${stat.skipped}</p>
+                                    <p class="text-2xl font-bold text-red-500">${stat.skipped || 0}</p>
                                     <p class="text-xs text-gray-500">Skipped</p>
                                 </div>
                             </div>
-                            <div>
-                                <button onclick="showDriverFeedback('${stat.id}')" class="btn btn-primary btn-xs text-xs mr-2">View Feedback</button>
+                            <div class="flex justify-center md:justify-end gap-2 flex-shrink-0 w-full md:w-auto">
+                                <button onclick="showDriverFeedback('${stat.id}')" class="btn btn-primary btn-xs text-xs">View Feedback</button>
                                 <button onclick="showDriverDeliveries('${stat.id}')" class="btn btn-secondary btn-xs text-xs">View Deliveries</button>
                             </div>
                         `;
@@ -1714,6 +1714,7 @@
                         }]
                     },
                     options: {
+                        responsive: true,
                         scales: {
                             y: {
                                 beginAtZero: true,
@@ -1824,41 +1825,55 @@
             }
         }
 
+        // UPDATED: More comprehensive device parser
         function parseDeviceInfo(ua) {
             if (!ua) return 'N/A';
 
-            // Specific models for better readability
-            if (ua.includes('SM-S918')) return 'Samsung Galaxy S23 Ultra';
-            if (ua.includes('SM-S908')) return 'Samsung Galaxy S22 Ultra';
-            if (ua.includes('SM-G998')) return 'Samsung Galaxy S21 Ultra';
+            // Specific models first for better readability
+            if (/iPhone15,2/i.test(ua)) return 'iPhone 15 Pro';
+            if (/iPhone15,3/i.test(ua)) return 'iPhone 15 Pro Max';
+            if (/iPhone16,1/i.test(ua)) return 'iPhone 15 Pro';
+            if (/iPhone16,2/i.test(ua)) return 'iPhone 15 Pro Max';
+            if (/iPhone14,2/i.test(ua)) return 'iPhone 14 Pro';
+            if (/iPhone14,3/i.test(ua)) return 'iPhone 14 Pro Max';
+            if (/SM-S928/i.test(ua)) return 'Samsung Galaxy S24 Ultra';
+            if (/SM-S918/i.test(ua)) return 'Samsung Galaxy S23 Ultra';
+            if (/SM-S908/i.test(ua)) return 'Samsung Galaxy S22 Ultra';
+            if (/SM-G998/i.test(ua)) return 'Samsung Galaxy S21 Ultra';
 
-            // Generic Apple devices
-            if (ua.includes('iPhone')) return 'iPhone';
-            if (ua.includes('iPad')) return 'iPad';
+            // Generic mobile devices
+            if (/iphone/i.test(ua)) return 'iPhone';
+            if (/ipad/i.test(ua)) return 'iPad';
 
-            // Generic Google Pixel
             const pixelMatch = ua.match(/Pixel [^\s;)]+/);
             if (pixelMatch) return `Google ${pixelMatch[0]}`;
 
-            // Try to extract model from generic Android UA string
-            if (ua.includes('Android')) {
-                const androidMatch = ua.match(/\(([^)]+)\)/);
-                if (androidMatch && androidMatch[1]) {
-                    const parts = androidMatch[1].split(';').map(p => p.trim());
-                    // The model is often the last part before the 'Build/' string
-                    const modelPart = parts[parts.length - 1];
-                    if (modelPart && modelPart.includes('Build/')) {
-                        return modelPart.split(' Build/')[0];
+            if (/android/i.test(ua)) {
+                const modelMatch = ua.match(/\(([^)]+)\)/);
+                if (modelMatch && modelMatch[1]) {
+                    const parts = modelMatch[1].split(';').map(p => p.trim());
+                    // Find the part with 'Build/' as it usually contains the model name
+                    const modelPart = parts.find(p => p.toLowerCase().includes('build/'));
+                    if (modelPart) {
+                        const model = modelPart.split(' Build/')[0].trim();
+                         // Avoid returning generic names
+                        if (model && model.toLowerCase() !== 'linux' && !/^\d+(\.\d+)*$/.test(model)) {
+                            return model;
+                        }
                     }
-                    return modelPart; // Return whatever was found
+                    // Fallback for UAs without a clear build string
+                    const lastPart = parts[parts.length - 1];
+                    if (lastPart && lastPart.length > 2 && !lastPart.toLowerCase().includes('build/')) {
+                         return lastPart;
+                    }
                 }
                 return 'Android Device';
             }
 
-            // Desktop Operating Systems
-            if (ua.includes('Windows NT')) return 'Windows PC';
-            if (ua.includes('Macintosh')) return 'Mac';
-            if (ua.includes('Linux') && !ua.includes('Android')) return 'Linux PC';
+            // Desktop
+            if (/windows nt/i.test(ua)) return 'Windows PC';
+            if (/macintosh/i.test(ua)) return 'Mac';
+            if (/linux/i.test(ua) && !/android/i.test(ua)) return 'Linux PC';
 
             return 'Unknown Device';
         }
@@ -1894,7 +1909,7 @@
                     rating: parseInt(rating.value, 10),
                     comment: comment,
                     createdAt: serverTimestamp(),
-                    deviceInfo: deviceInfo,
+                    deviceInfo: deviceInfo, // Raw user agent
                     ipAddress: ipAddress
                 };
 
@@ -1932,6 +1947,7 @@
                     
                     let adminInfo = '';
                     if (currentUser.role === 'admin') {
+                        // USE THE NEW PARSER FUNCTION HERE
                         const deviceName = parseDeviceInfo(feedback.deviceInfo);
                         adminInfo = `
                         <div class="mt-2 pt-2 border-t text-xs text-gray-500 space-y-1">
@@ -2169,4 +2185,3 @@
     </script>
 </body>
 </html>
-
