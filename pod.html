@@ -1021,7 +1021,7 @@
                 showNotification("Please enter the receiver's name and mobile number.", true);
                 return;
             }
-            if (completionSignaturePad.isEmpty()) {
+             if (completionSignaturePad.isEmpty()) {
                 showNotification("Please capture the receiver's signature.", true);
                 return;
             }
@@ -1333,6 +1333,48 @@
             };
             okButton.addEventListener('click', handleOkClick, { once: true });
         }
+        
+        window.confirmPodCancel = (deliveryId, jobFileNo) => {
+            const modal = document.getElementById('confirm-modal');
+            modal.querySelector('#confirm-title').textContent = 'Confirm POD Cancellation';
+            modal.querySelector('#confirm-message').innerHTML = `Are you sure you want to cancel the POD for job file "${jobFileNo}"? This will delete the receipt and set the delivery back to "Pending".`;
+            openModal('confirm-modal', true);
+
+            const okButton = modal.querySelector('#confirm-ok');
+             const handleOkClick = () => {
+                cancelPod(deliveryId);
+                closeModal('confirm-modal');
+                okButton.removeEventListener('click', handleOkClick);
+            };
+            okButton.addEventListener('click', handleOkClick, { once: true });
+        }
+
+        async function cancelPod(deliveryId) {
+            showLoader();
+            try {
+                const batch = writeBatch(db);
+
+                const podRef = doc(db, 'pods', deliveryId);
+                batch.delete(podRef);
+
+                const deliveryRef = doc(db, 'deliveries', deliveryId);
+                batch.update(deliveryRef, {
+                    status: 'Pending',
+                    podId: deleteField(),
+                    completedAt: deleteField(),
+                    receiverName: deleteField(),
+                    receiverMobile: deleteField(),
+                });
+                
+                await batch.commit();
+                showNotification("POD cancelled and delivery status reset.", false);
+            } catch (error) {
+                console.error("Error cancelling POD:", error);
+                showNotification("Failed to cancel POD.", true);
+            } finally {
+                hideLoader();
+            }
+        }
 
         async function deleteUserFromFirestore(userId) {
             showLoader();
@@ -1347,6 +1389,35 @@
                 hideLoader();
             }
         }
+        
+         async function showPublicPodView(podId) {
+            showLoader();
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-container').style.display = 'none';
+            
+            try {
+                const podDocRef = doc(db, 'pods', podId);
+                const podDoc = await getDoc(podDocRef);
+
+                if (podDoc.exists()) {
+                    activeDeliveryForReceipt = podDoc.data();
+                    const view = document.getElementById('public-pod-view');
+                    view.style.display = 'block';
+                    view.innerHTML = `<div class="container mx-auto p-4 sm:p-6 lg:p-8"><div id="receipt-content" class="p-4 border rounded-md bg-white shadow-lg"></div></div>`;
+                    generateReceipt();
+                } else {
+                    document.body.innerHTML = `<div class="p-4 text-center text-red-700 bg-red-100">POD with ID "${podId}" not found.</div>`;
+                }
+
+            } catch(e) {
+                console.error("Error fetching public POD:", e);
+                document.body.innerHTML = `<div class="p-4 text-center text-red-700 bg-red-100">Error loading POD.</div>`;
+            } finally {
+                hideLoader();
+                document.body.classList.remove('loading');
+            }
+        }
+
 
         // --- General Functions ---
         function showLoader() { document.getElementById('loader-overlay').classList.add('visible'); }
@@ -1397,6 +1468,18 @@
             document.getElementById('print-receipt-btn').addEventListener('click', printReceipt);
             document.getElementById('admin-panel-btn').addEventListener('click', openAdminPanel);
 
+            document.getElementById('create-driver-account-link').addEventListener('click', (e) => {
+                e.preventDefault();
+                openModal('signup-modal');
+            });
+            document.getElementById('signup-form').addEventListener('submit', handleDriverSignUp);
+            document.getElementById('forgot-password-link').addEventListener('click', (e) => {
+                e.preventDefault();
+                openModal('forgot-password-modal');
+            });
+            document.getElementById('forgot-password-form').addEventListener('submit', handleForgotPassword);
+
+
             const confirmCancelBtn = document.getElementById('confirm-cancel');
             confirmCancelBtn.addEventListener('click', () => {
                  const okButton = document.getElementById('confirm-ok');
@@ -1411,6 +1494,7 @@
         window.saveUserChanges = saveUserChanges;
         window.openReceiptModal = openReceiptModal;
         window.confirmUserDelete = confirmUserDelete;
+        window.confirmPodCancel = confirmPodCancel;
 
     </script>
 </body>
