@@ -1824,6 +1824,45 @@
             }
         }
 
+        function parseDeviceInfo(ua) {
+            if (!ua) return 'N/A';
+
+            // Specific models for better readability
+            if (ua.includes('SM-S918')) return 'Samsung Galaxy S23 Ultra';
+            if (ua.includes('SM-S908')) return 'Samsung Galaxy S22 Ultra';
+            if (ua.includes('SM-G998')) return 'Samsung Galaxy S21 Ultra';
+
+            // Generic Apple devices
+            if (ua.includes('iPhone')) return 'iPhone';
+            if (ua.includes('iPad')) return 'iPad';
+
+            // Generic Google Pixel
+            const pixelMatch = ua.match(/Pixel [^\s;)]+/);
+            if (pixelMatch) return `Google ${pixelMatch[0]}`;
+
+            // Try to extract model from generic Android UA string
+            if (ua.includes('Android')) {
+                const androidMatch = ua.match(/\(([^)]+)\)/);
+                if (androidMatch && androidMatch[1]) {
+                    const parts = androidMatch[1].split(';').map(p => p.trim());
+                    // The model is often the last part before the 'Build/' string
+                    const modelPart = parts[parts.length - 1];
+                    if (modelPart && modelPart.includes('Build/')) {
+                        return modelPart.split(' Build/')[0];
+                    }
+                    return modelPart; // Return whatever was found
+                }
+                return 'Android Device';
+            }
+
+            // Desktop Operating Systems
+            if (ua.includes('Windows NT')) return 'Windows PC';
+            if (ua.includes('Macintosh')) return 'Mac';
+            if (ua.includes('Linux') && !ua.includes('Android')) return 'Linux PC';
+
+            return 'Unknown Device';
+        }
+
 
         async function handleFeedbackSubmit(event) {
             event.preventDefault();
@@ -1893,9 +1932,10 @@
                     
                     let adminInfo = '';
                     if (currentUser.role === 'admin') {
+                        const deviceName = parseDeviceInfo(feedback.deviceInfo);
                         adminInfo = `
                         <div class="mt-2 pt-2 border-t text-xs text-gray-500 space-y-1">
-                            <p><strong>Device:</strong> ${feedback.deviceInfo || 'N/A'}</p>
+                            <p><strong>Device:</strong> ${deviceName}</p>
                             <p><strong>IP Address:</strong> ${feedback.ipAddress || 'N/A'}</p>
                         </div>
                         `;
@@ -2129,3 +2169,4 @@
     </script>
 </body>
 </html>
+
