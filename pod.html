@@ -831,6 +831,13 @@
                 showNotification("Please select a driver and enter a location.", true);
                 return;
             }
+
+            // Check for existing delivery
+            const existingDelivery = deliveriesCache.find(delivery => delivery.jobFileId === selectedJobFile.id);
+            if (existingDelivery) {
+                showNotification(`A delivery for Job File "${selectedJobFile.jfn}" has already been assigned.`, true);
+                return;
+            }
             
             showLoader();
             try {
