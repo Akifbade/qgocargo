@@ -1410,7 +1410,7 @@
             const body = document.getElementById('analytics-body');
              if (jobs.length === 0) {
                  body.innerHTML = `
-                 <!-- Timeframe Filters -->
+                <!-- Timeframe Filters -->
                 <div class="space-y-3">
                     <div class="flex items-center justify-center gap-4">
                          <label for="analytics-date-type" class="text-sm font-medium">Report Date Type:</label>
@@ -1426,7 +1426,7 @@
                     </div>
                 </div>
                  <p class="text-center text-gray-500 mt-8">No data available for the selected period.</p>`;
-                 
+                
                 document.querySelectorAll('.timeframe-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const timeframe = e.target.dataset.timeframe;
@@ -1435,8 +1435,8 @@
                     });
                 });
                  document.getElementById('analytics-date-type').addEventListener('change', (e) => {
-                     const activeTimeframeButton = document.querySelector('.timeframe-btn.bg-indigo-700') || document.querySelector('[data-timeframe="all"]');
-                     filterAnalyticsByTimeframe(activeTimeframeButton.dataset.timeframe, e.target.value);
+                      const activeTimeframeButton = document.querySelector('.timeframe-btn.bg-indigo-700') || document.querySelector('[data-timeframe="all"]');
+                      filterAnalyticsByTimeframe(activeTimeframeButton.dataset.timeframe, e.target.value);
                 });
                  return;
             }
@@ -1682,10 +1682,10 @@
                 </div>
                  <!-- Profit Chart -->
                  <div class="bg-white p-4 rounded-lg shadow-sm">
-                    <div style="position: relative; height:300px;">
-                        <canvas id="profit-chart"></canvas>
-                    </div>
-                </div>
+                     <div style="position: relative; height:300px;">
+                         <canvas id="profit-chart"></canvas>
+                     </div>
+                 </div>
 
                 <!-- Detailed Breakdowns -->
                 <div id="analytics-tables" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1778,10 +1778,10 @@
             document.querySelectorAll('.timeframe-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                      document.querySelectorAll('.timeframe-btn').forEach(b => {
-                        b.classList.remove('bg-indigo-700', 'text-white');
-                        if(!b.classList.contains('bg-gray-200')) {
-                           b.classList.add('bg-indigo-500');
-                        }
+                         b.classList.remove('bg-indigo-700', 'text-white');
+                         if(!b.classList.contains('bg-gray-200')) {
+                            b.classList.add('bg-indigo-500');
+                         }
                      });
                      e.target.classList.remove('bg-indigo-500', 'bg-gray-200');
                      e.target.classList.add('bg-indigo-700', 'text-white');
@@ -1853,6 +1853,8 @@
                         <select data-uid="${userId}" class="role-select input-field col-span-1" ${isDisabled ? 'disabled' : ''}>
                             <option value="user" ${userData.role === 'user' ? 'selected' : ''}>User</option>
                             <option value="checker" ${userData.role === 'checker' ? 'selected' : ''}>Checker</option>
+                            <option value="driver" ${userData.role === 'driver' ? 'selected' : ''}>Driver</option>
+                            <option value="warehouse_supervisor" ${userData.role === 'warehouse_supervisor' ? 'selected' : ''}>Warehouse Supervisor</option>
                             <option value="admin" ${userData.role === 'admin' ? 'selected' : ''}>Admin</option>
                         </select>
                         <select data-uid="${userId}" class="status-select input-field col-span-1" ${isDisabled ? 'disabled' : ''}>
@@ -3374,4 +3376,3 @@
     </script>
 </body>
 </html>
-
