@@ -70,7 +70,7 @@
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0, 0, 0, 0.6); display: flex;
             align-items: center; justify-content: center; z-index: 1000;
-            opacity: 0; visibility: hidden; transition: opacity 0.3s ease-in-out;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
             padding: 1rem;
         }
         .overlay.visible {
@@ -130,15 +130,20 @@
             border: 2px dashed #d1d5db;
             border-radius: 0.5rem;
         }
-
-        #driver-simulation-section {
-            max-width: 375px;
-            margin-left: auto;
-            margin-right: auto;
-            border: 8px solid black;
-            border-radius: 2rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        
+        @keyframes fadeInFromBottom {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
+        .delivery-card {
+            animation: fadeInFromBottom 0.5s ease-out forwards;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .delivery-card:hover {
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 8px 16px -4px rgba(0,0,0,0.1);
+        }
+
     </style>
 </head>
 <body class="bg-gray-100 loading">
@@ -155,10 +160,14 @@
                     <input id="email-address" name="email" type="email" autocomplete="email" class="input-field" placeholder="Email address">
                     <input id="password" name="password" type="password" autocomplete="current-password" class="input-field" placeholder="Password">
                 </div>
+                <div class="flex items-center justify-between text-sm">
+                    <a href="#" id="forgot-password-link" class="font-medium text-indigo-600 hover:text-indigo-500">Forgot your password?</a>
+                </div>
                 <div>
-                    <button id="auth-btn" class="btn btn-primary w-full text-lg">
-                        Sign in
-                    </button>
+                    <button id="auth-btn" class="btn btn-primary w-full text-lg">Sign in</button>
+                </div>
+                 <div class="text-center text-sm text-gray-600">
+                    <p>New Driver? <a href="#" id="driver-signup-link" class="font-medium text-indigo-600 hover:text-indigo-500">Sign up here</a></p>
                 </div>
             </div>
         </div>
@@ -191,15 +200,15 @@
                 <section id="dashboard-section" class="space-y-6">
                     <!-- Stat Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-5 border-l-4 border-yellow-400">
+                        <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-5 border-l-4 border-yellow-400 delivery-card">
                             <div class="bg-yellow-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
                             <div><p class="text-base text-gray-500">Pending</p><p id="stat-pending" class="text-3xl font-extrabold text-gray-800">0</p></div>
                         </div>
-                        <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-5 border-l-4 border-green-400">
+                        <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-5 border-l-4 border-green-400 delivery-card">
                             <div class="bg-green-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
                             <div><p class="text-base text-gray-500">Completed</p><p id="stat-completed" class="text-3xl font-extrabold text-gray-800">0</p></div>
                         </div>
-                        <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-5 border-l-4 border-blue-400">
+                        <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-5 border-l-4 border-blue-400 delivery-card">
                             <div class="bg-blue-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h8a1 1 0 001-1z" /></svg></div>
                             <div><p class="text-base text-gray-500">Total Deliveries</p><p id="stat-total" class="text-3xl font-extrabold text-gray-800">0</p></div>
                         </div>
@@ -208,7 +217,10 @@
                 
                 <!-- 2. Assign New Delivery -->
                 <section class="bg-white p-6 rounded-xl shadow-md">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Assign New Delivery</h2>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                        <span>Assign New Delivery</span>
+                    </h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div class="space-y-4">
                             <div class="relative">
@@ -229,7 +241,6 @@
                                 <label for="delivery-location" class="block text-sm font-medium text-gray-700 mb-1">Delivery Location</label>
                                 <textarea id="delivery-location" rows="2" class="input-field" placeholder="Enter the full delivery address"></textarea>
                             </div>
-                             <!-- FIX: Added missing 'additional-notes' textarea -->
                             <div>
                                 <label for="additional-notes" class="block text-sm font-medium text-gray-700 mb-1">Additional Notes (Optional)</label>
                                 <textarea id="additional-notes" rows="2" class="input-field" placeholder="e.g., Contact person, delivery instructions"></textarea>
@@ -250,30 +261,22 @@
                 <!-- 3. Delivery Lists -->
                 <section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div class="bg-white p-6 rounded-xl shadow-md">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-4">Pending Deliveries</h2>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-3">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                           <span>Pending Deliveries</span>
+                        </h2>
+                        <input type="text" id="pending-search" class="input-field mb-4" placeholder="Search pending deliveries...">
                         <div id="pending-deliveries-list" class="space-y-4 max-h-96 overflow-y-auto"></div>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow-md">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-4">Completed Deliveries</h2>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span>Completed Deliveries</span>
+                        </h2>
+                        <input type="text" id="completed-search" class="input-field mb-4" placeholder="Search completed deliveries...">
                         <div id="completed-deliveries-list" class="space-y-4 max-h-96 overflow-y-auto"></div>
                     </div>
                 </section>
-                
-                <!-- FIX: Added content to the driver simulation section -->
-                <section id="driver-simulation-section" class="bg-gray-50 hidden p-4 rounded-xl shadow-inner">
-                     <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">Driver Task Simulation</h2>
-                     <div class="space-y-4">
-                         <div>
-                             <label for="user-simulation-select" class="block text-sm font-medium text-gray-700 mb-1">Select User to View As</label>
-                             <select id="user-simulation-select" class="input-field">
-                                 <option value="">-- Select a User --</option>
-                             </select>
-                         </div>
-                         <div id="user-simulation-list" class="space-y-4 max-h-96 overflow-y-auto border-t pt-4 mt-4">
-                              <!-- Simulated tasks will be rendered here by JavaScript -->
-                         </div>
-                     </div>
-                 </section>
         </div>
 
         <!-- Driver View -->
@@ -305,11 +308,10 @@
     <div id="admin-panel-modal" class="overlay">
         <div class="modal-content max-w-3xl">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-bold">Admin Panel</h3>
+                <h3 class="text-2xl font-bold">Driver Management</h3>
                 <button onclick="closeModal('admin-panel-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
             <div class="space-y-4">
-                <h4 class="text-lg font-semibold">User Management</h4>
                 <div id="user-list-admin" class="space-y-2 max-h-[60vh] overflow-y-auto">
                     <!-- User list will be populated here -->
                 </div>
@@ -383,6 +385,53 @@
         </div>
     </div>
 
+    <!-- Driver Signup Modal -->
+    <div id="signup-modal" class="overlay">
+        <div class="modal-content max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">Driver Registration</h3>
+                <button onclick="closeModal('signup-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <form id="signup-form" class="space-y-4">
+                <div>
+                    <label for="signup-name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                    <input type="text" id="signup-name" class="input-field mt-1" required>
+                </div>
+                <div>
+                    <label for="signup-email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                    <input type="email" id="signup-email" class="input-field mt-1" required>
+                </div>
+                <div>
+                    <label for="signup-password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="signup-password" class="input-field mt-1" required>
+                </div>
+                <div class="text-right pt-4">
+                    <button type="submit" class="btn btn-primary">Create Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Forgot Password Modal -->
+    <div id="forgot-password-modal" class="overlay">
+        <div class="modal-content max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">Reset Password</h3>
+                <button onclick="closeModal('forgot-password-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <form id="forgot-password-form" class="space-y-4">
+                <p class="text-sm text-gray-600">Enter your email address and we will send you a link to reset your password.</p>
+                <div>
+                    <label for="forgot-email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                    <input type="email" id="forgot-email" class="input-field mt-1" required>
+                </div>
+                <div class="text-right pt-4">
+                    <button type="submit" class="btn btn-primary">Send Reset Link</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 
     <!-- Firebase SDK and App Logic -->
     <script type="module">
@@ -405,7 +454,7 @@
         let activeDeliveryForCompletion = null;
 
 
-        // --- Firebase Configuration (Same as your main file) ---
+        // --- Firebase Configuration ---
         const firebaseConfig = {
             apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
             authDomain: "my-job-file-system.firebaseapp.com",
@@ -439,7 +488,7 @@
                                 showApp();
                             } else {
                                 if (userDoc.exists()) {
-                                    showNotification("Your account is pending admin approval.", true);
+                                    showNotification("Your account is inactive or pending admin approval.", true);
                                 }
                                 currentUser = null;
                                 await signOut(auth);
@@ -481,6 +530,69 @@
                 hideLoader();
             }
         }
+
+        async function handleSignup(e) {
+            e.preventDefault();
+            const name = document.getElementById('signup-name').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value.trim();
+            if(!name || !email || !password) {
+                showNotification("Please fill out all fields.", true);
+                return;
+            }
+            if(password.length < 6) {
+                 showNotification("Password must be at least 6 characters long.", true);
+                return;
+            }
+            showLoader();
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                // Create user document in Firestore
+                await setDoc(doc(db, "users", user.uid), {
+                    displayName: name,
+                    email: email,
+                    role: 'driver',
+                    status: 'inactive', // inactive until admin approves
+                    createdAt: serverTimestamp()
+                });
+                
+                closeModal('signup-modal');
+                showNotification("Account created! Please wait for admin approval.", false);
+                await signOut(auth);
+
+            } catch (error) {
+                 console.error("Signup failed:", error);
+                 if (error.code === 'auth/email-already-in-use') {
+                    showNotification("This email address is already in use.", true);
+                 } else {
+                    showNotification("Could not create account. Please try again.", true);
+                 }
+            } finally {
+                hideLoader();
+            }
+        }
+
+        async function handleForgotPassword(e) {
+            e.preventDefault();
+            const email = document.getElementById('forgot-email').value.trim();
+            if(!email) {
+                showNotification("Please enter your email address.", true);
+                return;
+            }
+            showLoader();
+            try {
+                await sendPasswordResetEmail(auth, email);
+                closeModal('forgot-password-modal');
+                showNotification("Password reset link sent! Check your email.", false);
+            } catch (error) {
+                 console.error("Password reset failed:", error);
+                 showNotification("Could not send reset link. Check the email address.", true);
+            } finally {
+                hideLoader();
+            }
+        }
         
         // --- UI & View Management ---
         function showLogin() {
@@ -499,14 +611,12 @@
             document.getElementById('admin-staff-view').style.display = 'none';
             document.getElementById('driver-view').style.display = 'none';
             document.getElementById('admin-panel-btn').classList.add('hidden');
-            document.getElementById('driver-simulation-section').classList.add('hidden');
             
             if (currentUser.role === 'admin' || currentUser.role === 'staff') {
                 document.getElementById('admin-staff-view').style.display = 'block';
                 document.getElementById('header-subtitle').textContent = "Assign, track, and manage deliveries.";
                 if (currentUser.role === 'admin') {
                     document.getElementById('admin-panel-btn').classList.remove('hidden');
-                    document.getElementById('driver-simulation-section').classList.remove('hidden');
                 }
                 loadAdminData();
             } else if (currentUser.role === 'driver') {
@@ -531,7 +641,7 @@
                 jobFilesCache = jobFilesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 allUsersCache = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
-                populateUserDropdowns();
+                populateDriverDropdown();
                 listenForDeliveries();
 
             } catch (error) {
@@ -542,30 +652,18 @@
             }
         }
         
-        function populateUserDropdowns() {
+        function populateDriverDropdown() {
             const assignmentSelect = document.getElementById('driver-select');
-            const simulationSelect = document.getElementById('user-simulation-select');
+            if (!assignmentSelect) return;
 
-            if (assignmentSelect) {
-                assignmentSelect.innerHTML = '<option value="">-- Select a Driver --</option>';
-                const activeDrivers = allUsersCache.filter(u => u.role === 'driver' && u.status === 'active');
-                activeDrivers.forEach(driver => {
-                    const option = document.createElement('option');
-                    option.value = driver.id;
-                    option.textContent = driver.displayName;
-                    assignmentSelect.appendChild(option);
-                });
-            }
-            
-            if (simulationSelect) {
-                simulationSelect.innerHTML = '<option value="">-- Select a User --</option>';
-                allUsersCache.forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = user.id;
-                    option.textContent = `${user.displayName} (${user.role})`;
-                    simulationSelect.appendChild(option);
-                });
-            }
+            assignmentSelect.innerHTML = '<option value="">-- Select a Driver --</option>';
+            const activeDrivers = allUsersCache.filter(u => u.role === 'driver' && u.status === 'active');
+            activeDrivers.forEach(driver => {
+                const option = document.createElement('option');
+                option.value = driver.id;
+                option.textContent = driver.displayName;
+                assignmentSelect.appendChild(option);
+            });
         }
         
         function listenForDeliveries() {
@@ -589,24 +687,41 @@
             const completedList = document.getElementById('completed-deliveries-list');
             pendingList.innerHTML = '';
             completedList.innerHTML = '';
-            
-            const pendingDeliveries = deliveriesCache.filter(d => d.status !== 'Delivered');
-            const completedDeliveries = deliveriesCache.filter(d => d.status === 'Delivered');
+
+            const pendingSearchTerm = document.getElementById('pending-search').value.toLowerCase();
+            const completedSearchTerm = document.getElementById('completed-search').value.toLowerCase();
+
+            const searchFilter = (delivery, term) => {
+                if (!term) return true;
+                const job = delivery.jobFileData || {};
+                return (
+                    (job.jfn && job.jfn.toLowerCase().includes(term)) ||
+                    (job.sh && job.sh.toLowerCase().includes(term)) ||
+                    (job.co && job.co.toLowerCase().includes(term)) ||
+                    (delivery.driverName && delivery.driverName.toLowerCase().includes(term)) ||
+                    (delivery.receiverName && delivery.receiverName.toLowerCase().includes(term))
+                );
+            };
+
+            const pendingDeliveries = deliveriesCache
+                .filter(d => d.status !== 'Delivered')
+                .filter(d => searchFilter(d, pendingSearchTerm));
+
+            const completedDeliveries = deliveriesCache
+                .filter(d => d.status === 'Delivered')
+                .filter(d => searchFilter(d, completedSearchTerm));
+
 
             if (pendingDeliveries.length > 0) {
                 pendingDeliveries.forEach(delivery => pendingList.appendChild(createDeliveryCard(delivery)));
             } else {
-                pendingList.innerHTML = '<p class="text-gray-500 text-center py-4">No pending deliveries.</p>';
+                pendingList.innerHTML = '<p class="text-gray-500 text-center py-4">No pending deliveries found.</p>';
             }
 
             if (completedDeliveries.length > 0) {
                 completedDeliveries.forEach(delivery => completedList.appendChild(createDeliveryCard(delivery)));
             } else {
-                completedList.innerHTML = '<p class="text-gray-500 text-center py-4">No completed deliveries yet.</p>';
-            }
-            
-            if (currentUser.role === 'admin') {
-                renderUserSimulationView();
+                completedList.innerHTML = '<p class="text-gray-500 text-center py-4">No completed deliveries found.</p>';
             }
         }
         
@@ -621,7 +736,7 @@
 
         function createDeliveryCard(delivery) {
             const card = document.createElement('div');
-            card.className = 'border p-3 rounded-lg bg-gray-50';
+            card.className = 'border p-3 rounded-lg bg-gray-50 delivery-card';
             const jobData = delivery.jobFileData || {};
             let actionButtons = '';
 
@@ -723,12 +838,15 @@
                 const deliveryData = {
                     jobFileId: selectedJobFile.id,
                     jobFileData: { // Store a snapshot of key data
-                        jfn: selectedJobFile.jfn,
-                        sh: selectedJobFile.sh,
-                        co: selectedJobFile.co,
-                        dsc: selectedJobFile.dsc,
-                        gw: selectedJobFile.gw,
-                        mawb: selectedJobFile.mawb
+                        jfn: selectedJobFile.jfn || 'N/A',
+                        sh: selectedJobFile.sh || 'N/A',
+                        co: selectedJobFile.co || 'N/A',
+                        dsc: selectedJobFile.dsc || 'N/A',
+                        gw: selectedJobFile.gw || 'N/A',
+                        mawb: selectedJobFile.mawb || 'N/A',
+                        pol: selectedJobFile.pol || 'N/A', // Country of Origin
+                        poa: selectedJobFile.poa || 'N/A', // Destination
+                        al: selectedJobFile.al || 'N/A',   // Airlines
                     },
                     deliveryLocation: location,
                     deliveryNotes: document.getElementById('additional-notes')?.value.trim(),
@@ -758,7 +876,7 @@
         // --- Driver Logic & Simulation ---
         function createDriverTaskCard(task) {
             const taskCard = document.createElement('div');
-            taskCard.className = `border p-4 rounded-lg shadow-sm ${task.status === 'Pending' ? 'bg-white' : 'bg-gray-200'}`;
+            taskCard.className = `border p-4 rounded-lg shadow-sm delivery-card ${task.status === 'Pending' ? 'bg-white' : 'bg-gray-200'}`;
             const jobData = task.jobFileData || {};
 
             let actionButton = '';
@@ -891,7 +1009,8 @@
                     driverName: currentUser.displayName,
                 };
                  if (currentGeolocation) {
-                    podData.geolocation = currentGeolocation;
+                    podData.geolocation = currentGeolocation.coords;
+                    podData.geolocationName = currentGeolocation.displayName;
                 }
 
                 const podDocRef = doc(db, 'pods', deliveryId);
@@ -925,13 +1044,32 @@
 
             statusEl.textContent = 'Getting location...';
             navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    currentGeolocation = {
+                async (position) => {
+                    const coords = {
                         lat: position.coords.latitude,
                         lng: position.coords.longitude
                     };
-                    statusEl.textContent = `Location captured successfully.`;
-                    statusEl.style.color = '#16a34a';
+                    statusEl.textContent = `Coordinates captured. Fetching address...`;
+
+                    try {
+                        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.lat}&lon=${coords.lng}`);
+                        if(!response.ok) throw new Error('Network response was not ok');
+                        const data = await response.json();
+                        const displayName = data.display_name || 'Address not found';
+                        
+                        currentGeolocation = {
+                           coords: coords,
+                           displayName: displayName
+                        };
+                        statusEl.textContent = `Location: ${displayName}`;
+                        statusEl.style.color = '#16a34a';
+
+                    } catch (error) {
+                        console.error('Reverse geocoding error:', error);
+                        statusEl.textContent = 'Could not fetch address name, but coordinates saved.';
+                        currentGeolocation = { coords: coords, displayName: 'N/A' };
+                        statusEl.style.color = '#eab308';
+                    }
                 },
                 () => {
                     statusEl.textContent = 'Unable to retrieve your location.';
@@ -966,59 +1104,75 @@
 
         function generateReceipt() {
             const receiptContent = document.getElementById('receipt-content');
-            const jobData = activeDeliveryForReceipt.jobFileData;
-            const receiverName = activeDeliveryForReceipt.receiverName;
-            const deliveryDate = (activeDeliveryForReceipt.completedAt?.toDate() || new Date()).toLocaleString();
+            const data = activeDeliveryForReceipt;
+            const jobData = data.jobFileData;
+            const deliveryDate = (data.completedAt?.toDate() || new Date()).toLocaleString();
+
+            let locationInfo = data.geolocationName || 'Not Captured.';
+            if (data.geolocation) {
+                locationInfo += ` <a href="https://www.google.com/maps?q=${data.geolocation.lat},${data.geolocation.lng}" target="_blank" class="text-blue-600 hover:underline text-xs ml-2">[View on Map]</a>`;
+            }
 
             receiptContent.innerHTML = `
-                <div class="space-y-4">
-                    <div class="flex justify-between items-start">
+                <div class="space-y-6 text-gray-800">
+                    <!-- Header -->
+                    <div class="flex justify-between items-start pb-4 border-b-2 border-gray-200">
                         <div>
-                            <div class="text-2xl font-bold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
-                            <p class="text-xs text-gray-500">Proof of Delivery</p>
-                        </div>
-                        <div class="text-right text-xs">
-                            <p class="font-bold">Job No: ${jobData.jfn}</p>
-                            <p>MAWB/OBL: ${jobData.mawb || 'N/A'}</p>
-                        </div>
-                    </div>
-                    <div class="border-t border-b py-2 grid grid-cols-2 gap-x-4 text-sm">
-                        <div>
-                            <p class="text-gray-500">Shipper</p>
-                            <p class="font-medium">${jobData.sh}</p>
+                            <div class="text-3xl font-extrabold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
+                            <p class="text-sm text-gray-500 font-semibold">PROOF OF DELIVERY</p>
                         </div>
                         <div class="text-right">
-                            <p class="text-gray-500">Consignee</p>
-                            <p class="font-medium">${jobData.co}</p>
+                            <div id="receipt-qrcode" class="p-1 bg-white border rounded-md inline-block"></div>
+                            <p class="text-xs text-gray-500 mt-1">Scan for details</p>
                         </div>
                     </div>
-                     <div class="text-sm space-y-1">
-                         <p><strong>Description:</strong> ${jobData.dsc || 'N/A'}</p>
-                         <p><strong>Gross Weight:</strong> ${jobData.gw || 'N/A'}</p>
-                         <p><strong>Delivery Location:</strong> ${activeDeliveryForReceipt.deliveryLocation || activeDeliveryForReceipt.jobFileData.de}</p>
-                         <p><strong>Receiver Mobile:</strong> ${activeDeliveryForReceipt.receiverMobile || 'N/A'}</p>
-                       </div>
-                       <div class="bg-gray-50 p-3 rounded-md flex justify-between items-end">
-                         <div>
-                             <p class="text-sm font-semibold">Recipient Confirmation</p>
-                             <p class="text-xs mt-1">I, <strong>${receiverName}</strong>, confirm the receipt of the goods on <strong>${deliveryDate}</strong>.</p>
-                             <div class="mt-2">
-                                 <p class="text-xs mb-1 text-gray-600">Signature:</p>
-                                 <img src="${activeDeliveryForReceipt.signatureDataUrl}" alt="Signature" class="w-40 bg-white border p-1 rounded-md"/>
-                             </div>
-                         </div>
-                         <div id="receipt-qrcode" class="p-1 bg-white border rounded-md"></div>
-                     </div>
+
+                    <!-- Job Details -->
+                    <div class="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                        <div><strong class="text-gray-500 block">Job File No:</strong> <span class="font-mono">${jobData.jfn || 'N/A'}</span></div>
+                        <div><strong class="text-gray-500 block">MAWB / OBL:</strong> <span class="font-mono">${jobData.mawb || 'N/A'}</span></div>
+                        <div><strong class="text-gray-500 block">Shipper:</strong> ${jobData.sh || 'N/A'}</div>
+                        <div><strong class="text-gray-500 block">Consignee:</strong> ${jobData.co || 'N/A'}</div>
+                        <div><strong class="text-gray-500 block">Airlines:</strong> ${jobData.al || 'N/A'}</div>
+                        <div><strong class="text-gray-500 block">Origin:</strong> ${jobData.pol || 'N/A'}</div>
+                        <div><strong class="text-gray-500 block">Destination:</strong> ${jobData.poa || 'N/A'}</div>
+                        <div class="col-span-2"><strong class="text-gray-500 block">Description:</strong> ${jobData.dsc || 'N/A'}</div>
+                        <div class="col-span-2"><strong class="text-gray-500 block">Gross Weight:</strong> ${jobData.gw || 'N/A'}</div>
+                    </div>
+
+                    <!-- Delivery Details -->
+                    <div class="bg-gray-50 p-4 rounded-lg border">
+                        <h4 class="font-bold text-lg mb-3">Delivery Confirmation</h4>
+                        <div class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                            <div><strong class="text-gray-500 block">Delivered To:</strong> ${data.receiverName}</div>
+                            <div><strong class="text-gray-500 block">Contact:</strong> ${data.receiverMobile}</div>
+                            <div class="col-span-2"><strong class="text-gray-500 block">Date & Time:</strong> ${deliveryDate}</div>
+                            <div class="col-span-2"><strong class="text-gray-500 block">Delivery Address:</strong> ${data.deliveryLocation}</div>
+                            <div class="col-span-2"><strong class="text-gray-500 block">GPS Location:</strong> ${locationInfo}</div>
+                            <div class="col-span-2"><strong class="text-gray-500 block">Driver:</strong> ${data.driverName}</div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t">
+                             <p class="text-gray-600 text-sm italic mb-2">"I, <strong>${data.receiverName}</strong>, confirm I have received this shipment from the driver, <strong>${data.driverName}</strong>, in good condition on the date specified above."</p>
+                            <p class="text-gray-500 text-sm font-bold mb-1">Receiver's Signature:</p>
+                            <img src="${data.signatureDataUrl}" alt="Signature" class="w-48 bg-white border-2 p-1 rounded-md shadow-inner"/>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center text-xs text-gray-400 pt-4">
+                        Thank you for your business.
+                    </div>
                 </div>
             `;
-            
-            // Generate QR Code
+
             const qrContainer = document.getElementById('receipt-qrcode');
             qrContainer.innerHTML = '';
             new QRCode(qrContainer, {
-                text: window.location.origin + window.location.pathname + '?podId=' + activeDeliveryForReceipt.deliveryId,
+                text: window.location.origin + window.location.pathname + '?podId=' + data.deliveryId,
                 width: 80,
                 height: 80,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
             });
         }
         
@@ -1073,55 +1227,38 @@
             printWindow.document.close();
         }
         
-        function renderUserSimulationView() {
-            const selectedUserId = document.getElementById('user-simulation-select').value;
-            const listEl = document.getElementById('user-simulation-list');
-            listEl.innerHTML = '';
-            
-            if (!selectedUserId) {
-                listEl.innerHTML = '<p class="text-center text-gray-500 p-4">Select a user to see their assigned tasks.</p>';
-                return;
-            }
-
-            const userTasks = deliveriesCache.filter(d => d.driverUid === selectedUserId);
-            if(userTasks.length > 0) {
-                 userTasks.forEach(task => listEl.appendChild(createDriverTaskCard(task)));
-            } else {
-                 listEl.innerHTML = '<p class="text-center text-gray-500 p-4">This user has no assigned tasks.</p>';
-            }
-        }
-        
         // --- Admin Panel ---
         async function openAdminPanel() {
             showLoader();
             try {
-                // Fetch all users now, not just drivers
+                // Fetch all users and filter for drivers
                 const snapshot = await getDocs(collection(db, 'users'));
                 const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const drivers = users.filter(user => user.role === 'driver');
 
                 const listEl = document.getElementById('user-list-admin');
                 listEl.innerHTML = '';
-                if(users.length === 0) {
-                    listEl.innerHTML = `<p class="text-gray-500 text-center p-4">No users found.</p>`;
+                if(drivers.length === 0) {
+                    listEl.innerHTML = `<p class="text-gray-500 text-center p-4">No drivers found.</p>`;
                 } else {
-                    users.forEach(user => {
-                        const canDelete = currentUser.uid !== user.id && user.role !== 'admin';
-                        const deleteButton = canDelete ? `<button onclick="confirmUserDelete('${user.id}', '${user.displayName}')" class="btn btn-danger text-xs">Delete</button>` : '';
+                    drivers.forEach(driver => {
+                        const canDelete = currentUser.uid !== driver.id;
+                        const deleteButton = canDelete ? `<button onclick="confirmUserDelete('${driver.id}', '${driver.displayName}')" class="btn btn-danger text-xs">Delete</button>` : '';
                         
                         const userEl = document.createElement('div');
                         userEl.className = "grid grid-cols-4 gap-4 items-center p-2 border-b";
                         userEl.innerHTML = `
                             <div>
-                                <p class="font-medium">${user.displayName}</p>
-                                <p class="text-xs text-gray-500">${user.email}</p>
+                                <p class="font-medium">${driver.displayName}</p>
+                                <p class="text-xs text-gray-500">${driver.email}</p>
                             </div>
                              <div>
-                                <select data-uid="${user.id}" class="input-field status-select" ${currentUser.uid === user.id ? 'disabled' : ''}>
-                                    <option value="active" ${user.status === 'active' ? 'selected' : ''}>Active</option>
-                                    <option value="inactive" ${user.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                                <select data-uid="${driver.id}" class="input-field status-select">
+                                    <option value="active" ${driver.status === 'active' ? 'selected' : ''}>Active</option>
+                                    <option value="inactive" ${driver.status === 'inactive' ? 'selected' : ''}>Inactive</option>
                                 </select>
                             </div>
-                            <div class="text-sm text-gray-600">${user.role}</div>
+                            <div class="text-sm text-gray-600 capitalize">${driver.role}</div>
                             <div class="text-right">
                                 ${deleteButton}
                             </div>
@@ -1152,7 +1289,7 @@
 
             try {
                 await batch.commit();
-                showNotification("User statuses updated successfully!", false);
+                showNotification("Driver statuses updated successfully!", false);
                 closeModal('admin-panel-modal');
                 loadAdminData();
             } catch (error) {
@@ -1298,10 +1435,18 @@
             
             document.getElementById('auth-btn').addEventListener('click', handleLogin);
             document.getElementById('logout-btn').addEventListener('click', handleLogout);
+            document.getElementById('driver-signup-link').addEventListener('click', (e) => { e.preventDefault(); openModal('signup-modal'); });
+            document.getElementById('forgot-password-link').addEventListener('click', (e) => { e.preventDefault(); openModal('forgot-password-modal'); });
+            document.getElementById('signup-form').addEventListener('submit', handleSignup);
+            document.getElementById('forgot-password-form').addEventListener('submit', handleForgotPassword);
+
             document.getElementById('job-file-search').addEventListener('input', handleJobFileSearch);
             document.getElementById('job-file-suggestions').addEventListener('click', selectJobFile);
             document.getElementById('delivery-form').addEventListener('submit', handleAssignDelivery);
-            document.getElementById('user-simulation-select').addEventListener('change', renderUserSimulationView);
+            
+            document.getElementById('pending-search').addEventListener('input', renderAllDeliveryViews);
+            document.getElementById('completed-search').addEventListener('input', renderAllDeliveryViews);
+
             document.getElementById('completion-form').addEventListener('submit', handleCompleteDelivery);
             document.getElementById('clear-completion-signature-btn').addEventListener('click', () => completionSignaturePad.clear());
             document.getElementById('get-location-btn').addEventListener('click', handleGetLocation);
@@ -1312,7 +1457,6 @@
 
             const confirmCancelBtn = document.getElementById('confirm-cancel');
             confirmCancelBtn.addEventListener('click', () => {
-                 // Clone the 'OK' button to remove any existing event listeners from previous confirmations.
                  const okButton = document.getElementById('confirm-ok');
                  const newOkButton = okButton.cloneNode(true);
                  okButton.parentNode.replaceChild(newOkButton, okButton);
@@ -1330,3 +1474,4 @@
     </script>
 </body>
 </html>
+
