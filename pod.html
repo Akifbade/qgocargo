@@ -50,6 +50,9 @@
         .btn-secondary:hover { background-color: #4b5563; }
         .btn-success { background-color: #16a34a; color: white; }
         .btn-success:hover { background-color: #15803d; }
+        .btn-danger { background-color: #dc2626; color: white; }
+        .btn-danger:hover { background-color: #b91c1c; }
+
 
         .overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -110,25 +113,20 @@
         .suggestion-item:hover {
             background-color: #f3f4f6;
         }
-        .tab {
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            font-weight: 500;
-        }
-        .tab.active {
-            border-color: var(--theme-color);
-            color: var(--theme-color);
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
+        
         .signature-pad-canvas {
             border: 2px dashed #d1d5db;
             border-radius: 0.375rem;
+        }
+
+        #driver-simulation-section {
+            max-width: 375px;
+            margin-left: auto;
+            margin-right: auto;
+            border: 8px solid black;
+            border-radius: 2rem;
+            padding: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         }
     </style>
 </head>
@@ -145,22 +143,17 @@
                 <div class="rounded-md shadow-sm -space-y-px">
                     <div>
                         <label for="email-address" class="sr-only">Email address</label>
-                        <input id="email-address" name="email" type="email" autocomplete="email" required class="input-field rounded-t-md" placeholder="Email address">
+                        <input id="email-address" name="email" type="email" autocomplete="email" class="input-field rounded-t-md" placeholder="Email address">
                     </div>
                     <div>
                         <label for="password" class="sr-only">Password</label>
-                        <input id="password" name="password" type="password" autocomplete="current-password" required class="input-field rounded-b-md" placeholder="Password">
+                        <input id="password" name="password" type="password" autocomplete="current-password" class="input-field rounded-b-md" placeholder="Password">
                     </div>
                 </div>
                 <div>
                     <button id="auth-btn" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         Sign in
                     </button>
-                </div>
-                 <div class="text-sm text-center mt-2">
-                    <a href="#" id="create-driver-account-link" class="font-medium text-green-600 hover:text-green-500">
-                        Create a Driver Account
-                    </a>
                 </div>
             </div>
         </div>
@@ -184,18 +177,9 @@
             </div>
         </header>
 
-        <!-- Tabs for Admin/Staff -->
-        <div id="admin-staff-tabs" class="mb-4 border-b hidden">
-            <nav class="flex space-x-4" aria-label="Tabs">
-                <button id="tab-management" class="tab active" onclick="switchTab('management')">Delivery Management</button>
-                <button id="tab-driver-tools" class="tab" onclick="switchTab('driver-tools')">Driver Tools</button>
-            </nav>
-        </div>
-
         <!-- Admin / Staff View -->
         <div id="admin-staff-view" class="hidden space-y-8">
-            <div id="management-content" class="tab-content active space-y-8">
-                 <!-- 1. Dashboard / Overview -->
+                <!-- 1. Dashboard / Overview -->
                 <section id="dashboard-section" class="space-y-6">
                     <!-- Stat Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -235,7 +219,7 @@
                             </div>
                         </div>
                         <!-- Delivery Details Form -->
-                        <form id="delivery-form" class="space-y-4">
+                        <form id="delivery-form" class="space-y-4" novalidate>
                             <h3 class="font-semibold text-lg">2. Enter Delivery Details</h3>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Job File No.</label>
@@ -247,7 +231,7 @@
                             </div>
                             <div>
                                 <label for="delivery-location" class="block text-sm font-medium text-gray-700">Delivery Location</label>
-                                <textarea id="delivery-location" rows="2" class="input-field mt-1" required placeholder="Enter the full delivery address"></textarea>
+                                <textarea id="delivery-location" rows="2" class="input-field mt-1" placeholder="Enter the full delivery address"></textarea>
                             </div>
                             <div>
                                 <label for="additional-notes" class="block text-sm font-medium text-gray-700">Additional Notes</label>
@@ -255,7 +239,7 @@
                             </div>
                             <div>
                                 <label for="driver-select" class="block text-sm font-medium text-gray-700">Assign Driver</label>
-                                <select id="driver-select" class="input-field mt-1" required>
+                                <select id="driver-select" class="input-field mt-1">
                                     <option value="">-- Select a Driver --</option>
                                     <!-- Drivers populated by JS -->
                                 </select>
@@ -285,43 +269,21 @@
                     </div>
                 </section>
 
-                 <!-- 4. Driver View Simulation -->
-                 <section id="driver-simulation-section" class="bg-white p-6 rounded-lg shadow-md">
+                 <!-- 4. Driver View Simulation (ADMIN ONLY) -->
+                 <section id="driver-simulation-section" class="bg-white hidden">
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-4">
-                         <h2 class="text-2xl font-semibold">Driver View Simulation</h2>
+                         <h2 class="text-2xl font-semibold">User View Simulation</h2>
                          <div class="flex items-center gap-2 mt-2 sm:mt-0">
-                            <label for="driver-simulation-select" class="text-sm font-medium">View tasks for:</label>
-                            <select id="driver-simulation-select" class="input-field w-auto">
-                                <option value="">-- Select Driver --</option>
+                            <label for="user-simulation-select" class="text-sm font-medium">View tasks for:</label>
+                            <select id="user-simulation-select" class="input-field w-auto">
+                                <option value="">-- Select User --</option>
                             </select>
                          </div>
                     </div>
-                    <div id="driver-simulation-list" class="space-y-4 max-h-96 overflow-y-auto p-2 bg-gray-50 rounded">
-                        <p class="text-center text-gray-500 p-4">Select a driver to see their assigned tasks.</p>
+                    <div id="user-simulation-list" class="space-y-4 max-h-[40rem] overflow-y-auto p-2 bg-gray-50 rounded">
+                        <p class="text-center text-gray-500 p-4">Select a user to see their assigned tasks.</p>
                     </div>
                 </section>
-            </div>
-
-            <div id="driver-tools-content" class="tab-content space-y-6">
-                 <!-- E-Signature and Receipt Section -->
-                <section class="bg-white p-6 rounded-lg shadow-md">
-                    <h2 class="text-2xl font-semibold mb-4 border-b pb-2">E-Signature & Receipt Generator</h2>
-                    <p class="text-gray-600 mb-4">This tool allows drivers to capture a recipient's signature and generate a delivery receipt. Below is a demo task to test the functionality.</p>
-                    <div id="demo-signature-task" class="space-y-4">
-                        <!-- Demo Task Card -->
-                        <div class="border p-4 rounded-lg shadow-sm bg-white">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <p class="font-bold text-lg">DEMO-JOB-001</p>
-                                    <p class="text-sm text-gray-700"><strong>To:</strong> 123 Demo Street, Anytown</p>
-                                    <p class="text-xs text-gray-500"><strong>Shipper:</strong> Global Exports</p>
-                                </div>
-                                <button class="btn btn-primary" onclick="openSignatureModal(true)">Get Signature & Generate Receipt</button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </div>
         </div>
 
         <!-- Driver View -->
@@ -339,47 +301,32 @@
     <div id="loader-overlay" class="overlay"><div class="loader"></div></div>
     <div id="notification"></div>
     
-    <!-- Driver Sign-Up Modal -->
-    <div id="signup-modal" class="overlay">
-        <div class="modal-content max-w-md">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-bold">Create Driver Account</h3>
-                <button onclick="closeModal('signup-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="overlay">
+        <div class="modal-content max-w-sm">
+            <h3 class="text-lg font-bold mb-4" id="confirm-title">Confirm Action</h3>
+            <div id="confirm-message" class="mb-4 text-sm">Are you sure?</div>
+            <div class="text-right mt-6 space-x-2">
+                <button id="confirm-cancel" class="btn btn-secondary">Cancel</button>
+                <button id="confirm-ok" class="btn btn-danger">Confirm</button>
             </div>
-            <form id="signup-form" class="space-y-4">
-                <div>
-                    <label for="signup-name" class="block text-sm font-medium text-gray-700">Full Name</label>
-                    <input type="text" id="signup-name" class="input-field mt-1" required>
-                </div>
-                <div>
-                    <label for="signup-email" class="block text-sm font-medium text-gray-700">Email Address</label>
-                    <input type="email" id="signup-email" class="input-field mt-1" required>
-                </div>
-                <div>
-                    <label for="signup-password" class="block text-sm font-medium text-gray-700">Password</label>
-                    <input type="password" id="signup-password" class="input-field mt-1" required minlength="6">
-                </div>
-                <div class="text-right pt-4">
-                    <button type="submit" class="btn btn-primary w-full">Create Account</button>
-                </div>
-            </form>
         </div>
     </div>
     
     <!-- Admin Panel Modal -->
     <div id="admin-panel-modal" class="overlay">
-        <div class="modal-content max-w-2xl">
+        <div class="modal-content max-w-3xl">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-2xl font-bold">Admin Panel</h3>
                 <button onclick="closeModal('admin-panel-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
             <div class="space-y-4">
-                <h4 class="text-lg font-semibold">Driver Management</h4>
-                <div id="driver-list-admin" class="space-y-2 max-h-[60vh] overflow-y-auto">
-                    <!-- Driver list will be populated here -->
+                <h4 class="text-lg font-semibold">User Management</h4>
+                <div id="user-list-admin" class="space-y-2 max-h-[60vh] overflow-y-auto">
+                    <!-- User list will be populated here -->
                 </div>
                 <div class="text-right">
-                    <button onclick="saveDriverStatusChanges()" class="btn btn-success">Save Changes</button>
+                    <button onclick="saveUserChanges()" class="btn btn-success">Save Changes</button>
                 </div>
             </div>
         </div>
@@ -392,7 +339,7 @@
                 <h3 class="text-2xl font-bold">Complete Delivery</h3>
                 <button onclick="closeModal('delivery-completion-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
-            <form id="completion-form" class="space-y-4">
+            <form id="completion-form" class="space-y-4" novalidate>
                 <input type="hidden" id="delivery-id-input">
                 <div class="p-4 bg-gray-50 rounded-md">
                     <p><strong>Job File:</strong> <span id="modal-job-no"></span></p>
@@ -428,25 +375,21 @@
         </div>
     </div>
 
-    <!-- E-Signature Modal (For Viewing Receipts) -->
-    <div id="signature-modal" class="overlay">
+    <!-- Receipt Modal (For Viewing Receipts) -->
+    <div id="receipt-modal" class="overlay">
         <div class="modal-content max-w-2xl">
             <div class="flex justify-between items-center mb-4">
-                <h3 id="signature-modal-title" class="text-2xl font-bold">View Receipt</h3>
-                <button onclick="closeModal('signature-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+                <h3 id="receipt-modal-title" class="text-2xl font-bold">View Receipt</h3>
+                <button onclick="closeModal('receipt-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
             
              <div id="receipt-view">
                  <div id="receipt-content" class="p-4 border rounded-md">
                     <!-- Receipt content will be generated here -->
                  </div>
-                 <div class="text-right mt-4 flex justify-between items-center">
-                    <button id="back-to-signature-btn" class="btn btn-secondary">Back</button>
-                    <div class="flex gap-2">
-                        <button id="save-receipt-btn" class="btn btn-success">Save</button>
-                        <button id="pdf-receipt-btn" class="btn btn-secondary">PDF</button>
-                        <button id="print-receipt-btn" class="btn btn-primary">Print</button>
-                    </div>
+                 <div class="text-right mt-4 flex justify-end gap-2">
+                    <button id="pdf-receipt-btn" class="btn btn-secondary">PDF</button>
+                    <button id="print-receipt-btn" class="btn btn-primary">Print</button>
                  </div>
             </div>
         </div>
@@ -456,22 +399,22 @@
     <!-- Firebase SDK and App Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, serverTimestamp, getDocs, writeBatch, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
-
+        import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, serverTimestamp, getDocs, writeBatch, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
         // --- Global variables ---
-        let db, auth, storage;
+        let db, auth;
         let currentUser = null;
         let jobFilesCache = [];
-        let driversCache = [];
+        let allUsersCache = [];
         let deliveriesCache = [];
         let selectedJobFile = null;
         let currentGeolocation = null;
         let deliveriesUnsubscribe = () => {};
         let driverTasksUnsubscribe = () => {};
         let completionSignaturePad;
-        let activeDeliveryForSignature = null;
+        let activeDeliveryForReceipt = null;
+        let activeDeliveryForCompletion = null;
 
 
         // --- Firebase Configuration (Same as your main file) ---
@@ -491,7 +434,6 @@
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
-                storage = getStorage(app);
 
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
@@ -508,7 +450,7 @@
                             }
                             currentUser = null;
                             await signOut(auth);
-                            showLogin(); // Explicitly show login if user is not approved
+                            showLogin();
                         }
                     } else {
                         currentUser = null;
@@ -536,7 +478,6 @@
             showLoader();
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                // onAuthStateChanged will handle showing the app
             } catch (error) {
                 console.error("Login failed:", error);
                 let message = "Login failed. Please check your credentials.";
@@ -548,57 +489,6 @@
                 hideLoader();
             }
         }
-        
-        async function handleDriverSignUp(e) {
-            e.preventDefault();
-            const name = document.getElementById('signup-name').value.trim();
-            const email = document.getElementById('signup-email').value.trim();
-            const password = document.getElementById('signup-password').value;
-
-            if (!name || !email || !password) {
-                showNotification("Please fill in all fields.", true);
-                return;
-            }
-            if (password.length < 6) {
-                showNotification("Password should be at least 6 characters.", true);
-                return;
-            }
-
-            showLoader();
-            try {
-                // Create user in Auth
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-
-                // Create user document in Firestore
-                const userDocRef = doc(db, 'users', user.uid);
-                const newUser = {
-                    displayName: name,
-                    email: email,
-                    role: 'driver',
-                    status: 'inactive', // Admin must approve
-                    createdAt: serverTimestamp()
-                };
-                await setDoc(userDocRef, newUser);
-
-                // Log the new user out, so they can't use the app until approved
-                await signOut(auth);
-
-                closeModal('signup-modal');
-                showNotification("Account created. Please wait for admin approval.", false);
-
-            } catch (error) {
-                console.error("Sign up error:", error);
-                let message = "Could not create account. Please try again.";
-                if (error.code === 'auth/email-already-in-use') {
-                    message = "An account with this email already exists.";
-                }
-                showNotification(message, true);
-            } finally {
-                hideLoader();
-            }
-        }
-
 
         // --- UI & View Management ---
         function showLogin() {
@@ -610,22 +500,20 @@
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-container').style.display = 'block';
             
-            // Set user info in header
             document.getElementById('user-display-name').textContent = currentUser.displayName;
             document.getElementById('user-role').textContent = currentUser.role;
 
-            // Hide all role-specific sections by default
             document.getElementById('admin-staff-view').style.display = 'none';
             document.getElementById('driver-view').style.display = 'none';
-            document.getElementById('admin-staff-tabs').classList.add('hidden');
             document.getElementById('admin-panel-btn').classList.add('hidden');
+            document.getElementById('driver-simulation-section').classList.add('hidden');
             
             if (currentUser.role === 'admin' || currentUser.role === 'staff') {
-                document.getElementById('admin-staff-tabs').classList.remove('hidden');
                 document.getElementById('admin-staff-view').style.display = 'block';
-                document.getElementById('header-subtitle').textContent = "Assign, track, and manage all job file deliveries.";
+                document.getElementById('header-subtitle').textContent = "Assign, track, and manage deliveries.";
                 if (currentUser.role === 'admin') {
                     document.getElementById('admin-panel-btn').classList.remove('hidden');
+                    document.getElementById('driver-simulation-section').classList.remove('hidden');
                 }
                 loadAdminData();
             } else if (currentUser.role === 'driver') {
@@ -633,33 +521,24 @@
                 document.getElementById('header-subtitle').textContent = "View and complete your assigned deliveries.";
                 loadDriverTasks();
             } else {
-                // This case is for users with other roles (e.g., 'user', 'checker') who shouldn't access this system
                 showNotification("You do not have permission to access the delivery system.", true);
                 setTimeout(handleLogout, 3000);
             }
         }
         
-        window.switchTab = (tabName) => {
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.getElementById(`${tabName}-content`).classList.add('active');
-            document.getElementById(`tab-${tabName}`).classList.add('active');
-        }
-
         // --- Admin / Staff Logic ---
         async function loadAdminData() {
             showLoader();
             try {
-                const jobFilesRef = collection(db, 'jobfiles');
-                const jobFilesSnapshot = await getDocs(jobFilesRef);
-                jobFilesCache = jobFilesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const jobFilesPromise = getDocs(collection(db, 'jobfiles'));
+                const usersPromise = getDocs(collection(db, 'users'));
 
-                const usersRef = collection(db, 'users');
-                const q = query(usersRef, where("role", "==", "driver"), where("status", "==", "active"));
-                const driversSnapshot = await getDocs(q);
-                driversCache = driversSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const [jobFilesSnapshot, usersSnapshot] = await Promise.all([jobFilesPromise, usersPromise]);
+
+                jobFilesCache = jobFilesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allUsersCache = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
-                populateDriverDropdowns();
+                populateUserDropdowns();
                 listenForDeliveries();
 
             } catch (error) {
@@ -670,23 +549,32 @@
             }
         }
         
-        function populateDriverDropdowns() {
+        function populateUserDropdowns() {
             const assignmentSelect = document.getElementById('driver-select');
-            const simulationSelect = document.getElementById('driver-simulation-select');
+            const simulationSelect = document.getElementById('user-simulation-select');
             
             assignmentSelect.innerHTML = '<option value="">-- Select a Driver --</option>';
-            simulationSelect.innerHTML = '<option value="">-- Select a Driver --</option>';
+            simulationSelect.innerHTML = '<option value="">-- Select a User --</option>';
 
-            driversCache.forEach(driver => {
+            const activeDrivers = allUsersCache.filter(u => u.role === 'driver' && u.status === 'active');
+
+            activeDrivers.forEach(driver => {
                 const option = document.createElement('option');
                 option.value = driver.id;
                 option.textContent = driver.displayName;
                 assignmentSelect.appendChild(option);
-                simulationSelect.appendChild(option.cloneNode(true));
+            });
+
+            allUsersCache.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.displayName} (${user.role})`;
+                simulationSelect.appendChild(option);
             });
         }
         
         function listenForDeliveries() {
+            if (deliveriesUnsubscribe) deliveriesUnsubscribe(); // Unsubscribe from previous listener
             const deliveriesRef = collection(db, 'deliveries');
             deliveriesUnsubscribe = onSnapshot(deliveriesRef, (snapshot) => {
                 deliveriesCache = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
@@ -722,7 +610,9 @@
                 completedList.innerHTML = '<p class="text-gray-500">No completed deliveries yet.</p>';
             }
             
-            renderDriverSimulationView();
+            if (currentUser.role === 'admin') {
+                renderUserSimulationView();
+            }
         }
         
         function renderDashboardMetrics() {
@@ -774,7 +664,7 @@
                             <p class="text-xs"><strong>Receiver:</strong> ${delivery.receiverName || 'N/A'}</p>
                             <p class="text-xs"><strong>Completed:</strong> ${delivery.completedAt?.toDate().toLocaleString() || 'N/A'}</p>
                         </div>
-                        ${delivery.signatureImageUrl ? `<button class="btn btn-secondary btn-xs text-xs" onclick="openSignatureModal(false, '${delivery.id}')">View Receipt</button>` : ''}
+                        ${delivery.podId ? `<button class="btn btn-secondary btn-xs text-xs" onclick="openReceiptModal('${delivery.id}')">View Receipt</button>` : ''}
                     </div>
                 `;
             }
@@ -796,7 +686,7 @@
             // Re-attach event listener since innerHTML removes it
             const viewReceiptBtn = card.querySelector('button');
             if (viewReceiptBtn) {
-                viewReceiptBtn.onclick = () => openSignatureModal(false, delivery.id);
+                viewReceiptBtn.onclick = () => openReceiptModal(delivery.id);
             }
 
             return card;
@@ -860,7 +750,7 @@
             
             showLoader();
             try {
-                const driver = driversCache.find(d => d.id === driverId);
+                const driver = allUsersCache.find(d => d.id === driverId);
                 const deliveryData = {
                     jobFileId: selectedJobFile.id,
                     jobFileData: { // Store a snapshot of key data
@@ -928,14 +818,14 @@
                 if (task.status === 'Pending') {
                     openCompletionModal(task)
                 } else {
-                    openSignatureModal(false, task.id)
+                    openReceiptModal(task.id)
                 }
              });
             return taskCard;
         }
 
         function loadDriverTasks() {
-            driverTasksUnsubscribe();
+            if (driverTasksUnsubscribe) driverTasksUnsubscribe();
             const q = query(collection(db, "deliveries"), where("driverUid", "==", currentUser.uid));
             
             driverTasksUnsubscribe = onSnapshot(q, (snapshot) => {
@@ -961,7 +851,7 @@
         }
         
         function openCompletionModal(delivery) {
-            activeDeliveryForSignature = delivery;
+            activeDeliveryForCompletion = delivery; // **FIX**: Store the full delivery object
             document.getElementById('delivery-id-input').value = delivery.id;
             document.getElementById('modal-job-no').textContent = delivery.jobFileData.jfn;
             document.getElementById('modal-location').textContent = delivery.deliveryLocation;
@@ -978,7 +868,9 @@
             setTimeout(resizeCanvas, 10);
             
             if (!completionSignaturePad) {
-                completionSignaturePad = new SignaturePad(canvas);
+                completionSignaturePad = new SignaturePad(canvas, {
+                    backgroundColor: 'rgb(255, 255, 255)' // Set background to white
+                });
             } else {
                 completionSignaturePad.clear();
             }
@@ -1005,50 +897,47 @@
 
             showLoader();
             try {
-                // Get compressed signature image
                 const signatureDataUrl = completionSignaturePad.toDataURL('image/jpeg', 0.5);
-                const response = await fetch(signatureDataUrl);
-                const blob = await response.blob();
                 
-                const storageRef = ref(storage, `signatures/${deliveryId}/signature.jpg`);
-                const snapshot = await uploadBytes(storageRef, blob);
-                const downloadURL = await getDownloadURL(snapshot.ref);
+                const deliveryData = activeDeliveryForCompletion; // **FIX**: Use the stored delivery object
+                if (!deliveryData) {
+                    throw new Error("Could not find the delivery data to process.");
+                }
 
-                const deliveryRef = doc(db, 'deliveries', deliveryId);
-                const updateData = {
-                    status: 'Delivered',
+                const podData = {
+                    deliveryId: deliveryId,
+                    jobFileId: deliveryData.jobFileId,
+                    jobFileData: deliveryData.jobFileData,
                     receiverName: receiverName,
                     receiverMobile: receiverMobile,
-                    signatureImageUrl: downloadURL,
-                    completedAt: serverTimestamp()
+                    signatureDataUrl: signatureDataUrl, // Save as Data URL
+                    completedAt: serverTimestamp(),
+                    driverUid: currentUser.uid,
+                    driverName: currentUser.displayName,
                 };
-                if (currentGeolocation) {
-                    updateData.geolocation = currentGeolocation;
+                 if (currentGeolocation) {
+                    podData.geolocation = currentGeolocation;
                 }
-                
-                await updateDoc(deliveryRef, updateData);
+
+                const podDocRef = doc(db, 'pods', deliveryId);
+                await setDoc(podDocRef, podData);
+
+                const deliveryRef = doc(db, 'deliveries', deliveryId);
+                await updateDoc(deliveryRef, {
+                    status: 'Delivered',
+                    completedAt: serverTimestamp(),
+                    podId: deliveryId,
+                    receiverName: receiverName
+                });
                 
                 showNotification("Delivery completed successfully!");
                 closeModal('delivery-completion-modal');
 
             } catch (error) {
                 console.error("Error completing delivery:", error);
-                showNotification("Failed to complete delivery. Please try again.", true);
+                showNotification(`Failed to complete delivery: ${error.message}`, true);
             } finally {
                 hideLoader();
-            }
-        }
-        
-        function handleImagePreview(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                const preview = document.getElementById('image-preview');
-                reader.onload = function(e) {
-                    preview.src = e.target.result;
-                    preview.classList.remove('hidden');
-                }
-                reader.readAsDataURL(file);
             }
         }
         
@@ -1076,47 +965,35 @@
             );
         }
 
-        // --- Signature & Receipt Logic ---
-        window.openSignatureModal = (isDemo = false, deliveryId = null, receiverName = '') => {
-            if (isDemo) {
-                activeDeliveryForSignature = {
-                    isDemo: true,
-                    jobFileData: { jfn: 'DEMO-JOB-001', sh: 'Global Exports', co: 'Local Imports', dsc: 'Electronics', gw: '50 KG', mawb: '123-4567890' },
-                    deliveryLocation: '123 Demo Street, Anytown',
-                    driverName: 'Demo Driver'
-                };
-                document.getElementById('signature-modal-title').textContent = "Generate Demo Receipt";
-            } else if (deliveryId) {
-                 activeDeliveryForSignature = deliveriesCache.find(d => d.id === deliveryId);
-                 document.getElementById('signature-modal-title').textContent = "View Receipt";
-            }
-            
-            if (!activeDeliveryForSignature) {
-                showNotification("Could not find delivery details.", true);
-                return;
-            }
-            
-            openModal('signature-modal', true);
-            
-            document.getElementById('receipt-view').style.display = 'block';
-            document.getElementById('back-to-signature-btn').style.display = 'none';
-            document.getElementById('save-receipt-btn').style.display = 'none';
+        // --- Receipt Logic ---
+        async function openReceiptModal(deliveryId) {
+            showLoader();
+            try {
+                const podDocRef = doc(db, 'pods', deliveryId);
+                const podDoc = await getDoc(podDocRef);
+                
+                if (podDoc.exists()) {
+                    activeDeliveryForReceipt = podDoc.data();
+                } else {
+                     throw new Error("Receipt data not found in PODs collection.");
+                }
 
-            if (activeDeliveryForSignature.signatureImageUrl && activeDeliveryForSignature.receiverName) {
-                generateReceipt(activeDeliveryForSignature.receiverName, activeDeliveryForSignature.signatureImageUrl);
-            } else {
-                // This is for the demo task
-                document.getElementById('signature-modal-title').textContent = "Generate Demo Receipt";
-                generateReceipt('Demo Recipient', null); // Generate with placeholder
+                openModal('receipt-modal', true);
+                generateReceipt();
+
+            } catch (error) {
+                console.error("Error opening receipt:", error);
+                showNotification(error.message, true);
+            } finally {
+                hideLoader();
             }
         }
 
-        function generateReceipt(predefinedReceiverName = null, predefinedSignatureUrl = null) {
+        function generateReceipt() {
             const receiptContent = document.getElementById('receipt-content');
-            const jobData = activeDeliveryForSignature.jobFileData;
-
-            const receiverName = predefinedReceiverName;
-            const deliveryDate = (activeDeliveryForSignature.completedAt?.toDate() || new Date()).toLocaleString();
+            const jobData = activeDeliveryForReceipt.jobFileData;
+            const receiverName = activeDeliveryForReceipt.receiverName;
+            const deliveryDate = (activeDeliveryForReceipt.completedAt?.toDate() || new Date()).toLocaleString();
 
             receiptContent.innerHTML = `
                 <div class="space-y-4">
@@ -1143,15 +1020,15 @@
                      <div class="text-sm space-y-1">
                         <p><strong>Description:</strong> ${jobData.dsc || 'N/A'}</p>
                         <p><strong>Gross Weight:</strong> ${jobData.gw || 'N/A'}</p>
-                        <p><strong>Delivery Location:</strong> ${activeDeliveryForSignature.deliveryLocation}</p>
-                        <p><strong>Receiver Mobile:</strong> ${activeDeliveryForSignature.receiverMobile || 'N/A'}</p>
+                        <p><strong>Delivery Location:</strong> ${activeDeliveryForReceipt.deliveryLocation || activeDeliveryForReceipt.jobFileData.de}</p>
+                        <p><strong>Receiver Mobile:</strong> ${activeDeliveryForReceipt.receiverMobile || 'N/A'}</p>
                      </div>
                      <div class="bg-gray-50 p-3 rounded-md">
                         <p class="text-sm font-semibold">Recipient Confirmation</p>
                         <p class="text-xs mt-1">I, <strong>${receiverName}</strong>, confirm the receipt of the goods on <strong>${deliveryDate}</strong>.</p>
                         <div class="mt-2">
                             <p class="text-xs mb-1 text-gray-600">Signature:</p>
-                            ${predefinedSignatureUrl ? `<img src="${predefinedSignatureUrl}" alt="Signature" class="w-40 bg-white border p-1 rounded-md"/>` : '<p class="text-xs text-red-500">Signature not captured for this demo.</p>'}
+                            <img src="${activeDeliveryForReceipt.signatureDataUrl}" alt="Signature" class="w-40 bg-white border p-1 rounded-md"/>
                         </div>
                     </div>
                 </div>
@@ -1170,11 +1047,11 @@
                 const pdf = new jsPDF({
                     orientation: 'portrait',
                     unit: 'pt',
-                    format: [canvas.width / 2, canvas.height / 2] // Use aspect ratio of canvas
+                    format: [canvas.width / 2, canvas.height / 2]
                 });
                 
                 pdf.addImage(imgData, 'PNG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
-                pdf.save(`Receipt-${activeDeliveryForSignature.jobFileData.jfn}.pdf`);
+                pdf.save(`Receipt-${activeDeliveryForReceipt.jobFileData.jfn}.pdf`);
 
             } catch (error) {
                  console.error("Error generating PDF:", error);
@@ -1188,7 +1065,7 @@
             const receiptHTML = document.getElementById('receipt-content').innerHTML;
             const printWindow = window.open('', '', 'height=600,width=800');
             printWindow.document.write('<html><head><title>Delivery Receipt</title>');
-            printWindow.document.write('<script src="https://cdn.tailwindcss.com"><\/script>'); // For styling
+            printWindow.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
             printWindow.document.write('</head><body class="p-6">');
             printWindow.document.write(receiptHTML);
             printWindow.document.write('</body></html>');
@@ -1198,21 +1075,21 @@
             }, 500);
         }
         
-        function renderDriverSimulationView() {
-            const selectedDriverId = document.getElementById('driver-simulation-select').value;
-            const listEl = document.getElementById('driver-simulation-list');
+        function renderUserSimulationView() {
+            const selectedUserId = document.getElementById('user-simulation-select').value;
+            const listEl = document.getElementById('user-simulation-list');
             listEl.innerHTML = '';
             
-            if (!selectedDriverId) {
-                listEl.innerHTML = '<p class="text-center text-gray-500 p-4">Select a driver to see their assigned tasks.</p>';
+            if (!selectedUserId) {
+                listEl.innerHTML = '<p class="text-center text-gray-500 p-4">Select a user to see their assigned tasks.</p>';
                 return;
             }
 
-            const driverTasks = deliveriesCache.filter(d => d.driverUid === selectedDriverId);
-            if(driverTasks.length > 0) {
-                 driverTasks.forEach(task => listEl.appendChild(createDriverTaskCard(task)));
+            const userTasks = deliveriesCache.filter(d => d.driverUid === selectedUserId);
+            if(userTasks.length > 0) {
+                 userTasks.forEach(task => listEl.appendChild(createDriverTaskCard(task)));
             } else {
-                 listEl.innerHTML = '<p class="text-center text-gray-500 p-4">This driver has no assigned tasks.</p>';
+                 listEl.innerHTML = '<p class="text-center text-gray-500 p-4">This user has no assigned tasks.</p>';
             }
         }
         
@@ -1220,47 +1097,50 @@
         async function openAdminPanel() {
             showLoader();
             try {
-                const usersRef = collection(db, 'users');
-                const q = query(usersRef, where("role", "==", "driver"));
-                const snapshot = await getDocs(q);
-                const drivers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Fetch all users now, not just drivers
+                const snapshot = await getDocs(collection(db, 'users'));
+                const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                const listEl = document.getElementById('driver-list-admin');
+                const listEl = document.getElementById('user-list-admin');
                 listEl.innerHTML = '';
-                if(drivers.length === 0) {
-                    listEl.innerHTML = `<p class="text-gray-500 text-center p-4">No drivers have registered yet.</p>`;
+                if(users.length === 0) {
+                    listEl.innerHTML = `<p class="text-gray-500 text-center p-4">No users found.</p>`;
                 } else {
-                    drivers.forEach(driver => {
-                        const driverEl = document.createElement('div');
-                        driverEl.className = "grid grid-cols-3 gap-4 items-center p-2 border-b";
-                        driverEl.innerHTML = `
+                    users.forEach(user => {
+                        const canDelete = currentUser.uid !== user.id && user.role !== 'admin';
+                        const deleteButton = canDelete ? `<button onclick="confirmUserDelete('${user.id}', '${user.displayName}')" class="btn btn-danger text-xs">Delete</button>` : '';
+                        
+                        const userEl = document.createElement('div');
+                        userEl.className = "grid grid-cols-4 gap-4 items-center p-2 border-b";
+                        userEl.innerHTML = `
                             <div>
-                                <p class="font-medium">${driver.displayName}</p>
-                                <p class="text-xs text-gray-500">${driver.email}</p>
+                                <p class="font-medium">${user.displayName}</p>
+                                <p class="text-xs text-gray-500">${user.email}</p>
                             </div>
-                            <div>
-                                <select data-uid="${driver.id}" class="input-field status-select">
-                                    <option value="active" ${driver.status === 'active' ? 'selected' : ''}>Active</option>
-                                    <option value="inactive" ${driver.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                             <div>
+                                <select data-uid="${user.id}" class="input-field status-select" ${currentUser.uid === user.id ? 'disabled' : ''}>
+                                    <option value="active" ${user.status === 'active' ? 'selected' : ''}>Active</option>
+                                    <option value="inactive" ${user.status === 'inactive' ? 'selected' : ''}>Inactive</option>
                                 </select>
                             </div>
-                            <div class="text-xs text-gray-400 text-right">
-                                Registered: ${driver.createdAt?.toDate().toLocaleDateString() || 'N/A'}
+                            <div class="text-sm text-gray-600">${user.role}</div>
+                            <div class="text-right">
+                                ${deleteButton}
                             </div>
                         `;
-                        listEl.appendChild(driverEl);
+                        listEl.appendChild(userEl);
                     });
                 }
                 openModal('admin-panel-modal');
             } catch (error) {
                 console.error("Error opening admin panel:", error);
-                showNotification("Could not load driver data.", true);
+                showNotification("Could not load user data.", true);
             } finally {
                 hideLoader();
             }
         }
 
-        async function saveDriverStatusChanges() {
+        async function saveUserChanges() {
             showLoader();
             const batch = writeBatch(db);
             const statusSelects = document.querySelectorAll('.status-select');
@@ -1274,18 +1154,45 @@
 
             try {
                 await batch.commit();
-                showNotification("Driver statuses updated successfully!", false);
+                showNotification("User statuses updated successfully!", false);
                 closeModal('admin-panel-modal');
-                // Refresh active driver list for assignment
                 loadAdminData();
             } catch (error) {
-                console.error("Error saving driver statuses:", error);
+                console.error("Error saving user statuses:", error);
                 showNotification("Failed to update statuses.", true);
             } finally {
                 hideLoader();
             }
         }
+        
+        window.confirmUserDelete = (userId, userName) => {
+             const modal = document.getElementById('confirm-modal');
+            modal.querySelector('#confirm-title').textContent = 'Confirm User Deletion';
+            modal.querySelector('#confirm-message').innerHTML = `Are you sure you want to delete the user "${userName}"? This will only remove them from the application database, not from Firebase Authentication.`;
+            openModal('confirm-modal', true);
 
+            const okButton = modal.querySelector('#confirm-ok');
+            const handleOkClick = () => {
+                deleteUserFromFirestore(userId);
+                closeModal('confirm-modal');
+                okButton.removeEventListener('click', handleOkClick);
+            };
+            okButton.addEventListener('click', handleOkClick, { once: true });
+        }
+
+        async function deleteUserFromFirestore(userId) {
+            showLoader();
+            try {
+                await deleteDoc(doc(db, 'users', userId));
+                showNotification("User deleted successfully from Firestore.", false);
+                openAdminPanel(); // Refresh the list
+            } catch (error) {
+                console.error("Error deleting user:", error);
+                showNotification("Failed to delete user.", true);
+            } finally {
+                hideLoader();
+            }
+        }
 
         // --- General Functions ---
         function showLoader() { document.getElementById('loader-overlay').classList.add('visible'); }
@@ -1324,15 +1231,10 @@
             
             document.getElementById('auth-btn').addEventListener('click', handleLogin);
             document.getElementById('logout-btn').addEventListener('click', handleLogout);
-            document.getElementById('create-driver-account-link').addEventListener('click', (e) => {
-                e.preventDefault();
-                openModal('signup-modal');
-            });
-            document.getElementById('signup-form').addEventListener('submit', handleDriverSignUp);
             document.getElementById('job-file-search').addEventListener('input', handleJobFileSearch);
             document.getElementById('job-file-suggestions').addEventListener('click', selectJobFile);
             document.getElementById('delivery-form').addEventListener('submit', handleAssignDelivery);
-            document.getElementById('driver-simulation-select').addEventListener('change', renderDriverSimulationView);
+            document.getElementById('user-simulation-select').addEventListener('change', renderUserSimulationView);
             document.getElementById('completion-form').addEventListener('submit', handleCompleteDelivery);
             document.getElementById('clear-completion-signature-btn').addEventListener('click', () => completionSignaturePad.clear());
             document.getElementById('get-location-btn').addEventListener('click', handleGetLocation);
@@ -1340,15 +1242,21 @@
             document.getElementById('pdf-receipt-btn').addEventListener('click', downloadReceiptAsPDF);
             document.getElementById('print-receipt-btn').addEventListener('click', printReceipt);
             document.getElementById('admin-panel-btn').addEventListener('click', openAdminPanel);
-             document.getElementById('back-to-signature-btn').addEventListener('click', () => {
-                document.getElementById('receipt-view').style.display = 'none';
-                document.getElementById('signature-pad-view').style.display = 'block';
+
+            const confirmCancelBtn = document.getElementById('confirm-cancel');
+            confirmCancelBtn.addEventListener('click', () => {
+                 const okButton = document.getElementById('confirm-ok');
+                 const newOkButton = okButton.cloneNode(true);
+                 okButton.parentNode.replaceChild(newOkButton, okButton);
+                 closeModal('confirm-modal');
             });
 
         });
         
         // Make functions globally accessible for inline onclick handlers
-        window.saveDriverStatusChanges = saveDriverStatusChanges;
+        window.saveUserChanges = saveUserChanges;
+        window.openReceiptModal = openReceiptModal;
+        window.confirmUserDelete = confirmUserDelete;
 
     </script>
 </body>
