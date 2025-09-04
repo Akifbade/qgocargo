@@ -15,6 +15,9 @@
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
         }
+        body.loading > * {
+            visibility: hidden;
+        }
         .input-field {
             border: 1px solid #d1d5db;
             border-radius: 0.375rem;
@@ -129,7 +132,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 loading">
 
     <!-- Login Screen -->
      <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -154,11 +157,6 @@
                         Sign in
                     </button>
                 </div>
-                <div class="text-sm text-center">
-                    <a href="index.html" class="font-medium text-indigo-600 hover:text-indigo-500">
-                        Forgot password? Go to Main System
-                    </a>
-                </div>
                  <div class="text-sm text-center mt-2">
                     <a href="#" id="create-driver-account-link" class="font-medium text-green-600 hover:text-green-500">
                         Create a Driver Account
@@ -175,12 +173,12 @@
         <header class="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b">
             <div>
                 <h1 class="text-3xl font-bold text-gray-800">Delivery System</h1>
-                <p class="text-gray-500">Assign, track, and manage all job file deliveries.</p>
+                <p id="header-subtitle" class="text-gray-500">Assign, track, and manage all job file deliveries.</p>
             </div>
             <div class="text-sm mt-4 sm:mt-0">
                 <p>Welcome, <span id="user-display-name" class="font-bold"></span> (<span id="user-role" class="capitalize"></span>)</p>
                 <div class="flex items-center justify-end gap-4 mt-2">
-                    <a href="index.html" class="text-indigo-600 hover:underline">Back to Main System</a>
+                    <button id="admin-panel-btn" class="btn btn-primary text-xs hidden">Admin Panel</button>
                     <button id="logout-btn" class="btn btn-secondary text-xs">Logout</button>
                 </div>
             </div>
@@ -327,7 +325,7 @@
         </div>
 
         <!-- Driver View -->
-        <div id="driver-view" class="hidden space-y-6">
+        <div id="driver-view" class="hidden">
             <section class="bg-white p-6 rounded-lg shadow-md">
                 <h2 class="text-2xl font-semibold mb-4">My Assigned Deliveries</h2>
                 <div id="driver-tasks-list" class="space-y-4">
@@ -365,6 +363,25 @@
                     <button type="submit" class="btn btn-primary w-full">Create Account</button>
                 </div>
             </form>
+        </div>
+    </div>
+    
+    <!-- Admin Panel Modal -->
+    <div id="admin-panel-modal" class="overlay">
+        <div class="modal-content max-w-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">Admin Panel</h3>
+                <button onclick="closeModal('admin-panel-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div class="space-y-4">
+                <h4 class="text-lg font-semibold">Driver Management</h4>
+                <div id="driver-list-admin" class="space-y-2 max-h-[60vh] overflow-y-auto">
+                    <!-- Driver list will be populated here -->
+                </div>
+                <div class="text-right">
+                    <button onclick="saveDriverStatusChanges()" class="btn btn-success">Save Changes</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -430,10 +447,13 @@
                  <div id="receipt-content" class="p-4 border rounded-md">
                     <!-- Receipt content will be generated here -->
                  </div>
-                 <div class="text-right mt-4 flex justify-end gap-2">
-                    <button id="save-receipt-btn" class="btn btn-success">Save Signature & Receipt</button>
-                    <button id="pdf-receipt-btn" class="btn btn-secondary">Share PDF</button>
-                    <button id="print-receipt-btn" class="btn btn-primary">Print Receipt</button>
+                 <div class="text-right mt-4 flex justify-between items-center">
+                    <button id="back-to-signature-btn" class="btn btn-secondary">Back</button>
+                    <div class="flex gap-2">
+                        <button id="save-receipt-btn" class="btn btn-success">Save</button>
+                        <button id="pdf-receipt-btn" class="btn btn-secondary">PDF</button>
+                        <button id="print-receipt-btn" class="btn btn-primary">Print</button>
+                    </div>
                  </div>
             </div>
         </div>
@@ -490,21 +510,25 @@
                             console.log("User logged in:", currentUser);
                             showApp();
                         } else {
+                            if (userDoc.exists()) {
+                                showNotification("Your account is pending admin approval.", true);
+                            }
                             currentUser = null;
-                            console.log("User is not approved or does not exist in Firestore.");
-                            showLogin();
-                            signOut(auth);
+                            await signOut(auth);
+                            showLogin(); // Explicitly show login if user is not approved
                         }
                     } else {
                         currentUser = null;
                         console.log("No user signed in.");
                         showLogin();
                     }
+                    document.body.classList.remove('loading');
                 });
 
             } catch (error) {
                 console.error("Firebase initialization failed:", error);
                 showNotification("Could not connect to the database.", true);
+                document.body.classList.remove('loading');
             }
         }
 
@@ -592,19 +616,33 @@
         function showApp() {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-container').style.display = 'block';
+            
+            // Set user info in header
             document.getElementById('user-display-name').textContent = currentUser.displayName;
             document.getElementById('user-role').textContent = currentUser.role;
 
+            // Hide all role-specific sections by default
+            document.getElementById('admin-staff-view').style.display = 'none';
+            document.getElementById('driver-view').style.display = 'none';
+            document.getElementById('admin-staff-tabs').classList.add('hidden');
+            document.getElementById('admin-panel-btn').classList.add('hidden');
+            
             if (currentUser.role === 'admin' || currentUser.role === 'staff') {
                 document.getElementById('admin-staff-tabs').classList.remove('hidden');
                 document.getElementById('admin-staff-view').style.display = 'block';
+                document.getElementById('header-subtitle').textContent = "Assign, track, and manage all job file deliveries.";
+                if (currentUser.role === 'admin') {
+                    document.getElementById('admin-panel-btn').classList.remove('hidden');
+                }
                 loadAdminData();
             } else if (currentUser.role === 'driver') {
                 document.getElementById('driver-view').style.display = 'block';
+                document.getElementById('header-subtitle').textContent = "View and complete your assigned deliveries.";
                 loadDriverTasks();
             } else {
-                 showNotification("You do not have permission to view this page.", true);
-                 setTimeout(showLogin, 2000);
+                // This case is for users with other roles (e.g., 'user', 'checker') who shouldn't access this system
+                showNotification("You do not have permission to access the delivery system.", true);
+                setTimeout(handleLogout, 3000);
             }
         }
         
@@ -633,7 +671,7 @@
 
             } catch (error) {
                 console.error("Error loading admin data: ", error);
-                showNotification("Failed to load initial data.", true);
+                showNotification("Failed to load initial data. Check Firestore permissions.", true);
             } finally {
                 hideLoader();
             }
@@ -662,6 +700,9 @@
                 deliveriesCache.sort((a,b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
                 
                 renderAllDeliveryViews();
+            }, (error) => {
+                console.error("Firestore Error (Deliveries):", error);
+                showNotification("Permission error: Could not load delivery data.", true);
             });
         }
 
@@ -854,7 +895,7 @@
 
             } catch(error) {
                 console.error("Error assigning delivery:", error);
-                showNotification("Could not assign delivery.", true);
+                showNotification("Could not assign delivery. Check Firestore permissions.", true);
             } finally {
                 hideLoader();
             }
@@ -920,6 +961,9 @@
                 } else {
                      listEl.innerHTML = '<p class="text-gray-500">You have no assigned deliveries.</p>';
                 }
+            }, (error) => {
+                console.error("Firestore Error (Driver Tasks):", error);
+                showNotification("Permission error: Could not load your assigned tasks.", true);
             });
         }
         
@@ -1220,6 +1264,77 @@
                  listEl.innerHTML = '<p class="text-center text-gray-500 p-4">This driver has no assigned tasks.</p>';
             }
         }
+        
+        // --- Admin Panel ---
+        async function openAdminPanel() {
+            showLoader();
+            try {
+                const usersRef = collection(db, 'users');
+                const q = query(usersRef, where("role", "==", "driver"));
+                const snapshot = await getDocs(q);
+                const drivers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                const listEl = document.getElementById('driver-list-admin');
+                listEl.innerHTML = '';
+                if(drivers.length === 0) {
+                    listEl.innerHTML = `<p class="text-gray-500 text-center p-4">No drivers have registered yet.</p>`;
+                } else {
+                    drivers.forEach(driver => {
+                        const driverEl = document.createElement('div');
+                        driverEl.className = "grid grid-cols-3 gap-4 items-center p-2 border-b";
+                        driverEl.innerHTML = `
+                            <div>
+                                <p class="font-medium">${driver.displayName}</p>
+                                <p class="text-xs text-gray-500">${driver.email}</p>
+                            </div>
+                            <div>
+                                <select data-uid="${driver.id}" class="input-field status-select">
+                                    <option value="active" ${driver.status === 'active' ? 'selected' : ''}>Active</option>
+                                    <option value="inactive" ${driver.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                                </select>
+                            </div>
+                            <div class="text-xs text-gray-400 text-right">
+                                Registered: ${driver.createdAt?.toDate().toLocaleDateString() || 'N/A'}
+                            </div>
+                        `;
+                        listEl.appendChild(driverEl);
+                    });
+                }
+                openModal('admin-panel-modal');
+            } catch (error) {
+                console.error("Error opening admin panel:", error);
+                showNotification("Could not load driver data.", true);
+            } finally {
+                hideLoader();
+            }
+        }
+
+        async function saveDriverStatusChanges() {
+            showLoader();
+            const batch = writeBatch(db);
+            const statusSelects = document.querySelectorAll('.status-select');
+            
+            statusSelects.forEach(select => {
+                const uid = select.dataset.uid;
+                const newStatus = select.value;
+                const docRef = doc(db, 'users', uid);
+                batch.update(docRef, { status: newStatus });
+            });
+
+            try {
+                await batch.commit();
+                showNotification("Driver statuses updated successfully!", false);
+                closeModal('admin-panel-modal');
+                // Refresh active driver list for assignment
+                loadAdminData();
+            } catch (error) {
+                console.error("Error saving driver statuses:", error);
+                showNotification("Failed to update statuses.", true);
+            } finally {
+                hideLoader();
+            }
+        }
+
 
         // --- General Functions ---
         function showLoader() { document.getElementById('loader-overlay').classList.add('visible'); }
@@ -1279,8 +1394,16 @@
             document.getElementById('save-receipt-btn').addEventListener('click', saveAndUploadReceipt);
             document.getElementById('pdf-receipt-btn').addEventListener('click', downloadReceiptAsPDF);
             document.getElementById('print-receipt-btn').addEventListener('click', printReceipt);
+            document.getElementById('admin-panel-btn').addEventListener('click', openAdminPanel);
+             document.getElementById('back-to-signature-btn').addEventListener('click', () => {
+                document.getElementById('receipt-view').style.display = 'none';
+                document.getElementById('signature-pad-view').style.display = 'block';
+            });
 
         });
+        
+        // Make functions globally accessible for inline onclick handlers
+        window.saveDriverStatusChanges = saveDriverStatusChanges;
 
     </script>
 </body>
