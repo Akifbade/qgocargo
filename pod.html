@@ -1299,13 +1299,30 @@
                 locationInfo += ` <a href="https://www.google.com/maps?q=${data.geolocation.lat},${data.geolocation.lng}" target="_blank" class="text-blue-600 hover:underline text-xs ml-2">[View on Map]</a>`;
             }
 
+            // UPDATED: Receipt with professional header and footer with IMAGE logos
             receiptContent.innerHTML = `
-                <div class="space-y-6 text-gray-800">
-                    <!-- Header -->
+                <div class="space-y-4 text-gray-800">
+                    <!-- ============================ NEW HEADER ============================ -->
                     <div class="flex flex-col sm:flex-row justify-between items-start pb-4 border-b-2 border-gray-200">
-                        <div class="mb-4 sm:mb-0">
-                            <div class="text-3xl font-extrabold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
-                            <p class="text-sm text-gray-500 font-semibold">PROOF OF DELIVERY</p>
+                        <div>
+                            <h1 class="text-4xl font-extrabold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></h1>
+                            <p class="text-xs text-gray-500">www.qgocargo.com</p>
+                            <p class="text-xs text-gray-500 italic">Formerly known as Boodai Aviation Group</p>
+                        </div>
+                        <div class="text-right text-xs mt-4 sm:mt-0">
+                            <p class="font-bold">CARGO DIVISION</p>
+                            <p>A/F Cargo Complex, Waha Mall,</p>
+                            <p>Ground Floor, Office # 28, Kuwait</p>
+                            <p>Tel: 1887887, 22087411/2</p>
+                            <p>Email: cargo@qgoaviation.com</p>
+                        </div>
+                    </div>
+                    <!-- ============================ END NEW HEADER ============================ -->
+
+                    <!-- Title and QR Code -->
+                    <div class="flex justify-between items-start pt-2">
+                        <div>
+                             <h2 class="text-2xl font-bold text-gray-700">PROOF OF DELIVERY</h2>
                         </div>
                         <div id="qr-code-section" class="text-center p-2 rounded-lg bg-gray-100">
                             <p class="text-sm font-bold text-gray-800">Verify POD</p>
@@ -1346,9 +1363,22 @@
                         </div>
                     </div>
                     
-                    <div class="text-center text-xs text-gray-400 pt-4">
-                        Thank you for your business.
+                    <!-- ============================ NEW FOOTER WITH LOGOS ============================ -->
+                     <div class="pt-4 border-t-2 border-gray-200 text-xs text-gray-600 space-y-3">
+                       <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div class="flex items-center gap-4 flex-wrap justify-center">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/IATAlogo.svg/1200px-IATAlogo.svg.png" alt="IATA Logo" class="h-8 object-contain" onerror="this.style.display='none'">
+                                <img src="https://www.wcaworld.com/images/logo2.png" alt="WCA Logo" class="h-10 object-contain" onerror="this.style.display='none'">
+                                <img src="https://www.iam-members.com/images/iam-logo-2017.png" alt="IAM Logo" class="h-10 object-contain" onerror="this.style.display='none'">
+                            </div>
+                            <p class="font-semibold text-center sm:text-right">We are your one-stop-shop for logistics solutions.</p>
+                       </div>
+                       <div class="text-center border-t pt-3 mt-3">
+                           <p class="font-bold">Q'GO TRAVEL & TOURISM COMPANY W.L.L</p>
+                           <p>Address: P.O. Box 5798 Safat 13058 Kuwait | Tel: 1 887 887 | Fax: 22087419</p>
+                       </div>
                     </div>
+                    <!-- ============================ END NEW FOOTER ============================ -->
                 </div>
             `;
             
@@ -1825,54 +1855,81 @@
             }
         }
 
-        // UPDATED: More comprehensive device parser
+        // UPDATED AND ENHANCED: More comprehensive device parser
         function parseDeviceInfo(ua) {
             if (!ua) return 'N/A';
 
-            // Specific models first for better readability
-            if (/iPhone15,2/i.test(ua)) return 'iPhone 15 Pro';
-            if (/iPhone15,3/i.test(ua)) return 'iPhone 15 Pro Max';
-            if (/iPhone16,1/i.test(ua)) return 'iPhone 15 Pro';
+            // --- More specific models for better readability (Most Reliable Method) ---
+            // Apple
             if (/iPhone16,2/i.test(ua)) return 'iPhone 15 Pro Max';
-            if (/iPhone14,2/i.test(ua)) return 'iPhone 14 Pro';
-            if (/iPhone14,3/i.test(ua)) return 'iPhone 14 Pro Max';
+            if (/iPhone16,1/i.test(ua)) return 'iPhone 15 Pro';
+            if (/iPhone15,3/i.test(ua)) return 'iPhone 15 Pro Max';
+            if (/iPhone15,2/i.test(ua)) return 'iPhone 15';
+            if (/iPhone14,8/i.test(ua)) return 'iPhone 14 Plus';
+            if (/iPhone14,7/i.test(ua)) return 'iPhone 14';
+            if (/iPhone14,3/i.test(ua)) return 'iPhone 13 Pro Max';
+            if (/iPhone14,2/i.test(ua)) return 'iPhone 13 Pro';
+            if (/iPhone13,4/i.test(ua)) return 'iPhone 12 Pro Max';
+            if (/iPhone13,3/i.test(ua)) return 'iPhone 12 Pro';
+            
+            // Samsung
             if (/SM-S928/i.test(ua)) return 'Samsung Galaxy S24 Ultra';
             if (/SM-S918/i.test(ua)) return 'Samsung Galaxy S23 Ultra';
             if (/SM-S908/i.test(ua)) return 'Samsung Galaxy S22 Ultra';
             if (/SM-G998/i.test(ua)) return 'Samsung Galaxy S21 Ultra';
+            if (/SM-F946/i.test(ua)) return 'Samsung Galaxy Z Fold5';
+            if (/SM-F731/i.test(ua)) return 'Samsung Galaxy Z Flip5';
+            if (/SM-A546/i.test(ua)) return 'Samsung Galaxy A54';
+            if (/SM-A146/i.test(ua)) return 'Samsung Galaxy A14';
 
-            // Generic mobile devices
-            if (/iphone/i.test(ua)) return 'iPhone';
-            if (/ipad/i.test(ua)) return 'iPad';
 
-            const pixelMatch = ua.match(/Pixel [^\s;)]+/);
-            if (pixelMatch) return `Google ${pixelMatch[0]}`;
+            // Google
+            if (/Pixel 8 Pro/i.test(ua)) return 'Google Pixel 8 Pro';
+            if (/Pixel 8/i.test(ua)) return 'Google Pixel 8';
+            if (/Pixel 7 Pro/i.test(ua)) return 'Google Pixel 7 Pro';
+            if (/Pixel 7/i.test(ua)) return 'Google Pixel 7';
+            if (/Pixel Fold/i.test(ua)) return 'Google Pixel Fold';
+            
+            // Xiaomi / Redmi / Poco
+            if (/2201116TG/i.test(ua)) return 'Xiaomi 12 Pro';
+            if (/23021RAA2Y/i.test(ua)) return 'Xiaomi 13';
+            if (/M2102J20SG/i.test(ua)) return 'Poco F3';
 
+            // OnePlus
+            if (/CPH2417/i.test(ua)) return 'OnePlus 11';
+            if (/NE2213/i.test(ua)) return 'OnePlus 10 Pro';
+
+
+            // --- Generic Parsing ---
+            // Try to extract model from Android user agent
             if (/android/i.test(ua)) {
-                const modelMatch = ua.match(/\(([^)]+)\)/);
+                const modelMatch = ua.match(/\(([^)]+)\)/); // Get everything in parentheses
                 if (modelMatch && modelMatch[1]) {
                     const parts = modelMatch[1].split(';').map(p => p.trim());
-                    // Find the part with 'Build/' as it usually contains the model name
-                    const modelPart = parts.find(p => p.toLowerCase().includes('build/'));
-                    if (modelPart) {
-                        const model = modelPart.split(' Build/')[0].trim();
-                         // Avoid returning generic names
-                        if (model && model.toLowerCase() !== 'linux' && !/^\d+(\.\d+)*$/.test(model)) {
-                            return model;
+                    // The model identifier is often the last part.
+                    let model = parts[parts.length - 1]; 
+                    
+                    if (model) {
+                        // If the last part contains 'Build/', extract the model name before it.
+                        const buildIndex = model.toLowerCase().indexOf(' build/');
+                        if (buildIndex !== -1) {
+                            model = model.substring(0, buildIndex);
+                        }
+                        
+                        // Check if the model is not something generic like 'Linux' or the OS version
+                        if (model.toLowerCase() !== 'linux' && !model.toLowerCase().startsWith('android')) {
+                            return model.trim(); // This will return the model name or code
                         }
                     }
-                    // Fallback for UAs without a clear build string
-                    const lastPart = parts[parts.length - 1];
-                    if (lastPart && lastPart.length > 2 && !lastPart.toLowerCase().includes('build/')) {
-                         return lastPart;
-                    }
                 }
-                return 'Android Device';
+                return 'Android Device'; // Fallback if no specific model found
             }
-
-            // Desktop
-            if (/windows nt/i.test(ua)) return 'Windows PC';
+            
+            // Generic Fallbacks for other OS
+            if (/iphone/i.test(ua)) return 'iPhone';
+            if (/ipad/i.test(ua)) return 'iPad';
             if (/macintosh/i.test(ua)) return 'Mac';
+            if (/windows nt/i.test(ua)) return 'Windows PC';
             if (/linux/i.test(ua) && !/android/i.test(ua)) return 'Linux PC';
 
             return 'Unknown Device';
@@ -2185,3 +2242,4 @@
     </script>
 </body>
 </html>
+
