@@ -1391,6 +1391,20 @@
         }
 
         function showApproveUserModal(pendingUserId, userEmail) {
+            if (!window.appState.roles || window.appState.roles.length === 0) {
+                const noRolesHTML = `
+                    <div class="text-center p-4">
+                         <i data-feather="alert-circle" class="w-16 h-16 text-red-500 mx-auto mb-4"></i>
+                        <h2 class="text-xl font-bold mb-4">No Roles Found</h2>
+                        <p class="text-gray-600 mb-6">You must create at least one role before you can approve a user. Please go to the 'Manage Roles & Permissions' section to create a new role.</p>
+                        <button type="button" class="close-modal-btn btn btn-primary">OK</button>
+                    </div>
+                `;
+                showModal(noRolesHTML);
+                feather.replace();
+                return;
+            }
+
             const roleOptions = window.appState.roles.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
             const modalHTML = `
                 <div class="flex justify-between items-center mb-6">
