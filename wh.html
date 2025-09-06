@@ -3,695 +3,1177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QGO - Live Logistics & Warehouse System</title>
+    <title>Crew & Inventory Management</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Feather Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+
+    <!-- Custom Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
     <style>
-        :root { --theme-color: #4f46e5; }
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        .container { max-width: 1200px; margin: 1rem auto; padding: 1rem; background-color: white; border-radius: 0.75rem; border-top: 5px solid var(--theme-color); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-        .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; padding: 1rem; }
-        .overlay.visible { opacity: 1; visibility: visible; }
-        .modal-content { background: white; padding: 1.5rem; border-radius: 0.5rem; width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; transform: scale(0.9); transition: transform 0.3s; }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--theme-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #notification { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: #2d3748; color: white; padding: 1rem 1.5rem; border-radius: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000; text-align: center; transition: transform 0.5s, opacity 0.5s; transform: translateY(100px); opacity: 0; }
-        #notification.show { transform: translateY(0); opacity: 1; }
-        #signature-pad { border: 2px dashed #d1d5db; border-radius: 0.5rem; cursor: crosshair; width: 100%; height: 200px; }
-        .pod-view-section { border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem; }
-        .dashboard-tab { cursor: pointer; padding: 0.5rem 1rem; border-bottom: 2px solid transparent; color: #6b7280; }
-        .dashboard-tab-active { border-color: var(--theme-color); color: var(--theme-color); font-weight: 600; }
-        .job-category-header { font-size: 1.25rem; font-weight: 700; color: #374151; margin-top: 1.5rem; margin-bottom: 0.75rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; }
-        .job-card { background-color: #ffffff; border: 1px solid #e5e7eb; border-left-width: 4px; padding: 1rem; border-radius: 0.5rem; margin-bottom: 0.75rem; display: flex; flex-direction: column; sm:flex-direction: row; justify-content: space-between; align-items: flex-start; sm:align-items: center; gap: 1rem; transition: box-shadow 0.2s; }
-        .job-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .stat-card { background-color: #f9fafb; padding: 1rem; border-radius: 0.5rem; text-align: center; border: 1px solid #e5e7eb; }
-        .input-field { border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.5rem 0.75rem; width: 100%; }
-        @media print { 
-            body * { visibility: hidden; } 
-            #pod-document, #pod-document * { visibility: visible; } 
-            #pod-document { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; border: none; box-shadow: none; border-radius: 0; }
-            .no-print { display: none !important; }
-            @page { size: A4; margin: 15mm; } 
+        /* Custom styles for the application */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        .main-content {
+            transition: margin-left 0.3s ease-in-out;
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        /* Style for active navigation link */
+        .nav-link.active {
+            background-color: #3b82f6; /* Blue-500 */
+            color: white;
+            font-weight: 600;
+        }
+        /* Card styling */
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1rem;
+        }
+        @media (min-width: 640px) {
+            .card {
+                padding: 1.5rem;
+            }
+        }
+        /* Button styling */
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-primary {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb;
+        }
+        .btn-secondary {
+            background-color: #6b7280;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+        .btn-success {
+             background-color: #22c55e;
+             color: white;
+        }
+        .btn-success:hover {
+            background-color: #16a34a;
         }
     </style>
 </head>
-<body class="bg-gray-100">
-    <div id="login-screen" class="hidden min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-md w-full space-y-8">
-            <div>
-                <div class="text-center text-5xl font-extrabold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
-                <h2 id="auth-title" class="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-75 z-50 flex items-center justify-center p-4">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+    </div>
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="sidebar bg-white w-64 min-h-full p-4 shadow-lg fixed lg:relative transform -translate-x-full lg:translate-x-0 z-40">
+            <div class="text-2xl font-bold text-blue-600 mb-8 flex items-center gap-2">
+                <i data-feather="box"></i>
+                <span>CrewSys</span>
             </div>
-            <div class="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-md">
-                <div id="approval-message" class="hidden p-4 text-center text-yellow-800 bg-yellow-100 rounded-lg">Your account is awaiting admin approval.</div>
-                <div class="rounded-md shadow-sm -space-y-px">
-                    <div id="signup-name-field" style="display: none;"><input id="full-name" type="text" class="input-field rounded-t-md" placeholder="Full Name"></div>
-                    <div><input id="email-address" type="email" autocomplete="email" required class="input-field" placeholder="Email address"></div>
-                    <div><input id="password" type="password" autocomplete="current-password" required class="input-field rounded-b-md" placeholder="Password"></div>
+            <nav>
+                <ul>
+                    <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-500 hover:text-white transition-colors duration-200 active" data-tab="analytics"><i data-feather="bar-chart-2" class="mr-3"></i>Analytics</a></li>
+                    <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-500 hover:text-white transition-colors duration-200 mt-2" data-tab="scheduling"><i data-feather="calendar" class="mr-3"></i>Scheduling</a></li>
+                    <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-500 hover:text-white transition-colors duration-200 mt-2" data-tab="inventory"><i data-feather="archive" class="mr-3"></i>Inventory</a></li>
+                    <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-500 hover:text-white transition-colors duration-200 mt-2" data-tab="admin"><i data-feather="users" class="mr-3"></i>Admin</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main id="main-content" class="main-content flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
+            <header class="flex justify-between items-center mb-6">
+                <button id="menu-toggle" class="lg:hidden p-2 rounded-md hover:bg-gray-200">
+                    <i data-feather="menu"></i>
+                </button>
+                <h1 id="tab-title" class="text-2xl sm:text-3xl font-bold text-gray-800">Analytics Dashboard</h1>
+                <div>
+                    <!-- User Info Placeholder -->
+                    <span id="user-info" class="text-sm font-medium"></span>
                 </div>
-                <div><button id="auth-btn" class="w-full flex justify-center py-2 px-4 border rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Sign in</button></div>
-                <p class="mt-2 text-center text-sm text-gray-600"><a href="#" id="auth-link" class="font-medium text-indigo-600 hover:text-indigo-500">Create a new account</a></p>
-            </div>
+            </header>
+
+            <!-- Tab Content -->
+            <div id="analytics-tab" class="tab-content hidden"></div>
+            <div id="scheduling-tab" class="tab-content hidden"></div>
+            <div id="inventory-tab" class="tab-content hidden"></div>
+            <div id="admin-tab" class="tab-content hidden"></div>
+
+        </main>
+    </div>
+
+    <!-- Modal for Forms -->
+    <div id="form-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div id="modal-content" class="bg-white rounded-lg shadow-2xl w-full max-w-lg p-6 sm:p-8 transform transition-all scale-95 opacity-0 max-h-[90vh] overflow-y-auto">
+            <!-- Modal content will be injected here -->
         </div>
     </div>
 
-    <div id="app-container" class="container hidden"></div>
-    
-    <div id="worker-delivery-page" class="hidden"></div>
-    <div id="public-pod-view" class="hidden bg-white p-8 min-h-screen"></div>
-    
-    <div id="loader-overlay" class="overlay hidden"><div class="loader"></div></div>
-    <div id="notification"></div>
-    <div id="view-pod-modal" class="overlay"><div id="view-pod-modal-content" class="modal-content"></div></div>
-    <div id="assign-worker-modal" class="overlay"><div class="modal-content" style="max-width: 400px;"></div></div>
-    <div id="inventory-modal" class="overlay"><div class="modal-content" style="max-width: 500px;"></div></div>
-    <div id="job-details-modal" class="overlay"><div class="modal-content"></div></div>
-    <div id="confirm-modal" class="overlay"><div class="modal-content" style="max-width: 400px;"></div></div>
-    <div id="print-area" class="hidden"></div>
 
+    <!-- Firebase and App Logic -->
     <script type="module">
+        // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs, writeBatch, serverTimestamp, addDoc, runTransaction, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getStorage, ref, uploadString, getDownloadURL, uploadBytes } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, deleteDoc, query, where, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
+        // --- TEMPLATES --- //
+        const AnalyticsTemplate = `
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                <div class="card flex items-center">
+                    <div class="bg-blue-100 p-3 sm:p-4 rounded-full mr-4"><i data-feather="users" class="text-blue-500"></i></div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Total Crew</p>
+                        <p id="total-users" class="text-xl sm:text-2xl font-bold">0</p>
+                    </div>
+                </div>
+                <div class="card flex items-center">
+                    <div class="bg-green-100 p-3 sm:p-4 rounded-full mr-4"><i data-feather="archive" class="text-green-500"></i></div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Inventory Items</p>
+                        <p id="total-inventory" class="text-xl sm:text-2xl font-bold">0</p>
+                    </div>
+                </div>
+                <div class="card flex items-center">
+                    <div class="bg-yellow-100 p-3 sm:p-4 rounded-full mr-4"><i data-feather="calendar" class="text-yellow-500"></i></div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Schedules Today</p>
+                        <p id="schedules-today" class="text-xl sm:text-2xl font-bold">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                <div class="card"><canvas id="inventoryChart"></canvas></div>
+                <div class="card"><canvas id="scheduleChart"></canvas></div>
+            </div>
+        `;
+
+        const SchedulingTemplate = `
+            <div class="card">
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                    <h2 class="text-xl font-semibold">Crew Schedule</h2>
+                    <div class="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                        <input type="date" id="schedule-date" class="border border-gray-300 rounded-md p-2 w-full">
+                        <button id="add-schedule-btn" class="btn btn-primary flex-shrink-0"><i data-feather="plus-circle" class="sm:mr-2"></i><span class="hidden sm:inline">New</span></button>
+                    </div>
+                </div>
+                <div id="schedule-container" class="space-y-4">
+                    <p class="text-center text-gray-500">Select a date to view or add schedules.</p>
+                </div>
+            </div>
+        `;
+        
+        const InventoryTemplate = `
+            <div class="card">
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                    <h2 class="text-xl font-semibold">Warehouse Inventory</h2>
+                    <button id="add-inventory-btn" class="btn btn-primary w-full sm:w-auto"><i data-feather="plus-circle"></i>Add Item</button>
+                </div>
+                <input type="text" id="inventory-search" placeholder="Search for items..." class="w-full border border-gray-300 rounded-md p-2 mb-4">
+                
+                <!-- Mobile View: Card List -->
+                <div id="inventory-card-list" class="space-y-4 md:hidden">
+                   <!-- Mobile cards will be injected here -->
+                </div>
+
+                <!-- Desktop View: Table -->
+                <div class="hidden md:block overflow-x-auto">
+                    <table class="min-w-full bg-white">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+                                <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Name</th>
+                                <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                                <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-table-body" class="divide-y divide-gray-200">
+                           <!-- Desktop rows will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        const AdminTemplate = `
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="card">
+                    <h2 class="text-xl font-semibold mb-4">Create New User</h2>
+                    <form id="add-user-form">
+                        <div class="mb-4">
+                            <label for="user-name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                            <input type="text" id="user-name" required class="w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="mb-6">
+                            <label for="user-role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                            <select id="user-role" required class="w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="Laborer">Laborer</option>
+                                <option value="Driver">Driver</option>
+                                <option value="Crew Leader">Crew Leader</option>
+                                <option value="Supervisor">Supervisor</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-full"><i data-feather="user-plus"></i>Create User</button>
+                    </form>
+                </div>
+                <div class="card">
+                     <h2 class="text-xl font-semibold mb-4">Manage Users</h2>
+                     <div id="user-list-container" class="overflow-y-auto" style="max-height: 400px;">
+                        <!-- User list will be populated here -->
+                     </div>
+                </div>
+            </div>
+        `;
+
+        // --- FIREBASE CONFIG & INITIALIZATION --- //
+        let db, auth, userId, app;
+        let usersUnsubscribe, inventoryUnsubscribe, schedulesUnsubscribe;
+        let inventoryChartInstance, scheduleChartInstance;
+        const currentUserRole = 'Admin'; // The operator of the app is always the Admin
+
+        // --- IMPORTANT FIREBASE CONFIGURATION --- //
         const firebaseConfig = {
-            apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc", authDomain: "my-job-file-system.firebaseapp.com", projectId: "my-job-file-system",
-            storageBucket: "my-job-file-system.appspot.com", messagingSenderId: "145307873304", appId: "1:145307873304:web:d661ea6ec118801b4a136d"
+            apiKey: "AIzaSyD6tMBDcZSR32ZwWIwc_ff2zHp26tSesMw",
+            authDomain: "qgowhm.firebaseapp.com",
+            projectId: "qgowhm",
+            storageBucket: "qgowhm.firebasestorage.app",
+            messagingSenderId: "331703931357",
+            appId: "1:331703931357:web:b25ed7f60db706b1072634",
+            measurementId: "G-5VXETKM4H8"
         };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
-        const auth = getAuth(app);
+        // --- END OF CONFIGURATION --- //
         
-        let currentUser;
-        let currentView = 'admin';
-        let signaturePad;
-        let inventoryCache = [];
-        let jobsCache = [];
-        let usersCache = [];
-        let workersCache = [];
+        const appId = firebaseConfig.projectId;
 
-        // --- UI HELPER FUNCTIONS ---
-        const showLoader = () => document.getElementById('loader-overlay').classList.add('visible');
-        const hideLoader = () => document.getElementById('loader-overlay').classList.remove('visible');
-        const openModal = (id) => document.getElementById(id).classList.add('visible');
-        window.closeModal = (id) => document.getElementById(id).classList.remove('visible');
-        function showNotification(message, isError = false) {
-            const notification = document.getElementById('notification');
-            notification.innerHTML = message;
-            notification.style.backgroundColor = isError ? '#c53030' : '#2d3748';
-            notification.classList.add('show');
-            setTimeout(() => { notification.classList.remove('show'); }, 5000);
-        }
-        window.signOut = () => signOut(auth);
-
-        // --- AUTHENTICATION ---
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const userDocRef = doc(db, 'users', user.uid);
-                const userDoc = await getDoc(userDocRef);
-                if (userDoc.exists() && userDoc.data().status === 'active') {
-                    currentUser = { uid: user.uid, ...userDoc.data() };
-                    if (!currentUser.pod_role) {
-                        currentUser.pod_role = (currentUser.role === 'admin' || currentUser.role === 'supervisor') ? 'supervisor' : 'worker';
-                    }
-                    document.getElementById('login-screen').style.display = 'none';
-                    document.getElementById('app-container').style.display = 'block';
-                    loadInitialData();
-                } else {
-                    document.getElementById('approval-message').style.display = 'block';
-                    signOut(auth);
-                }
-            } else {
-                currentUser = null;
-                document.getElementById('login-screen').style.display = 'flex';
-                document.getElementById('app-container').style.display = 'none';
-            }
-        });
-        
-        async function loadInitialData() {
-            const usersQuery = query(collection(db, 'users'));
-            const userSnapshot = await getDocs(usersQuery);
-            usersCache = userSnapshot.docs.map(d => {
-                const userData = d.data();
-                if (!userData.pod_role) {
-                    userData.pod_role = (userData.role === 'admin' || userData.role === 'supervisor') ? 'supervisor' : 'worker';
-                }
-                return { id: d.id, ...userData };
-            });
-            workersCache = usersCache.filter(u => u.pod_role === 'worker').map(u => u.displayName);
-            renderUIBasedOnRole();
-        }
-
-        function renderUIBasedOnRole() {
-            const appContainer = document.getElementById('app-container');
-            if (currentUser.pod_role === 'supervisor') {
-                appContainer.innerHTML = getAdminDashboardShell();
-                document.getElementById('dashboard-tab-btn').addEventListener('click', () => switchTab('dashboard'));
-                document.getElementById('warehouse-tab-btn').addEventListener('click', () => switchTab('warehouse'));
-                if(currentUser.role === 'admin') { // Main role check for Admin tab
-                    document.getElementById('admin-tab-btn').addEventListener('click', () => switchTab('admin'));
-                }
-                document.getElementById('logout-btn').addEventListener('click', window.signOut);
-                switchTab('dashboard');
-            } else { // Worker
-                appContainer.innerHTML = getWorkerDashboardShell();
-                document.getElementById('logout-btn').addEventListener('click', window.signOut);
-                listenForJobFiles();
-            }
-        }
-        
-        function switchTab(tabName) {
-            document.querySelectorAll('.dashboard-tab').forEach(t => t.classList.remove('dashboard-tab-active'));
-            document.getElementById(`${tabName}-tab-btn`).classList.add('dashboard-tab-active');
-            
-            document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
-            document.getElementById(`${tabName}-content`).style.display = 'block';
-
-            if (tabName === 'dashboard') {
-                document.getElementById('user-display-name').textContent = currentUser.displayName;
-                document.getElementById('user-role-display').textContent = currentUser.pod_role;
-                document.getElementById('admin-view-btn').addEventListener('click', () => renderTable('admin'));
-                document.getElementById('worker-view-btn').addEventListener('click', () => renderTable('worker'));
-                document.getElementById('job-search-input').addEventListener('input', (e) => listenForJobFiles(e.target.value));
-                renderTable('admin');
-            } else if (tabName === 'warehouse') {
-                document.getElementById('add-item-btn').style.display = currentUser.canManageWarehouse ? 'block' : 'none';
-                listenForInventory();
-            } else if (tabName === 'admin') {
-                displayAdminPanel();
-            }
-        }
-        
-        function displayAdminPanel() {
-            const container = document.getElementById('admin-content');
-            container.innerHTML = usersCache.map(user => {
-                const isCurrentUser = user.id === currentUser.uid;
-                return `
-                <div class="job-card">
-                    <div><p class="font-bold">${user.displayName}</p><p class="text-sm capitalize text-gray-500">Main Role: ${user.role}</p></div>
-                    <div class="flex items-center space-x-4">
-                        <select data-userid="${user.id}" onchange="updateUserPodRole(this)" class="p-2 border rounded-md text-sm" ${isCurrentUser ? 'disabled' : ''}>
-                            <option value="supervisor" ${user.pod_role === 'supervisor' ? 'selected' : ''}>Supervisor</option>
-                            <option value="worker" ${user.pod_role === 'worker' ? 'selected' : ''}>Worker</option>
-                        </select>
-                        <label class="flex items-center text-sm"><input type="checkbox" data-userid="${user.id}" onchange="toggleWarehousePermission(this)" class="mr-2" ${user.canManageWarehouse ? 'checked' : ''} ${isCurrentUser ? 'disabled' : ''}> Can Manage Warehouse</label>
-                    </div>
-                </div>`;
-            }).join('');
-        }
-
-        window.updateUserPodRole = async (select) => {
-            const userId = select.dataset.userid;
-            const newRole = select.value;
-            showLoader();
+        async function initFirebase() {
             try {
-                await updateDoc(doc(db, 'users', userId), { pod_role: newRole });
-                const userInCache = usersCache.find(u => u.id === userId);
-                if (userInCache) userInCache.pod_role = newRole;
-                showNotification(`POD System Role updated for ${userInCache.displayName}.`);
-            } catch (error) { showNotification("Failed to update role.", true);
-            } finally { hideLoader(); }
-        };
-
-        window.toggleWarehousePermission = async (checkbox) => {
-            const userId = checkbox.dataset.userid;
-            const canManage = checkbox.checked;
-            showLoader();
-            try {
-                await updateDoc(doc(db, 'users', userId), { canManageWarehouse: canManage });
-                const userInCache = usersCache.find(u => u.id === userId);
-                if (userInCache) userInCache.canManageWarehouse = canManage;
-                showNotification(`Permissions updated for ${userInCache.displayName}.`);
-            } catch (error) { showNotification("Failed to update permissions.", true); checkbox.checked = !canManage;
-            } finally { hideLoader(); }
-        };
-
-        function listenForInventory() {
-            const q = query(collection(db, "inventory"));
-            onSnapshot(q, (snapshot) => {
-                inventoryCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                displayInventory();
-            });
-        }
-
-        function displayInventory() {
-            const container = document.getElementById('inventory-list');
-            const canManage = currentUser.canManageWarehouse;
-            container.innerHTML = inventoryCache.length === 0 ? `<p class="text-center text-gray-500 p-4">No inventory items found.</p>` : inventoryCache.map(item => `
-                <div class="job-card" style="border-left-color: #6b7280;">
-                    <div><p class="font-bold text-lg">${item.name} <span class="text-sm font-normal text-gray-500">${item.sku || ''}</span></p><p class="text-xs text-gray-500">Category: ${item.category || 'N/A'} | Supplier: ${item.supplier || 'N/A'} | Cost: ${item.cost || 0} KWD</p></div>
-                    <div class="flex items-center gap-4"><p class="text-2xl font-bold">${item.quantity} <span class="text-sm font-normal text-gray-500">${item.unit || 'units'}</span></p>${canManage ? `<button onclick="openUpdateStockModal('${item.id}', '${item.name}', ${item.quantity})" class="bg-gray-200 hover:bg-gray-300 text-black font-bold py-2 px-4 rounded">Update</button>` : ''}</div>
-                </div>`).join('');
-        }
-        
-        window.openUpdateStockModal = (itemId, itemName, currentQty) => {
-            const modal = document.getElementById('inventory-modal');
-            modal.querySelector('.modal-content').innerHTML = `<h3 class="text-lg font-bold mb-4">Update Stock: ${itemName}</h3><p class="text-sm mb-4">Current Stock: <strong>${currentQty}</strong>.</p><div class="grid grid-cols-2 gap-4"><div><label class="block text-sm">Add Stock</label><input type="number" id="add-stock-input" class="w-full p-2 border rounded-md" placeholder="e.g., 50"></div><div><label class="block text-sm">Remove Stock</label><input type="number" id="remove-stock-input" class="w-full p-2 border rounded-md" placeholder="e.g., 5"></div></div><div class="text-right mt-6 space-x-2"><button onclick="closeModal('inventory-modal')" class="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button><button onclick="updateStock('${itemId}')" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded">Save</button></div>`;
-            openModal('inventory-modal');
-        };
-
-        window.openAddItemModal = () => {
-             const modal = document.getElementById('inventory-modal');
-            modal.querySelector('.modal-content').innerHTML = `<h3 class="text-lg font-bold mb-4">Add New Item</h3><div class="space-y-4"><div><label class="block text-sm">Item Name</label><input type="text" id="new-item-name" class="w-full p-2 border rounded-md"></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-sm">SKU</label><input type="text" id="new-item-sku" class="w-full p-2 border rounded-md"></div><div><label class="block text-sm">Category</label><input type="text" id="new-item-category" class="w-full p-2 border rounded-md"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-sm">Quantity</label><input type="number" id="new-item-qty" class="w-full p-2 border rounded-md" value="0"></div><div><label class="block text-sm">Unit</label><input type="text" id="new-item-unit" class="w-full p-2 border rounded-md" placeholder="e.g., pieces"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-sm">Supplier</label><input type="text" id="new-item-supplier" class="w-full p-2 border rounded-md"></div><div><label class="block text-sm">Cost/Unit (KWD)</label><input type="number" id="new-item-cost" class="w-full p-2 border rounded-md"></div></div></div><div class="text-right mt-6 space-x-2"><button onclick="closeModal('inventory-modal')" class="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button><button onclick="addNewItem()" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">Add Item</button></div>`;
-            openModal('inventory-modal');
-        }
-
-        window.updateStock = async (itemId) => {
-            const add = parseInt(document.getElementById('add-stock-input').value) || 0;
-            const remove = parseInt(document.getElementById('remove-stock-input').value) || 0;
-            const change = add - remove;
-            if(change === 0) { closeModal('inventory-modal'); return; }
-            showLoader();
-            try {
-                await runTransaction(db, async (t) => {
-                    const itemRef = doc(db, "inventory", itemId);
-                    const itemDoc = await t.get(itemRef);
-                    if (!itemDoc.exists()) throw "Document does not exist!";
-                    const newQuantity = (itemDoc.data().quantity || 0) + change;
-                    t.update(itemRef, { quantity: newQuantity });
-                });
-                showNotification("Stock updated successfully!");
-                closeModal('inventory-modal');
-            } catch (e) { console.error("Transaction failed: ", e); showNotification("Failed to update stock.", true);
-            } finally { hideLoader(); }
-        };
-
-        window.addNewItem = async () => {
-            const name = document.getElementById('new-item-name').value.trim();
-            if(!name) { showNotification("Item name is required.", true); return; }
-            const newItem = { name, quantity: parseInt(document.getElementById('new-item-qty').value) || 0, unit: document.getElementById('new-item-unit').value.trim(), sku: document.getElementById('new-item-sku').value.trim(), category: document.getElementById('new-item-category').value.trim(), supplier: document.getElementById('new-item-supplier').value.trim(), cost: parseFloat(document.getElementById('new-item-cost').value) || 0 };
-            showLoader();
-            try {
-                await addDoc(collection(db, "inventory"), newItem);
-                showNotification("New item added to inventory.");
-                closeModal('inventory-modal');
-            } catch(e) { console.error("Error adding item:", e); showNotification("Failed to add new item.", true);
-            } finally { hideLoader(); }
-        }
-        
-        window.openJobDetailsModal = (jobId) => {
-            const job = jobsCache.find(j => j.id === jobId);
-            if (!job) { showNotification("Job details not found.", true); return; }
-            const modal = document.getElementById('job-details-modal');
-            let materialsHtml = inventoryCache.map(item => `
-                <div class="grid grid-cols-3 items-center gap-2"><label class="text-sm">${item.name}</label><input type="number" data-item-id="${item.id}" class="w-full p-1 border rounded-md text-sm" placeholder="Qty" value="${job.materialsUsed?.[item.id] || ''}"><span class="text-xs text-gray-500">In Stock: ${item.quantity}</span></div>`).join('');
-            modal.querySelector('.modal-content').innerHTML = `<h3 class="text-lg font-bold mb-4">Manage Job: ${job.jfn}</h3><div class="pod-view-section bg-gray-50 mb-4"><p><strong>Shipper:</strong> ${job.sh || 'N/A'}</p><p><strong>Consignee:</strong> ${job.co || 'N/A'}</p></div><h4 class="font-semibold mb-2">Packing Materials Used</h4><div class="space-y-2 max-h-48 overflow-y-auto pr-2">${materialsHtml}</div><div class="text-right mt-6 space-x-2"><button onclick="closeModal('job-details-modal')" class="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button><button onclick="saveJobMaterials('${jobId}')" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">Save & Update Stock</button></div>`;
-            openModal('job-details-modal');
-        };
-
-        window.saveJobMaterials = async (jobId) => {
-            const inputs = document.querySelectorAll('#job-details-modal input[data-item-id]');
-            const materialsUsed = {};
-            const stockUpdates = [];
-            inputs.forEach(input => {
-                const qtyUsed = parseInt(input.value) || 0;
-                if (qtyUsed > 0) {
-                    const itemId = input.dataset.itemId;
-                    materialsUsed[itemId] = qtyUsed;
-                    stockUpdates.push({ id: itemId, change: -qtyUsed });
-                }
-            });
-            showLoader();
-            try {
-                await runTransaction(db, async (t) => {
-                    t.update(doc(db, 'jobfiles', jobId), { materialsUsed });
-                    for (const update of stockUpdates) {
-                        const itemRef = doc(db, "inventory", update.id);
-                        const itemDoc = await t.get(itemRef);
-                        if (!itemDoc.exists()) throw `Inventory item ${update.id} not found!`;
-                        const newQuantity = (itemDoc.data().quantity || 0) + update.change;
-                        if (newQuantity < 0) throw `Not enough stock for ${itemDoc.data().name}.`;
-                        t.update(itemRef, { quantity: newQuantity });
-                    }
-                });
-                showNotification("Job materials saved and stock updated.");
-                closeModal('job-details-modal');
-            } catch (e) { console.error("Transaction failed: ", e); showNotification(`Error: ${e}`, true);
-            } finally { hideLoader(); }
-        };
-
-        function renderTable(view) {
-            currentView = view;
-            if ((currentUser.pod_role === 'supervisor') && document.getElementById('admin-view-btn')) {
-                document.getElementById('admin-view-btn').classList.toggle('bg-white', view === 'admin');
-                document.getElementById('worker-view-btn').classList.toggle('bg-white', view === 'worker');
-            }
-            listenForJobFiles();
-        }
-
-        function listenForJobFiles(searchTerm = '') {
-            const q = query(collection(db, 'jobfiles'));
-            onSnapshot(q, (snapshot) => {
-                jobsCache = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
-                jobsCache.sort((a,b) => (b.updatedAt?.toDate()?.getTime() || 0) - (a.updatedAt?.toDate()?.getTime() || 0));
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
                 
-                let jobsToDisplay = [...jobsCache];
-
-                if (currentUser.pod_role === 'supervisor') {
-                    if(currentView === 'worker') {
-                        jobsToDisplay = jobsToDisplay.filter(job => job.status === 'Out for Delivery');
-                        displayWorkerView(jobsToDisplay, true);
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        document.getElementById('user-info').textContent = `User: ${userId.substring(0, 6)}... (${currentUserRole})`;
+                        await attachDataListeners();
+                        switchTab('analytics'); 
+                        document.getElementById('loading-overlay').style.display = 'none';
                     } else {
-                        displayAdminView(jobsToDisplay, searchTerm.toLowerCase());
+                        try {
+                            await signInAnonymously(auth);
+                        } catch (error) {
+                             console.error("Authentication Error:", error);
+                             document.getElementById('loading-overlay').innerHTML = `<div class="text-center p-4 bg-white rounded-lg shadow-xl"><p class="text-red-600 font-semibold text-lg">Authentication Failed</p><p class="text-gray-700 mt-2">Could not sign in.</p><p class="text-gray-500 text-sm mt-2">Check Firebase Authentication settings and ensure Anonymous sign-in is enabled.</p></div>`;
+                        }
                     }
-                } else { // Worker role
-                    jobsToDisplay = jobsToDisplay.filter(job => job.status === 'Out for Delivery' && job.assignedTo === currentUser.displayName);
-                    displayWorkerView(jobsToDisplay);
+                });
+            } catch (error) {
+                console.error("Firebase Initialization Error:", error);
+                document.getElementById('loading-overlay').innerHTML = `<p class="text-red-500">Error setting up Firebase connection. Check your config object.</p>`;
+            }
+        }
+        
+        // --- DATA LISTENERS --- //
+        async function attachDataListeners() {
+            if (!userId) return;
+            attachUsersListener();
+            attachInventoryListener();
+            const scheduleDate = document.getElementById('schedule-date').value || new Date().toISOString().split('T')[0];
+            attachScheduleListener(scheduleDate);
+        }
+
+        function attachUsersListener() {
+            const usersCollectionPath = `/artifacts/${appId}/public/data/users`;
+            if (usersUnsubscribe) usersUnsubscribe();
+            usersUnsubscribe = onSnapshot(collection(db, usersCollectionPath), (snapshot) => {
+                window.appState.users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderUsersAdmin();
+                updateDashboardCards();
+                const scheduleDate = document.getElementById('schedule-date').value || new Date().toISOString().split('T')[0];
+                if (window.appState.schedules) {
+                    renderSchedules(scheduleDate);
                 }
-            });
+            }, (error) => console.error("Error with users snapshot listener:", error));
+        }
+
+        function attachInventoryListener() {
+             const inventoryCollectionPath = `/artifacts/${appId}/public/data/inventory`;
+             if(inventoryUnsubscribe) inventoryUnsubscribe();
+             inventoryUnsubscribe = onSnapshot(collection(db, inventoryCollectionPath), (snapshot) => {
+                window.appState.inventory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderInventory();
+                updateDashboardCards();
+                updateInventoryChart();
+            }, (error) => console.error("Error with inventory snapshot listener:", error));
         }
         
-        function displayAdminView(jobs, searchTerm) {
-            const container = document.getElementById('job-list-container');
-            const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-            
-            if (searchTerm) jobs = jobs.filter(j => (j.jfn || '').toLowerCase().includes(searchTerm) || (j.sh || '').toLowerCase().includes(searchTerm) || (j.co || '').toLowerCase().includes(searchTerm));
-
-            const ready = jobs.filter(j => ['approved', 'checked'].includes(j.status));
-            const out = jobs.filter(j => j.status === 'Out for Delivery');
-            const completed = jobs.filter(j => j.status === 'Completed-POD' && j.updatedAt?.toDate() >= todayStart);
-            const pending = jobs.filter(j => j.status === 'pending');
-            
-            document.getElementById('ready-count').textContent = ready.length;
-            document.getElementById('transit-count').textContent = out.length;
-            document.getElementById('completed-count').textContent = completed.length;
-
-            let html = createCategorySection('Ready for Delivery', ready, '#2563eb');
-            html += createCategorySection('Out for Delivery', out, '#d97706');
-            html += createCategorySection('Completed Today', completed, '#16a34a');
-            html += createCategorySection('Pending Approval', pending, '#78716c');
-            container.innerHTML = html;
+        function attachScheduleListener(date) {
+            if (!userId) return;
+            const schedulesCollectionPath = `/artifacts/${appId}/public/data/schedules`;
+            if (schedulesUnsubscribe) schedulesUnsubscribe();
+            const q = query(collection(db, schedulesCollectionPath), where("date", "==", date));
+            schedulesUnsubscribe = onSnapshot(q, (snapshot) => {
+                window.appState.schedules = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderSchedules(date);
+                updateDashboardCards();
+                updateScheduleChart();
+            }, (error) => console.error(`Error with schedules snapshot listener for date ${date}:`, error));
         }
 
-        function displayWorkerView(jobs, isAdminViewing = false) {
-            const container = document.getElementById('job-list-container');
-            const title = isAdminViewing ? "All Out for Delivery Jobs" : "Your Assigned Deliveries";
-            container.innerHTML = jobs.length === 0 ? `<p class="p-8 text-center text-gray-500">No jobs are currently out for delivery.</p>` : `<h2 class="job-category-header">${title} (${jobs.length})</h2>` + jobs.map(job => createJobCardHtml(job, '#059669')).join('');
-        }
-
-        function createCategorySection(title, jobs, color) {
-            let content = `<h2 class="job-category-header">${title} (${jobs.length})</h2>`;
-            content += jobs.length === 0 ? `<p class="text-sm text-gray-500 italic">No jobs in this category.</p>` : jobs.map(job => createJobCardHtml(job, color)).join('');
-            return content;
-        }
-
-        function createJobCardHtml(job, color = '#78716c') {
-            const status = job.status || 'pending';
-            let actionButtons = '';
-            const deleteBtn = `<button onclick='confirmDeletePod("${job.jfn}")' class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded text-sm ml-2">Delete POD</button>`;
-            const cancelBtn = `<button onclick='confirmCancelDelivery("${job.jfn}")' class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded text-sm ml-2">Cancel Delivery</button>`;
-
-            if (currentUser.pod_role === 'supervisor') {
-                const manageBtn = `<button onclick='openJobDetailsModal("${job.id}")' class="bg-gray-200 hover:bg-gray-300 text-black font-bold py-2 px-4 rounded text-sm">Manage Job</button>`;
-                if (status === 'approved' || status === 'checked') actionButtons = manageBtn + `<button onclick='openAssignWorkerModal("${job.id}")' class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm ml-2">Prepare Delivery</button>`;
-                else if (status === 'Out for Delivery') actionButtons = `<button onclick='openViewPodModal("${job.jfn}")' class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded text-sm">View Order</button>` + cancelBtn;
-                else if (status === 'Completed-POD') actionButtons = `<button onclick='openViewPodModal("${job.jfn}")' class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded text-sm">View Order</button>` + deleteBtn;
-                else actionButtons = manageBtn;
-            } else { // Worker
-                actionButtons = `<button onclick='openWorkerDeliveryPage("${job.jfn}")' class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-sm">Complete Delivery</button>`;
-            }
-            return `<div class="job-card" style="border-left-color: ${color};"><div><p class="font-bold text-indigo-700">${job.jfn || 'N/A'}</p><p class="text-sm text-gray-600"><strong>Shipper:</strong> ${job.sh || 'N/A'}</p><p class="text-sm text-gray-600"><strong>Consignee:</strong> ${job.co || 'N/A'}</p></div><div class="text-right space-x-2">${actionButtons}<p class="text-xs text-gray-400 mt-2">Last Updated: ${job.updatedAt?.toDate().toLocaleString() || 'N/A'}</p></div></div>`;
-        }
-        
-        window.confirmDeletePod = (jobFileNo) => {
-            const modal = document.getElementById('confirm-modal');
-            modal.querySelector('.modal-content').innerHTML = `
-                <h3 class="text-lg font-bold mb-4">Confirm POD Deletion</h3>
-                <p>Are you sure you want to delete the POD for job <strong>${jobFileNo}</strong>? This will revert the job's status to its previous state.</p>
-                <div class="text-right mt-6 space-x-2">
-                    <button onclick="closeModal('confirm-modal')" class="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button>
-                    <button onclick="deletePod('${jobFileNo}')" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">Confirm Deletion</button>
-                </div>`;
-            openModal('confirm-modal');
-        };
-        
-        window.confirmCancelDelivery = (jobFileNo) => {
-            const modal = document.getElementById('confirm-modal');
-            modal.querySelector('.modal-content').innerHTML = `
-                <h3 class="text-lg font-bold mb-4">Confirm Delivery Cancellation</h3>
-                <p>Are you sure you want to cancel the delivery for job <strong>${jobFileNo}</strong>? This will delete the POD record and return the job to its previous state.</p>
-                <div class="text-right mt-6 space-x-2">
-                    <button onclick="closeModal('confirm-modal')" class="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button>
-                    <button onclick="deletePod('${jobFileNo}')" class="bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded">Confirm Cancellation</button>
-                </div>`;
-            openModal('confirm-modal');
-        };
-
-        window.deletePod = async (jobFileNo) => {
-             showLoader();
-            try {
-                const pod = await findPodByJobFileNo(jobFileNo);
-                if(!pod) throw new Error("POD document not found");
-
-                const batch = writeBatch(db);
-                batch.delete(doc(db, 'pods', pod.id));
-                batch.update(doc(db, 'jobfiles', jobFileNo.replace(/\//g, '_')), { status: pod.originalJobStatus || 'approved', assignedTo: null });
-                await batch.commit();
-                
-                showNotification("POD deleted and job status reverted.");
-                closeModal('confirm-modal');
-            } catch (error) { console.error("Error deleting POD:", error); showNotification("Error deleting POD.", true);
-            } finally { hideLoader(); }
-        };
-
-        window.openAssignWorkerModal = (docId) => {
-            const modal = document.getElementById('assign-worker-modal');
-            modal.querySelector('.modal-content').innerHTML = `<h3 class="text-lg font-bold mb-4">Assign Worker</h3><select id="worker-select" class="w-full p-2 border rounded-md">${workersCache.map(w => `<option value="${w}">${w}</option>`).join('')}</select><div class="text-right mt-6 space-x-2"><button onclick="closeModal('assign-worker-modal')" class="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button><button onclick="preparePodDocument('${docId}')" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded">Confirm</button></div>`;
-            openModal('assign-worker-modal');
-        };
-
-        window.preparePodDocument = async (docId) => {
-            const workerName = document.getElementById('worker-select').value;
-            if (!workerName) { showNotification("Please select a worker.", true); return; }
-            showLoader();
-            try {
-                const jobDocRef = doc(db, 'jobfiles', docId);
-                const jobDocSnap = await getDoc(jobDocRef);
-                if (!jobDocSnap.exists()) throw new Error("Job file not found!");
-                const jobData = jobDocSnap.data();
-                const podData = {
-                    jobFileNo: jobData.jfn, shipperName: jobData.sh, consigneeName: jobData.co,
-                    description: jobData.dsc, mawb: jobData.mawb, hawb: jobData.hawb,
-                    origin: jobData.or, destination: jobData.de, pieces: jobData.pc,
-                    grossWeight: jobData.gw, podStatus: 'Out for Delivery',
-                    preparedBy: currentUser.displayName, preparedAt: serverTimestamp(),
-                    assignedTo: workerName,
-                    originalJobStatus: jobData.status
-                };
-                const batch = writeBatch(db);
-                batch.set(doc(collection(db, 'pods')), podData);
-                batch.update(jobDocRef, { status: 'Out for Delivery', assignedTo: workerName, updatedAt: serverTimestamp() });
-                await batch.commit();
-                showNotification(`Delivery assigned to ${workerName}.`);
-                closeModal('assign-worker-modal');
-            } catch (error) { console.error("Error preparing POD:", error); showNotification("Error preparing document.", true);
-            } finally { hideLoader(); }
-        };
-
-        async function findPodByJobFileNo(jobFileNo) {
-            const q = query(collection(db, 'pods'), where('jobFileNo', '==', jobFileNo));
-            const snapshot = await getDocs(q);
-            if (snapshot.empty) return null;
-            return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
-        }
-        
-        async function findPodById(podId) {
-            const docRef = doc(db, 'pods', podId);
-            const docSnap = await getDoc(docRef);
-            return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
-        }
-
-        window.openViewPodModal = async (jobFileNo) => {
-            const modalContent = document.getElementById('view-pod-modal-content');
-            modalContent.innerHTML = getAdminViewPodModalHtml(null);
-            openModal('view-pod-modal');
-            const pod = await findPodByJobFileNo(jobFileNo);
-            modalContent.innerHTML = getAdminViewPodModalHtml(pod);
-        };
-
-        window.openWorkerDeliveryPage = async (jobFileNo) => {
-            showLoader();
-            const pod = await findPodByJobFileNo(jobFileNo);
-            if (!pod) { 
-                showNotification("Could not find delivery details.", true);
-                hideLoader();
-                return;
-            }
-            document.getElementById('app-container').style.display = 'none';
-            const deliveryPage = document.getElementById('worker-delivery-page');
-            deliveryPage.innerHTML = getWorkerPodCapturePageHtml(pod);
-            deliveryPage.style.display = 'block';
-
-            const canvas = document.getElementById('signature-pad');
-            canvas.width = canvas.offsetWidth;
-            signaturePad = new SignaturePad(canvas);
-            document.getElementById('clear-signature').addEventListener('click', () => signaturePad.clear());
-            document.getElementById('submit-pod-btn').addEventListener('click', () => submitPod(pod.id));
-            document.getElementById('back-to-tasks-btn').addEventListener('click', () => {
-                deliveryPage.style.display = 'none';
-                document.getElementById('app-container').style.display = 'block';
-            });
-            hideLoader();
-        };
-        
-        async function submitPod(podId) {
-            const receiverName = document.getElementById('receiver-name').value.trim();
-            const photoFile = document.getElementById('pod-photo').files[0];
-            if (signaturePad.isEmpty() || !receiverName) {
-                showNotification("Receiver name and signature are required.", true);
-                return;
-            }
-            showLoader();
-            try {
-                const podDocRef = doc(db, 'pods', podId);
-                const pod = await findPodById(podId);
-                
-                const signatureRef = ref(storage, `pod_signatures/${pod.jobFileNo}_${Date.now()}.png`);
-                await uploadString(signatureRef, signaturePad.toDataURL(), 'data_url');
-                const signatureUrl = await getDownloadURL(signatureRef);
-                
-                let photoUrl = null;
-                if (photoFile) {
-                    const photoRef = ref(storage, `pod_photos/${pod.jobFileNo}_${Date.now()}`);
-                    await uploadBytes(photoRef, photoFile);
-                    photoUrl = await getDownloadURL(photoRef);
-                }
-                
-                const batch = writeBatch(db);
-                batch.update(podDocRef, { podStatus: 'Completed-POD', receiverName, signatureUrl, photoUrl, podTimestamp: serverTimestamp(), deliveredBy: currentUser.displayName });
-                batch.update(doc(db, 'jobfiles', pod.jobFileNo.replace(/\//g, '_')), { status: 'Completed-POD', updatedAt: serverTimestamp() });
-                await batch.commit();
-
-                showNotification("POD Submitted Successfully!");
-                document.getElementById('worker-delivery-page').style.display = 'none';
-                document.getElementById('app-container').style.display = 'block';
-
-            } catch(error) { console.error("Error submitting POD:", error); showNotification("Failed to submit POD.", true);
-            } finally { hideLoader(); }
-        }
-
-        function getAdminViewPodModalHtml(pod) {
-            const content = pod ? getProfessionalPodHtml(pod) : '<div class="flex justify-center p-8"><div class="loader"></div></div>';
-            return `<div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-bold">Delivery Note & POD</h2><div><button onclick="printPod()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-3 rounded text-sm mr-2">Print</button><button onclick="closeModal('view-pod-modal')" class="text-gray-400 hover:text-gray-600 text-3xl">&times;</button></div></div><div id="pod-details-content">${content}</div>`;
-        }
-        
-        function getProfessionalPodHtml(pod) {
-            let podCompletionDetails = '';
-            if (pod.podStatus === 'Completed-POD') {
-                const podDate = pod.podTimestamp?.toDate().toLocaleString('en-KW') || 'N/A';
-                const photoHtml = pod.photoUrl ? `<a href="${pod.photoUrl}" target="_blank"><img src="${pod.photoUrl}" alt="Photo" class="mt-1 rounded-md border-2 p-1 bg-white max-h-48"></a>` : '<p class="text-xs italic text-gray-500">No photo provided.</p>';
-                podCompletionDetails = `<div class="mt-4 pod-view-section bg-green-50"><h3 class="text-green-700">Proof of Delivery - Completed</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><p><strong>Receiver:</strong> ${pod.receiverName || 'N/A'}</p><p><strong>Received On:</strong> ${podDate}</p><p><strong>Delivered By:</strong> ${pod.deliveredBy || 'N/A'}</p><p class="mt-2"><strong>Signature:</strong></p><img src="${pod.signatureUrl}" alt="Signature" class="mt-1 rounded-md border-2 p-1 bg-white"></div><div><p><strong>Photo Evidence:</strong></p>${photoHtml}</div></div></div>`;
-            } else {
-                podCompletionDetails = `<div class="mt-4 text-center font-semibold text-yellow-700 bg-yellow-100 p-3 rounded-md">Status: Out for Delivery</div>`;
-            }
-
-            return `<div id="professional-pod-view" class="text-sm"><div class="flex justify-between items-start pb-4 mb-4 border-b-2 border-black"><div><div class="text-3xl font-extrabold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div><p class="text-xs text-gray-500 mt-1">Salmiya, Kuwait<br>+965 1234 5678 | info@qgocargo.com</p></div><div class="text-right"><h2 class="text-2xl font-bold text-gray-700">DELIVERY NOTE</h2><p><strong>Job No:</strong> ${pod.jobFileNo}</p><svg id="barcode"></svg></div></div><div class="grid grid-cols-2 gap-4 mb-4"><div class="pod-view-section"><h3>Shipper</h3><p>${pod.shipperName || 'N/A'}</p><p><strong>Origin:</strong> ${pod.origin || 'N/A'}</p></div><div class="pod-view-section"><h3>Consignee</h3><p>${pod.consigneeName || 'N/A'}</p><p><strong>Destination:</strong> ${pod.destination || 'N/A'}</p></div></div><div class="pod-view-section mb-4"><h3>Shipment Information</h3><p><strong>Description:</strong> ${pod.description || 'N/A'}</p><div class="grid grid-cols-2 gap-4 mt-2"><div><p><strong>MAWB/OBL:</strong> ${pod.mawb || 'N/A'}</p><p><strong>HAWB/HBL:</strong> ${pod.hawb || 'N/A'}</p></div><div><p><strong>Pieces:</strong> ${pod.pieces || 'N/A'}</p><p><strong>Weight:</strong> ${pod.grossWeight || 'N/A'}</p></div></div></div>${podCompletionDetails}<div class="flex justify-between items-end pt-4 mt-4 border-t"><p class="text-xs text-gray-400">Prepared By: ${pod.preparedBy || 'N/A'}</p><div id="qrcode" class="w-20 h-20"></div></div></div>`;
-        }
-
-        function getWorkerPodCapturePageHtml(pod) {
-            return `
-                <div class="container">
-                     <div class="flex justify-between items-center mb-4">
-                        <h1 class="text-2xl font-bold">Complete Delivery</h1>
-                        <button id="back-to-tasks-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">Back to Task List</button>
+        // --- UI RENDERING --- //
+        function renderUsersAdmin() {
+            const userListContainer = document.getElementById('user-list-container');
+            if (!userListContainer) return;
+            userListContainer.innerHTML = (window.appState.users || []).map(user => `
+                <div class="flex justify-between items-center p-3 hover:bg-gray-50 rounded-md">
+                    <div>
+                        <p class="font-semibold">${user.name}</p>
+                        <p class="text-sm text-gray-500">${user.role}</p>
                     </div>
-                    <div class="mt-4 max-h-[75vh] overflow-y-auto pr-2">
-                        ${getProfessionalPodHtml(pod)}
-                        <div class="mt-4 pod-view-section bg-blue-50">
-                            <h3 class="text-blue-700">Proof of Delivery - Capture</h3>
-                            <div class="space-y-4 mt-2">
-                                <div><label for="receiver-name" class="block text-sm font-medium text-gray-700">Receiver Full Name</label><input type="text" id="receiver-name" class="w-full mt-1 p-2 border rounded-md" required></div>
-                                <div><label class="block text-sm font-medium text-gray-700">Receiver Signature</label><canvas id="signature-pad"></canvas><button id="clear-signature" type="button" class="text-xs text-indigo-600 mt-1">Clear Signature</button></div>
-                                <div><label for="pod-photo" class="block text-sm font-medium text-gray-700">Photo Evidence (Optional)</label><input type="file" id="pod-photo" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"></div>
-                            </div>
+                    <button class="delete-user-btn text-red-500 hover:text-red-700 p-2" data-id="${user.id}"><i data-feather="trash-2"></i></button>
+                </div>
+            `).join('') || '<p class="text-center text-gray-500 py-4">No users created yet.</p>';
+            feather.replace();
+            document.querySelectorAll('.delete-user-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const idToDelete = e.currentTarget.closest('button').dataset.id;
+                    showConfirmationModal('Are you sure you want to delete this user?', async () => {
+                        await deleteUser(idToDelete);
+                    });
+                });
+            });
+        }
+        
+        function renderInventory() {
+            const tableBody = document.getElementById('inventory-table-body');
+            const cardList = document.getElementById('inventory-card-list');
+            if (!tableBody || !cardList) return;
+
+            const searchTerm = document.getElementById('inventory-search').value.toLowerCase();
+            const inventory = window.appState.inventory || [];
+            const filteredInventory = inventory.filter(item => 
+                item.name.toLowerCase().includes(searchTerm) || 
+                (item.sku && item.sku.toLowerCase().includes(searchTerm))
+            );
+            
+            if (filteredInventory.length === 0) {
+                const emptyMessage = `<tr><td colspan="5" class="text-center py-8 text-gray-500">No inventory items found.</td></tr>`;
+                tableBody.innerHTML = emptyMessage;
+                cardList.innerHTML = `<p class="text-center py-8 text-gray-500">No inventory items found.</p>`;
+                return;
+            }
+            
+            const placeholderImg = 'https://placehold.co/60x60/e2e8f0/adb5bd?text=No+Image';
+
+            tableBody.innerHTML = filteredInventory.map(item => `
+                <tr class="hover:bg-gray-50">
+                    <td class="py-4 px-6"><img src="${item.imageData || placeholderImg}" alt="${item.name}" class="w-12 h-12 rounded-md object-cover"></td>
+                    <td class="py-4 px-6 font-medium">${item.name}</td>
+                    <td class="py-4 px-6 text-gray-600">${item.sku || 'N/A'}</td>
+                    <td class="py-4 px-6 font-semibold">${item.quantity}</td>
+                    <td class="py-4 px-6">
+                        <button class="edit-inventory-btn text-blue-500 hover:text-blue-700 p-2" data-id="${item.id}"><i data-feather="edit"></i></button>
+                        <button class="delete-inventory-btn text-red-500 hover:text-red-700 p-2" data-id="${item.id}"><i data-feather="trash-2"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            cardList.innerHTML = filteredInventory.map(item => `
+                <div class="border rounded-lg p-4 bg-white shadow-sm">
+                    <div class="flex items-start gap-4">
+                        <img src="${item.imageData || placeholderImg}" alt="${item.name}" class="w-16 h-16 rounded-md object-cover flex-shrink-0">
+                        <div class="flex-1">
+                            <p class="font-bold text-gray-800">${item.name}</p>
+                            <p class="text-sm text-gray-500">SKU: ${item.sku || 'N/A'}</p>
+                            <p class="text-sm text-gray-500">Quantity: <span class="font-semibold">${item.quantity}</span></p>
                         </div>
                     </div>
-                    <div class="mt-6">
-                        <button id="submit-pod-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg">Submit POD</button>
+                    <div class="mt-4 flex justify-end gap-2">
+                        <button class="edit-inventory-btn btn btn-secondary !p-2" data-id="${item.id}"><i data-feather="edit"></i></button>
+                        <button class="delete-inventory-btn btn btn-danger !p-2" data-id="${item.id}"><i data-feather="trash-2"></i></button>
+                    </div>
+                </div>
+            `).join('');
+
+            feather.replace();
+            document.querySelectorAll('.edit-inventory-btn').forEach(btn => btn.addEventListener('click', handleEditInventory));
+            document.querySelectorAll('.delete-inventory-btn').forEach(btn => btn.addEventListener('click', handleDeleteInventory));
+        }
+
+        function renderSchedules(date) {
+            const container = document.getElementById('schedule-container');
+            if (!container) return;
+            const schedules = window.appState.schedules || [];
+            const users = window.appState.users || [];
+            
+            if(schedules.length === 0) {
+                 container.innerHTML = `<p class="text-center text-gray-500 py-8">No schedules found for ${date}.</p>`;
+                 return;
+            }
+            
+            container.innerHTML = schedules.map(schedule => {
+                const assignedUsers = schedule.assignedUserIds.map(id => users.find(u => u.id === id)).filter(Boolean);
+                const crewLeader = assignedUsers.find(u => u.role === 'Crew Leader');
+                const priorityColors = {'High': 'bg-red-100 text-red-800', 'Medium': 'bg-yellow-100 text-yellow-800', 'Low': 'bg-blue-100 text-blue-800'};
+                const statusColors = {'Finished': 'bg-green-100 text-green-800', 'Pending': 'bg-yellow-100 text-yellow-800', 'Pending Confirmation': 'bg-orange-100 text-orange-800'};
+                const isSupervisor = ['Admin', 'Supervisor'].includes(currentUserRole);
+
+                let materialStatusHTML = '';
+                if (schedule.status === 'Pending Confirmation') {
+                    materialStatusHTML = `<span class="text-xs font-semibold text-yellow-600 flex items-center gap-1"><i data-feather="clock" class="w-3 h-3"></i> Returns Pending Confirmation</span>`;
+                } else if (schedule.materialsConfirmed) {
+                     materialStatusHTML = `<span class="text-xs font-semibold text-green-600 flex items-center gap-1"><i data-feather="check-circle" class="w-3 h-3"></i> Returns Confirmed</span>`;
+                }
+
+                const renderReconciliationDetails = () => {
+                    if (!schedule.reconciliationDetails) return '';
+                    let detailsHtml = '<p><strong>Reconciliation Details:</strong></p><ul class="list-disc pl-5 text-gray-600">';
+                    for (const [key, value] of Object.entries(schedule.reconciliationDetails.returnedItems)) {
+                        detailsHtml += `<li>${key}: ${value}</li>`;
+                    }
+                    detailsHtml += '</ul>';
+                    if (schedule.reconciliationDetails.discrepancyNotes) {
+                         detailsHtml += `<p class="mt-2"><strong>Discrepancy Notes:</strong><br><span class="text-gray-600 whitespace-pre-wrap">${schedule.reconciliationDetails.discrepancyNotes}</span></p>`;
+                    }
+                    return detailsHtml;
+                };
+
+                return `
+                    <div class="border rounded-lg p-4 bg-white shadow-sm">
+                        <div class="flex justify-between items-start">
+                           <div class="flex-1 overflow-hidden">
+                                <div class="flex items-center gap-2 mb-2 flex-wrap">
+                                    <h3 class="font-bold text-base sm:text-lg text-blue-600 truncate">${schedule.task}</h3>
+                                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${statusColors[schedule.status] || 'bg-gray-100'} flex-shrink-0">${schedule.status}</span>
+                                    ${schedule.priority ? `<span class="text-xs font-semibold px-2.5 py-1 rounded-full ${priorityColors[schedule.priority]} flex-shrink-0">${schedule.priority}</span>` : ''}
+                                </div>
+                                <p class="text-sm text-gray-500 flex items-center"><i data-feather="clock" class="w-4 h-4 mr-2 flex-shrink-0"></i>${schedule.startTime} - ${schedule.endTime}</p>
+                                ${schedule.address ? `<p class="text-sm text-gray-500 mt-1 flex items-center"><i data-feather="map-pin" class="w-4 h-4 mr-2 flex-shrink-0"></i>${schedule.address}</p>` : ''}
+                                ${schedule.vehicle ? `<p class="text-sm text-gray-500 mt-1 flex items-center"><i data-feather="truck" class="w-4 h-4 mr-2 flex-shrink-0"></i>${schedule.vehicle}</p>` : ''}
+                                ${schedule.status !== 'Pending' && schedule.completionTime ? `<p class="text-sm text-gray-600 mt-1 flex items-center font-semibold"><i data-feather="check-circle" class="w-4 h-4 mr-2 flex-shrink-0"></i>Submitted at ${new Date(schedule.completionTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>` : ''}
+                                
+                                <p class="mt-3 text-sm text-gray-700">${schedule.notes || 'No notes.'}</p>
+                                
+                                ${(schedule.materialsUsed) ? `
+                                <details class="mt-4 text-sm">
+                                    <summary class="font-semibold cursor-pointer flex justify-between items-center">
+                                        <span>Material Details</span>
+                                        ${materialStatusHTML}
+                                    </summary>
+                                    <div class="pl-4 mt-2 border-l-2 space-y-2">
+                                        ${schedule.materialsUsed ? `<p><strong>Used:</strong><br><span class="text-gray-600 whitespace-pre-wrap">${schedule.materialsUsed}</span></p>` : ''}
+                                        ${renderReconciliationDetails()}
+                                        ${schedule.materialReturnPhotoData ? `<p><strong>Confirmation Photo:</strong><br><img src="${schedule.materialReturnPhotoData}" class="w-24 h-24 rounded-md object-cover mt-1 border"></p>` : ''}
+                                        ${schedule.materialsConfirmedBy ? `<p class="mt-2 text-xs text-gray-500">Confirmed by ${schedule.materialsConfirmedBy} at ${new Date(schedule.materialsConfirmationTime).toLocaleString()}</p>` : ''}
+                                    </div>
+                                </details>
+                                ` : ''}
+
+                                <div class="mt-4">
+                                    ${crewLeader ? `<p class="font-semibold text-sm mb-2">Leader: <span class="font-normal bg-yellow-200 text-yellow-800 text-xs px-2 py-1 rounded-full">${crewLeader.name}</span></p>` : ''}
+                                    <p class="font-semibold text-sm">Crew:</p>
+                                    <div class="flex flex-wrap gap-2 mt-1">
+                                        ${assignedUsers.map(user => `<span class="bg-gray-200 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full">${user.name}</span>`).join('')}
+                                    </div>
+                                </div>
+                           </div>
+                           <div class="flex flex-col items-end gap-2 ml-2">
+                                <button class="share-whatsapp-btn btn btn-primary !bg-green-500 hover:!bg-green-600 !p-2" data-id="${schedule.id}"><i data-feather="share-2"></i></button>
+                                <button class="edit-schedule-btn btn btn-secondary !p-2" data-id="${schedule.id}"><i data-feather="edit"></i></button>
+                                <button class="material-schedule-btn btn btn-primary !bg-orange-500 hover:!bg-orange-600 !p-2" data-id="${schedule.id}"><i data-feather="tool"></i></button>
+                                <button class="delete-schedule-btn btn btn-danger !p-2" data-id="${schedule.id}"><i data-feather="trash-2"></i></button>
+                           </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t flex flex-col sm:flex-row gap-2">
+                            ${schedule.status === 'Pending' ? `<button class="complete-schedule-btn btn btn-success w-full" data-id="${schedule.id}"><i data-feather="check-circle"></i>Mark as Complete</button>` : ''}
+                            ${(isSupervisor && schedule.status === 'Pending Confirmation') ? `<button class="confirm-return-btn btn btn-primary !bg-indigo-500 hover:!bg-indigo-600 w-full" data-id="${schedule.id}"><i data-feather="shield"></i>Confirm Material Returns</button>`: ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            feather.replace();
+            document.querySelectorAll('.share-whatsapp-btn, .edit-schedule-btn, .delete-schedule-btn, .complete-schedule-btn, .material-schedule-btn, .confirm-return-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    if (btn.classList.contains('share-whatsapp-btn')) handleShareToWhatsApp(id);
+                    if (btn.classList.contains('edit-schedule-btn')) handleEditSchedule(id);
+                    if (btn.classList.contains('delete-schedule-btn')) handleDeleteSchedule(id);
+                    if (btn.classList.contains('complete-schedule-btn')) handleCompleteSchedule(id);
+                    if (btn.classList.contains('material-schedule-btn')) showMaterialModal(id);
+                    if (btn.classList.contains('confirm-return-btn')) showConfirmReturnModal(id);
+                });
+            });
+        }
+
+        // --- DASHBOARD & CHARTS --- //
+        function updateDashboardCards() {
+            try {
+                const totalUsersEl = document.getElementById('total-users');
+                if (totalUsersEl) totalUsersEl.textContent = window.appState.users.length;
+
+                const totalInventoryEl = document.getElementById('total-inventory');
+                if (totalInventoryEl) totalInventoryEl.textContent = window.appState.inventory.length;
+
+                const schedulesTodayEl = document.getElementById('schedules-today');
+                if (schedulesTodayEl) schedulesTodayEl.textContent = window.appState.schedules.length;
+            } catch (e) {
+                console.error("Error updating dashboard cards:", e);
+            }
+        }
+        
+        function initCharts() {
+            try {
+                if (inventoryChartInstance) inventoryChartInstance.destroy();
+                if (scheduleChartInstance) scheduleChartInstance.destroy();
+                
+                const inventoryCanvas = document.getElementById('inventoryChart');
+                if(inventoryCanvas) {
+                    const inventoryCtx = inventoryCanvas.getContext('2d');
+                    inventoryChartInstance = new Chart(inventoryCtx, {
+                        type: 'doughnut',
+                        data: { labels: [], datasets: [{ data: [] }] },
+                        options: { responsive: true, plugins: { legend: { position: 'top' }, title: { display: true, text: 'Inventory by Quantity' } } }
+                    });
+                }
+
+                const scheduleCanvas = document.getElementById('scheduleChart');
+                if (scheduleCanvas) {
+                     const scheduleCtx = scheduleCanvas.getContext('2d');
+                     scheduleChartInstance = new Chart(scheduleCtx, {
+                        type: 'bar',
+                        data: { labels: [], datasets: [{ label: 'Tasks', data: [] }] },
+                        options: { responsive: true, plugins: { legend: { display: false }, title: { display: true, text: 'Tasks by Status' } }, scales: { y: { beginAtZero: true } } }
+                    });
+                }
+                updateInventoryChart();
+                updateScheduleChart();
+            } catch (e) {
+                console.error("Error initializing charts:", e);
+            }
+        }
+        
+        function updateInventoryChart() {
+            if (!inventoryChartInstance) return;
+            try {
+                const inventory = window.appState.inventory || [];
+                const top5Items = inventory.sort((a, b) => b.quantity - a.quantity).slice(0, 5);
+                inventoryChartInstance.data.labels = top5Items.map(item => item.name);
+                inventoryChartInstance.data.datasets[0].data = top5Items.map(item => item.quantity);
+                inventoryChartInstance.data.datasets[0].backgroundColor = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#6366f1'];
+                inventoryChartInstance.update();
+            } catch(e) {
+                console.error("Error updating inventory chart:", e);
+            }
+        }
+        
+        function updateScheduleChart() {
+            if (!scheduleChartInstance) return;
+            try {
+                const schedules = window.appState.schedules || [];
+                const statusCounts = schedules.reduce((acc, schedule) => {
+                    acc[schedule.status] = (acc[schedule.status] || 0) + 1;
+                    return acc;
+                }, {});
+                scheduleChartInstance.data.labels = Object.keys(statusCounts);
+                scheduleChartInstance.data.datasets[0].data = Object.values(statusCounts);
+                scheduleChartInstance.data.datasets[0].backgroundColor = ['#f59e0b', '#10b981', '#f97316'];
+                scheduleChartInstance.update();
+            } catch(e) {
+                console.error("Error updating schedule chart:", e);
+            }
+        }
+        
+        // --- DATA MANIPULATION --- //
+        async function addUser(name, role) { try { await addDoc(collection(db, `/artifacts/${appId}/public/data/users`), { name, role }); } catch(e) { console.error("Firestore Error: Could not add user.", e); } }
+        async function deleteUser(id) { try { await deleteDoc(doc(db, `/artifacts/${appId}/public/data/users/${id}`)); } catch(e) { console.error("Firestore Error: Could not delete user.", e); } }
+        async function addInventory(item) { try { await addDoc(collection(db, `/artifacts/${appId}/public/data/inventory`), item); } catch(e) { console.error("Firestore Error: Could not add inventory.", e); } }
+        async function updateInventory(id, item) { try { await setDoc(doc(db, `/artifacts/${appId}/public/data/inventory/${id}`), item); } catch(e) { console.error("Firestore Error: Could not update inventory.", e); } }
+        async function deleteInventory(id) { try { await deleteDoc(doc(db, `/artifacts/${appId}/public/data/inventory/${id}`)); } catch(e) { console.error("Firestore Error: Could not delete inventory.", e); } }
+        async function addSchedule(schedule) { try { await addDoc(collection(db, `/artifacts/${appId}/public/data/schedules`), schedule); } catch(e) { console.error("Firestore Error: Could not add schedule.", e); } }
+        async function updateSchedule(id, schedule) { try { await setDoc(doc(db, `/artifacts/${appId}/public/data/schedules/${id}`), schedule, { merge: true }); } catch(e) { console.error("Firestore Error: Could not update schedule.", e); } }
+        async function deleteSchedule(id) { try { await deleteDoc(doc(db, `/artifacts/${appId}/public/data/schedules/${id}`)); } catch(e) { console.error("Firestore Error: Could not delete schedule.", e); } }
+        
+        async function updateScheduleStatus(id, scheduleData) {
+            try {
+                const scheduleRef = doc(db, `/artifacts/${appId}/public/data/schedules/${id}`);
+                let newStatus = 'Finished';
+
+                if (scheduleData.materialsUsed && scheduleData.materialsUsed.trim() !== '') {
+                    newStatus = 'Pending Confirmation';
+                }
+
+                const updateData = { 
+                    status: newStatus,
+                    completionTime: new Date().toISOString()
+                };
+                await updateDoc(scheduleRef, updateData);
+            } catch(e) {
+                console.error("Firestore Error: Could not update schedule status.", e);
+            }
+        }
+
+        async function updateScheduleMaterials(id, data) {
+            try {
+                const scheduleRef = doc(db, `/artifacts/${appId}/public/data/schedules/${id}`);
+                await updateDoc(scheduleRef, data);
+            } catch(e) {
+                console.error("Firestore Error: Could not update schedule materials.", e);
+            }
+        }
+        
+        async function confirmMaterialReturns(id, reconciliationData) {
+            try {
+                const scheduleRef = doc(db, `/artifacts/${appId}/public/data/schedules/${id}`);
+                await updateDoc(scheduleRef, {
+                    status: 'Finished',
+                    materialsConfirmed: true,
+                    materialsConfirmedBy: currentUserRole,
+                    materialsConfirmationTime: new Date().toISOString(),
+                    materialReturnPhotoData: reconciliationData.photoData,
+                    reconciliationDetails: {
+                        returnedItems: reconciliationData.returnedItems,
+                        discrepancyNotes: reconciliationData.discrepancyNotes,
+                    }
+                });
+            } catch(e) {
+                console.error("Firestore Error: Could not confirm material returns.", e);
+            }
+        }
+        
+        // --- EVENT HANDLERS & MODALS --- //
+        
+        function showModal(content) {
+            const modalContent = document.getElementById('modal-content');
+            const modal = document.getElementById('form-modal');
+            modalContent.innerHTML = content;
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+            setTimeout(() => { modalContent.classList.remove('scale-95', 'opacity-0'); }, 10);
+        }
+        
+        function hideModal() {
+            const modalContent = document.getElementById('modal-content');
+            const modal = document.getElementById('form-modal');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 200);
+        }
+
+        function showConfirmationModal(message, onConfirm) {
+            const modalHTML = `
+                <div class="p-4 text-center">
+                    <p class="text-lg font-medium mb-6">${message}</p>
+                    <div class="flex justify-center gap-4">
+                        <button id="confirm-cancel" class="btn btn-secondary">Cancel</button>
+                        <button id="confirm-ok" class="btn btn-danger">Confirm</button>
                     </div>
                 </div>
             `;
+            showModal(modalHTML);
+            document.getElementById('confirm-ok').addEventListener('click', () => {
+                onConfirm();
+                hideModal();
+            }, { once: true });
+             document.getElementById('confirm-cancel').addEventListener('click', hideModal, { once: true });
         }
         
-        function getAdminDashboardShell() {
-            const adminTab = currentUser.role === 'admin' ? `<button id="admin-tab-btn" class="dashboard-tab">Admin</button>` : '';
-            return `<div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"><div><h1 class="text-3xl font-bold" style="color: var(--theme-color);">QGO Logistics Platform</h1><p class="text-sm text-gray-500">Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role-display" class="capitalize"></span>)</p></div><button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Logout</button></div><div class="border-b border-gray-200 mb-4"><nav class="-mb-px flex space-x-8" aria-label="Tabs"><button id="dashboard-tab-btn" class="dashboard-tab">Dashboard</button><button id="warehouse-tab-btn" class="dashboard-tab">Warehouse</button>${adminTab}</nav></div><div id="dashboard-content" class="tab-content hidden"><div class="flex items-center justify-between mb-4"><div id="view-toggle-container" class="flex items-center space-x-2 bg-gray-200 p-1 rounded-lg"><button id="admin-view-btn" class="px-4 py-1 text-sm font-semibold rounded-md">Admin View</button><button id="worker-view-btn" class="px-4 py-1 text-sm font-semibold rounded-md">Worker View</button></div></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="stat-card"><p class="text-sm text-gray-500">Ready for Delivery</p><p id="ready-count" class="text-3xl font-bold text-blue-600">0</p></div><div class="stat-card"><p class="text-sm text-gray-500">In Transit</p><p id="transit-count" class="text-3xl font-bold text-amber-600">0</p></div><div class="stat-card"><p class="text-sm text-gray-500">Completed Today</p><p id="completed-count" class="text-3xl font-bold text-green-600">0</p></div></div><div><input type="text" id="job-search-input" placeholder="Search by Job No, Shipper, Consignee..." class="w-full p-2 border rounded-md mb-4"></div><div id="job-list-container"></div></div><div id="warehouse-content" class="tab-content hidden"><div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-bold">Warehouse Inventory</h2><button id="add-item-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Add New Item</button></div><div id="inventory-list"></div></div><div id="admin-content" class="tab-content hidden"><h2 class="text-2xl font-bold mb-4">User Permissions</h2></div>`;
-        }
-        
-        function getWorkerDashboardShell() {
-             return `<div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"><div><h1 class="text-3xl font-bold" style="color: var(--theme-color);">Your Delivery Tasks</h1><p class="text-sm text-gray-500">Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role-display" class="capitalize"></span>)</p></div><button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Logout</button></div><div id="job-list-container"></div>`;
-        }
-        
-        window.printPod = () => {
-            const modalContent = document.querySelector('#view-pod-modal-content #professional-pod-view');
-            if(modalContent) {
-                const podView = document.getElementById('print-area');
-                podView.innerHTML = modalContent.innerHTML;
-                JsBarcode("#print-area #barcode", modalContent.querySelector('p:last-child').textContent.split(': ')[1], { format: "CODE128" });
-                window.print();
-            }
-        };
-        
-        async function checkPublicView() {
-            const params = new URLSearchParams(window.location.search);
-            const podToView = params.get('viewpod');
-            if (podToView) {
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('app-container').style.display = 'none';
-                const publicView = document.getElementById('public-pod-view');
-                publicView.innerHTML = '<div class="flex justify-center p-8"><div class="loader"></div></div>';
-                publicView.style.display = 'block';
-                const pod = await findPodByJobFileNo(podToView);
-                if(pod) {
-                    publicView.innerHTML = getProfessionalPodHtml(pod);
-                    JsBarcode("#public-pod-view #barcode", pod.jobFileNo, { format: "CODE128", lineColor: "#000", width: 2, height: 40, displayValue: false });
-                    new QRCode(document.querySelector("#public-pod-view #qrcode"), { text: window.location.href, width: 80, height: 80 });
-                } else {
-                    publicView.innerHTML = '<p class="text-center font-bold text-red-600">Proof of Delivery not found.</p>';
+        function setupModalEventListeners() {
+            document.getElementById('form-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'form-modal' || e.target.closest('.close-modal-btn')) {
+                    hideModal();
                 }
-            } else {
-                document.getElementById('login-screen').style.display = 'flex';
-            }
+            });
         }
         
-        let isLogin = true;
-        document.getElementById('auth-link').addEventListener('click', (e) => {
-            e.preventDefault();
-            isLogin = !isLogin;
-            document.getElementById('auth-title').textContent = isLogin ? 'Sign in to your account' : 'Create a new account';
-            document.getElementById('auth-btn').textContent = isLogin ? 'Sign in' : 'Sign up';
-            document.getElementById('auth-link').textContent = isLogin ? 'Create a new account' : 'Already have an account? Sign in';
-            document.getElementById('signup-name-field').style.display = isLogin ? 'none' : 'block';
-        });
+        function handleImageUpload(event, previewElementId, hiddenInputId) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-        document.getElementById('auth-btn').addEventListener('click', async () => {
-            const email = document.getElementById('email-address').value;
-            const password = document.getElementById('password').value;
-            showLoader();
-            try {
-                if (isLogin) {
-                    await signInWithEmailAndPassword(auth, email, password);
-                } else {
-                    const displayName = document.getElementById('full-name').value;
-                    if (!displayName) throw new Error("Full name is required for sign up.");
-                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    await setDoc(doc(db, 'users', userCredential.user.uid), {
-                        displayName, email, role: 'worker', status: 'inactive', createdAt: serverTimestamp()
-                    });
-                    showNotification("Account created. Please wait for admin approval.");
-                    signOut(auth);
-                }
-            } catch (error) { showNotification(error.message, true);
-            } finally { hideLoader(); }
-        });
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 400;
+                    const MAX_HEIGHT = 400;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Compress image to JPEG format with 70% quality
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7); 
+                    
+                    document.getElementById(previewElementId).src = dataUrl;
+                    document.getElementById(hiddenInputId).value = dataUrl;
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
         
-        checkPublicView();
+        function showScheduleModal(scheduleToEdit = null) {
+            const users = window.appState.users || [];
+            const date = document.getElementById('schedule-date').value;
+            if (!date && !scheduleToEdit) {
+                showModal(`<div class="p-4"><p class="text-center text-red-600 font-medium">Please select a date first.</p><div class="flex justify-center mt-6"><button class="close-modal-btn btn btn-primary">OK</button></div></div>`);
+                return;
+            }
+            const assignedIds = scheduleToEdit?.assignedUserIds || [];
+            const userCheckboxes = users.map(u => `
+                <div class="flex items-center gap-3 p-2 rounded-md hover:bg-gray-100">
+                    <input type="checkbox" id="user-check-${u.id}" name="assignedUserIds" value="${u.id}" class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" ${assignedIds.includes(u.id) ? 'checked' : ''}>
+                    <label for="user-check-${u.id}" class="flex-1 text-sm font-medium text-gray-700">${u.name} <span class="text-gray-500">(${u.role})</span></label>
+                </div>
+            `).join('');
+
+            const modalTitle = scheduleToEdit ? `Edit Schedule` : `New Schedule for ${date}`;
+            
+            const modalHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">${modalTitle}</h2>
+                    <button class="close-modal-btn p-2 rounded-full hover:bg-gray-200"><i data-feather="x"></i></button>
+                </div>
+                <form id="schedule-modal-form" class="space-y-4">
+                    <input type="hidden" name="id" value="${scheduleToEdit?.id || ''}">
+                    <input type="hidden" name="date" value="${scheduleToEdit?.date || date}">
+                    <div><label class="block text-sm font-medium mb-1">Task / Job Site</label>
+                        <input type="text" name="task" required class="w-full border rounded-md p-2" value="${scheduleToEdit?.task || ''}"></div>
+                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-medium mb-1">Job Site Address</label>
+                           <input type="text" name="address" class="w-full border rounded-md p-2" value="${scheduleToEdit?.address || ''}"></div>
+                         <div><label class="block text-sm font-medium mb-1">Vehicle/Equipment</label>
+                           <input type="text" name="vehicle" class="w-full border rounded-md p-2" value="${scheduleToEdit?.vehicle || ''}"></div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-medium mb-1">Start Time</label>
+                           <input type="time" name="startTime" required class="w-full border rounded-md p-2" value="${scheduleToEdit?.startTime || ''}"></div>
+                        <div><label class="block text-sm font-medium mb-1">End Time</label>
+                           <input type="time" name="endTime" required class="w-full border rounded-md p-2" value="${scheduleToEdit?.endTime || ''}"></div>
+                    </div>
+                     <div><label class="block text-sm font-medium mb-1">Priority</label>
+                        <select name="priority" class="w-full border rounded-md p-2">
+                            <option value="Low" ${scheduleToEdit?.priority === 'Low' ? 'selected' : ''}>Low</option>
+                            <option value="Medium" ${scheduleToEdit?.priority === 'Medium' ? 'selected' : ''}>Medium</option>
+                            <option value="High" ${scheduleToEdit?.priority === 'High' ? 'selected' : ''}>High</option>
+                        </select></div>
+                    <div><label class="block text-sm font-medium mb-1">Assign Crew</label>
+                        <div class="border rounded-md p-2 h-40 overflow-y-auto space-y-1">${userCheckboxes}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Materials to be Used (Format: Quantity - Item)</label>
+                        <textarea name="materialsUsed" class="w-full border rounded-md p-2 h-24" placeholder="e.g.&#10;5 - Drills&#10;2 - Boxes of screws">${scheduleToEdit?.materialsUsed || ''}</textarea>
+                    </div>
+                    <div><label class="block text-sm font-medium mb-1">Notes</label>
+                        <textarea name="notes" class="w-full border rounded-md p-2 h-24">${scheduleToEdit?.notes || ''}</textarea></div>
+                    <div class="flex justify-end gap-4 !mt-6">
+                       <button type="button" class="close-modal-btn btn btn-secondary">Cancel</button>
+                       <button type="submit" class="btn btn-primary">Save Schedule</button>
+                    </div></form>`;
+            showModal(modalHTML);
+            feather.replace();
+            document.getElementById('schedule-modal-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const id = formData.get('id');
+                const schedule = {
+                    date: formData.get('date'), task: formData.get('task'), startTime: formData.get('startTime'),
+                    endTime: formData.get('endTime'), notes: formData.get('notes'), assignedUserIds: formData.getAll('assignedUserIds'),
+                    address: formData.get('address'), vehicle: formData.get('vehicle'), priority: formData.get('priority'),
+                    status: scheduleToEdit?.status || 'Pending',
+                    materialsUsed: formData.get('materialsUsed'),
+                    materialsConfirmed: scheduleToEdit?.materialsConfirmed || false,
+                };
+                if (id) { await updateSchedule(id, schedule); } else { await addSchedule(schedule); }
+                hideModal();
+            });
+        }
+
+        function showMaterialModal(id) {
+            const schedule = window.appState.schedules.find(s => s.id === id);
+            if (!schedule) return;
+
+            const modalHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">Update Materials for Task</h2>
+                    <button class="close-modal-btn p-2 rounded-full hover:bg-gray-200"><i data-feather="x"></i></button>
+                </div>
+                <form id="material-modal-form" class="space-y-4">
+                    <input type="hidden" name="id" value="${schedule.id}">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Materials to be Used (Format: Quantity - Item)</label>
+                        <textarea name="materialsUsed" class="w-full border rounded-md p-2 h-32" placeholder="e.g.&#10;5 - Drills&#10;2 - Boxes of screws">${schedule.materialsUsed || ''}</textarea>
+                    </div>
+                    <div class="flex justify-end gap-4 !mt-6">
+                       <button type="button" class="close-modal-btn btn btn-secondary">Cancel</button>
+                       <button type="submit" class="btn btn-primary">Save Materials</button>
+                    </div>
+                </form>
+            `;
+
+            showModal(modalHTML);
+            feather.replace();
+
+            document.getElementById('material-modal-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const id = formData.get('id');
+                const materialsData = {
+                    materialsUsed: formData.get('materialsUsed'),
+                };
+                await updateScheduleMaterials(id, materialsData);
+                hideModal();
+            });
+        }
+        
+        function showConfirmReturnModal(id) {
+            const schedule = window.appState.schedules.find(s => s.id === id);
+            if (!schedule || !schedule.materialsUsed) return;
+            
+            const materialsList = schedule.materialsUsed.split('\n').filter(line => line.trim() !== '');
+            const reconciliationFields = materialsList.map((line, index) => {
+                const [quantity, ...itemNameParts] = line.split('-').map(s => s.trim());
+                const itemName = itemNameParts.join('-').trim();
+                return `
+                    <div class="grid grid-cols-3 gap-2 items-center">
+                        <label for="recon-item-${index}" class="col-span-2 text-sm font-medium text-gray-700">${itemName} (Used: ${quantity})</label>
+                        <input type="number" id="recon-item-${index}" name="${itemName.replace(/\s/g, '_')}" required class="w-full border rounded-md p-2" placeholder="Returned Qty">
+                    </div>
+                `;
+            }).join('');
+
+            const modalHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">Reconcile Material Returns</h2>
+                    <button class="close-modal-btn p-2 rounded-full hover:bg-gray-200"><i data-feather="x"></i></button>
+                </div>
+                <form id="confirm-return-form" class="space-y-4">
+                    <input type="hidden" name="id" value="${id}">
+                    <div class="space-y-3 p-3 border rounded-md bg-gray-50">
+                        <h3 class="font-semibold mb-2">Returned Quantities</h3>
+                        ${reconciliationFields}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Photo of Returned Items</label>
+                        <input type="file" id="photo-camera-input" accept="image/*" capture="environment" class="hidden">
+                        <input type="file" id="photo-gallery-input" accept="image/*" class="hidden">
+                        <input type="hidden" id="photo-data-input" name="photoData">
+                        <div class="flex gap-2 mt-1">
+                             <button type="button" id="photo-camera-btn" class="btn btn-secondary w-full"><i data-feather="camera"></i>Take Photo</button>
+                             <button type="button" id="photo-gallery-btn" class="btn btn-secondary w-full"><i data-feather="image"></i>Upload</button>
+                        </div>
+                        <img id="photo-preview" src="" class="mt-2 w-24 h-24 rounded-md object-cover border hidden">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Discrepancy Notes (Required if quantities don't match)</label>
+                        <textarea name="discrepancyNotes" class="w-full border rounded-md p-2 h-24" placeholder="e.g., 'One drill was damaged on site.'"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-4 !mt-6">
+                       <button type="button" class="close-modal-btn btn btn-secondary">Cancel</button>
+                       <button type="submit" class="btn btn-primary !bg-indigo-500">Confirm & Finish Job</button>
+                    </div>
+                </form>
+            `;
+            showModal(modalHTML);
+            feather.replace();
+
+            document.getElementById('photo-camera-btn').addEventListener('click', () => document.getElementById('photo-camera-input').click());
+            document.getElementById('photo-gallery-btn').addEventListener('click', () => document.getElementById('photo-gallery-input').click());
+            
+            const handlePhotoSelection = (e) => {
+                 document.getElementById('photo-preview').classList.remove('hidden');
+                 handleImageUpload(e, 'photo-preview', 'photo-data-input');
+            };
+
+            document.getElementById('photo-camera-input').addEventListener('change', handlePhotoSelection);
+            document.getElementById('photo-gallery-input').addEventListener('change', handlePhotoSelection);
+
+            document.getElementById('confirm-return-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const scheduleId = formData.get('id');
+                
+                if(!formData.get('photoData')) {
+                    showModal('<div class="p-4 text-center"><p class="text-red-600 font-medium">Please upload a photo of the returned materials.</p><div class="flex justify-center mt-6"><button class="close-modal-btn btn btn-primary">OK</button></div></div>');
+                    return;
+                }
+
+                const returnedItems = {};
+                for (let [key, value] of formData.entries()) {
+                    if (key !== 'id' && key !== 'photoData' && key !== 'discrepancyNotes') {
+                        returnedItems[key.replace(/_/g, ' ')] = value;
+                    }
+                }
+
+                const reconciliationData = {
+                    photoData: formData.get('photoData'),
+                    discrepancyNotes: formData.get('discrepancyNotes'),
+                    returnedItems: returnedItems
+                };
+                
+                await confirmMaterialReturns(scheduleId, reconciliationData);
+                hideModal();
+            });
+        }
+        
+        function handleEditSchedule(id) {
+            const schedule = window.appState.schedules.find(s => s.id === id);
+            if(schedule) { showScheduleModal(schedule); }
+        }
+
+        async function handleCompleteSchedule(id) {
+            const schedule = window.appState.schedules.find(s => s.id === id);
+            if(schedule) {
+                 await updateScheduleStatus(id, schedule);
+            }
+        }
+        
+        function handleAddInventory() {
+            const modalHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">Add Inventory Item</h2>
+                    <button class="close-modal-btn p-2 rounded-full hover:bg-gray-200"><i data-feather="x"></i></button>
+                </div>
+                <form id="inventory-modal-form" class="space-y-4">
+                     <div><label class="block text-sm font-medium mb-1">Item Name</label><input type="text" name="name" required class="w-full border rounded-md p-2"></div>
+                     <div><label class="block text-sm font-medium mb-1">SKU</label><input type="text" name="sku" class="w-full border rounded-md p-2"></div>
+                     <div><label class="block text-sm font-medium mb-1">Quantity</label><input type="number" name="quantity" required class="w-full border rounded-md p-2"></div>
+                     <div>
+                        <label class="block text-sm font-medium mb-1">Item Photo</label>
+                        <input type="file" id="inventory-camera-input" accept="image/*" capture="environment" class="hidden">
+                        <input type="file" id="inventory-gallery-input" accept="image/*" class="hidden">
+                        <input type="hidden" id="inventory-photo-data" name="imageData">
+                        <div class="flex gap-2 mt-1">
+                            <button type="button" id="inventory-camera-btn" class="btn btn-secondary w-full"><i data-feather="camera"></i>Take Photo</button>
+                            <button type="button" id="inventory-gallery-btn" class="btn btn-secondary w-full"><i data-feather="image"></i>Upload</button>
+                        </div>
+                        <img id="inventory-photo-preview" src="" class="mt-2 w-24 h-24 rounded-md object-cover border hidden">
+                     </div>
+                     <div class="flex justify-end gap-4 !mt-6">
+                       <button type="button" class="close-modal-btn btn btn-secondary">Cancel</button>
+                       <button type="submit" class="btn btn-primary">Add Item</button>
+                    </div>
+                </form>
+            `;
+            showModal(modalHTML);
+            feather.replace();
+
+            document.getElementById('inventory-camera-btn').addEventListener('click', () => document.getElementById('inventory-camera-input').click());
+            document.getElementById('inventory-gallery-btn').addEventListener('click', () => document.getElementById('inventory-gallery-input').click());
+            
+            const handleInvPhotoSelection = (e) => {
+                 document.getElementById('inventory-photo-preview').classList.remove('hidden');
+                 handleImageUpload(e, 'inventory-photo-preview', 'inventory-photo-data');
+            };
+
+            document.getElementById('inventory-camera-input').addEventListener('change', handleInvPhotoSelection);
+            document.getElementById('inventory-gallery-input').addEventListener('change', handleInvPhotoSelection);
+
+            document.getElementById('inventory-modal-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const item = Object.fromEntries(formData.entries());
+                await addInventory(item);
+                hideModal();
+            });
+        }
+        
+        function handleEditInventory(e) {
+             const id = e.currentTarget.dataset.id;
+             const item = window.appState.inventory.find(i => i.id === id);
+             if (!item) return;
+             const modalHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">Edit Inventory Item</h2>
+                    <button class="close-modal-btn p-2 rounded-full hover:bg-gray-200"><i data-feather="x"></i></button>
+                </div>
+                <form id="inventory-modal-form" class="space-y-4">
+                     <input type="hidden" name="id" value="${item.id}">
+                     <div><label class="block text-sm font-medium mb-1">Item Name</label><input type="text" name="name" required class="w-full border rounded-md p-2" value="${item.name}"></div>
+                     <div><label class="block text-sm font-medium mb-1">SKU</label><input type="text" name="sku" class="w-full border rounded-md p-2" value="${item.sku || ''}"></div>
+                     <div><label class="block text-sm font-medium mb-1">Quantity</label><input type="number" name="quantity" required class="w-full border rounded-md p-2" value="${item.quantity}"></div>
+                     <div>
+                        <label class="block text-sm font-medium mb-1">Item Photo</label>
+                        <input type="file" id="inventory-camera-input" accept="image/*" capture="environment" class="hidden">
+                        <input type="file" id="inventory-gallery-input" accept="image/*" class="hidden">
+                        <input type="hidden" id="inventory-photo-data" name="imageData" value="${item.imageData || ''}">
+                        <div class="flex gap-2 mt-1">
+                           <button type="button" id="inventory-camera-btn" class="btn btn-secondary w-full"><i data-feather="camera"></i>Take Photo</button>
+                           <button type="button" id="inventory-gallery-btn" class="btn btn-secondary w-full"><i data-feather="image"></i>Upload</button>
+                        </div>
+                        <img id="inventory-photo-preview" src="${item.imageData || ''}" class="mt-2 w-24 h-24 rounded-md object-cover border ${item.imageData ? '' : 'hidden'}">
+                    </div>
+                     <div class="flex justify-end gap-4 !mt-6">
+                       <button type="button" class="close-modal-btn btn btn-secondary">Cancel</button>
+                       <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            `;
+             showModal(modalHTML);
+             feather.replace();
+
+             document.getElementById('inventory-camera-btn').addEventListener('click', () => document.getElementById('inventory-camera-input').click());
+             document.getElementById('inventory-gallery-btn').addEventListener('click', () => document.getElementById('inventory-gallery-input').click());
+
+             const handleInvPhotoSelection = (e) => {
+                 document.getElementById('inventory-photo-preview').classList.remove('hidden');
+                 handleImageUpload(e, 'inventory-photo-preview', 'inventory-photo-data');
+             };
+
+             document.getElementById('inventory-camera-input').addEventListener('change', handleInvPhotoSelection);
+             document.getElementById('inventory-gallery-input').addEventListener('change', handleInvPhotoSelection);
+
+             document.getElementById('inventory-modal-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const id = formData.get('id');
+                const updatedItem = Object.fromEntries(formData.entries());
+                delete updatedItem.id;
+                await updateInventory(id, updatedItem);
+                hideModal();
+            });
+        }
+        function handleDeleteInventory(e) { const id = e.currentTarget.dataset.id; showConfirmationModal('Delete inventory item?', async () => { await deleteInventory(id);});}
+        function handleDeleteSchedule(id) { showConfirmationModal('Delete this schedule?', async () => { await deleteSchedule(id); }); }
+        
+        function handleShareToWhatsApp(id) {
+            const schedule = window.appState.schedules.find(s => s.id === id);
+            if(!schedule) return;
+            const users = window.appState.users;
+            const assignedUsersList = schedule.assignedUserIds.map(id => users.find(u => u.id === id)).filter(Boolean);
+            const crewLeader = assignedUsersList.find(u => u.role === 'Crew Leader');
+            const assignedUsersText = assignedUsersList.map(u => `  - ${u.name}`).join('\n');
+            let message = `*🗓️ Crew Schedule: ${schedule.date}*\n\n` +
+                          `*Status:* ${schedule.status}\n` +
+                          `*Task:* ${schedule.task}\n` +
+                          `*Time:* ${schedule.startTime} - ${schedule.endTime}\n` +
+                          `*Priority:* ${schedule.priority || 'N/A'}`;
+
+            if (schedule.address) message += `\n*📍 Address:* ${schedule.address}`;
+            if (schedule.vehicle) message += `\n*🚚 Vehicle:* ${schedule.vehicle}`;
+            if (crewLeader) message += `\n*👷‍♂️ Leader:* ${crewLeader.name}`;
+            
+            message += `\n\n*👥 Assigned Crew:*\n${assignedUsersText}\n\n` +
+                       `*📝 Notes:*\n${schedule.notes || 'No notes provided.'}`;
+
+            const encodedMessage = encodeURIComponent(message.trim());
+            window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
+        }
+
+        // --- MAIN APP LOGIC --- //
+        window.appState = { users: [], inventory: [], schedules: [] };
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            
+            const tabToShow = document.getElementById(`${tabId}-tab`);
+            if (tabToShow) {
+                tabToShow.classList.remove('hidden');
+            }
+            
+            const activeLink = document.querySelector(`.nav-link[data-tab="${tabId}"]`);
+            if(activeLink) {
+                 activeLink.classList.add('active');
+                 document.getElementById('tab-title').textContent = activeLink.textContent;
+            }
+
+            if (tabId === 'analytics') { 
+                initCharts(); 
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('analytics-tab').innerHTML = AnalyticsTemplate;
+            document.getElementById('scheduling-tab').innerHTML = SchedulingTemplate;
+            document.getElementById('inventory-tab').innerHTML = InventoryTemplate;
+            document.getElementById('admin-tab').innerHTML = AdminTemplate;
+            feather.replace(); 
+            initFirebase();
+            document.getElementById('schedule-date').value = new Date().toISOString().split('T')[0];
+            const sidebar = document.getElementById('sidebar');
+            document.getElementById('menu-toggle').addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault(); 
+                    switchTab(e.currentTarget.dataset.tab);
+                    if (window.innerWidth < 1024) { 
+                        sidebar.classList.add('-translate-x-full'); 
+                    }
+                });
+            });
+            setupModalEventListeners();
+            document.getElementById('add-user-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await addUser(document.getElementById('user-name').value, document.getElementById('user-role').value);
+                e.target.reset();
+            });
+            document.getElementById('add-schedule-btn').addEventListener('click', () => showScheduleModal());
+            document.getElementById('add-inventory-btn').addEventListener('click', handleAddInventory);
+            document.getElementById('schedule-date').addEventListener('change', (e) => attachScheduleListener(e.target.value));
+            document.getElementById('inventory-search').addEventListener('input', renderInventory);
+        });
 
     </script>
 </body>
