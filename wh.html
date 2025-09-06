@@ -102,6 +102,13 @@
         .btn-success:hover {
             background-color: #16a34a;
         }
+        /* Details/Summary styling for user profiles */
+        details > summary {
+            list-style: none;
+        }
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -162,7 +169,7 @@
         // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, deleteDoc, query, where, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, deleteDoc, query, where, getDocs, updateDoc, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- TEMPLATES --- //
         const AnalyticsTemplate = `
@@ -247,27 +254,11 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div class="card">
                     <h2 class="text-xl font-semibold mb-4">Create New User</h2>
-                    <form id="add-user-form">
-                        <div class="mb-4">
-                            <label for="user-name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                            <input type="text" id="user-name" required class="w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div class="mb-6">
-                            <label for="user-role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                            <select id="user-role" required class="w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="Laborer">Laborer</option>
-                                <option value="Driver">Driver</option>
-                                <option value="Crew Leader">Crew Leader</option>
-                                <option value="Supervisor">Supervisor</option>
-                                <option value="Admin">Admin</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-full"><i data-feather="user-plus"></i>Create User</button>
-                    </form>
+                    <button id="show-add-user-modal-btn" class="btn btn-primary w-full"><i data-feather="user-plus"></i>Create User</button>
                 </div>
-                <div class="card">
+                <div class="card lg:col-span-2">
                      <h2 class="text-xl font-semibold mb-4">Manage Users</h2>
-                     <div id="user-list-container" class="overflow-y-auto" style="max-height: 400px;">
+                     <div id="user-list-container" class="space-y-3">
                         <!-- User list will be populated here -->
                      </div>
                 </div>
@@ -349,7 +340,7 @@
              const inventoryCollectionPath = `/artifacts/${appId}/public/data/inventory`;
              if(inventoryUnsubscribe) inventoryUnsubscribe();
              inventoryUnsubscribe = onSnapshot(collection(db, inventoryCollectionPath), (snapshot) => {
-                window.appState.inventory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                window.appState.inventory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), quantity: Number(doc.data().quantity) }));
                 renderInventory();
                 updateDashboardCards();
                 updateInventoryChart();
@@ -373,22 +364,47 @@
         function renderUsersAdmin() {
             const userListContainer = document.getElementById('user-list-container');
             if (!userListContainer) return;
-            userListContainer.innerHTML = (window.appState.users || []).map(user => `
-                <div class="flex justify-between items-center p-3 hover:bg-gray-50 rounded-md">
-                    <div>
-                        <p class="font-semibold">${user.name}</p>
-                        <p class="text-sm text-gray-500">${user.role}</p>
+            userListContainer.innerHTML = (window.appState.users || []).map(user => {
+                let detailsHtml = `<div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">`;
+                if(user.mobileNumber) detailsHtml += `<div class="text-gray-500">Mobile:</div><div class="font-medium text-gray-800">${user.mobileNumber}</div>`;
+                if(user.civilId) detailsHtml += `<div class="text-gray-500">Civil ID:</div><div class="font-medium text-gray-800">${user.civilId}</div>`;
+                if(user.truckType) detailsHtml += `<div class="text-gray-500">Truck Type:</div><div class="font-medium text-gray-800">${user.truckType}</div>`;
+                if(user.truckNumber) detailsHtml += `<div class="text-gray-500">Truck #:</div><div class="font-medium text-gray-800">${user.truckNumber}</div>`;
+                detailsHtml += `</div>`;
+                
+                return `
+                <details class="bg-gray-50 rounded-lg border">
+                    <summary class="flex justify-between items-center p-3 cursor-pointer">
+                        <div>
+                            <p class="font-semibold text-gray-900">${user.name}</p>
+                            <p class="text-sm text-gray-600">${user.role}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                             <button class="edit-user-btn text-blue-500 hover:text-blue-700 p-2" data-id="${user.id}"><i data-feather="edit-2"></i></button>
+                             <button class="delete-user-btn text-red-500 hover:text-red-700 p-2" data-id="${user.id}"><i data-feather="trash-2"></i></button>
+                        </div>
+                    </summary>
+                    <div class="p-3 border-t bg-white">
+                        ${detailsHtml}
                     </div>
-                    <button class="delete-user-btn text-red-500 hover:text-red-700 p-2" data-id="${user.id}"><i data-feather="trash-2"></i></button>
-                </div>
-            `).join('') || '<p class="text-center text-gray-500 py-4">No users created yet.</p>';
+                </details>
+            `}).join('') || '<p class="text-center text-gray-500 py-4">No users created yet.</p>';
             feather.replace();
             document.querySelectorAll('.delete-user-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
-                    const idToDelete = e.currentTarget.closest('button').dataset.id;
+                    e.stopPropagation(); // Prevent details from toggling
+                    const idToDelete = e.currentTarget.dataset.id;
                     showConfirmationModal('Are you sure you want to delete this user?', async () => {
                         await deleteUser(idToDelete);
                     });
+                });
+            });
+            document.querySelectorAll('.edit-user-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent details from toggling
+                    const idToEdit = e.currentTarget.dataset.id;
+                    const user = window.appState.users.find(u => u.id === idToEdit);
+                    showUserModal(user);
                 });
             });
         }
@@ -473,12 +489,20 @@
                 } else if (schedule.materialsConfirmed) {
                      materialStatusHTML = `<span class="text-xs font-semibold text-green-600 flex items-center gap-1"><i data-feather="check-circle" class="w-3 h-3"></i> Returns Confirmed</span>`;
                 }
+                
+                let materialsUsedText = '';
+                if (Array.isArray(schedule.materialsUsed)) {
+                    materialsUsedText = schedule.materialsUsed.map(m => `${m.quantity} - ${m.itemName}`).join('<br>');
+                } else if (typeof schedule.materialsUsed === 'string' && schedule.materialsUsed) {
+                    materialsUsedText = schedule.materialsUsed.replace(/\n/g, '<br>');
+                }
 
                 const renderReconciliationDetails = () => {
                     if (!schedule.reconciliationDetails) return '';
                     let detailsHtml = '<p><strong>Reconciliation Details:</strong></p><ul class="list-disc pl-5 text-gray-600">';
                     for (const [key, value] of Object.entries(schedule.reconciliationDetails.returnedItems)) {
-                        detailsHtml += `<li>${key}: ${value}</li>`;
+                        const item = window.appState.inventory.find(i => i.id === key);
+                        detailsHtml += `<li>${item?.name || 'Unknown Item'}: ${value}</li>`;
                     }
                     detailsHtml += '</ul>';
                     if (schedule.reconciliationDetails.discrepancyNotes) {
@@ -503,14 +527,14 @@
                                 
                                 <p class="mt-3 text-sm text-gray-700">${schedule.notes || 'No notes.'}</p>
                                 
-                                ${(schedule.materialsUsed) ? `
+                                ${(schedule.materialsUsed && ( (Array.isArray(schedule.materialsUsed) && schedule.materialsUsed.length > 0) || typeof schedule.materialsUsed === 'string' )) ? `
                                 <details class="mt-4 text-sm">
                                     <summary class="font-semibold cursor-pointer flex justify-between items-center">
                                         <span>Material Details</span>
                                         ${materialStatusHTML}
                                     </summary>
                                     <div class="pl-4 mt-2 border-l-2 space-y-2">
-                                        ${schedule.materialsUsed ? `<p><strong>Used:</strong><br><span class="text-gray-600 whitespace-pre-wrap">${schedule.materialsUsed}</span></p>` : ''}
+                                        ${materialsUsedText ? `<p><strong>Used:</strong><br><span class="text-gray-600 whitespace-pre-wrap">${materialsUsedText}</span></p>` : ''}
                                         ${renderReconciliationDetails()}
                                         ${schedule.materialReturnPhotoData ? `<p><strong>Confirmation Photo:</strong><br><img src="${schedule.materialReturnPhotoData}" class="w-24 h-24 rounded-md object-cover mt-1 border"></p>` : ''}
                                         ${schedule.materialsConfirmedBy ? `<p class="mt-2 text-xs text-gray-500">Confirmed by ${schedule.materialsConfirmedBy} at ${new Date(schedule.materialsConfirmationTime).toLocaleString()}</p>` : ''}
@@ -529,7 +553,6 @@
                            <div class="flex flex-col items-end gap-2 ml-2">
                                 <button class="share-whatsapp-btn btn btn-primary !bg-green-500 hover:!bg-green-600 !p-2" data-id="${schedule.id}"><i data-feather="share-2"></i></button>
                                 <button class="edit-schedule-btn btn btn-secondary !p-2" data-id="${schedule.id}"><i data-feather="edit"></i></button>
-                                <button class="material-schedule-btn btn btn-primary !bg-orange-500 hover:!bg-orange-600 !p-2" data-id="${schedule.id}"><i data-feather="tool"></i></button>
                                 <button class="delete-schedule-btn btn btn-danger !p-2" data-id="${schedule.id}"><i data-feather="trash-2"></i></button>
                            </div>
                         </div>
@@ -541,14 +564,13 @@
                 `;
             }).join('');
             feather.replace();
-            document.querySelectorAll('.share-whatsapp-btn, .edit-schedule-btn, .delete-schedule-btn, .complete-schedule-btn, .material-schedule-btn, .confirm-return-btn').forEach(btn => {
+            document.querySelectorAll('.share-whatsapp-btn, .edit-schedule-btn, .delete-schedule-btn, .complete-schedule-btn, .confirm-return-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const id = e.currentTarget.dataset.id;
                     if (btn.classList.contains('share-whatsapp-btn')) handleShareToWhatsApp(id);
                     if (btn.classList.contains('edit-schedule-btn')) handleEditSchedule(id);
                     if (btn.classList.contains('delete-schedule-btn')) handleDeleteSchedule(id);
                     if (btn.classList.contains('complete-schedule-btn')) handleCompleteSchedule(id);
-                    if (btn.classList.contains('material-schedule-btn')) showMaterialModal(id);
                     if (btn.classList.contains('confirm-return-btn')) showConfirmReturnModal(id);
                 });
             });
@@ -633,7 +655,8 @@
         }
         
         // --- DATA MANIPULATION --- //
-        async function addUser(name, role) { try { await addDoc(collection(db, `/artifacts/${appId}/public/data/users`), { name, role }); } catch(e) { console.error("Firestore Error: Could not add user.", e); } }
+        async function addUser(userData) { try { await addDoc(collection(db, `/artifacts/${appId}/public/data/users`), userData); } catch(e) { console.error("Firestore Error: Could not add user.", e); } }
+        async function updateUser(id, userData) { try { await setDoc(doc(db, `/artifacts/${appId}/public/data/users/${id}`), userData); } catch(e) { console.error("Firestore Error: Could not update user.", e); } }
         async function deleteUser(id) { try { await deleteDoc(doc(db, `/artifacts/${appId}/public/data/users/${id}`)); } catch(e) { console.error("Firestore Error: Could not delete user.", e); } }
         async function addInventory(item) { try { await addDoc(collection(db, `/artifacts/${appId}/public/data/inventory`), item); } catch(e) { console.error("Firestore Error: Could not add inventory.", e); } }
         async function updateInventory(id, item) { try { await setDoc(doc(db, `/artifacts/${appId}/public/data/inventory/${id}`), item); } catch(e) { console.error("Firestore Error: Could not update inventory.", e); } }
@@ -647,7 +670,7 @@
                 const scheduleRef = doc(db, `/artifacts/${appId}/public/data/schedules/${id}`);
                 let newStatus = 'Finished';
 
-                if (scheduleData.materialsUsed && scheduleData.materialsUsed.trim() !== '') {
+                if (scheduleData.materialsUsed && scheduleData.materialsUsed.length > 0) {
                     newStatus = 'Pending Confirmation';
                 }
 
@@ -660,20 +683,26 @@
                 console.error("Firestore Error: Could not update schedule status.", e);
             }
         }
-
-        async function updateScheduleMaterials(id, data) {
-            try {
-                const scheduleRef = doc(db, `/artifacts/${appId}/public/data/schedules/${id}`);
-                await updateDoc(scheduleRef, data);
-            } catch(e) {
-                console.error("Firestore Error: Could not update schedule materials.", e);
-            }
-        }
         
         async function confirmMaterialReturns(id, reconciliationData) {
             try {
+                const batch = writeBatch(db);
+                // 1. Update Inventory
+                for (const [itemId, returnedQtyStr] of Object.entries(reconciliationData.returnedItems)) {
+                    const returnedQty = Number(returnedQtyStr);
+                    if(isNaN(returnedQty) || returnedQty < 0) continue;
+
+                    const itemRef = doc(db, `/artifacts/${appId}/public/data/inventory/${itemId}`);
+                    const itemDoc = await getDoc(itemRef);
+                    if(itemDoc.exists()){
+                        const currentQty = Number(itemDoc.data().quantity);
+                        batch.update(itemRef, { quantity: currentQty + returnedQty });
+                    }
+                }
+                
+                // 2. Update Schedule
                 const scheduleRef = doc(db, `/artifacts/${appId}/public/data/schedules/${id}`);
-                await updateDoc(scheduleRef, {
+                batch.update(scheduleRef, {
                     status: 'Finished',
                     materialsConfirmed: true,
                     materialsConfirmedBy: currentUserRole,
@@ -684,6 +713,9 @@
                         discrepancyNotes: reconciliationData.discrepancyNotes,
                     }
                 });
+
+                await batch.commit();
+
             } catch(e) {
                 console.error("Firestore Error: Could not confirm material returns.", e);
             }
@@ -762,7 +794,6 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
 
-                    // Compress image to JPEG format with 70% quality
                     const dataUrl = canvas.toDataURL('image/jpeg', 0.7); 
                     
                     document.getElementById(previewElementId).src = dataUrl;
@@ -771,6 +802,100 @@
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
+        }
+
+        function showUserModal(userToEdit = null) {
+            const modalTitle = userToEdit ? 'Edit User Profile' : 'Create New User';
+            const modalHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">${modalTitle}</h2>
+                    <button class="close-modal-btn p-2 rounded-full hover:bg-gray-200"><i data-feather="x"></i></button>
+                </div>
+                <form id="user-modal-form" class="space-y-4">
+                    <input type="hidden" name="id" value="${userToEdit?.id || ''}">
+                    <div>
+                        <label for="user-name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <input type="text" id="user-name" name="name" required class="w-full border border-gray-300 rounded-md p-2" value="${userToEdit?.name || ''}">
+                    </div>
+                    <div>
+                        <label for="user-role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                        <select id="user-role" name="role" required class="w-full border border-gray-300 rounded-md p-2">
+                            <option value="Laborer" ${userToEdit?.role === 'Laborer' ? 'selected' : ''}>Laborer</option>
+                            <option value="Driver" ${userToEdit?.role === 'Driver' ? 'selected' : ''}>Driver</option>
+                            <option value="Crew Leader" ${userToEdit?.role === 'Crew Leader' ? 'selected' : ''}>Crew Leader</option>
+                            <option value="Supervisor" ${userToEdit?.role === 'Supervisor' ? 'selected' : ''}>Supervisor</option>
+                            <option value="Admin" ${userToEdit?.role === 'Admin' ? 'selected' : ''}>Admin</option>
+                        </select>
+                    </div>
+                    <div id="role-specific-fields" class="space-y-4"></div>
+                    <div class="flex justify-end gap-4 !mt-6">
+                       <button type="button" class="close-modal-btn btn btn-secondary">Cancel</button>
+                       <button type="submit" class="btn btn-primary">Save User</button>
+                    </div>
+                </form>
+            `;
+            showModal(modalHTML);
+            feather.replace();
+
+            const roleSelect = document.getElementById('user-role');
+            const fieldsContainer = document.getElementById('role-specific-fields');
+
+            const updateRoleFields = () => {
+                const role = roleSelect.value;
+                let fieldsHtml = '';
+                const mobileField = `
+                    <div class="field-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                        <input type="tel" name="mobileNumber" class="w-full border rounded-md p-2" value="${userToEdit?.mobileNumber || ''}">
+                    </div>`;
+                
+                switch(role) {
+                    case 'Driver':
+                        fieldsHtml = `
+                            ${mobileField}
+                            <div class="field-group">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Truck Type</label>
+                                <input type="text" name="truckType" class="w-full border rounded-md p-2" value="${userToEdit?.truckType || ''}">
+                            </div>
+                            <div class="field-group">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Truck Number</label>
+                                <input type="text" name="truckNumber" class="w-full border rounded-md p-2" value="${userToEdit?.truckNumber || ''}">
+                            </div>`;
+                        break;
+                    case 'Laborer':
+                    case 'Crew Leader':
+                         fieldsHtml = `
+                            ${mobileField}
+                            <div class="field-group">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Civil ID Number</label>
+                                <input type="text" name="civilId" class="w-full border rounded-md p-2" value="${userToEdit?.civilId || ''}">
+                            </div>`;
+                        break;
+                    case 'Supervisor':
+                    case 'Admin':
+                        fieldsHtml = mobileField;
+                        break;
+                }
+                fieldsContainer.innerHTML = fieldsHtml;
+            };
+
+            roleSelect.addEventListener('change', updateRoleFields);
+            updateRoleFields(); // Initial call
+
+            document.getElementById('user-modal-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const id = formData.get('id');
+                const userData = Object.fromEntries(formData.entries());
+                delete userData.id;
+
+                if (id) {
+                    await updateUser(id, userData);
+                } else {
+                    await addUser(userData);
+                }
+                hideModal();
+            });
         }
         
         function showScheduleModal(scheduleToEdit = null) {
@@ -798,7 +923,8 @@
                 <form id="schedule-modal-form" class="space-y-4">
                     <input type="hidden" name="id" value="${scheduleToEdit?.id || ''}">
                     <input type="hidden" name="date" value="${scheduleToEdit?.date || date}">
-                    <div><label class="block text-sm font-medium mb-1">Task / Job Site</label>
+                    <!-- ... other form fields ... -->
+                     <div><label class="block text-sm font-medium mb-1">Task / Job Site</label>
                         <input type="text" name="task" required class="w-full border rounded-md p-2" value="${scheduleToEdit?.task || ''}"></div>
                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div><label class="block text-sm font-medium mb-1">Job Site Address</label>
@@ -821,87 +947,153 @@
                     <div><label class="block text-sm font-medium mb-1">Assign Crew</label>
                         <div class="border rounded-md p-2 h-40 overflow-y-auto space-y-1">${userCheckboxes}</div>
                     </div>
+                    
                     <div>
-                        <label class="block text-sm font-medium mb-1">Materials to be Used (Format: Quantity - Item)</label>
-                        <textarea name="materialsUsed" class="w-full border rounded-md p-2 h-24" placeholder="e.g.&#10;5 - Drills&#10;2 - Boxes of screws">${scheduleToEdit?.materialsUsed || ''}</textarea>
+                        <label class="block text-sm font-medium mb-1">Materials to be Used</label>
+                        <div id="materials-list-container" class="space-y-2 border rounded-md p-2"></div>
+                        <button type="button" id="add-material-row-btn" class="btn btn-secondary !p-2 mt-2"><i data-feather="plus"></i> Add Material</button>
                     </div>
+
                     <div><label class="block text-sm font-medium mb-1">Notes</label>
                         <textarea name="notes" class="w-full border rounded-md p-2 h-24">${scheduleToEdit?.notes || ''}</textarea></div>
                     <div class="flex justify-end gap-4 !mt-6">
                        <button type="button" class="close-modal-btn btn btn-secondary">Cancel</button>
                        <button type="submit" class="btn btn-primary">Save Schedule</button>
-                    </div></form>`;
+                    </div>
+                </form>`;
             showModal(modalHTML);
             feather.replace();
+            
+            const addMaterialRow = (material = { itemId: '', quantity: '' }) => {
+                const container = document.getElementById('materials-list-container');
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-2 material-row';
+                
+                const inventoryOptions = window.appState.inventory.map(item => {
+                    const currentAssignment = material.itemId === item.id ? Number(material.quantity) : 0;
+                    const availableStock = item.quantity + currentAssignment;
+                    const isSelected = material.itemId === item.id ? 'selected' : '';
+                    const isDisabled = item.quantity === 0 && !isSelected ? 'disabled' : '';
+                    return `<option value="${item.id}" data-stock="${availableStock}" ${isSelected} ${isDisabled}>${item.name} (In Stock: ${availableStock})</option>`;
+                }).join('');
+
+                row.innerHTML = `
+                    <select class="material-item-select w-1/2 border rounded-md p-2">
+                        <option value="">Select Item</option>
+                        ${inventoryOptions}
+                    </select>
+                    <input type="number" class="material-item-quantity w-1/4 border rounded-md p-2" placeholder="Qty" min="1" value="${material.quantity}">
+                    <button type="button" class="remove-material-row-btn btn btn-danger !p-2"><i data-feather="trash-2"></i></button>
+                `;
+                container.appendChild(row);
+                feather.replace();
+
+                row.querySelector('.material-item-select').addEventListener('change', (e) => {
+                    const selectedOption = e.target.options[e.target.selectedIndex];
+                    const stock = selectedOption.dataset.stock;
+                    const qtyInput = row.querySelector('.material-item-quantity');
+                    qtyInput.max = stock;
+                    if(Number(qtyInput.value) > Number(stock)) {
+                        qtyInput.value = stock;
+                    }
+                });
+                
+                // Trigger change to set initial max value if editing
+                if (material.itemId) {
+                    row.querySelector('.material-item-select').dispatchEvent(new Event('change'));
+                }
+
+                row.querySelector('.remove-material-row-btn').addEventListener('click', () => row.remove());
+            };
+
+            document.getElementById('add-material-row-btn').addEventListener('click', () => addMaterialRow());
+
+            if (scheduleToEdit && scheduleToEdit.materialsUsed) {
+                scheduleToEdit.materialsUsed.forEach(addMaterialRow);
+            }
+
             document.getElementById('schedule-modal-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const formData = new FormData(e.target);
                 const id = formData.get('id');
+                
+                const materialsUsed = [];
+                document.querySelectorAll('.material-row').forEach(row => {
+                    const itemId = row.querySelector('.material-item-select').value;
+                    const quantity = Number(row.querySelector('.material-item-quantity').value);
+                    if (itemId && quantity > 0) {
+                        const item = window.appState.inventory.find(i => i.id === itemId);
+                        materialsUsed.push({ itemId, itemName: item.name, quantity });
+                    }
+                });
+
+                const batch = writeBatch(db);
+                
+                // --- Inventory Update Logic ---
+                const oldMaterials = scheduleToEdit?.materialsUsed || [];
+                const inventoryChanges = new Map();
+
+                // 1. Add back old quantities to calculate changes
+                oldMaterials.forEach(m => {
+                    inventoryChanges.set(m.itemId, (inventoryChanges.get(m.itemId) || 0) + m.quantity);
+                });
+
+                // 2. Subtract new quantities
+                for(const m of materialsUsed) {
+                    const currentItem = window.appState.inventory.find(i => i.id === m.itemId);
+                    const currentStock = currentItem.quantity;
+                    const change = (inventoryChanges.get(m.itemId) || 0) - m.quantity;
+                    const finalStock = currentStock + change;
+
+                    if (finalStock < 0) {
+                        alert(`Not enough stock for ${m.itemName}. Only ${currentStock + (inventoryChanges.get(m.itemId) || 0)} available.`);
+                        return;
+                    }
+                    inventoryChanges.set(m.itemId, change);
+                }
+                
+                // 3. Apply changes to batch
+                for(const [itemId, change] of inventoryChanges.entries()){
+                    if (change !== 0) {
+                        const itemRef = doc(db, `/artifacts/${appId}/public/data/inventory/${itemId}`);
+                        const currentItem = window.appState.inventory.find(i => i.id === itemId);
+                        batch.update(itemRef, { quantity: currentItem.quantity - (change > 0 ? 0 : Math.abs(change)) + (change < 0 ? 0 : change) });
+                    }
+                }
+                // --- End Inventory Logic ---
+                
                 const schedule = {
                     date: formData.get('date'), task: formData.get('task'), startTime: formData.get('startTime'),
                     endTime: formData.get('endTime'), notes: formData.get('notes'), assignedUserIds: formData.getAll('assignedUserIds'),
                     address: formData.get('address'), vehicle: formData.get('vehicle'), priority: formData.get('priority'),
                     status: scheduleToEdit?.status || 'Pending',
-                    materialsUsed: formData.get('materialsUsed'),
+                    materialsUsed: materialsUsed,
                     materialsConfirmed: scheduleToEdit?.materialsConfirmed || false,
                 };
-                if (id) { await updateSchedule(id, schedule); } else { await addSchedule(schedule); }
-                hideModal();
-            });
-        }
 
-        function showMaterialModal(id) {
-            const schedule = window.appState.schedules.find(s => s.id === id);
-            if (!schedule) return;
+                if (id) { 
+                    const scheduleRef = doc(db, `/artifacts/${appId}/public/data/schedules/${id}`);
+                    batch.set(scheduleRef, schedule, { merge: true });
+                } else { 
+                    const newScheduleRef = doc(collection(db, `/artifacts/${appId}/public/data/schedules`));
+                    batch.set(newScheduleRef, schedule);
+                }
 
-            const modalHTML = `
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold">Update Materials for Task</h2>
-                    <button class="close-modal-btn p-2 rounded-full hover:bg-gray-200"><i data-feather="x"></i></button>
-                </div>
-                <form id="material-modal-form" class="space-y-4">
-                    <input type="hidden" name="id" value="${schedule.id}">
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Materials to be Used (Format: Quantity - Item)</label>
-                        <textarea name="materialsUsed" class="w-full border rounded-md p-2 h-32" placeholder="e.g.&#10;5 - Drills&#10;2 - Boxes of screws">${schedule.materialsUsed || ''}</textarea>
-                    </div>
-                    <div class="flex justify-end gap-4 !mt-6">
-                       <button type="button" class="close-modal-btn btn btn-secondary">Cancel</button>
-                       <button type="submit" class="btn btn-primary">Save Materials</button>
-                    </div>
-                </form>
-            `;
-
-            showModal(modalHTML);
-            feather.replace();
-
-            document.getElementById('material-modal-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const id = formData.get('id');
-                const materialsData = {
-                    materialsUsed: formData.get('materialsUsed'),
-                };
-                await updateScheduleMaterials(id, materialsData);
+                await batch.commit();
                 hideModal();
             });
         }
         
         function showConfirmReturnModal(id) {
             const schedule = window.appState.schedules.find(s => s.id === id);
-            if (!schedule || !schedule.materialsUsed) return;
+            if (!schedule || !schedule.materialsUsed || schedule.materialsUsed.length === 0) return;
             
-            const materialsList = schedule.materialsUsed.split('\n').filter(line => line.trim() !== '');
-            const reconciliationFields = materialsList.map((line, index) => {
-                const [quantity, ...itemNameParts] = line.split('-').map(s => s.trim());
-                const itemName = itemNameParts.join('-').trim();
-                return `
+            const reconciliationFields = schedule.materialsUsed.map((item, index) => `
                     <div class="grid grid-cols-3 gap-2 items-center">
-                        <label for="recon-item-${index}" class="col-span-2 text-sm font-medium text-gray-700">${itemName} (Used: ${quantity})</label>
-                        <input type="number" id="recon-item-${index}" name="${itemName.replace(/\s/g, '_')}" required class="w-full border rounded-md p-2" placeholder="Returned Qty">
+                        <label for="recon-item-${index}" class="col-span-2 text-sm font-medium text-gray-700">${item.itemName} (Used: ${item.quantity})</label>
+                        <input type="number" id="recon-item-${index}" name="${item.itemId}" required class="w-full border rounded-md p-2" placeholder="Returned Qty" max="${item.quantity}" min="0" value="${item.quantity}">
                     </div>
-                `;
-            }).join('');
+                `).join('');
 
             const modalHTML = `
                 <div class="flex justify-between items-center mb-6">
@@ -916,13 +1108,9 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Photo of Returned Items</label>
-                        <input type="file" id="photo-camera-input" accept="image/*" capture="environment" class="hidden">
-                        <input type="file" id="photo-gallery-input" accept="image/*" class="hidden">
+                        <input type="file" id="confirm-photo-input" accept="image/*" capture="environment" class="hidden">
                         <input type="hidden" id="photo-data-input" name="photoData">
-                        <div class="flex gap-2 mt-1">
-                             <button type="button" id="photo-camera-btn" class="btn btn-secondary w-full"><i data-feather="camera"></i>Take Photo</button>
-                             <button type="button" id="photo-gallery-btn" class="btn btn-secondary w-full"><i data-feather="image"></i>Upload</button>
-                        </div>
+                        <button type="button" id="add-confirm-photo-btn" class="btn btn-secondary w-full mt-1"><i data-feather="camera"></i>Add Photo</button>
                         <img id="photo-preview" src="" class="mt-2 w-24 h-24 rounded-md object-cover border hidden">
                     </div>
                     <div>
@@ -938,16 +1126,11 @@
             showModal(modalHTML);
             feather.replace();
 
-            document.getElementById('photo-camera-btn').addEventListener('click', () => document.getElementById('photo-camera-input').click());
-            document.getElementById('photo-gallery-btn').addEventListener('click', () => document.getElementById('photo-gallery-input').click());
-            
-            const handlePhotoSelection = (e) => {
-                 document.getElementById('photo-preview').classList.remove('hidden');
-                 handleImageUpload(e, 'photo-preview', 'photo-data-input');
-            };
-
-            document.getElementById('photo-camera-input').addEventListener('change', handlePhotoSelection);
-            document.getElementById('photo-gallery-input').addEventListener('change', handlePhotoSelection);
+            document.getElementById('add-confirm-photo-btn').addEventListener('click', () => document.getElementById('confirm-photo-input').click());
+            document.getElementById('confirm-photo-input').addEventListener('change', (e) => {
+                document.getElementById('photo-preview').classList.remove('hidden');
+                handleImageUpload(e, 'photo-preview', 'photo-data-input');
+            });
 
             document.getElementById('confirm-return-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -962,7 +1145,7 @@
                 const returnedItems = {};
                 for (let [key, value] of formData.entries()) {
                     if (key !== 'id' && key !== 'photoData' && key !== 'discrepancyNotes') {
-                        returnedItems[key.replace(/_/g, ' ')] = value;
+                        returnedItems[key] = value;
                     }
                 }
 
@@ -998,16 +1181,12 @@
                 <form id="inventory-modal-form" class="space-y-4">
                      <div><label class="block text-sm font-medium mb-1">Item Name</label><input type="text" name="name" required class="w-full border rounded-md p-2"></div>
                      <div><label class="block text-sm font-medium mb-1">SKU</label><input type="text" name="sku" class="w-full border rounded-md p-2"></div>
-                     <div><label class="block text-sm font-medium mb-1">Quantity</label><input type="number" name="quantity" required class="w-full border rounded-md p-2"></div>
+                     <div><label class="block text-sm font-medium mb-1">Quantity</label><input type="number" name="quantity" required class="w-full border rounded-md p-2" min="0"></div>
                      <div>
                         <label class="block text-sm font-medium mb-1">Item Photo</label>
-                        <input type="file" id="inventory-camera-input" accept="image/*" capture="environment" class="hidden">
-                        <input type="file" id="inventory-gallery-input" accept="image/*" class="hidden">
+                        <input type="file" id="inventory-photo-input" accept="image/*" capture="environment" class="hidden">
                         <input type="hidden" id="inventory-photo-data" name="imageData">
-                        <div class="flex gap-2 mt-1">
-                            <button type="button" id="inventory-camera-btn" class="btn btn-secondary w-full"><i data-feather="camera"></i>Take Photo</button>
-                            <button type="button" id="inventory-gallery-btn" class="btn btn-secondary w-full"><i data-feather="image"></i>Upload</button>
-                        </div>
+                        <button type="button" id="add-inventory-photo-btn" class="btn btn-secondary w-full mt-1"><i data-feather="camera"></i>Add Photo</button>
                         <img id="inventory-photo-preview" src="" class="mt-2 w-24 h-24 rounded-md object-cover border hidden">
                      </div>
                      <div class="flex justify-end gap-4 !mt-6">
@@ -1019,21 +1198,17 @@
             showModal(modalHTML);
             feather.replace();
 
-            document.getElementById('inventory-camera-btn').addEventListener('click', () => document.getElementById('inventory-camera-input').click());
-            document.getElementById('inventory-gallery-btn').addEventListener('click', () => document.getElementById('inventory-gallery-input').click());
-            
-            const handleInvPhotoSelection = (e) => {
-                 document.getElementById('inventory-photo-preview').classList.remove('hidden');
-                 handleImageUpload(e, 'inventory-photo-preview', 'inventory-photo-data');
-            };
-
-            document.getElementById('inventory-camera-input').addEventListener('change', handleInvPhotoSelection);
-            document.getElementById('inventory-gallery-input').addEventListener('change', handleInvPhotoSelection);
+            document.getElementById('add-inventory-photo-btn').addEventListener('click', () => document.getElementById('inventory-photo-input').click());
+            document.getElementById('inventory-photo-input').addEventListener('change', (e) => {
+                document.getElementById('inventory-photo-preview').classList.remove('hidden');
+                handleImageUpload(e, 'inventory-photo-preview', 'inventory-photo-data');
+            });
 
             document.getElementById('inventory-modal-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const formData = new FormData(e.target);
                 const item = Object.fromEntries(formData.entries());
+                item.quantity = Number(item.quantity);
                 await addInventory(item);
                 hideModal();
             });
@@ -1052,16 +1227,12 @@
                      <input type="hidden" name="id" value="${item.id}">
                      <div><label class="block text-sm font-medium mb-1">Item Name</label><input type="text" name="name" required class="w-full border rounded-md p-2" value="${item.name}"></div>
                      <div><label class="block text-sm font-medium mb-1">SKU</label><input type="text" name="sku" class="w-full border rounded-md p-2" value="${item.sku || ''}"></div>
-                     <div><label class="block text-sm font-medium mb-1">Quantity</label><input type="number" name="quantity" required class="w-full border rounded-md p-2" value="${item.quantity}"></div>
+                     <div><label class="block text-sm font-medium mb-1">Quantity</label><input type="number" name="quantity" required class="w-full border rounded-md p-2" value="${item.quantity}" min="0"></div>
                      <div>
                         <label class="block text-sm font-medium mb-1">Item Photo</label>
-                        <input type="file" id="inventory-camera-input" accept="image/*" capture="environment" class="hidden">
-                        <input type="file" id="inventory-gallery-input" accept="image/*" class="hidden">
+                        <input type="file" id="inventory-photo-input" accept="image/*" capture="environment" class="hidden">
                         <input type="hidden" id="inventory-photo-data" name="imageData" value="${item.imageData || ''}">
-                        <div class="flex gap-2 mt-1">
-                           <button type="button" id="inventory-camera-btn" class="btn btn-secondary w-full"><i data-feather="camera"></i>Take Photo</button>
-                           <button type="button" id="inventory-gallery-btn" class="btn btn-secondary w-full"><i data-feather="image"></i>Upload</button>
-                        </div>
+                        <button type="button" id="add-inventory-photo-btn" class="btn btn-secondary w-full mt-1"><i data-feather="camera"></i>Add Photo</button>
                         <img id="inventory-photo-preview" src="${item.imageData || ''}" class="mt-2 w-24 h-24 rounded-md object-cover border ${item.imageData ? '' : 'hidden'}">
                     </div>
                      <div class="flex justify-end gap-4 !mt-6">
@@ -1073,16 +1244,11 @@
              showModal(modalHTML);
              feather.replace();
 
-             document.getElementById('inventory-camera-btn').addEventListener('click', () => document.getElementById('inventory-camera-input').click());
-             document.getElementById('inventory-gallery-btn').addEventListener('click', () => document.getElementById('inventory-gallery-input').click());
-
-             const handleInvPhotoSelection = (e) => {
+             document.getElementById('add-inventory-photo-btn').addEventListener('click', () => document.getElementById('inventory-photo-input').click());
+             document.getElementById('inventory-photo-input').addEventListener('change', (e) => {
                  document.getElementById('inventory-photo-preview').classList.remove('hidden');
                  handleImageUpload(e, 'inventory-photo-preview', 'inventory-photo-data');
-             };
-
-             document.getElementById('inventory-camera-input').addEventListener('change', handleInvPhotoSelection);
-             document.getElementById('inventory-gallery-input').addEventListener('change', handleInvPhotoSelection);
+             });
 
              document.getElementById('inventory-modal-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -1090,6 +1256,7 @@
                 const id = formData.get('id');
                 const updatedItem = Object.fromEntries(formData.entries());
                 delete updatedItem.id;
+                updatedItem.quantity = Number(updatedItem.quantity);
                 await updateInventory(id, updatedItem);
                 hideModal();
             });
@@ -1116,6 +1283,18 @@
             
             message += `\n\n*👥 Assigned Crew:*\n${assignedUsersText}\n\n` +
                        `*📝 Notes:*\n${schedule.notes || 'No notes provided.'}`;
+                       
+            if (schedule.materialsUsed) {
+                let materialsText = '';
+                if (Array.isArray(schedule.materialsUsed)) {
+                    materialsText = schedule.materialsUsed.map(m => `  - ${m.quantity} x ${m.itemName}`).join('\n');
+                } else if (typeof schedule.materialsUsed === 'string') {
+                    materialsText = schedule.materialsUsed;
+                }
+                if (materialsText) {
+                    message += `\n\n*🛠️ Materials:*\n${materialsText}`;
+                }
+            }
 
             const encodedMessage = encodeURIComponent(message.trim());
             window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
@@ -1164,11 +1343,7 @@
                 });
             });
             setupModalEventListeners();
-            document.getElementById('add-user-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                await addUser(document.getElementById('user-name').value, document.getElementById('user-role').value);
-                e.target.reset();
-            });
+            document.getElementById('show-add-user-modal-btn').addEventListener('click', () => showUserModal());
             document.getElementById('add-schedule-btn').addEventListener('click', () => showScheduleModal());
             document.getElementById('add-inventory-btn').addEventListener('click', handleAddInventory);
             document.getElementById('schedule-date').addEventListener('change', (e) => attachScheduleListener(e.target.value));
