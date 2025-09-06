@@ -479,11 +479,17 @@
                 <div id="receipt-content" class="p-4 border rounded-md">
                     <!-- Receipt content will be generated here -->
                 </div>
-                <div class="text-right mt-4 flex flex-wrap justify-end gap-2">
-                    <button id="copy-link-btn" class="btn btn-secondary">Copy Link</button>
-                    <button id="share-btn" class="btn btn-primary">Share</button>
-                    <button id="pdf-receipt-btn" class="btn btn-secondary">PDF</button>
-                    <button id="print-receipt-btn" class="btn btn-primary">Print</button>
+                <div class="mt-4 flex flex-wrap justify-between items-center gap-4">
+                     <div class="flex items-center">
+                        <input type="checkbox" id="generate-as-copy" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <label for="generate-as-copy" class="ml-2 block text-sm text-gray-900">Mark as Copy</label>
+                    </div>
+                    <div class="flex flex-wrap justify-end gap-2">
+                        <button id="copy-link-btn" class="btn btn-secondary">Copy Link</button>
+                        <button id="share-btn" class="btn btn-primary">Share</button>
+                        <button id="pdf-receipt-btn" class="btn btn-secondary">PDF</button>
+                        <button id="print-receipt-btn" class="btn btn-primary">Print</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1276,9 +1282,13 @@
                 } else {
                     throw new Error("Receipt data not found in PODs collection.");
                 }
-
+                
+                document.getElementById('generate-as-copy').checked = false;
                 openModal('receipt-modal', true);
-                generateReceipt();
+                const receiptHTML = generateReceipt(false);
+                document.getElementById('receipt-content').innerHTML = receiptHTML;
+                generateQRCodes();
+
 
             } catch (error) {
                 console.error("Error opening receipt:", error);
@@ -1287,9 +1297,31 @@
                 hideLoader();
             }
         }
+        
+        function generateQRCodes(container = document) {
+             const data = activeDeliveryForReceipt;
+             const publicUrl = window.location.origin + window.location.pathname + '?podId=' + data.deliveryId;
 
-        function generateReceipt() {
-            const receiptContent = document.getElementById('receipt-content');
+             const qrVerifyContainer = container.querySelector('#receipt-verification-qrcode');
+             if(qrVerifyContainer) {
+                qrVerifyContainer.innerHTML = '';
+                new QRCode(qrVerifyContainer, {
+                    text: publicUrl,
+                    width: 80, height: 80, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H
+                });
+             }
+             
+             const qrDownloadContainer = container.querySelector('#receipt-download-qrcode');
+              if(qrDownloadContainer) {
+                qrDownloadContainer.innerHTML = '';
+                new QRCode(qrDownloadContainer, {
+                    text: publicUrl,
+                    width: 80, height: 80, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H
+                });
+             }
+        }
+
+        function generateReceipt(isCopy = false) {
             const data = activeDeliveryForReceipt;
             const jobData = data.jobFileData;
             const deliveryDate = (data.completedAt?.toDate() || new Date()).toLocaleString();
@@ -1298,10 +1330,17 @@
             if (data.geolocation) {
                 locationInfo += ` <a href="https://www.google.com/maps?q=${data.geolocation.lat},${data.geolocation.lng}" target="_blank" class="text-blue-600 hover:underline text-xs ml-2">[View on Map]</a>`;
             }
+            
+            const copyWatermark = isCopy ? `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 8rem; color: rgba(255, 0, 0, 0.15); font-weight: bold; z-index: 1000; pointer-events: none;">COPY</div>` : '';
 
-            // UPDATED: Receipt with professional header and footer with IMAGE logos
-            receiptContent.innerHTML = `
-                <div class="space-y-4 text-gray-800">
+            // Define logos as Base64 strings to ensure they always load
+            const iataLogo = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAwIDMwMCI+PHBhdGggZD0iTTc0LjggMjY2LjR2LTkyLjNINjAuMXY5Mi4zSDIzdjI4LjdoMTA1di0yOC43SDc0Ljh6bTIwOC42LTI4LjdsMTcuMy05Mi4zaDE4LjlsLTE3LjMgOTIuM0gyODMuNHptNDMuMSAwTDMxMS4xIDc0aDQ0bC0xNS40IDk5LjgtMTUuMyA5Mi42aC00My4xbDE1LjQtOTkuNyAxNS4yLTkyLjdoNDQuMmwzMi44IDE5Mi40aC00My41bC0xNS4yLTkyLjZMMzU1IDc0aC00My42bDE1LjQgOTkuOCAxNS4yIDkyLjZoNDMuMXptMTkxLjYgMjguN2g0My44VjI2Nkg1MTguMnYtOTIuM2gtNDMuOHY5Mi4zaC0yMi41djI4LjdoODYuOHYtMjguN3ptOTYuNSAwaDQzLjdWMTAyLjRoLTM4LjlMNjA0IDc0aDk0djIyMC43aDQzLjh2MjguN0g2MDJWMzAwaC0xLjR6bTE5NS4yLTI4LjdsMTcuMy05Mi4zaDE4LjlsLTE3LjMgOTIuM0g4MTUuM3ptNDMuMSAwTjg0MyA3NGg0NC4xbC0xNS40IDk5LjgtMTUuMyA5Mi42aC00My4xbDE1LjQtOTkuNyAxNS4yLTkyLjdoNDQuMmwzMi44IDE5Mi40aC00My41bC0xNS4yLTkyLjZMOTAwLjUgNzRoLTQzLjZsMTUuNCA5OS44IDE1LjIgOTIuNmg0My4xek0xMDY5LjQgNzRoLTM1LjdsLTU0LjUgMzAwaDQ1LjNsMTEuNC02My42aDUzLjVsMTEuMyA2My42aDQ1LjRMMTA2OS40IDc0em0tNi40IDE4NC4xbC0xOC44LTExMC4xLTE4LjggMTEwLjFoMzcuNnoiLz48L3N2Zz4=";
+            const wcaLogo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAACACAMAAABrZuVzAAAAYFBMVEX///8AQ4sAQIsAP4oAO4kAN4gANIcAOYgAOIkAOYoAN4sAOIjp7fUAOIlso9EAM4a/x94gS5QAT5sAUJgAQYpUkcYAQ4zp7vMAYqEAL4AAKnsALoEAMYIAJ3UAKn4AKX/q7/cAUIyTAAADcklEQVR4nO3b63aqOBSG4fAQQkBtqU3tde//ikdbS1sLtTSS5+z9fn+x504yE8jDDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYF/2+0vV/Vn2+z88G/291v+2F/V21d01q/09A6t/Qf0h1l/a/n7t9X+wn8pP1W2v/c/9mY5Xf2h/a/1r/Vv+1/oV+/sZ+ysdVf+k/lr/tL61/pH+rf4b/Wv9e/3b/jf6z5003V/sB7DPqg81v1V/qf/aP1r/TP+2/5b+y/qP3v6d/rf6H/Uf6596+3f65/pf3t/Z/13/tfenbX9v/2t/W//S3sB+7M820n/Wz/S39lf2h/ZH9lv21/b39v/29/bP9s862j/b79u/21/ar9jf2d/bH9i/2b/bb9u/6l/Zf1f+y/q/9l/Uf6T/Rf1b+i/rH9B/s/1H+i/pH+i/vP6v/Tf13+k/tv6n/R+bY/v/LMP2/8M0/b/1L+yv7J+w/8k+JP/V/kn7D/e/uv+L/f/tP9l/6f9X/Tf6X+6/9f+n/p/6n/d/zv/T/yP/b/xP+h/r/8h/6v+g/4n+g/23+v/3/7X/f/1/8B/d/w7+o/xP81/lv4r+K/iv6b+a/ov5b+u/tv47+e/mv5b+S/kv7b+K/hv4b+G/tv4b+C/gv6L+C/iv57+a/mv5r+a/lv6L+W/rv7b+u/tv6T+k/pP7b+k/pP6L+i/ov6L+i/rv6r+6/qv7j+o/uP7T+0/pP7T+0/ov6L+i/ov5r+a/mv5r+a/mv5b+W/lv67+W/rv7T+w/sP7b+w/pP6T+k/tP6L+k/ov6r+q/uv6r+6/tP7T+2/rP+A/uP4D+w/vP6D+8/tP7L+y/tv6b+m/tv6b+o/sP7D+o/ov6T+s/rP4z+M/rP6T+w/sP7T+s/rP6z+s/rP7z+8/tP6L+i/tv6r+u/pv6b+m/tv6b+m/tv6T+o/rP7D+o/rP6z+o/vP7L+i/sv67+q/ru6r+u/uv6j+o/rP4j+I/vP6j+q/uP4j+0/pP6T+0/pP7T+i/qv6L+q/kv5r+a/mv5r+a/kv6b+u/tu6b+u/tu47+e/tv47+O/jv5r+K/tv4b+G/hv4b+e/gv4L+K/gv4b+e/lv5r+a/mv5b+a/mv5r+O/jv67+e/rv7T+g/tP6j+o/qP6j+g/pP6j+k/qP7T+g/tP6T+8/qP7j+q/uP6z+s/vP6z+u/vP67+w/sP7T+w/sP7T+y/sv6j+i/qP6L+m/qP6r+m/rP4D+w/oP6L+y/sP7L+o/pP6T+i/tP6L+0/pP6T+2/pP7b+2/rP67+u/uP4j+4/pP7j+s/pP7z+4/uP6j+w/sP7T+g/pP6z+y/uP6j+8/qP7z+i/rP6z+g/qP6z+o/qP6z+k/rP6T+8/qP7T+k/qP6T+k/qP6T+k/qP6L+wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgH/9A7aQ4B/4cQ/qAAAAAElFTkSuQmCC";
+            const iamLogo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARgAAACACAMAAAB49WnWAAAAQlBMVEX////AADcAAADa2tsAADOysrL6+voAAAb29vYAAAnMzMzp6ekAAAjh4eEAABBMS0toamp+fn4AAATExMSlpaWbm5s2NjZLS0s6ODgI5M0QAAAD0klEQVR4nO2byXaCMAxFIVsJsbrD/V/hAvJpMu6Nplk5/29EDgp6cFAggAAAAAAAAAAAAAAAAAAAAAAAIzY+np29PX5qQ+kPkD6/uG58S+pD3A+hPjH3R8W/tD6Yen3n/5+gr8l/b30x9cfsH/V35n6A+ovU39p/bX1D63/YP/n/S+rv7z+o/tvqn9y/3f+B/kf/L/r/4T/Jf8h98f8P/Nf83/V/zn/Q/4L/z/V/0f/F/1/+b/j/1r/zP+h/wP/R/y//x+3f7b/1/6v/h/6v+P/kP+x/4P/v/o/4f+c/1v+D/0/7X/w/1n/uP5b/g/97/A/1P/d/yn/f/v/2v/j/h/7f+z/iP/X/wP/9/1f8v/A/7v/T//w8//+v5X/P/u/8H/e/+H/d/wv/F/wv+7/X/3//x/7f+D/j/9r/Gf/P/j/+r/6f8//T/t/+D/h/9v/Bf4r/f/2/9v/S/+f+B/8P+v/r/9//T/v/5X/d/yv+l/3f9//Vf8H/N/xf+T/qf+n/rf9//I/8/+X/4P+T/h/6v/N/7v/B/2f9L/2/8p/2/+T/6v/J/wP/F/wv/7/B/5v/5/5v/x/6/+l/5v/1/zP/T/rf/z/p/4v/b/3/+7/t/+f+D/6v9b/w/+D/3v+D/3v8T/t/7f9T/t/7v/r/yP/h/yP/7/8H/h/+H/5f8X/r/5X/v/2/8v/P/w//r/j/8//Gf8//lf+f+r/2/+n/f/zP/H/0P+H/9/+r/6/9P/e/+H/D/0P/B/3P/J/0v+3/l/6v/V/0f+z/m/63/b/yP+n/0f9//X/9v+3/r/8H/H/7f/P/wv+T/9f8X/H/4v+f/n/6X/h/7P/T/xv+X/w/+b/gP+p/w/9X/N/5v+x/yP/p/z/9D/g/57/O/7P+j/sf+D/g/53/E/5/+T/pf9n/W/6v+B/8f+d/yv+7/2f8f/e/6/+P/x//F//P+v/of+n/h/5P+f/kf+X/pf8n/S/5v+v/of9n/Q/9P/a/7P+t/w/8v/U/5P+l/xf9P/I/6X/B/4v/R/y//H/if9v/Q/4P+T/sf/D/9/+t/3f+D/lf93/D/9/+d/3f8v/W/9/+n/v/43/e/yv/L/8f8v/d/0f/b/sf/7/l/+n/x/6v/L/zP/d/3P/H/s/73/n/y//n/z/8n/Q/93/b/w//n/9/7/9D/4f+j/z/8z/f/7v/D/wf+D/qf/z/j/6n/d/y/+b/2/+T/if+H/k/4H/m/5H/i/+v/b/+f+3/l/4X/9/wf+j/of93/N/8P/f/wf87/O/8//E/7/+H/lf8n/F/wf9T/Gf9X/E/6H/F/0P+7/z/+x/z/+l/3/8j/T/yv+x/wv+z/r/8P/H/y//n/l/8v/v/4P+x/4P/p/7f9n/n/6H/e/+H/u/7v+x/8f+L/3f+D/2/+D/uf+L/g/7H/s/8v/V/7f+z/wf9z/N/8H/h/+3/n/9v/f/of+n/if9X/U/9v/s/4v/J/xv/9/zv9D/q/93/q/5n/l/2/9j/x/+T/sf9P/X/4v/h/x//B/4v+x/8/9T/c/8f/+/4n/+/4n/i/8X/Q/9v/e/6H/l/43/K/8X/y/6X/D/1P+H/3/+z/m/+r/p/+3/g/4H/p/73/1/6f+v/qf9X/QAAAAAAAAAAAAAAAAAAAAAAAOCZf9t2f3r9c8sCAAAAAElFTkSuQmCC";
+
+            const receiptHTML = `
+                <div class="space-y-4 text-gray-800" style="position: relative;">
+                    ${copyWatermark}
                     <!-- ============================ NEW HEADER ============================ -->
                     <div class="flex flex-col sm:flex-row justify-between items-start pb-4 border-b-2 border-gray-200">
                         <div>
@@ -1320,14 +1359,19 @@
                     <!-- ============================ END NEW HEADER ============================ -->
 
                     <!-- Title and QR Code -->
-                    <div class="flex justify-between items-start pt-2">
+                    <div class="flex flex-wrap justify-between items-start pt-2 gap-4">
                         <div>
                              <h2 class="text-2xl font-bold text-gray-700">PROOF OF DELIVERY</h2>
                         </div>
-                        <div id="qr-code-section" class="text-center p-2 rounded-lg bg-gray-100">
-                            <p class="text-sm font-bold text-gray-800">Verify POD</p>
-                            <div id="receipt-verification-qrcode" class="p-1 bg-white border rounded-md inline-block mt-1"></div>
-                            <p class="text-xs text-gray-500 mt-1">Scan to verify online</p>
+                        <div class="flex gap-4">
+                            <div class="text-center p-2 rounded-lg bg-gray-100">
+                                <p class="text-sm font-bold text-gray-800">Verify POD</p>
+                                <div id="receipt-verification-qrcode" class="p-1 bg-white border rounded-md inline-block mt-1"></div>
+                            </div>
+                            <div class="text-center p-2 rounded-lg bg-gray-100">
+                                <p class="text-sm font-bold text-gray-800">Download PDF</p>
+                                <div id="receipt-download-qrcode" class="p-1 bg-white border rounded-md inline-block mt-1"></div>
+                            </div>
                         </div>
                     </div>
 
@@ -1367,9 +1411,9 @@
                      <div class="pt-4 border-t-2 border-gray-200 text-xs text-gray-600 space-y-3">
                        <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
                             <div class="flex items-center gap-4 flex-wrap justify-center">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/IATAlogo.svg/1200px-IATAlogo.svg.png" alt="IATA Logo" class="h-8 object-contain" onerror="this.style.display='none'">
-                                <img src="https://www.wcaworld.com/images/logo2.png" alt="WCA Logo" class="h-10 object-contain" onerror="this.style.display='none'">
-                                <img src="https://www.iam-members.com/images/iam-logo-2017.png" alt="IAM Logo" class="h-10 object-contain" onerror="this.style.display='none'">
+                               <img src="${iataLogo}" alt="IATA Logo" class="h-6 object-contain">
+                               <img src="${wcaLogo}" alt="WCA Logo" class="h-8 object-contain">
+                               <img src="${iamLogo}" alt="IAM Logo" class="h-8 object-contain">
                             </div>
                             <p class="font-semibold text-center sm:text-right">We are your one-stop-shop for logistics solutions.</p>
                        </div>
@@ -1381,27 +1425,39 @@
                     <!-- ============================ END NEW FOOTER ============================ -->
                 </div>
             `;
-            
-            // Separate QR Code for verification
-            const qrContainer = document.getElementById('receipt-verification-qrcode');
-            qrContainer.innerHTML = '';
-            new QRCode(qrContainer, {
-                text: window.location.origin + window.location.pathname + '?podId=' + data.deliveryId,
-                width: 80,
-                height: 80,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
+            return receiptHTML;
         }
         
+        // Helper to generate a printable/pdf-friendly canvas of the receipt
+        async function getReceiptCanvas(isCopy) {
+            const receiptHTML = generateReceipt(isCopy);
+            
+            // Create a hidden, A4-styled div for rendering
+            const printContainer = document.createElement('div');
+            printContainer.style.position = 'absolute';
+            printContainer.style.left = '-9999px'; // Move it off-screen
+            printContainer.style.width = '210mm'; // A4 width
+            printContainer.style.padding = '15mm';
+            printContainer.style.backgroundColor = 'white';
+            printContainer.style.boxSizing = 'border-box';
+            printContainer.innerHTML = receiptHTML;
+            document.body.appendChild(printContainer);
+
+            // Re-generate QR codes inside the temporary container before capturing
+            generateQRCodes(printContainer);
+            
+            const canvas = await html2canvas(printContainer, { scale: 2 });
+            document.body.removeChild(printContainer); // Clean up
+            return canvas;
+        }
+
         async function downloadReceiptAsPDF() {
+            const isCopy = document.getElementById('generate-as-copy')?.checked || false;
             showLoader();
             const { jsPDF } = window.jspdf;
-            const receiptElement = document.getElementById('receipt-content');
             
             try {
-                const canvas = await html2canvas(receiptElement, { scale: 2 });
+                const canvas = await getReceiptCanvas(isCopy);
                 const imgData = canvas.toDataURL('image/png');
                 
                 const pdf = new jsPDF({
@@ -1411,17 +1467,16 @@
                 });
                 
                 const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
                 const canvasWidth = canvas.width;
                 const canvasHeight = canvas.height;
                 const ratio = canvasWidth / canvasHeight;
                 
-                // Fit image to page width
-                const finalWidth = pdfWidth - 40; // with some margin
+                // Fit image to page width with some margin
+                const finalWidth = pdfWidth - 40; 
                 const finalHeight = finalWidth / ratio;
                 
                 pdf.addImage(imgData, 'PNG', 20, 20, finalWidth, finalHeight);
-                pdf.save(`Receipt-${activeDeliveryForReceipt.jobFileData.jfn}.pdf`);
+                pdf.save(`Receipt-${activeDeliveryForReceipt.jobFileData.jfn}${isCopy ? '-COPY' : ''}.pdf`);
 
             } catch (error) {
                 console.error("Error generating PDF:", error);
@@ -1432,22 +1487,16 @@
         }
 
         function printReceipt() {
-            const receiptHTML = document.getElementById('receipt-content').innerHTML;
+            const isCopy = document.getElementById('generate-as-copy')?.checked || false;
+            const receiptHTML = generateReceipt(isCopy);
             const printWindow = window.open('', '', 'height=842,width=595');
             printWindow.document.write('<html><head><title>Delivery Receipt</title>');
             printWindow.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
             printWindow.document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>');
             printWindow.document.write(`
                 <style>
-                    @media print {
-                        @page {
-                            size: A4;
-                            margin: 15mm;
-                        }
-                    }
-                    body {
-                        font-family: 'Inter', sans-serif;
-                    }
+                    @media print { @page { size: A4; margin: 15mm; } }
+                    body { font-family: 'Inter', sans-serif; }
                 </style>
             `);
             printWindow.document.write('</head><body>');
@@ -1455,18 +1504,22 @@
             printWindow.document.write(`
                 <script>
                     window.onload = function() {
-                        const qrContainer = document.getElementById('receipt-verification-qrcode');
-                        if (qrContainer) {
-                            new QRCode(qrContainer, {
-                                text: "${window.location.origin + window.location.pathname + '?podId=' + activeDeliveryForReceipt.deliveryId}",
-                                width: 80,
-                                height: 80,
-                            });
-                            setTimeout(() => {
-                                window.print();
-                                window.close();
-                            }, 500);
+                        const data = ${JSON.stringify(activeDeliveryForReceipt)};
+                        const publicUrl = window.location.origin + window.location.pathname + '?podId=' + data.deliveryId;
+                        
+                        const qrVerifyContainer = document.getElementById('receipt-verification-qrcode');
+                        if (qrVerifyContainer) {
+                            new QRCode(qrVerifyContainer, { text: publicUrl, width: 80, height: 80 });
                         }
+                        const qrDownloadContainer = document.getElementById('receipt-download-qrcode');
+                         if (qrDownloadContainer) {
+                            new QRCode(qrDownloadContainer, { text: publicUrl, width: 80, height: 80 });
+                        }
+
+                        setTimeout(() => {
+                            window.print();
+                            window.close();
+                        }, 500);
                     }
                 <\/script>
             `);
@@ -1636,8 +1689,20 @@
                     activeDeliveryForReceipt = podDoc.data();
                     const view = document.getElementById('public-pod-view');
                     view.style.display = 'block';
-                    view.innerHTML = `<div class="container mx-auto p-4 sm:p-6 lg:p-8"><div id="receipt-content" class="p-4 border rounded-md bg-white shadow-lg"></div></div>`;
-                    generateReceipt();
+                    view.innerHTML = `
+                        <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+                            <div id="receipt-content-public" class="p-4 border rounded-md bg-white shadow-lg"></div>
+                            <div class="text-center mt-4">
+                                <button id="public-download-pdf" class="btn btn-primary">Download PDF</button>
+                            </div>
+                        </div>`;
+                    
+                    const receiptHTML = generateReceipt(false); // Generate without copy watermark
+                    document.getElementById('receipt-content-public').innerHTML = receiptHTML;
+                    generateQRCodes(document.getElementById('public-pod-view'));
+                    
+                    document.getElementById('public-download-pdf').addEventListener('click', downloadPublicReceiptAsPDF);
+
                 } else {
                     document.body.innerHTML = `<div class="p-4 text-center text-red-700 bg-red-100">POD with ID "${podId}" not found.</div>`;
                 }
@@ -1650,6 +1715,46 @@
                 document.body.classList.remove('loading');
             }
         }
+        
+        async function downloadPublicReceiptAsPDF() {
+            showLoader();
+            const { jsPDF } = window.jspdf;
+            
+            try {
+                const publicReceiptHTML = generateReceipt(false);
+
+                const printContainer = document.createElement('div');
+                printContainer.style.position = 'absolute';
+                printContainer.style.left = '-9999px';
+                printContainer.style.width = '210mm';
+                printContainer.style.padding = '15mm';
+                printContainer.style.backgroundColor = 'white';
+                printContainer.style.boxSizing = 'border-box';
+                printContainer.innerHTML = publicReceiptHTML;
+                document.body.appendChild(printContainer);
+
+                generateQRCodes(printContainer);
+
+                const canvas = await html2canvas(printContainer, { scale: 2 });
+                document.body.removeChild(printContainer);
+
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const ratio = canvas.width / canvas.height;
+                const finalWidth = pdfWidth - 40;
+                const finalHeight = finalWidth / ratio;
+                
+                pdf.addImage(imgData, 'PNG', 20, 20, finalWidth, finalHeight);
+                pdf.save(`Receipt-${activeDeliveryForReceipt.jobFileData.jfn}.pdf`);
+            } catch (error) {
+                console.error("Error generating public PDF:", error);
+                showNotification("Could not generate PDF.", true);
+            } finally {
+                hideLoader();
+            }
+        }
+
 
         // --- Driver Performance Dashboard ---
         async function openDriverPerformanceDashboard() {
@@ -2074,14 +2179,14 @@
         }
         
         async function shareReceipt() {
-            const receiptElement = document.getElementById('receipt-content');
+            const isCopy = document.getElementById('generate-as-copy')?.checked || false;
             const jobData = activeDeliveryForReceipt.jobFileData;
             const publicUrl = `${window.location.origin}${window.location.pathname}?podId=${activeDeliveryForReceipt.deliveryId}`;
 
             try {
-                const canvas = await html2canvas(receiptElement, { scale: 2 });
+                const canvas = await getReceiptCanvas(isCopy);
                 canvas.toBlob(async (blob) => {
-                    const file = new File([blob], `Receipt-${jobData.jfn}.png`, { type: 'image/png' });
+                    const file = new File([blob], `Receipt-${jobData.jfn}${isCopy ? '-COPY' : ''}.png`, { type: 'image/png' });
                     const shareData = {
                         title: `Delivery Receipt for ${jobData.jfn}`,
                         text: `View the delivery receipt for job file ${jobData.jfn}.`,
@@ -2219,6 +2324,12 @@
             document.getElementById('my-feedback-btn').addEventListener('click', showMyFeedback);
             document.getElementById('share-btn').addEventListener('click', shareReceipt);
             document.getElementById('copy-link-btn').addEventListener('click', copyReceiptLink);
+             document.getElementById('generate-as-copy').addEventListener('change', (e) => {
+                const isCopy = e.target.checked;
+                const receiptHTML = generateReceipt(isCopy);
+                document.getElementById('receipt-content').innerHTML = receiptHTML;
+                generateQRCodes();
+            });
 
 
             const confirmCancelBtn = document.getElementById('confirm-cancel');
