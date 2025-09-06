@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crew & Inventory Management</title>
+    <title>Qgo Cargo - Crew & Inventory Management</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,6 +13,10 @@
     
     <!-- Feather Icons -->
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    
+    <!-- jsPDF for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
 
     <!-- Custom Google Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,10 +24,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        /* Custom styles for the application */
+        /* Custom styles for Qgo Cargo branding */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* Light gray background */
+            background-color: #eef2f7; /* Lighter blue-gray background */
         }
         .sidebar {
             transition: transform 0.3s ease-in-out;
@@ -39,15 +43,15 @@
             background: #f1f1f1;
         }
         ::-webkit-scrollbar-thumb {
-            background: #888;
+            background: #a0aec0;
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #555;
+            background: #718096;
         }
         /* Style for active navigation link */
         .nav-link.active {
-            background-color: #3b82f6; /* Blue-500 */
+            background-color: #2c5282; /* Dark blue */
             color: white;
             font-weight: 600;
         }
@@ -75,32 +79,32 @@
             gap: 0.5rem;
         }
         .btn-primary {
-            background-color: #3b82f6;
+            background-color: #3182ce; /* Qgo Blue */
             color: white;
         }
         .btn-primary:hover {
-            background-color: #2563eb;
+            background-color: #2b6cb0;
         }
         .btn-secondary {
-            background-color: #6b7280;
+            background-color: #718096;
             color: white;
         }
         .btn-secondary:hover {
-            background-color: #4b5563;
+            background-color: #4a5568;
         }
         .btn-danger {
-            background-color: #ef4444;
+            background-color: #e53e3e;
             color: white;
         }
         .btn-danger:hover {
-            background-color: #dc2626;
+            background-color: #c53030;
         }
         .btn-success {
-             background-color: #22c55e;
+             background-color: #38a169;
              color: white;
         }
         .btn-success:hover {
-            background-color: #16a34a;
+            background-color: #2f855a;
         }
         /* Details/Summary styling for user profiles */
         details > summary {
@@ -114,7 +118,7 @@
 <body class="bg-gray-100 text-gray-800">
 
     <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-75 z-50 flex items-center justify-center p-4">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
     </div>
     
     <!-- Authentication Screen -->
@@ -122,7 +126,11 @@
         <div class="w-full max-w-md">
             <!-- Login Form -->
             <div id="login-card" class="card">
-                <h2 class="text-2xl font-bold text-center mb-6">Login to CrewSys</h2>
+                 <div class="text-3xl font-bold text-blue-700 mb-6 text-center flex items-center justify-center gap-2">
+                    <i data-feather="truck"></i>
+                    <span>Qgo Cargo</span>
+                </div>
+                <h2 class="text-xl font-bold text-center mb-6 text-gray-700">Login to your Account</h2>
                 <form id="login-form" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium mb-1">Email</label>
@@ -141,7 +149,11 @@
             </div>
             <!-- Registration Form -->
             <div id="register-card" class="card hidden">
-                <h2 class="text-2xl font-bold text-center mb-6">Create Account</h2>
+                 <div class="text-3xl font-bold text-blue-700 mb-6 text-center flex items-center justify-center gap-2">
+                    <i data-feather="truck"></i>
+                    <span>Qgo Cargo</span>
+                </div>
+                <h2 class="text-xl font-bold text-center mb-6 text-gray-700">Create an Account</h2>
                 <form id="register-form" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium mb-1">Email</label>
@@ -173,16 +185,17 @@
         <div class="flex h-full">
             <!-- Sidebar Navigation -->
             <aside id="sidebar" class="sidebar bg-white w-64 min-h-full p-4 shadow-lg fixed lg:relative transform -translate-x-full lg:translate-x-0 z-40">
-                <div class="text-2xl font-bold text-blue-600 mb-8 flex items-center gap-2">
-                    <i data-feather="box"></i>
-                    <span>CrewSys</span>
+                <div class="text-3xl font-bold text-blue-700 mb-8 flex items-center gap-2">
+                    <i data-feather="truck"></i>
+                    <span>Qgo Cargo</span>
                 </div>
                 <nav id="app-nav">
                     <ul>
-                        <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-500 hover:text-white transition-colors duration-200 active" data-tab="analytics"><i data-feather="bar-chart-2" class="mr-3"></i>Analytics</a></li>
-                        <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-500 hover:text-white transition-colors duration-200 mt-2" data-tab="scheduling"><i data-feather="calendar" class="mr-3"></i>Scheduling</a></li>
-                        <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-500 hover:text-white transition-colors duration-200 mt-2" data-tab="inventory"><i data-feather="archive" class="mr-3"></i>Inventory</a></li>
-                        <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-500 hover:text-white transition-colors duration-200 mt-2" data-tab="admin"><i data-feather="shield" class="mr-3"></i>Admin Panel</a></li>
+                        <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-800 hover:text-white transition-colors duration-200 active" data-tab="analytics"><i data-feather="bar-chart-2" class="mr-3"></i>Analytics</a></li>
+                        <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-800 hover:text-white transition-colors duration-200 mt-2" data-tab="scheduling"><i data-feather="calendar" class="mr-3"></i>Scheduling</a></li>
+                        <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-800 hover:text-white transition-colors duration-200 mt-2" data-tab="inventory"><i data-feather="archive" class="mr-3"></i>Inventory</a></li>
+                        <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-800 hover:text-white transition-colors duration-200 mt-2" data-tab="reports"><i data-feather="file-text" class="mr-3"></i>Reports</a></li>
+                        <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-800 hover:text-white transition-colors duration-200 mt-2" data-tab="admin"><i data-feather="shield" class="mr-3"></i>Admin Panel</a></li>
                     </ul>
                 </nav>
             </aside>
@@ -205,6 +218,7 @@
                 <div id="analytics-tab" class="tab-content hidden"></div>
                 <div id="scheduling-tab" class="tab-content hidden"></div>
                 <div id="inventory-tab" class="tab-content hidden"></div>
+                 <div id="reports-tab" class="tab-content hidden"></div>
                 <div id="admin-tab" class="tab-content hidden"></div>
 
             </main>
@@ -224,7 +238,7 @@
         // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, deleteDoc, query, where, getDocs, updateDoc, writeBatch, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, deleteDoc, query, where, getDocs, updateDoc, writeBatch, getDoc, serverTimestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- TEMPLATES --- //
         const AnalyticsTemplate = `
@@ -301,6 +315,35 @@
                            <!-- Desktop rows will be injected here -->
                         </tbody>
                     </table>
+                </div>
+            </div>
+        `;
+        
+        const ReportsTemplate = `
+            <div class="space-y-8">
+                <div class="card">
+                    <h2 class="text-xl font-semibold mb-4">Inventory Report</h2>
+                    <div class="flex items-center gap-4">
+                        <button id="print-inventory-report" class="btn btn-secondary"><i data-feather="printer"></i>Print</button>
+                        <button id="pdf-inventory-report" class="btn btn-secondary"><i data-feather="file"></i>Download PDF</button>
+                        <button id="excel-inventory-report" class="btn btn-secondary"><i data-feather="grid"></i>Export to Excel</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2 class="text-xl font-semibold mb-4">Job Details Report</h2>
+                    <div class="flex flex-col sm:flex-row items-center gap-4 mb-4">
+                         <label class="font-medium">From:</label>
+                         <input type="date" id="report-start-date" class="border rounded-md p-2">
+                         <label class="font-medium">To:</label>
+                         <input type="date" id="report-end-date" class="border rounded-md p-2">
+                         <button id="generate-job-report" class="btn btn-primary">Generate Report</button>
+                    </div>
+                    <div id="job-report-actions" class="hidden items-center gap-4 mt-4">
+                        <button id="print-job-report" class="btn btn-secondary"><i data-feather="printer"></i>Print</button>
+                        <button id="pdf-job-report" class="btn btn-secondary"><i data-feather="file"></i>Download PDF</button>
+                        <button id="excel-job-report" class="btn btn-secondary"><i data-feather="grid"></i>Export to Excel</button>
+                    </div>
+                    <div id="job-report-container" class="mt-6"></div>
                 </div>
             </div>
         `;
@@ -1686,6 +1729,7 @@
             document.getElementById('analytics-tab').innerHTML = AnalyticsTemplate;
             document.getElementById('scheduling-tab').innerHTML = SchedulingTemplate;
             document.getElementById('inventory-tab').innerHTML = InventoryTemplate;
+            document.getElementById('reports-tab').innerHTML = ReportsTemplate;
             document.getElementById('admin-tab').innerHTML = AdminTemplate;
             
             initFirebase().then(() => {
