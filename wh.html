@@ -722,7 +722,7 @@
                 const crewLeader = assignedUsers.find(u => u.role === 'Crew Leader');
                 const priorityColors = {'High': 'bg-red-100 text-red-800', 'Medium': 'bg-yellow-100 text-yellow-800', 'Low': 'bg-blue-100 text-blue-800'};
                 const statusColors = {'Finished': 'bg-green-100 text-green-800', 'Pending': 'bg-yellow-100 text-yellow-800', 'Pending Confirmation': 'bg-orange-100 text-orange-800'};
-                const isSupervisor = ['Admin', 'Supervisor'].includes(currentUserRole);
+                const isSupervisor = currentUserIsAdmin;
 
                 let materialStatusHTML = '';
                 if (schedule.status === 'Pending Confirmation') {
@@ -1172,8 +1172,13 @@
                         <button type="button" id="add-material-row-btn" class="btn btn-secondary !p-2 mt-2"><i data-feather="plus"></i> Add Material</button>
                     </div>
 
-                    <div><label class="block text-sm font-medium mb-1">Notes</label>
-                        <textarea name="notes" class="w-full border rounded-md p-2 h-24">${scheduleToEdit?.notes || ''}</textarea></div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-sm font-medium">Notes</label>
+                            <button type="button" id="generate-notes-btn" class="text-xs text-blue-600 hover:underline font-semibold">✨ Generate with AI</button>
+                        </div>
+                        <textarea name="notes" id="schedule-notes" class="w-full border rounded-md p-2 h-24">${scheduleToEdit?.notes || ''}</textarea>
+                    </div>
                     <div class="flex justify-end gap-4 !mt-6">
                        <button type="button" class="close-modal-btn btn btn-secondary">Cancel</button>
                        <button type="submit" class="btn btn-primary">Save Schedule</button>
@@ -1182,6 +1187,47 @@
             showModal(modalHTML);
             feather.replace();
             
+            document.getElementById('generate-notes-btn').addEventListener('click', async (e) => {
+                const btn = e.currentTarget;
+                const task = document.querySelector('#schedule-modal-form [name="task"]').value;
+                const address = document.querySelector('#schedule-modal-form [name="address"]').value;
+                if(!task) {
+                    alert('Please enter a task before generating notes.');
+                    return;
+                }
+
+                let materialsText = 'Materials: ';
+                document.querySelectorAll('.material-row').forEach(row => {
+                    const itemName = row.querySelector('.material-item-search').value;
+                    const quantity = row.querySelector('.material-item-quantity').value;
+                    if (itemName && quantity) {
+                        materialsText += `${quantity}x ${itemName}, `;
+                    }
+                });
+
+                const prompt = `
+                    Generate brief, actionable notes for a cargo or logistics crew about to perform a task. 
+                    The notes should be formatted with clear headings like "Instructions:", "Safety Reminders:", and "Checklist:".
+                    Be concise and practical.
+                    Task: "${task}"
+                    Location: "${address}"
+                    ${materialsText.length > 12 ? materialsText : ''}
+                `;
+                
+                btn.textContent = 'Generating...';
+                btn.disabled = true;
+                try {
+                    const notes = await callGeminiAPI(prompt);
+                    document.getElementById('schedule-notes').value = notes;
+                } catch (error) {
+                    console.error("Gemini API Error:", error);
+                    alert("Could not generate notes. Please try again.");
+                } finally {
+                    btn.textContent = '✨ Generate with AI';
+                    btn.disabled = false;
+                }
+            });
+
             const addMaterialRow = (material = { itemId: '', quantity: '' }) => {
                 const container = document.getElementById('materials-list-container');
                 const row = document.createElement('div');
@@ -1596,7 +1642,7 @@
         function handleDeleteInventory(e) { const id = e.currentTarget.dataset.id; showConfirmationModal('Delete inventory item?', async () => { await deleteInventory(id);});}
         function handleDeleteSchedule(id) { showConfirmationModal('Delete this schedule?', async () => { await deleteSchedule(id); }); }
         
-        function handleShareToWhatsApp(id) {
+        async function handleShareToWhatsApp(id) {
             const schedule = window.appState.schedules.find(s => s.id === id);
             if(!schedule) return;
             const users = window.appState.users;
@@ -1628,8 +1674,70 @@
                 }
             }
 
-            const encodedMessage = encodeURIComponent(message.trim());
-            window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
+            const modalHTML = `
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Share to WhatsApp</h2>
+                    <button class="close-modal-btn p-2 rounded-full hover:bg-gray-200"><i data-feather="x"></i></button>
+                </div>
+                <textarea id="whatsapp-message" class="w-full border rounded-md p-2 h-64">${message.trim()}</textarea>
+                <div class="flex justify-end gap-4 mt-4">
+                    <button id="refine-whatsapp-btn" class="btn btn-secondary">✨ Refine with AI</button>
+                    <button id="send-whatsapp-btn" class="btn btn-primary !bg-green-500">Send Now</button>
+                </div>
+            `;
+            showModal(modalHTML);
+            feather.replace();
+
+            document.getElementById('refine-whatsapp-btn').addEventListener('click', async (e) => {
+                const btn = e.currentTarget;
+                const messageTextarea = document.getElementById('whatsapp-message');
+                const currentMessage = messageTextarea.value;
+                const prompt = `Rewrite the following crew schedule message to be more professional, friendly, and clear for a cargo team. Keep the essential details but improve the tone and formatting. Here is the message: \n\n"${currentMessage}"`;
+
+                btn.textContent = 'Refining...';
+                btn.disabled = true;
+
+                try {
+                    const refinedMessage = await callGeminiAPI(prompt);
+                    messageTextarea.value = refinedMessage;
+                } catch(error) {
+                    console.error("Gemini API error:", error);
+                    alert("Could not refine message. Please try again.");
+                } finally {
+                    btn.textContent = '✨ Refine with AI';
+                    btn.disabled = false;
+                }
+            });
+
+            document.getElementById('send-whatsapp-btn').addEventListener('click', () => {
+                const finalMessage = document.getElementById('whatsapp-message').value;
+                const encodedMessage = encodeURIComponent(finalMessage);
+                window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
+                hideModal();
+            });
+        }
+
+        // --- GEMINI API --- //
+        async function callGeminiAPI(prompt) {
+            const apiKey = ""; 
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }]
+            };
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`API call failed with status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            return result.candidates[0].content.parts[0].text;
         }
 
         // --- MAIN APP LOGIC --- //
