@@ -2,7 +2,7 @@
   "name": "Qgo Cargo - Warehouse Management",
   "short_name": "Qgo Cargo",
   "description": "Crew & Inventory Management System",
-  "start_url": "/wh.html",
+  "start_url": "/qgocargo/wh.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3182ce",
