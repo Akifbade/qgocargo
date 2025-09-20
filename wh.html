@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Qgo Cargo - Crew & Inventory Management</title>
+    <link rel="manifest" href="manifest.json">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -186,7 +187,7 @@
             <!-- Sidebar Navigation -->
             <aside id="sidebar" class="sidebar bg-white w-64 min-h-full p-4 shadow-lg fixed lg:relative transform -translate-x-full lg:translate-x-0 z-40">
                 <div class="text-3xl font-bold text-blue-700 mb-8 flex items-center gap-2">
-                    <i data-feather="truck"></i>
+                    <img src="https://qgocargo.com/logo.png" alt="Qgo Cargo Logo" class="h-10 w-10">
                     <span>Qgo Cargo</span>
                 </div>
                 <nav id="app-nav">
@@ -195,7 +196,9 @@
                         <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-800 hover:text-white transition-colors duration-200 mt-2" data-tab="scheduling"><i data-feather="calendar" class="mr-3"></i>Scheduling</a></li>
                         <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-800 hover:text-white transition-colors duration-200 mt-2" data-tab="inventory"><i data-feather="archive" class="mr-3"></i>Inventory</a></li>
                         <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-800 hover:text-white transition-colors duration-200 mt-2" data-tab="reports"><i data-feather="file-text" class="mr-3"></i>Reports</a></li>
+                        <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-800 hover:text-white transition-colors duration-200 mt-2" data-tab="maintenance"><i data-feather="tool" class="mr-3"></i>Maintenance</a></li>
                         <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-800 hover:text-white transition-colors duration-200 mt-2" data-tab="admin"><i data-feather="shield" class="mr-3"></i>Admin Panel</a></li>
+                        <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-800 hover:text-white transition-colors duration-200 mt-2" data-tab="notifications"><i data-feather="bell" class="mr-3"></i>Notifications</a></li>
                     </ul>
                 </nav>
             </aside>
@@ -218,8 +221,10 @@
                 <div id="analytics-tab" class="tab-content hidden"></div>
                 <div id="scheduling-tab" class="tab-content hidden"></div>
                 <div id="inventory-tab" class="tab-content hidden"></div>
-                 <div id="reports-tab" class="tab-content hidden"></div>
+                <div id="reports-tab" class="tab-content hidden"></div>
+                <div id="maintenance-tab" class="tab-content hidden"></div>
                 <div id="admin-tab" class="tab-content hidden"></div>
+                <div id="notifications-tab" class="tab-content hidden"></div>
 
             </main>
         </div>
@@ -242,7 +247,7 @@
         
         // --- TEMPLATES --- //
         const AnalyticsTemplate = `
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 <div class="card flex items-center">
                     <div class="bg-blue-100 p-3 sm:p-4 rounded-full mr-4"><i data-feather="users" class="text-blue-500"></i></div>
                     <div>
@@ -264,10 +269,23 @@
                         <p id="schedules-today" class="text-xl sm:text-2xl font-bold">0</p>
                     </div>
                 </div>
+                 <div class="card flex items-center">
+                    <div class="bg-purple-100 p-3 sm:p-4 rounded-full mr-4"><i data-feather="check-circle" class="text-purple-500"></i></div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Jobs Finished</p>
+                        <p id="jobs-finished-this-month" class="text-xl sm:text-2xl font-bold">0</p>
+                    </div>
+                </div>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
                 <div class="card"><canvas id="inventoryChart"></canvas></div>
                 <div class="card"><canvas id="scheduleChart"></canvas></div>
+            </div>
+            <div class="mt-6">
+                <div class="card">
+                    <h3 class="font-semibold mb-4">Crew Performance</h3>
+                    <canvas id="crewPerformanceChart"></canvas>
+                </div>
             </div>
         `;
 
@@ -370,13 +388,71 @@
                     </div>
                      <div id="user-list-container" class="space-y-3"></div>
                 </div>
+                <div class="card">
+                    <h2 class="text-xl font-semibold mb-4">Send Notifications</h2>
+                    <form id="send-notification-form" class="space-y-4">
+                        <input type="text" id="notification-title" class="w-full border rounded-md p-2" placeholder="Notification Title" required>
+                        <textarea id="notification-message" class="w-full border rounded-md p-2 h-24" placeholder="Notification Message" required></textarea>
+                        <button type="submit" class="btn btn-primary">Send Notification</button>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        const MaintenanceTemplate = `
+            <div class="card">
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                    <h2 class="text-xl font-semibold">Vehicle Maintenance Logs</h2>
+                    <button id="add-vehicle-btn" class="btn btn-primary w-full sm:w-auto"><i data-feather="plus-circle"></i> Add Vehicle</button>
+                </div>
+                <div id="vehicle-list-container" class="space-y-4">
+                    <!-- Vehicle details will be injected here -->
+                </div>
+            </div>
+        `;
+
+        const NotificationsTemplate = `
+            <div class="card">
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                    <h2 class="text-xl font-semibold">Notifications & Alerts</h2>
+                    <button id="add-notification-btn" class="btn btn-primary w-full sm:w-auto"><i data-feather="plus-circle"></i> Add Notification</button>
+                </div>
+                <div id="notifications-list" class="space-y-4">
+                    <div class="p-4 bg-blue-50 border-l-4 border-blue-400 rounded-md">
+                        <div class="flex items-center">
+                            <i data-feather="info" class="text-blue-400 mr-3"></i>
+                            <div>
+                                <p class="text-sm font-medium text-blue-800">Welcome to Qgo Cargo!</p>
+                                <p class="text-sm text-blue-700">Your warehouse management system is ready.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-md">
+                        <div class="flex items-center">
+                            <i data-feather="alert-triangle" class="text-yellow-400 mr-3"></i>
+                            <div>
+                                <p class="text-sm font-medium text-yellow-800">Low Stock Alert</p>
+                                <p class="text-sm text-yellow-700">Item "Widgets" is running low (5 remaining).</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-green-50 border-l-4 border-green-400 rounded-md">
+                        <div class="flex items-center">
+                            <i data-feather="check-circle" class="text-green-400 mr-3"></i>
+                            <div>
+                                <p class="text-sm font-medium text-green-800">Schedule Completed</p>
+                                <p class="text-sm text-green-700">Job at 123 Main St has been completed successfully.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
 
         // --- FIREBASE CONFIG & INITIALIZATION --- //
         let db, auth, userId, app, dataPath, currentUserIsAdmin;
-        let usersUnsubscribe, inventoryUnsubscribe, schedulesUnsubscribe, rolesUnsubscribe, pendingUsersUnsubscribe;
-        let inventoryChartInstance, scheduleChartInstance;
+        let usersUnsubscribe, inventoryUnsubscribe, schedulesUnsubscribe, rolesUnsubscribe, pendingUsersUnsubscribe, vehiclesUnsubscribe;
+        let inventoryChartInstance, scheduleChartInstance, crewPerformanceChartInstance;
         
         // --- IMPORTANT FIREBASE CONFIGURATION --- //
         const firebaseConfig = {
@@ -389,8 +465,37 @@
             measurementId: "G-5VXETKM4H8"
         };
         // --- END OF CONFIGURATION --- //
-        
+
+        async function handleSendNotification(e) {
+            e.preventDefault();
+            const title = document.getElementById('notification-title').value;
+            const message = document.getElementById('notification-message').value;
+            if (title && message) {
+                // Send to all users (for demo, show notification locally)
+                if (Notification.permission === 'granted') {
+                    new Notification(title, { body: message, icon: 'https://qgocargo.com/logo.png' });
+                } else if (Notification.permission !== 'denied') {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            new Notification(title, { body: message, icon: 'https://qgocargo.com/logo.png' });
+                        }
+                    });
+                }
+                // In real app, send via Firebase Cloud Messaging to all users
+                alert('Notification sent to all users!');
+                document.getElementById('notification-title').value = '';
+                document.getElementById('notification-message').value = '';
+            }
+        }
+
         async function initFirebase() {
+            // Register service worker for PWA
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => console.log('SW registered'))
+                    .catch(error => console.log('SW registration failed'));
+            }
+            
             try {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
@@ -472,8 +577,18 @@
             attachUsersListener();
             attachInventoryListener();
             attachRolesListener();
+            attachVehiclesListener();
             const scheduleDate = document.getElementById('schedule-date').value || new Date().toISOString().split('T')[0];
             attachScheduleListener(scheduleDate);
+        }
+
+        function attachVehiclesListener() {
+            const vehiclesCollectionPath = `${dataPath}/vehicles`;
+            if (vehiclesUnsubscribe) vehiclesUnsubscribe();
+            vehiclesUnsubscribe = onSnapshot(collection(db, vehiclesCollectionPath), (snapshot) => {
+                window.appState.vehicles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderVehicles();
+            }, (error) => console.error("Error with vehicles snapshot listener:", error));
         }
 
         function attachPendingUsersListener() {
@@ -818,7 +933,7 @@
         }
 
         // --- DASHBOARD & CHARTS --- //
-        function updateDashboardCards() {
+        async function updateDashboardCards() {
             try {
                 const totalUsersEl = document.getElementById('total-users');
                 if (totalUsersEl) totalUsersEl.textContent = window.appState.users.length;
@@ -828,6 +943,23 @@
 
                 const schedulesTodayEl = document.getElementById('schedules-today');
                 if (schedulesTodayEl) schedulesTodayEl.textContent = window.appState.schedules.length;
+
+                // Performance Analytics Card
+                const jobsFinishedEl = document.getElementById('jobs-finished-this-month');
+                if (jobsFinishedEl) {
+                    const startOfMonth = new Date();
+                    startOfMonth.setDate(1);
+                    startOfMonth.setHours(0, 0, 0, 0);
+                    
+                    const finishedQuery = query(
+                        collection(db, `${dataPath}/schedules`), 
+                        where("status", "==", "Finished"),
+                        where("completionTime", ">=", startOfMonth.toISOString())
+                    );
+                    const querySnapshot = await getDocs(finishedQuery);
+                    jobsFinishedEl.textContent = querySnapshot.size;
+                }
+
             } catch (e) {
                 console.error("Error updating dashboard cards:", e);
             }
@@ -837,6 +969,7 @@
             try {
                 if (inventoryChartInstance) inventoryChartInstance.destroy();
                 if (scheduleChartInstance) scheduleChartInstance.destroy();
+                if (crewPerformanceChartInstance) crewPerformanceChartInstance.destroy();
                 
                 const inventoryCanvas = document.getElementById('inventoryChart');
                 if(inventoryCanvas) {
@@ -857,8 +990,20 @@
                         options: { responsive: true, plugins: { legend: { display: false }, title: { display: true, text: 'Tasks by Status' } }, scales: { y: { beginAtZero: true } } }
                     });
                 }
+
+                const crewPerformanceCanvas = document.getElementById('crewPerformanceChart');
+                if (crewPerformanceCanvas) {
+                    const crewCtx = crewPerformanceCanvas.getContext('2d');
+                    crewPerformanceChartInstance = new Chart(crewCtx, {
+                        type: 'bar',
+                        data: { labels: [], datasets: [{ label: 'Jobs Completed This Month', data: [], backgroundColor: '#8b5cf6' }] },
+                        options: { responsive: true, plugins: { legend: { display: false }, title: { display: true, text: 'Crew Performance' } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+                    });
+                }
+
                 updateInventoryChart();
                 updateScheduleChart();
+                updateCrewPerformanceChart();
             } catch (e) {
                 console.error("Error initializing charts:", e);
             }
@@ -894,6 +1039,46 @@
                 console.error("Error updating schedule chart:", e);
             }
         }
+
+        async function updateCrewPerformanceChart() {
+            if (!crewPerformanceChartInstance) return;
+            try {
+                const users = window.appState.users || [];
+                const userJobCounts = new Map(users.map(u => [u.id, 0]));
+
+                const startOfMonth = new Date();
+                startOfMonth.setDate(1);
+                startOfMonth.setHours(0, 0, 0, 0);
+
+                const finishedQuery = query(
+                    collection(db, `${dataPath}/schedules`), 
+                    where("status", "==", "Finished"),
+                    where("completionTime", ">=", startOfMonth.toISOString())
+                );
+                const querySnapshot = await getDocs(finishedQuery);
+
+                querySnapshot.forEach(doc => {
+                    const schedule = doc.data();
+                    schedule.assignedUserIds.forEach(userId => {
+                        if (userJobCounts.has(userId)) {
+                            userJobCounts.set(userId, userJobCounts.get(userId) + 1);
+                        }
+                    });
+                });
+
+                const sortedUsers = [...userJobCounts.entries()].sort((a, b) => b[1] - a[1]);
+                
+                crewPerformanceChartInstance.data.labels = sortedUsers.map(([userId, count]) => {
+                    const user = users.find(u => u.id === userId);
+                    return user ? user.name : 'Unknown';
+                });
+                crewPerformanceChartInstance.data.datasets[0].data = sortedUsers.map(([userId, count]) => count);
+                crewPerformanceChartInstance.update();
+
+            } catch(e) {
+                console.error("Error updating crew performance chart:", e);
+            }
+        }
         
         // --- DATA MANIPULATION --- //
         async function addUser(userData) { try { await addDoc(collection(db, `${dataPath}/crew`), userData); } catch(e) { console.error("Firestore Error: Could not add crew member.", e); } }
@@ -908,6 +1093,11 @@
         async function addSchedule(schedule) { try { await addDoc(collection(db, `${dataPath}/schedules`), schedule); } catch(e) { console.error("Firestore Error: Could not add schedule.", e); } }
         async function updateSchedule(id, schedule) { try { await setDoc(doc(db, `${dataPath}/schedules/${id}`), schedule, { merge: true }); } catch(e) { console.error("Firestore Error: Could not update schedule.", e); } }
         async function deleteSchedule(id) { try { await deleteDoc(doc(db, `${dataPath}/schedules/${id}`)); } catch(e) { console.error("Firestore Error: Could not delete schedule.", e); } }
+        async function addVehicle(vehicleData) { try { await addDoc(collection(db, `${dataPath}/vehicles`), vehicleData); } catch(e) { console.error("Firestore Error: Could not add vehicle.", e); } }
+        async function updateVehicle(id, vehicleData) { try { await setDoc(doc(db, `${dataPath}/vehicles/${id}`), vehicleData); } catch(e) { console.error("Firestore Error: Could not update vehicle.", e); } }
+        async function deleteVehicle(id) { try { await deleteDoc(doc(db, `${dataPath}/vehicles/${id}`)); } catch(e) { console.error("Firestore Error: Could not delete vehicle.", e); } }
+        async function addMaintenanceLog(vehicleId, logData) { try { await addDoc(collection(db, `${dataPath}/vehicles/${vehicleId}/maintenanceLogs`), logData); } catch(e) { console.error("Firestore Error: Could not add maintenance log.", e); } }
+        async function deleteMaintenanceLog(vehicleId, logId) { try { await deleteDoc(doc(db, `${dataPath}/vehicles/${vehicleId}/maintenanceLogs/${logId}`)); } catch(e) { console.error("Firestore Error: Could not delete maintenance log.", e); } }
         
         async function updateScheduleStatus(id, scheduleData) {
             try {
@@ -1740,8 +1930,130 @@
             return result.candidates[0].content.parts[0].text;
         }
 
+        function renderVehicles() {
+            const container = document.getElementById('vehicle-list-container');
+            if (!container) return;
+            container.innerHTML = (window.appState.vehicles || []).map(vehicle => `
+                <details class="bg-gray-50 rounded-lg border">
+                    <summary class="flex justify-between items-center p-3 cursor-pointer">
+                        <div>
+                            <p class="font-semibold text-gray-900">${vehicle.name} (${vehicle.model})</p>
+                            <p class="text-sm text-gray-600">${vehicle.licensePlate}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                             <button class="add-log-btn btn btn-success !p-2" data-id="${vehicle.id}"><i data-feather="plus"></i></button>
+                             <button class="edit-vehicle-btn text-blue-500 hover:text-blue-700 p-2" data-id="${vehicle.id}"><i data-feather="edit-2"></i></button>
+                             <button class="delete-vehicle-btn text-red-500 hover:text-red-700 p-2" data-id="${vehicle.id}"><i data-feather="trash-2"></i></button>
+                        </div>
+                    </summary>
+                    <div class="p-3 border-t bg-white">
+                        <div id="logs-for-${vehicle.id}" class="space-y-2">Loading logs...</div>
+                    </div>
+                </details>
+            `).join('') || '<p class="text-center text-gray-500 py-4">No vehicles added yet.</p>';
+            
+            feather.replace();
+
+            document.querySelectorAll('.add-log-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); showMaintenanceLogModal(e.currentTarget.dataset.id); }));
+            document.querySelectorAll('.edit-vehicle-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); const v = window.appState.vehicles.find(v => v.id === e.currentTarget.dataset.id); showVehicleModal(v); }));
+            document.querySelectorAll('.delete-vehicle-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); showConfirmationModal('Delete this vehicle and all its logs?', () => deleteVehicle(e.currentTarget.dataset.id)); }));
+
+            // Load maintenance logs when a vehicle details section is opened
+            document.querySelectorAll('details').forEach(detail => {
+                detail.addEventListener('toggle', async (event) => {
+                    if (event.target.open) {
+                        const vehicleId = event.target.querySelector('.add-log-btn').dataset.id;
+                        const logsContainer = document.getElementById(`logs-for-${vehicleId}`);
+                        const logsQuery = query(collection(db, `${dataPath}/vehicles/${vehicleId}/maintenanceLogs`), orderBy('date', 'desc'));
+                        const logSnapshot = await getDocs(logsQuery);
+                        const logs = logSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        
+                        logsContainer.innerHTML = logs.map(log => `
+                            <div class="flex justify-between items-center p-2 border-b">
+                                <div>
+                                    <p class="font-medium">${log.serviceType} on ${log.date}</p>
+                                    <p class="text-sm text-gray-600">${log.notes || 'No notes.'} (Cost: $${log.cost || 0})</p>
+                                </div>
+                                <button class="delete-log-btn text-red-500 hover:text-red-700 p-1" data-vehicle-id="${vehicleId}" data-log-id="${log.id}"><i data-feather="x-circle"></i></button>
+                            </div>
+                        `).join('') || '<p class="text-sm text-gray-500">No maintenance logs yet.</p>';
+                        feather.replace();
+                        logsContainer.querySelectorAll('.delete-log-btn').forEach(btn => btn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const { vehicleId, logId } = e.currentTarget.dataset;
+                            showConfirmationModal('Delete this log entry?', () => deleteMaintenanceLog(vehicleId, logId));
+                        }));
+                    }
+                });
+            });
+        }
+
+        function showVehicleModal(vehicleToEdit = null) {
+            const modalTitle = vehicleToEdit ? 'Edit Vehicle' : 'Add New Vehicle';
+            const modalHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">${modalTitle}</h2>
+                    <button class="close-modal-btn p-2 rounded-full hover:bg-gray-200"><i data-feather="x"></i></button>
+                </div>
+                <form id="vehicle-modal-form" class="space-y-4">
+                    <input type="hidden" name="id" value="${vehicleToEdit?.id || ''}">
+                    <div><label class="block text-sm font-medium mb-1">Vehicle Name/Identifier</label><input type="text" name="name" required class="w-full border rounded-md p-2" value="${vehicleToEdit?.name || ''}"></div>
+                    <div><label class="block text-sm font-medium mb-1">Model</label><input type="text" name="model" class="w-full border rounded-md p-2" value="${vehicleToEdit?.model || ''}"></div>
+                    <div><label class="block text-sm font-medium mb-1">License Plate</label><input type="text" name="licensePlate" required class="w-full border rounded-md p-2" value="${vehicleToEdit?.licensePlate || ''}"></div>
+                    <div class="flex justify-end gap-4 !mt-6">
+                       <button type="button" class="close-modal-btn btn btn-secondary">Cancel</button>
+                       <button type="submit" class="btn btn-primary">Save Vehicle</button>
+                    </div>
+                </form>
+            `;
+            showModal(modalHTML);
+            feather.replace();
+            document.getElementById('vehicle-modal-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const id = formData.get('id');
+                const vehicleData = Object.fromEntries(formData.entries());
+                delete vehicleData.id;
+                if (id) { await updateVehicle(id, vehicleData); } 
+                else { await addVehicle(vehicleData); }
+                hideModal();
+            });
+        }
+
+        function showMaintenanceLogModal(vehicleId) {
+            const modalHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">Add Maintenance Log</h2>
+                    <button class="close-modal-btn p-2 rounded-full hover:bg-gray-200"><i data-feather="x"></i></button>
+                </div>
+                <form id="log-modal-form" class="space-y-4">
+                    <input type="hidden" name="vehicleId" value="${vehicleId}">
+                    <div><label class="block text-sm font-medium mb-1">Date of Service</label><input type="date" name="date" required class="w-full border rounded-md p-2"></div>
+                    <div><label class="block text-sm font-medium mb-1">Service Type</label><input type="text" name="serviceType" required class="w-full border rounded-md p-2" placeholder="e.g., Oil Change, Tire Rotation"></div>
+                    <div><label class="block text-sm font-medium mb-1">Cost</label><input type="number" name="cost" class="w-full border rounded-md p-2" min="0" step="0.01"></div>
+                    <div><label class="block text-sm font-medium mb-1">Notes</label><textarea name="notes" class="w-full border rounded-md p-2 h-24"></textarea></div>
+                    <div class="flex justify-end gap-4 !mt-6">
+                       <button type="button" class="close-modal-btn btn btn-secondary">Cancel</button>
+                       <button type="submit" class="btn btn-primary">Save Log</button>
+                    </div>
+                </form>
+            `;
+            showModal(modalHTML);
+            feather.replace();
+            document.getElementById('log-modal-form').querySelector('[name="date"]').value = new Date().toISOString().split('T')[0];
+            document.getElementById('log-modal-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const vId = formData.get('vehicleId');
+                const logData = Object.fromEntries(formData.entries());
+                delete logData.vehicleId;
+                await addMaintenanceLog(vId, logData);
+                hideModal();
+            });
+        }
+
         // --- MAIN APP LOGIC --- //
-        window.appState = { users: [], inventory: [], schedules: [], roles: [], impersonatedUser: null, pendingUsers: [] };
+        window.appState = { users: [], inventory: [], schedules: [], roles: [], impersonatedUser: null, pendingUsers: [], vehicles: [] };
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
@@ -1838,9 +2150,15 @@
             document.getElementById('scheduling-tab').innerHTML = SchedulingTemplate;
             document.getElementById('inventory-tab').innerHTML = InventoryTemplate;
             document.getElementById('reports-tab').innerHTML = ReportsTemplate;
+            document.getElementById('maintenance-tab').innerHTML = MaintenanceTemplate;
             document.getElementById('admin-tab').innerHTML = AdminTemplate;
+            document.getElementById('notifications-tab').innerHTML = NotificationsTemplate;
             
             initFirebase().then(() => {
+                // Request notification permission
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
                 feather.replace(); 
                 if(document.getElementById('schedule-date')) {
                     document.getElementById('schedule-date').value = new Date().toISOString().split('T')[0];
@@ -1861,12 +2179,13 @@
                 document.getElementById('add-crew-btn')?.addEventListener('click', () => showUserModal());
                 document.getElementById('add-schedule-btn').addEventListener('click', () => showScheduleModal());
                 document.getElementById('add-inventory-btn').addEventListener('click', handleAddInventory);
+                document.getElementById('add-vehicle-btn')?.addEventListener('click', () => showVehicleModal());
                 document.getElementById('schedule-date').addEventListener('change', (e) => attachScheduleListener(e.target.value));
                 document.getElementById('inventory-search').addEventListener('input', renderInventory);
+                document.getElementById('send-notification-form')?.addEventListener('submit', handleSendNotification);
             });
         });
 
     </script>
 </body>
 </html>
-
