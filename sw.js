@@ -1,8 +1,9 @@
 const CACHE_NAME = 'qgo-cargo-v1';
 const urlsToCache = [
-  '/wh.html',
-  '/manifest.json',
-  '/sw.js',
+  '/qgocargo/',
+  '/qgocargo/wh.html',
+  '/qgocargo/manifest.json',
+  '/qgocargo/sw.js',
   'https://cdn.tailwindcss.com',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js',
