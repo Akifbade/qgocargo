@@ -19,6 +19,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
 
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging.js';
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp, getDocs } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+        window.FirebaseApp = { initializeApp, getMessaging, getToken, onMessage, getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp, getDocs };
+    </script>
+
     <!-- Custom Google Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -415,7 +425,10 @@
             <div class="card">
                 <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                     <h2 class="text-xl font-semibold">Notifications & Alerts</h2>
-                    <button id="add-notification-btn" class="btn btn-primary w-full sm:w-auto"><i data-feather="plus-circle"></i> Add Notification</button>
+                    <div class="flex gap-2">
+                        <button id="refresh-notifications-btn" class="btn btn-secondary"><i data-feather="refresh-ccw"></i></button>
+                        <button id="clear-notifications-btn" class="btn btn-danger"><i data-feather="trash-2"></i></button>
+                    </div>
                 </div>
                 <div id="notifications-list" class="space-y-4">
                     <div class="p-4 bg-blue-50 border-l-4 border-blue-400 rounded-md">
@@ -427,30 +440,12 @@
                             </div>
                         </div>
                     </div>
-                    <div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-md">
-                        <div class="flex items-center">
-                            <i data-feather="alert-triangle" class="text-yellow-400 mr-3"></i>
-                            <div>
-                                <p class="text-sm font-medium text-yellow-800">Low Stock Alert</p>
-                                <p class="text-sm text-yellow-700">Item "Widgets" is running low (5 remaining).</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="p-4 bg-green-50 border-l-4 border-green-400 rounded-md">
-                        <div class="flex items-center">
-                            <i data-feather="check-circle" class="text-green-400 mr-3"></i>
-                            <div>
-                                <p class="text-sm font-medium text-green-800">Schedule Completed</p>
-                                <p class="text-sm text-green-700">Job at 123 Main St has been completed successfully.</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         `;
 
         // --- FIREBASE CONFIG & INITIALIZATION --- //
-        let db, auth, userId, app, dataPath, currentUserIsAdmin;
+        let db, auth, userId, app, dataPath, currentUserIsAdmin, messaging;
         let usersUnsubscribe, inventoryUnsubscribe, schedulesUnsubscribe, rolesUnsubscribe, pendingUsersUnsubscribe, vehiclesUnsubscribe;
         let inventoryChartInstance, scheduleChartInstance, crewPerformanceChartInstance;
         
@@ -471,21 +466,75 @@
             const title = document.getElementById('notification-title').value;
             const message = document.getElementById('notification-message').value;
             if (title && message) {
-                // Send to all users (for demo, show notification locally)
-                if (Notification.permission === 'granted') {
-                    new Notification(title, { body: message, icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"%3E%3Crect width="192" height="192" fill="%233182ce" rx="24"/%3E%3Cpath d="M48 64h96v8H48v-8zm0 24h96v8H48v-8zm0 24h64v8H48v-8z" fill="white"/%3E%3Ccircle cx="80" cy="120" r="16" fill="white"/%3E%3Ccircle cx="112" cy="120" r="16" fill="white"/%3E%3Crect x="72" y="136" width="48" height="8" fill="white" rx="4"/%3E%3C/svg%3E' });
-                } else if (Notification.permission !== 'denied') {
-                    Notification.requestPermission().then(permission => {
-                        if (permission === 'granted') {
-                            new Notification(title, { body: message, icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"%3E%3Crect width="192" height="192" fill="%233182ce" rx="24"/%3E%3Cpath d="M48 64h96v8H48v-8zm0 24h96v8H48v-8zm0 24h64v8H48v-8z" fill="white"/%3E%3Ccircle cx="80" cy="120" r="16" fill="white"/%3E%3Ccircle cx="112" cy="120" r="16" fill="white"/%3E%3Crect x="72" y="136" width="48" height="8" fill="white" rx="4"/%3E%3C/svg%3E' });
-                        }
+                try {
+                    // Store notification in Firestore
+                    await addDoc(collection(db, `${dataPath}/notifications`), {
+                        title: title,
+                        message: message,
+                        timestamp: serverTimestamp(),
+                        sentBy: auth.currentUser.uid,
+                        type: 'admin_broadcast'
                     });
+                    
+                    // Show local notification for admin
+                    if (Notification.permission === 'granted') {
+                        new Notification(title, { 
+                            body: message, 
+                            icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"%3E%3Crect width="192" height="192" fill="%233182ce" rx="24"/%3E%3Cpath d="M48 64h96v8H48v-8zm0 24h96v8H48v-8zm0 24h64v8H48v-8z" fill="white"/%3E%3Ccircle cx="80" cy="120" r="16" fill="white"/%3E%3Ccircle cx="112" cy="120" r="16" fill="white"/%3E%3Crect x="72" y="136" width="48" height="8" fill="white" rx="4"/%3E%3C/svg%3E' 
+                        });
+                    }
+                    
+                    alert('Notification sent to all users!');
+                    document.getElementById('notification-title').value = '';
+                    document.getElementById('notification-message').value = '';
+                } catch (error) {
+                    console.error('Error sending notification:', error);
+                    alert('Error sending notification. Please try again.');
                 }
-                // In real app, send via Firebase Cloud Messaging to all users
-                alert('Notification sent to all users!');
-                document.getElementById('notification-title').value = '';
-                document.getElementById('notification-message').value = '';
             }
+        }
+
+        // Initialize Firebase Cloud Messaging
+        async function initFCM() {
+            try {
+                // Request notification permission
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    console.log('Notification permission granted');
+                    
+                    // Try to get FCM token (only works with proper VAPID key setup)
+                    try {
+                        const token = await getToken(messaging, {
+                            vapidKey: 'BNzs8b3MdxMeIdB64LIXNYlcvOuvtXzg5fMPrNQN_hR2OQfGLBzAJI-LNt1VaDEPhqtyWXbDIQ_P0zxjffI86Ls'
+                        });
+                        
+                        if (token) {
+                            console.log('FCM Token:', token);
+                            // Store token in user's document for admin to use
+                            if (auth.currentUser) {
+                                await setDoc(doc(db, `${dataPath}/userTokens`, auth.currentUser.uid), {
+                                    fcmToken: token,
+                                    userId: auth.currentUser.uid,
+                                    timestamp: serverTimestamp()
+                                });
+                            }
+                        }
+                    } catch (fcmError) {
+                        console.warn('FCM not configured, using real-time notifications only:', fcmError);
+                    }
+                }
+            } catch (error) {
+                console.error('FCM initialization error:', error);
+            }
+            
+            // Handle foreground messages (when app is open)
+            onMessage(messaging, (payload) => {
+                console.log('Message received:', payload);
+                new Notification(payload.notification.title, {
+                    body: payload.notification.body,
+                    icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"%3E%3Crect width="192" height="192" fill="%233182ce" rx="24"/%3E%3Cpath d="M48 64h96v8H48v-8zm0 24h96v8H48v-8zm0 24h64v8H48v-8z" fill="white"/%3E%3Ccircle cx="80" cy="120" r="16" fill="white"/%3E%3Ccircle cx="112" cy="120" r="16" fill="white"/%3E%3Crect x="72" y="136" width="48" height="8" fill="white" rx="4"/%3E%3C/svg%3E'
+                });
+            });
         }
 
         async function initFirebase() {
@@ -500,6 +549,10 @@
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
+                messaging = getMessaging(app);
+                
+                // Initialize FCM
+                initFCM();
                 
                 onAuthStateChanged(auth, async (user) => {
                     const loadingOverlay = document.getElementById('loading-overlay');
@@ -578,6 +631,7 @@
             attachInventoryListener();
             attachRolesListener();
             attachVehiclesListener();
+            attachNotificationsListener();
             const scheduleDate = document.getElementById('schedule-date').value || new Date().toISOString().split('T')[0];
             attachScheduleListener(scheduleDate);
         }
@@ -589,6 +643,64 @@
                 window.appState.vehicles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderVehicles();
             }, (error) => console.error("Error with vehicles snapshot listener:", error));
+        }
+
+        function attachNotificationsListener() {
+            const notificationsCollectionPath = `${dataPath}/notifications`;
+            if (window.notificationsUnsubscribe) window.notificationsUnsubscribe();
+            window.notificationsUnsubscribe = onSnapshot(
+                query(collection(db, notificationsCollectionPath), orderBy('timestamp', 'desc')),
+                (snapshot) => {
+                    const newNotifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    
+                    // Show notification for new messages (not from current user)
+                    newNotifications.forEach(notification => {
+                        if (notification.sentBy !== auth.currentUser?.uid) {
+                            if (Notification.permission === 'granted') {
+                                new Notification(notification.title, {
+                                    body: notification.message,
+                                    icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"%3E%3Crect width="192" height="192" fill="%233182ce" rx="24"/%3E%3Cpath d="M48 64h96v8H48v-8zm0 24h96v8H48v-8zm0 24h64v8H48v-8z" fill="white"/%3E%3Ccircle cx="80" cy="120" r="16" fill="white"/%3E%3Ccircle cx="112" cy="120" r="16" fill="white"/%3E%3Crect x="72" y="136" width="48" height="8" fill="white" rx="4"/%3E%3C/svg%3E',
+                                    tag: notification.id // Prevent duplicate notifications
+                                });
+                            }
+                        }
+                    });
+                    
+                    // Update notifications display in UI
+                    renderNotifications(newNotifications);
+                }, 
+                (error) => console.error("Error with notifications snapshot listener:", error)
+            );
+        }
+
+        function renderNotifications(notifications) {
+            const notificationsList = document.getElementById('notifications-list');
+            if (!notificationsList) return;
+            
+            if (notifications.length === 0) {
+                notificationsList.innerHTML = '<p class="text-gray-500 text-center py-4">No notifications yet</p>';
+                return;
+            }
+            
+            notificationsList.innerHTML = notifications.map(notification => {
+                const date = notification.timestamp?.toDate?.() || new Date();
+                const timeString = date.toLocaleString();
+                
+                return `
+                    <div class="p-4 bg-blue-50 border-l-4 border-blue-400 rounded-md mb-2">
+                        <div class="flex items-start">
+                            <i data-feather="bell" class="text-blue-400 mr-3 mt-1 flex-shrink-0"></i>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-blue-800">${notification.title}</p>
+                                <p class="text-sm text-blue-700 mt-1">${notification.message}</p>
+                                <p class="text-xs text-blue-600 mt-2">${timeString}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            feather.replace();
         }
 
         function attachPendingUsersListener() {
@@ -2183,6 +2295,24 @@
                 document.getElementById('schedule-date').addEventListener('change', (e) => attachScheduleListener(e.target.value));
                 document.getElementById('inventory-search').addEventListener('input', renderInventory);
                 document.getElementById('send-notification-form')?.addEventListener('submit', handleSendNotification);
+                document.getElementById('refresh-notifications-btn')?.addEventListener('click', () => {
+                    // Re-attach notifications listener to refresh
+                    attachNotificationsListener();
+                });
+                document.getElementById('clear-notifications-btn')?.addEventListener('click', async () => {
+                    if (confirm('Are you sure you want to clear all notifications?')) {
+                        try {
+                            const notificationsRef = collection(db, `${dataPath}/notifications`);
+                            const snapshot = await getDocs(notificationsRef);
+                            const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+                            await Promise.all(deletePromises);
+                            alert('All notifications cleared!');
+                        } catch (error) {
+                            console.error('Error clearing notifications:', error);
+                            alert('Error clearing notifications');
+                        }
+                    }
+                });
             });
         });
 
