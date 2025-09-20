@@ -473,11 +473,11 @@
             if (title && message) {
                 // Send to all users (for demo, show notification locally)
                 if (Notification.permission === 'granted') {
-                    new Notification(title, { body: message, icon: 'https://qgocargo.com/logo.png' });
+                    new Notification(title, { body: message, icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"%3E%3Crect width="192" height="192" fill="%233182ce" rx="24"/%3E%3Cpath d="M48 64h96v8H48v-8zm0 24h96v8H48v-8zm0 24h64v8H48v-8z" fill="white"/%3E%3Ccircle cx="80" cy="120" r="16" fill="white"/%3E%3Ccircle cx="112" cy="120" r="16" fill="white"/%3E%3Crect x="72" y="136" width="48" height="8" fill="white" rx="4"/%3E%3C/svg%3E' });
                 } else if (Notification.permission !== 'denied') {
                     Notification.requestPermission().then(permission => {
                         if (permission === 'granted') {
-                            new Notification(title, { body: message, icon: 'https://qgocargo.com/logo.png' });
+                            new Notification(title, { body: message, icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"%3E%3Crect width="192" height="192" fill="%233182ce" rx="24"/%3E%3Cpath d="M48 64h96v8H48v-8zm0 24h96v8H48v-8zm0 24h64v8H48v-8z" fill="white"/%3E%3Ccircle cx="80" cy="120" r="16" fill="white"/%3E%3Ccircle cx="112" cy="120" r="16" fill="white"/%3E%3Crect x="72" y="136" width="48" height="8" fill="white" rx="4"/%3E%3C/svg%3E' });
                         }
                     });
                 }
@@ -492,8 +492,8 @@
             // Register service worker for PWA
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('sw.js')
-                    .then(registration => console.log('SW registered'))
-                    .catch(error => console.log('SW registration failed'));
+                    .then(registration => console.log('SW registered successfully'))
+                    .catch(error => console.log('SW registration failed:', error));
             }
             
             try {
