@@ -159,36 +159,91 @@
         .autocomplete-suggestion.selected {
             background-color: #e5e7eb;
         }
+    
+        /* --- Login glass & video background --- */
+        #login-screen { position: relative; }
+        #login-screen #bg-video { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        }
+        .glass-card input.input-field {
+            background: rgba(255,255,255,0.85);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #bg-video { display: none; }
+        }
+        @media print {
+            #bg-video { display: none !important; }
+        }
+
+    
+        /* --- Enhanced input fields & login card spacing --- */
+        .login-card { max-width: 480px; }
+        .input-field {
+            padding: 0.875rem 1rem !important;
+            height: 3rem;
+            border-radius: 0.75rem !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .input-field::placeholder { opacity: .8; }
+        .input-field:focus {
+            border-color: rgba(79,70,229,.6) !important;
+            box-shadow: 0 0 0 4px rgba(79,70,229,.25) !important;
+        }
+        .rounded-md.shadow-sm.-space-y-px > div + div {
+            margin-top: .9rem;
+        }
+
+    
+        /* --- App Settings modal minor tweaks --- */
+        #app-settings-modal .modal-content input[type="number"]::-webkit-outer-spin-button,
+        #app-settings-modal .modal-content input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+    
+        /* Overlay darkness adjustable via CSS variable */
+        :root { --login-overlay: rgba(0,0,0,.40); }
+        #login-screen > .bg-black\/40 { background-color: var(--login-overlay) !important; }
+
+    
+        /* --- Auto-logout warning overlay --- */
+        #autologout-warning.hidden { display: none; }
+
     </style>
 </head>
 <body class="bg-gray-100">
 
     <!-- Login Screen -->
-    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-md w-full space-y-8">
+    <div id="login-screen" class="relative min-h-screen flex items-center justify-center bg-black py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        
+        <video id="bg-video" autoplay muted loop playsinline class="absolute inset-0 w-full h-full object-cover"><source src="https://cdn.pixabay.com/video/2019/05/12/23544-335833111_large.mp4" type="video/mp4"></video><div class="absolute inset-0 bg-black/40"></div>
+        <div class="absolute inset-0 bg-black/40"></div>
+    <div class="max-w-md w-full space-y-8">
             <div>
-                <div class="text-center text-5xl font-extrabold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
+                <div class="text-center"><img src="http://qgocargo.com/logo.png" alt="QGO Cargo Logo" class="mx-auto h-28 w-auto drop-shadow-lg"></div>
                 <h2 id="auth-title" class="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
             </div>
-            <div class="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-md">
+            <div class="mt-8 space-y-6 glass-card p-8 rounded-2xl shadow-2xl border border-white/30 backdrop-blur login-card">
                 <div id="approval-message" class="hidden p-4 text-center text-yellow-800 bg-yellow-100 rounded-lg">
                     Your account is awaiting admin approval.
                 </div>
                  <div id="blocked-message" class="hidden p-4 text-center text-red-800 bg-red-100 rounded-lg">
                     Your account has been blocked by an administrator.
                 </div>
-                <div class="rounded-md shadow-sm -space-y-px">
+                <div class="rounded-md shadow-sm -space-y-px" autocomplete="off">
                     <div id="signup-name-field">
                         <label for="full-name" class="sr-only">Full Name</label>
                         <input id="full-name" name="name" type="text" autocomplete="name" required class="input-field rounded-t-md" placeholder="Full Name">
                     </div>
                     <div>
                         <label for="email-address" class="sr-only">Email address</label>
-                        <input id="email-address" name="email" type="email" autocomplete="email" required class="input-field" placeholder="Email address">
+                        <input id="email-address" name="email" type="email" autocomplete="off" autocapitalize="none" autocorrect="off" inputmode="email" required class="input-field" placeholder="Email address">
                     </div>
                     <div>
                         <label for="password" class="sr-only">Password</label>
-                        <input id="password" name="password" type="password" autocomplete="current-password" required class="input-field rounded-b-md" placeholder="Password">
+                        <input id="password" name="password" type="password" autocomplete="new-password" autocapitalize="none" autocorrect="off" required class="input-field rounded-b-md" placeholder="Password">
                     </div>
                 </div>
                 <div>
@@ -216,7 +271,7 @@
             <!-- Header Section -->
             <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div class="flex items-center">
-                    <div id="logo-container" class="text-3xl font-bold mr-4" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
+                    <div id="logo-container" class="mr-4"><img src="http://qgocargo.com/logo.png" alt="QGO Cargo Logo" class="h-10 w-auto"></div>
                     <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 border-l-4 border-gray-300 pl-4">JOB FILE</h1>
                 </div>
                 <div class="text-right w-full sm:w-auto">
@@ -241,6 +296,7 @@
                 </div>
                 <div>
                     <button id="activity-log-btn" class="admin-only bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Activity Log</button>
+                    <button id="app-settings-btn" class="bg-slate-700 hover:bg-slate-800 text-white font-bold py-1 px-3 rounded text-sm mr-2">App Settings</button>
                     <button id="admin-panel-btn" class="admin-only bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Admin Panel</button>
                     <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Logout</button>
                 </div>
@@ -419,6 +475,17 @@
                 </div>
             </div>
             <div id="analytics-body" class="space-y-6"></div>
+        </div>
+    </div>
+
+
+    <!-- Auto-Logout Warning Overlay -->
+    <div id="autologout-warning" class="hidden fixed inset-0 z-[2000] flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/70"></div>
+        <div class="relative bg-white/90 backdrop-blur rounded-2xl p-8 shadow-2xl max-w-md w-[90%] text-center">
+            <div class="text-3xl font-bold mb-2">You’re inactive</div>
+            <div class="text-gray-700 mb-4">App will logout in <span id="autologout-countdown" class="font-extrabold">5</span> seconds…</div>
+            <button id="stay-logged-in" class="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded">Stay Logged In</button>
         </div>
     </div>
 
@@ -646,6 +713,48 @@
         </div>
     </div>
     
+    
+    <!-- App Settings Modal -->
+    <div id="app-settings-modal" class="overlay">
+        <div class="modal-content max-w-xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">Application Settings</h3>
+                <button onclick="closeModal('app-settings-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div class="space-y-6">
+                <div class="border rounded-lg p-4">
+                    <h4 class="text-lg font-semibold mb-2">Auto Logout on Inactivity</h4>
+                    <div class="flex items-center gap-3 mb-3">
+                        <input id="setting-auto-logout-enabled" type="checkbox" class="h-4 w-4">
+                        <label for="setting-auto-logout-enabled" class="text-sm text-gray-700">Enable auto logout</label>
+                    </div>
+                    <label for="setting-auto-logout-seconds" class="block text-sm font-medium text-gray-700">Timeout (seconds)</label>
+                    <div class="flex gap-2 mt-1">
+                        <input id="setting-auto-logout-seconds" type="number" min="5" step="5" class="input-field w-32" placeholder="e.g., 30">
+                        <div class="flex gap-2">
+                            <button type="button" class="quick-time px-3 py-2 bg-gray-200 rounded hover:bg-gray-300" data-seconds="10">10s</button>
+                            <button type="button" class="quick-time px-3 py-2 bg-gray-200 rounded hover:bg-gray-300" data-seconds="20">20s</button>
+                            <button type="button" class="quick-time px-3 py-2 bg-gray-200 rounded hover:bg-gray-300" data-seconds="30">30s</button>
+                            <button type="button" class="quick-time px-3 py-2 bg-gray-200 rounded hover:bg-gray-300" data-seconds="60">60s</button>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">User activity (mouse, keyboard, touch, scroll) will reset the timer.</p>
+                
+                </div>
+                <div class="border rounded-lg p-4">
+                    <h4 class="text-lg font-semibold mb-2">Pre-Logout Warning</h4>
+                    <label for="setting-warning-seconds" class="block text-sm font-medium text-gray-700">Show warning (seconds before logout)</label>
+                    <input id="setting-warning-seconds" type="number" min="0" step="1" class="input-field mt-1 w-32" placeholder="e.g., 5">
+                    <p class="text-xs text-gray-500 mt-2">A full-screen countdown appears and resets if you interact before time runs out.</p>
+                </div>
+                <div class="text-right">
+                    <button onclick="saveAppSettings()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <!-- Activity Log Modal -->
     <div id="activity-log-modal" class="overlay">
         <div class="modal-content max-w-4xl">
@@ -701,10 +810,20 @@
     <script type="module">
         // Import Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, query, where, serverTimestamp, getDocs, writeBatch, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- Global variables ---
+        let inactivityTimer = null;
+        let appSettings = { autoLogoutEnabled: false, autoLogoutSeconds: 30, warningSeconds: 5 };
+
+        // Load settings ASAP (before Firebase init) so we don't lose user choices
+        try {
+            const __stored = localStorage.getItem('appSettings');
+            if (__stored) { try { appSettings = Object.assign({autoLogoutEnabled:false, autoLogoutSeconds:30, warningSeconds:5}, JSON.parse(__stored)); } catch(e){} }
+        } catch (e) { /* ignore */ }
+
+
         let db, auth;
         let currentUser = null;
         let jobFilesCache = [];
@@ -727,6 +846,114 @@
             return null;
         }
 
+        
+        // --- App Settings & Inactivity Logic ---
+        function getStoredSettings() {
+            try {
+                const raw = localStorage.getItem('appSettings');
+                if (raw) return JSON.parse(raw);
+            } catch (e) { console.warn('Bad settings JSON', e); }
+            return { autoLogoutEnabled: false, autoLogoutSeconds: 30 };
+        }
+        function applySettingsToUI() {
+            const s = appSettings;
+            const enabled = document.getElementById('setting-auto-logout-enabled');
+            const seconds = document.getElementById('setting-auto-logout-seconds');
+            if (enabled) enabled.checked = !!s.autoLogoutEnabled;
+            if (seconds) seconds.value = s.autoLogoutSeconds || 30;
+            const warnEl = document.getElementById('setting-warning-seconds');
+            if (warnEl) warnEl.value = (s.warningSeconds ?? 5);
+        }
+        function saveAppSettings() {
+            const enabled = document.getElementById('setting-auto-logout-enabled').checked;
+            const seconds = Math.max(5, parseInt(document.getElementById('setting-auto-logout-seconds').value || '30', 10));
+            const warn = Math.max(0, parseInt(document.getElementById('setting-warning-seconds').value || appSettings.warningSeconds || 5, 10));
+            appSettings = { autoLogoutEnabled: enabled, autoLogoutSeconds: seconds, warningSeconds: warn };
+            localStorage.setItem('appSettings', JSON.stringify(appSettings));
+            closeModal('app-settings-modal');
+            showNotification('Settings saved.');
+            appSettings = getStoredSettings();
+                        setupInactivityWatcher();
+                        
+                        const msg = appSettings.autoLogoutEnabled
+                            ? `Auto logout: ON (${appSettings.autoLogoutSeconds}s, warn ${appSettings.warningSeconds}s)`
+                            : 'Auto logout: OFF';
+                        showNotification(msg);
+ // re-init with new settings
+        }
+        function openAppSettings() {
+            appSettings = getStoredSettings();
+            applySettingsToUI();
+            openModal('app-settings-modal');
+            // quick time buttons
+            setTimeout(() => {
+                document.querySelectorAll('#app-settings-modal .quick-time').forEach(btn => {
+                    btn.onclick = () => {
+                        const secs = parseInt(btn.getAttribute('data-seconds'), 10);
+                        document.getElementById('setting-auto-logout-seconds').value = secs;
+                    };
+                });
+            }, 0);
+        }
+        function setupInactivityWatcher() {
+            clearInactivityWatcher();
+            const s = getStoredSettings();
+            appSettings = s;
+            if (!currentUser || !s.autoLogoutEnabled) return;
+            const ms = (s.autoLogoutSeconds || 30) * 1000;
+            const warnMs = Math.min(ms, (s.warningSeconds ?? 5) * 1000);
+            let warnTimeout = null, logoutTimeout = null, tickInterval = null;
+            const reset = () => {
+                if (inactivityTimer) clearTimeout(inactivityTimer);
+                if (warnTimeout) { clearTimeout(warnTimeout); warnTimeout = null; }
+                if (logoutTimeout) { clearTimeout(logoutTimeout); logoutTimeout = null; }
+                if (tickInterval) { clearInterval(tickInterval); tickInterval = null; }
+                const overlay = document.getElementById('autologout-warning');
+                if (overlay) overlay.classList.add('hidden');
+                warnTimeout = setTimeout(() => {
+                    const overlay = document.getElementById('autologout-warning');
+                    const countEl = document.getElementById('autologout-countdown');
+                    const stayBtn = document.getElementById('stay-logged-in');
+                    let remaining = Math.max(0, Math.round(warnMs/1000));
+                    if (overlay && countEl) {
+                        countEl.textContent = String(remaining);
+                        overlay.classList.remove('hidden');
+                    }
+                    if (stayBtn) {
+                        stayBtn.onclick = () => { overlay?.classList.add('hidden'); reset(); };
+                    }
+                    tickInterval = setInterval(() => {
+                        remaining -= 1;
+                        if (remaining >= 0 && countEl) countEl.textContent = String(remaining);
+                    }, 1000);
+                }, ms - warnMs);
+
+                logoutTimeout = setTimeout(async () => {
+                    try {
+                        showNotification('Logged out due to inactivity.');
+                        await signOut(auth);
+                    } catch (e) { console.error('Auto logout failed', e); }
+                }, ms);
+                inactivityTimer = logoutTimeout;
+            };
+            const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
+            events.forEach(ev => document.addEventListener(ev, reset, { passive: true }));
+            reset();
+            window.__inactivityCleanup = () => events.forEach(ev => document.removeEventListener(ev, reset));
+        }
+        function clearInactivityWatcher() {
+            if (inactivityTimer) { clearTimeout(inactivityTimer); inactivityTimer = null; }
+            if (window.__inactivityCleanup) { window.__inactivityCleanup(); window.__inactivityCleanup = null; }
+        }
+
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const settingsBtn = document.getElementById('app-settings-btn');
+            if (settingsBtn && !settingsBtn.__bound) { settingsBtn.onclick = openAppSettings; settingsBtn.__bound = true; }
+            const saveBtn = document.querySelector('#app-settings-modal button.bg-green-600');
+            if (saveBtn && !saveBtn.__bound) { saveBtn.onclick = saveAppSettings; saveBtn.__bound = true; }
+        });
+
         // --- Firebase Configuration ---
         const firebaseConfig = {
             apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
@@ -744,6 +971,7 @@
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
+                await setPersistence(auth, browserLocalPersistence); // keep user logged in across refreshes
                 
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
@@ -770,6 +998,7 @@
                         
                         if (currentUser.status === 'inactive') {
                             showLogin();
+                        clearInactivityWatcher();
                             document.getElementById('approval-message').style.display = 'block';
                             document.getElementById('blocked-message').style.display = 'none';
                             signOut(auth);
@@ -778,6 +1007,7 @@
 
                         if (currentUser.status === 'blocked') {
                             showLogin();
+                        clearInactivityWatcher();
                             document.getElementById('approval-message').style.display = 'none';
                             document.getElementById('blocked-message').style.display = 'block';
                             signOut(auth);
@@ -785,6 +1015,13 @@
                         }
                         
                         console.log("User logged in:", currentUser);
+                        
+                // Wire App Settings button
+                const settingsBtn = document.getElementById('app-settings-btn');
+                if (settingsBtn) settingsBtn.onclick = openAppSettings;
+
+                        appSettings = getStoredSettings();
+                        setupInactivityWatcher();
                         showApp();
                         loadJobFiles();
                         loadClients();
@@ -792,6 +1029,7 @@
                         currentUser = null;
                         console.log("User logged out");
                         showLogin();
+                        clearInactivityWatcher();
                     }
                 });
 
@@ -838,6 +1076,16 @@
         }
 
         // --- Authentication Logic ---
+
+        // Prevent auto form submit on Enter inside login fields
+        document.addEventListener('keydown', (e) => {
+            const active = document.activeElement;
+            if ((active && (active.id === 'email-address' || active.id === 'password')) && e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('auth-btn')?.click();
+            }
+        });
+
         async function handleSignUp(email, password, displayName) {
             showLoader();
             try {
@@ -891,6 +1139,7 @@
         }
 
         function handleLogout() {
+            clearInactivityWatcher();
             signOut(auth);
         }
 
@@ -2375,7 +2624,59 @@
                     body { padding: 1.5rem; background-color: white !important; }
                     #sort-analytics, button, select, .analytics-table td:last-child, .analytics-table th:last-child { display: none !important; }
                     .modal-content { box-shadow: none; border: none; }
-                </style>
+                
+        /* --- Login glass & video background --- */
+        #login-screen { position: relative; }
+        #login-screen #bg-video { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        }
+        .glass-card input.input-field {
+            background: rgba(255,255,255,0.85);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #bg-video { display: none; }
+        }
+        @media print {
+            #bg-video { display: none !important; }
+        }
+
+    
+        /* --- Enhanced input fields & login card spacing --- */
+        .login-card { max-width: 480px; }
+        .input-field {
+            padding: 0.875rem 1rem !important;
+            height: 3rem;
+            border-radius: 0.75rem !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .input-field::placeholder { opacity: .8; }
+        .input-field:focus {
+            border-color: rgba(79,70,229,.6) !important;
+            box-shadow: 0 0 0 4px rgba(79,70,229,.25) !important;
+        }
+        .rounded-md.shadow-sm.-space-y-px > div + div {
+            margin-top: .9rem;
+        }
+
+    
+        /* --- App Settings modal minor tweaks --- */
+        #app-settings-modal .modal-content input[type="number"]::-webkit-outer-spin-button,
+        #app-settings-modal .modal-content input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+    
+        /* Overlay darkness adjustable via CSS variable */
+        :root { --login-overlay: rgba(0,0,0,.40); }
+        #login-screen > .bg-black\/40 { background-color: var(--login-overlay) !important; }
+
+    
+        /* --- Auto-logout warning overlay --- */
+        #autologout-warning.hidden { display: none; }
+
+    </style>
                 </head><body>
                 <h1 class="text-3xl font-bold mb-6 text-center">Analytics Report</h1>
                 ${analyticsBody}
@@ -2389,7 +2690,59 @@
                 <style>
                     body { padding: 0; margin: 0; background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                     .no-print { display: none !important; }
-                </style>
+                
+        /* --- Login glass & video background --- */
+        #login-screen { position: relative; }
+        #login-screen #bg-video { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        }
+        .glass-card input.input-field {
+            background: rgba(255,255,255,0.85);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #bg-video { display: none; }
+        }
+        @media print {
+            #bg-video { display: none !important; }
+        }
+
+    
+        /* --- Enhanced input fields & login card spacing --- */
+        .login-card { max-width: 480px; }
+        .input-field {
+            padding: 0.875rem 1rem !important;
+            height: 3rem;
+            border-radius: 0.75rem !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .input-field::placeholder { opacity: .8; }
+        .input-field:focus {
+            border-color: rgba(79,70,229,.6) !important;
+            box-shadow: 0 0 0 4px rgba(79,70,229,.25) !important;
+        }
+        .rounded-md.shadow-sm.-space-y-px > div + div {
+            margin-top: .9rem;
+        }
+
+    
+        /* --- App Settings modal minor tweaks --- */
+        #app-settings-modal .modal-content input[type="number"]::-webkit-outer-spin-button,
+        #app-settings-modal .modal-content input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+    
+        /* Overlay darkness adjustable via CSS variable */
+        :root { --login-overlay: rgba(0,0,0,.40); }
+        #login-screen > .bg-black\/40 { background-color: var(--login-overlay) !important; }
+
+    
+        /* --- Auto-logout warning overlay --- */
+        #autologout-warning.hidden { display: none; }
+
+    </style>
                 </head><body>
                 ${previewBody}
             `;
