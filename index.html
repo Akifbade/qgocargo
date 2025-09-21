@@ -237,8 +237,8 @@
                     Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role" class="capitalize"></span>)
                 </div>
                  <div class="flex-grow text-center">
-                     <button onclick="openAnalyticsDashboard()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-5 rounded-md text-base">Analytics</button>
-                 </div>
+                    <button onclick="openAnalyticsDashboard()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-5 rounded-md text-base">Analytics</button>
+                </div>
                 <div>
                     <button id="activity-log-btn" class="admin-only bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Activity Log</button>
                     <button id="admin-panel-btn" class="admin-only bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Admin Panel</button>
@@ -715,6 +715,18 @@
         let fileIdToReject = null; 
         let profitChartInstance = null;
 
+        function safeToDate(timestamp) {
+            if (!timestamp) return null;
+            if (typeof timestamp.toDate === 'function') return timestamp.toDate();
+            if (timestamp instanceof Date) return timestamp;
+            if (typeof timestamp === 'string' || typeof timestamp === 'number') {
+                const d = new Date(timestamp);
+                if (!isNaN(d.getTime())) return d;
+            }
+            if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
+            return null;
+        }
+
         // --- Firebase Configuration ---
         const firebaseConfig = {
             apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
@@ -1174,7 +1186,8 @@
             let filesHtml = '';
             files.forEach((docData) => {
                 const deleteButton = currentUser.role === 'admin' ? `<button onclick="confirmDelete('${docData.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Delete</button>` : '';
-                const lastUpdated = docData.updatedAt?.toDate ? docData.updatedAt.toDate().toLocaleString() : 'N/A';
+                const lastUpdatedDate = safeToDate(docData.updatedAt);
+                const lastUpdated = lastUpdatedDate ? lastUpdatedDate.toLocaleString() : 'N/A';
                 
                 const searchTerm = [docData.jfn, docData.sh, docData.co].join(' ').toLowerCase();
 
@@ -1356,7 +1369,7 @@
                 onOk = () => moveToRecycleBin(docId);
             } else if (type === 'client') {
                 modal.querySelector('#confirm-title').textContent = 'Confirm Client Deletion';
-                const client = clientsCache.find(c => c.id === clientId);
+                const client = clientsCache.find(c => c.id === docId);
                 message = `Are you sure you want to delete the client "${client?.name || 'this client'}"? This action cannot be undone.`;
                 onOk = () => deleteClient(docId);
             }
@@ -1424,13 +1437,13 @@
                  body.innerHTML = `
                 <!-- Timeframe Filters -->
                 <div class="space-y-3">
-                    <div class="flex items-center justify-center gap-4">
+                     <div class="flex items-center justify-center gap-4">
                          <label for="analytics-date-type" class="text-sm font-medium">Report Date Type:</label>
                          <select id="analytics-date-type" class="input-field w-auto">
                              <option value="bd">Billing Date</option>
                              <option value="d">Opening Date</option>
                          </select>
-                    </div>
+                     </div>
                     <div class="flex justify-center flex-wrap gap-2">
                         <button data-timeframe="all" class="timeframe-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">All Time</button>
                         <button data-timeframe="thisYear" class="timeframe-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Year</button>
@@ -1447,8 +1460,8 @@
                      });
                  });
                  document.getElementById('analytics-date-type').addEventListener('change', (e) => {
-                      const activeTimeframeButton = document.querySelector('.timeframe-btn.bg-indigo-700') || document.querySelector('[data-timeframe="all"]');
-                      filterAnalyticsByTimeframe(activeTimeframeButton.dataset.timeframe, e.target.value);
+                     const activeTimeframeButton = document.querySelector('.timeframe-btn.bg-indigo-700') || document.querySelector('[data-timeframe="all"]');
+                     filterAnalyticsByTimeframe(activeTimeframeButton.dataset.timeframe, e.target.value);
                  });
                  return;
             }
@@ -1480,7 +1493,7 @@
                 totalCost += cost;
                 totalProfit += profit;
 
-                profitByFile.push({ id: job.id, jfn: job.jfn, shipper: job.sh, consignee: job.co, profit: profit, status: status, date: job.updatedAt?.toDate() || new Date(0), cost: cost, dsc: job.dsc, mawb: job.mawb, createdBy: creator });
+                profitByFile.push({ id: job.id, jfn: job.jfn, shipper: job.sh, consignee: job.co, profit: profit, status: status, date: safeToDate(job.updatedAt) || new Date(0), cost: cost, dsc: job.dsc, mawb: job.mawb, createdBy: creator });
 
                 if (job.sh) {
                     profitByShipper[job.sh] = (profitByShipper[job.sh] || 0) + profit;
@@ -1669,13 +1682,13 @@
             body.innerHTML = `
                 <!-- Timeframe Filters -->
                 <div class="space-y-3">
-                    <div class="flex items-center justify-center gap-4">
+                     <div class="flex items-center justify-center gap-4">
                          <label for="analytics-date-type" class="text-sm font-medium">Report Date Type:</label>
                          <select id="analytics-date-type" class="input-field w-auto">
                              <option value="bd" ${monthlyReportType === 'bd' ? 'selected' : ''}>Billing Date</option>
                              <option value="d" ${monthlyReportType === 'd' ? 'selected' : ''}>Opening Date</option>
                          </select>
-                    </div>
+                     </div>
                     <div class="flex justify-center flex-wrap gap-2">
                         <button data-timeframe="all" class="timeframe-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">All Time</button>
                         <button data-timeframe="thisYear" class="timeframe-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">This Year</button>
@@ -2008,15 +2021,32 @@
                         try {
                             const restoreBatch = writeBatch(db);
                             
+                            // FIX: Convert date strings back to Date objects for job files before setting
                             backupData.data.jobfiles.forEach(jobFile => {
                                 const docRef = doc(db, 'jobfiles', jobFile.id);
                                 const { id, ...dataToRestore } = jobFile;
+                                const timestampFields = ['createdAt', 'updatedAt', 'checkedAt', 'approvedAt', 'rejectedAt', 'deletedAt'];
+                                timestampFields.forEach(field => {
+                                    if (dataToRestore[field] && typeof dataToRestore[field] === 'string') {
+                                        const parsedDate = new Date(dataToRestore[field]);
+                                        if (!isNaN(parsedDate)) {
+                                            dataToRestore[field] = parsedDate;
+                                        }
+                                    }
+                                });
                                 restoreBatch.set(docRef, dataToRestore);
                             });
 
+                            // FIX: Convert date strings back to Date objects for users before setting
                             backupData.data.users.forEach(user => {
                                 const docRef = doc(db, 'users', user.id);
                                 const { id, ...dataToRestore } = user;
+                                if (dataToRestore.createdAt && typeof dataToRestore.createdAt === 'string') {
+                                    const parsedDate = new Date(dataToRestore.createdAt);
+                                    if(!isNaN(parsedDate)) {
+                                        dataToRestore.createdAt = parsedDate;
+                                    }
+                                }
                                 restoreBatch.set(docRef, dataToRestore);
                             });
 
@@ -2249,8 +2279,10 @@
             const createdInfo = document.getElementById('created-by-info');
             const updatedInfo = document.getElementById('last-updated-by-info');
             
-            createdInfo.textContent = data.createdBy ? `Created by: ${data.createdBy} on ${data.createdAt?.toDate().toLocaleDateString()}` : '';
-            updatedInfo.textContent = data.lastUpdatedBy ? `Last updated by: ${data.lastUpdatedBy} on ${data.updatedAt?.toDate().toLocaleString()}` : '';
+            const createdDate = safeToDate(data.createdAt);
+            createdInfo.textContent = data.createdBy && createdDate ? `Created by: ${data.createdBy} on ${createdDate.toLocaleDateString()}` : '';
+            const updatedDate = safeToDate(data.updatedAt);
+            updatedInfo.textContent = data.lastUpdatedBy && updatedDate ? `Last updated by: ${data.lastUpdatedBy} on ${updatedDate.toLocaleString()}` : '';
             
             document.getElementById('checked-stamp').style.display = 'none';
             document.getElementById('approved-stamp').style.display = 'none';
@@ -2261,7 +2293,8 @@
 
             const checkBtn = document.getElementById('check-btn');
             if (data.checkedBy) {
-                const checkedDate = data.checkedAt?.toDate() ? ` on ${data.checkedAt.toDate().toLocaleDateString()}` : '';
+                const checkedAtDate = safeToDate(data.checkedAt);
+                const checkedDate = checkedAtDate ? ` on ${checkedAtDate.toLocaleDateString()}` : '';
                 setVal('checked-by', `${data.checkedBy}${checkedDate}`);
                 checkBtn.disabled = true;
                 checkBtn.textContent = 'Checked';
@@ -2273,11 +2306,13 @@
             }
 
             if (data.status === 'approved') {
-                const approvedDate = data.approvedAt?.toDate() ? ` on ${data.approvedAt.toDate().toLocaleDateString()}` : '';
+                const approvedAtDate = safeToDate(data.approvedAt);
+                const approvedDate = approvedAtDate ? ` on ${approvedAtDate.toLocaleDateString()}` : '';
                 setVal('approved-by', `${data.approvedBy}${approvedDate}`);
                 document.getElementById('approved-stamp').style.display = 'block';
             } else if (data.status === 'rejected') {
-                const rejectedDate = data.rejectedAt?.toDate() ? ` on ${data.rejectedAt.toDate().toLocaleDateString()}` : '';
+                const rejectedAtDate = safeToDate(data.rejectedAt);
+                const rejectedDate = rejectedAtDate ? ` on ${rejectedAtDate.toLocaleDateString()}` : '';
                 setVal('approved-by', `Rejected by ${data.rejectedBy}${rejectedDate}`);
                 document.getElementById('rejected-stamp').style.display = 'block';
                 document.getElementById('rejection-banner').style.display = 'block';
@@ -2307,7 +2342,7 @@
                  data.ch.forEach(charge => addChargeRow(charge));
              } else {
                 // If there are no charges, ensure there are some empty rows to start with
-                for(let i=0; i<5; i++) addChargeRow();
+                 for(let i=0; i<5; i++) addChargeRow();
             }
             calculate();
         }
@@ -2366,15 +2401,19 @@
             const totalSelling = data.totalSelling || 0;
             const totalProfit = data.totalProfit || 0;
             
-            const checkedByText = data.checkedBy ? `${data.checkedBy} on ${data.checkedAt?.toDate().toLocaleDateString()}` : 'Pending';
+            const checkedAtDatePrint = safeToDate(data.checkedAt);
+            const checkedByText = data.checkedBy ? `${data.checkedBy}${checkedAtDatePrint ? ` on ${checkedAtDatePrint.toLocaleDateString()}`: ''}` : 'Pending';
+
             let approvedByText = 'Pending Approval';
+            const approvedAtDatePrint = safeToDate(data.approvedAt);
             if (data.status === 'approved') {
-                approvedByText = `${data.approvedBy} on ${data.approvedAt?.toDate().toLocaleDateString()}`;
+                approvedByText = `${data.approvedBy}${approvedAtDatePrint ? ` on ${approvedAtDatePrint.toLocaleDateString()}` : ''}`;
             } else if (data.status === 'rejected') {
                 approvedByText = `REJECTED: ${data.rejectionReason}`;
             }
             
-            const createdByText = data.createdBy ? `${data.createdBy} on ${data.createdAt?.toDate().toLocaleDateString()}` : (data.pb || 'N/A');
+            const createdAtDatePrint = safeToDate(data.createdAt);
+            const createdByText = data.createdBy ? `${data.createdBy}${createdAtDatePrint ? ` on ${createdAtDatePrint.toLocaleDateString()}` : ''}` : (data.pb || 'N/A');
             
             const checkedStampHtml = data.checkedBy ? `<div class="stamp stamp-checked" style="display: block;">Checked</div>` : '';
             let approvalStampHtml = '';
@@ -3052,7 +3091,8 @@
                 } else {
                     let filesHtml = '';
                     deletedFiles.forEach((docData) => {
-                        const deletedAt = docData.deletedAt?.toDate ? docData.deletedAt.toDate().toLocaleString() : 'N/A';
+                        const deletedAtDate = safeToDate(docData.deletedAt);
+                        const deletedAt = deletedAtDate ? deletedAtDate.toLocaleString() : 'N/A';
                         filesHtml += `
                             <div class="job-file-item border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center bg-gray-50 hover:bg-gray-100 gap-2">
                                 <div class="text-center sm:text-left">
@@ -3389,3 +3429,4 @@
     </script>
 </body>
 </html>
+
