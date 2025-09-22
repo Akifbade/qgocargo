@@ -344,9 +344,13 @@
                                 <label for="delivery-mawb" class="block text-sm font-medium text-gray-700 mb-1">AWB / MAWB</label>
                                 <input type="text" id="delivery-mawb" class="input-field" placeholder="Auto-filled or enter manually">
                             </div>
-                            <div class="col-span-1 sm:col-span-2">
+                             <div>
                                 <label for="delivery-inv" class="block text-sm font-medium text-gray-700 mb-1">Invoice No.</label>
                                 <input type="text" id="delivery-inv" class="input-field" placeholder="Auto-filled or enter manually">
+                            </div>
+                             <div>
+                                <label for="delivery-pcs" class="block text-sm font-medium text-gray-700 mb-1">Number of Pieces</label>
+                                <input type="text" id="delivery-pcs" class="input-field" placeholder="Auto-filled or enter manually">
                             </div>
                         </div>
 
@@ -1015,6 +1019,7 @@
                     document.getElementById('delivery-airlines').value = selectedJobFile.ca || '';
                     document.getElementById('delivery-mawb').value = selectedJobFile.mawb || '';
                     document.getElementById('delivery-inv').value = selectedJobFile.in || '';
+                    document.getElementById('delivery-pcs').value = selectedJobFile.pc || '';
                     document.getElementById('delivery-location').value = '';
                     document.getElementById('additional-notes').value = '';
                     document.getElementById('driver-select').value = '';
@@ -1059,12 +1064,14 @@
                     jfn: manualJfn,
                     sh: manualShipper,
                     co: manualConsignee,
-                    dsc: '', gw: '', 
+                    dsc: '', 
+                    gw: '', 
                     mawb: document.getElementById('delivery-mawb').value.trim() || 'N/A',
                     or: document.getElementById('delivery-origin').value.trim() || 'N/A', 
                     de: document.getElementById('delivery-destination').value.trim() || 'N/A',
                     ca: document.getElementById('delivery-airlines').value.trim() || 'N/A',
                     in: document.getElementById('delivery-inv').value.trim() || 'N/A',
+                    pcs: document.getElementById('delivery-pcs').value.trim() || 'N/A'
                 };
             } else {
                 if (!selectedJobFile) {
@@ -1088,6 +1095,7 @@
                     de: document.getElementById('delivery-destination').value.trim() || 'N/A',
                     ca: document.getElementById('delivery-airlines').value.trim() || 'N/A',
                     in: document.getElementById('delivery-inv').value.trim() || 'N/A',
+                    pcs: document.getElementById('delivery-pcs').value.trim() || 'N/A'
                 };
             }
             
@@ -1485,7 +1493,8 @@
                         <div><strong class="text-gray-500 block">Origin:</strong> ${jobData.or || 'N/A'}</div>
                         <div><strong class="text-gray-500 block">Destination:</strong> ${jobData.de || 'N/A'}</div>
                         <div class="col-span-1 sm:col-span-2"><strong class="text-gray-500 block">Description:</strong> ${jobData.dsc || 'N/A'}</div>
-                        <div class="col-span-1 sm:col-span-2"><strong class="text-gray-500 block">Gross Weight:</strong> ${jobData.gw || 'N/A'}</div>
+                        <div><strong class="text-gray-500 block">Gross Weight:</strong> ${jobData.gw || 'N/A'}</div>
+                        <div><strong class="text-gray-500 block">No. of Pcs:</strong> ${jobData.pcs || 'N/A'}</div>
                     </div>
 
                     <!-- Delivery Details -->
