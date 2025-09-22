@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Job File Backup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .print-table { border-collapse: collapse; width: 100%; }
+        .print-table th, .print-table td { border: 1px solid #d1d5db; padding: 0.5rem; text-align: left; }
+        .print-field { border: 1px solid #6b7280; padding: 0.3rem; min-height: 24px; word-break: break-all; }
+        .stamp {
+            position: absolute; top: -10px; right: -10px; padding: 4px 12px;
+            border-radius: 4px; font-size: 14px; font-weight: bold;
+            text-transform: uppercase; transform: rotate(15deg); opacity: 0.8;
+        }
+        .stamp-approved { border: 2px solid #16a34a; color: #16a34a; }
+        .stamp-checked { border: 2px solid #2563eb; color: #2563eb; }
+        .stamp-rejected { border: 2px solid #dc2626; color: #dc2626; }
+        .loader {
+            border: 4px solid #f3f3f3; border-top: 4px solid #4f46e5;
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div id="app" class="container mx-auto mt-10 p-8 bg-white rounded-lg shadow-lg max-w-4xl">
+        <div class="text-center">
+             <img src="http://qgocargo.com/logo.png" alt="QGO Cargo Logo" class="mx-auto h-16 w-auto mb-4">
+            <h1 class="text-3xl font-bold text-gray-800">Advanced Data Backup Tool</h1>
+            <p class="text-gray-600 mt-2">Generate a ZIP archive of individual job files and an analytics report for a selected date range.</p>
+        </div>
+
+        <div id="login-prompt" class="hidden text-center my-8 p-6 bg-yellow-100 text-yellow-800 rounded-lg">
+            <p class="font-semibold">Please log in to the main application first to use this backup tool.</p>
+            <p class="text-sm mt-2">This page requires an active session to securely access your data.</p>
+        </div>
+        
+        <div id="backup-ui" class="hidden mt-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end p-6 bg-gray-50 rounded-lg border">
+                <div>
+                    <label for="date-from" class="block text-sm font-medium text-gray-700">From Date</label>
+                    <input type="date" id="date-from" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label for="date-to" class="block text-sm font-medium text-gray-700">To Date</label>
+                    <input type="date" id="date-to" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <button id="generate-backup-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM4 8h5v2H4V8zm0 5a1 1 0 011-1h.5a.5.5 0 010 1H5a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
+                    Generate & Download Backup
+                </button>
+            </div>
+
+            <div id="status-area" class="mt-6 text-center text-gray-700 space-y-2"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Firebase SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
+            authDomain: "my-job-file-system.firebaseapp.com",
+            projectId: "my-job-file-system",
+            storageBucket: "my-job-file-system.appspot.com",
+            messagingSenderId: "145307873304",
+            appId: "1:145307873304:web:d661ea6ec118801b4a136d",
+            measurementId: "G-8EHX5K7YHL"
+        };
+        
+        let db, auth;
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+
+        const loginPrompt = document.getElementById('login-prompt');
+        const backupUI = document.getElementById('backup-ui');
+        const generateBtn = document.getElementById('generate-backup-btn');
+        const statusArea = document.getElementById('status-area');
+        
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                loginPrompt.classList.add('hidden');
+                backupUI.classList.remove('hidden');
+                document.getElementById('date-to').valueAsDate = new Date();
+            } else {
+                loginPrompt.classList.remove('hidden');
+                backupUI.classList.add('hidden');
+            }
+        });
+
+        generateBtn.addEventListener('click', generateBackup);
+
+        function safeToDate(timestamp) {
+            if (!timestamp) return null;
+            if (typeof timestamp.toDate === 'function') return timestamp.toDate();
+            if (timestamp instanceof Date) return timestamp;
+            if (typeof timestamp === 'string' || typeof timestamp === 'number') {
+                const d = new Date(timestamp);
+                if (!isNaN(d.getTime())) return d;
+            }
+            if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
+            return null;
+        }
+
+        async function generateBackup() {
+            const fromDate = document.getElementById('date-from').value;
+            const toDate = document.getElementById('date-to').value;
+
+            if (!fromDate || !toDate) {
+                statusArea.innerHTML = `<p class="text-red-500 font-semibold">Please select both a "From" and "To" date.</p>`;
+                return;
+            }
+
+            statusArea.innerHTML = `<div class="flex justify-center items-center gap-3"><div class="loader"></div><p>Starting backup process...</p></div>`;
+            generateBtn.disabled = true;
+            generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            try {
+                // 1. Fetch Job Files
+                statusArea.innerHTML += `<p>Fetching job files from ${fromDate} to ${toDate}...</p>`;
+                const jobFilesRef = collection(db, 'jobfiles');
+                const q = query(jobFilesRef, where("d", ">=", fromDate), where("d", "<=", toDate));
+                const querySnapshot = await getDocs(q);
+                const jobFiles = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                if (jobFiles.length === 0) {
+                    statusArea.innerHTML = `<p class="text-yellow-600 font-semibold">No job files found for the selected date range.</p>`;
+                    return;
+                }
+                
+                statusArea.innerHTML += `<p>Found ${jobFiles.length} job files. Preparing ZIP file...</p>`;
+                const zip = new JSZip();
+
+                // 2. Generate individual Excel files
+                for (let i = 0; i < jobFiles.length; i++) {
+                    const job = jobFiles[i];
+                    const excelHtml = getPrintViewHtml(job, false);
+                    const fileName = `JobFile-${job.jfn.replace(/[\/\\?%*:|"<>]/g, '-')}.xls`;
+                    zip.file(fileName, excelHtml);
+                    statusArea.innerHTML += `<p class="text-sm text-gray-500">Generated: ${fileName}</p>`;
+                    await new Promise(resolve => setTimeout(resolve, 10)); // Prevent browser freezing
+                }
+                
+                // 3. Generate Analytics Report
+                statusArea.innerHTML += `<p>Generating analytics report...</p>`;
+                const analyticsHtml = generateAnalyticsReport(jobFiles);
+                zip.file("Analytics Report.html", analyticsHtml);
+
+                // 4. Create and download ZIP
+                statusArea.innerHTML += `<p class="font-semibold">Finalizing ZIP archive... Please wait.</p>`;
+                const content = await zip.generateAsync({ type: "blob" });
+                
+                const date = new Date().toISOString().slice(0, 10);
+                saveAs(content, `QGO_Backup_${fromDate}_to_${toDate}_(${date}).zip`);
+                statusArea.innerHTML = `<p class="text-green-600 font-bold">Backup successfully generated and download started!</p>`;
+
+            } catch (error) {
+                console.error("Backup generation failed:", error);
+                statusArea.innerHTML = `<p class="text-red-500 font-semibold">An error occurred: ${error.message}</p>`;
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+        
+        function generateAnalyticsReport(jobs) {
+            let totalJobs = jobs.length;
+            let totalRevenue = 0;
+            let totalCost = 0;
+            let totalProfit = 0;
+
+            jobs.forEach(job => {
+                totalRevenue += job.totalSelling || 0;
+                totalCost += job.totalCost || 0;
+                totalProfit += job.totalProfit || 0;
+            });
+
+            const fromDate = document.getElementById('date-from').value;
+            const toDate = document.getElementById('date-to').value;
+            
+            return `
+                <!DOCTYPE html><html><head><title>Analytics Report</title>
+                <script src="https://cdn.tailwindcss.com"><\/script></head>
+                <body class="p-8"><div class="max-w-4xl mx-auto">
+                    <h1 class="text-2xl font-bold text-center">Analytics Report</h1>
+                    <p class="text-center text-gray-600">For period: ${fromDate} to ${toDate}</p>
+                    <div class="grid grid-cols-4 gap-4 text-center my-8">
+                        <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Total Jobs</p><p class="text-2xl font-bold">${totalJobs}</p></div>
+                        <div class="bg-blue-100 p-4 rounded-lg"><p class="text-sm text-blue-800">Total Revenue</p><p class="text-2xl font-bold text-blue-900">KD ${totalRevenue.toFixed(3)}</p></div>
+                        <div class="bg-red-100 p-4 rounded-lg"><p class="text-sm text-red-800">Total Cost</p><p class="text-2xl font-bold text-red-900">KD ${totalCost.toFixed(3)}</p></div>
+                        <div class="bg-green-100 p-4 rounded-lg"><p class="text-sm text-green-800">Total Profit</p><p class="text-2xl font-bold text-green-900">KD ${totalProfit.toFixed(3)}</p></div>
+                    </div>
+                </div></body></html>
+            `;
+        }
+
+        function getPrintViewHtml(data) {
+            const totalCost = data.totalCost || 0;
+            const totalSelling = data.totalSelling || 0;
+            const totalProfit = data.totalProfit || 0;
+            
+            const checkedAtDatePrint = safeToDate(data.checkedAt);
+            const checkedByText = data.checkedBy ? `${data.checkedBy}${checkedAtDatePrint ? ` on ${checkedAtDatePrint.toLocaleDateString()}`: ''}` : 'Pending';
+
+            let approvedByText = 'Pending Approval';
+            const approvedAtDatePrint = safeToDate(data.approvedAt);
+            if (data.status === 'approved') {
+                approvedByText = `${data.approvedBy}${approvedAtDatePrint ? ` on ${approvedAtDatePrint.toLocaleDateString()}` : ''}`;
+            } else if (data.status === 'rejected') {
+                approvedByText = `REJECTED: ${data.rejectionReason}`;
+            }
+            
+            const createdAtDatePrint = safeToDate(data.createdAt);
+            const createdByText = data.createdBy ? `${data.createdBy}${createdAtDatePrint ? ` on ${createdAtDatePrint.toLocaleDateString()}` : ''}` : (data.pb || 'N/A');
+            
+            const checkedStampHtml = data.checkedBy ? `<div class="stamp stamp-checked" style="display: block;">Checked</div>` : '';
+            let approvalStampHtml = '';
+            if (data.status === 'approved') {
+                approvalStampHtml = `<div class="stamp stamp-approved" style="display: block;">Approved</div>`;
+            } else if (data.status === 'rejected') {
+                approvalStampHtml = `<div class="stamp stamp-rejected" style="display: block;">Rejected</div>`;
+            }
+
+            const checkedSymbol = '&#9745;';
+            const uncheckedSymbol = '&#9744;';
+            
+            const descriptionHtml = `<div style="grid-column: span 12; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>Description:</strong><div class="print-field">${data.dsc || ''}</div></div>`;
+
+            const excelHeader = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset='UTF-8'><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>${data.jfn.replace(/[\/\\?%*:|"<>]/g, '-')}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>`;
+
+            return `${excelHeader}
+                <div style="border: 2px solid #374151; padding: 0.5rem; background-color: #fff;">
+                    <div style="display: grid; grid-template-columns: repeat(12, 1fr); gap: 1px; background-color: #374151; border: 1px solid #374151;">
+                        <div style="grid-column: span 3; background-color: #fff; padding: 0.25rem; display:flex; align-items:center; border: 1px solid #374151;">
+                            <img src="http://qgocargo.com/logo.png" alt="Logo" style="height: 2.5rem; width: auto;">
+                        </div>
+                        <div style="grid-column: span 6; background-color: #fff; display:flex; align-items:center; justify-content:center; font-size: 1.25rem; font-weight: bold; border: 1px solid #374151;">JOBFILE MANAGEMENT SYSTEM</div>
+                        <div style="grid-column: span 3; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><div><strong>Date:</strong> ${data.d || ''}</div><div><strong>P.O. #:</strong> ${data.po || ''}</div></div>
+                        
+                        <div style="grid-column: span 12; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>Job File No.:</strong> ${data.jfn || ''}</div>
+
+                        <div style="grid-column: span 12; background-color: #fff; padding: 0.25rem; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; font-size: 0.75rem; border: 1px solid #374151;">
+                            <div><strong>Clearance</strong><br>${(data.cl || []).includes('Export') ? checkedSymbol : uncheckedSymbol} Export<br>${(data.cl || []).includes('Import') ? checkedSymbol : uncheckedSymbol} Import<br>${(data.cl || []).includes('Clearance') ? checkedSymbol : uncheckedSymbol} Clearance<br>${(data.cl || []).includes('Local Move') ? checkedSymbol : uncheckedSymbol} Local Move</div>
+                            <div><strong>Product Type</strong><br>${(data.pt || []).includes('Air Freight') ? checkedSymbol : uncheckedSymbol} Air<br>${(data.pt || []).includes('Sea Freight') ? checkedSymbol : uncheckedSymbol} Sea<br>${(data.pt || []).includes('Land Freight') ? checkedSymbol : uncheckedSymbol} Land<br>${(data.pt || []).includes('Others') ? checkedSymbol : uncheckedSymbol} Others</div>
+                        </div>
+
+                        <div style="grid-column: span 6; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>Invoice No.:</strong><div class="print-field">${data.in || ''}</div></div>
+                        <div style="grid-column: span 6; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>Billing Date:</strong><div class="print-field">${data.bd || ''}</div></div>
+                        <div style="grid-column: span 12; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>Salesman:</strong><div class="print-field">${data.sm || ''}</div></div>
+
+                        <div style="grid-column: span 6; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>Shipper's Name:</strong><div class="print-field">${data.sh || ''}</div></div>
+                        <div style="grid-column: span 6; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>Consignee's Name:</strong><div class="print-field">${data.co || ''}</div></div>
+                        
+                        <div style="grid-column: span 6; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>MAWB/OBL/TCN:</strong><div class="print-field">${data.mawb || ''}</div></div>
+                        <div style="grid-column: span 6; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>Teams of Shipping:</strong><div class="print-field">${data.ts || ''}</div></div>
+                        <div style="grid-column: span 6; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>HAWB/HBL:</strong><div class="print-field">${data.hawb || ''}</div></div>
+                        <div style="grid-column: span 3; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>Origin:</strong><div class="print-field">${data.or || ''}</div></div>
+                        <div style="grid-column: span 3; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>Destination:</strong><div class="print-field">${data.de || ''}</div></div>
+                        <div style="grid-column: span 3; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>No. of Pieces:</strong><div class="print-field">${data.pc || ''}</div></div>
+                        <div style="grid-column: span 3; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>Gross Wt:</strong><div class="print-field">${data.gw || ''}</div></div>
+                        <div style="grid-column: span 6; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>Volume Wt:</strong><div class="print-field">${data.vw || ''}</div></div>
+                        
+                        ${descriptionHtml}
+                        <div style="grid-column: span 6; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>Carrier/Line/Trucking:</strong><div class="print-field">${data.ca || ''}</div></div>
+                        <div style="grid-column: span 6; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>Truck/Driver:</strong><div class="print-field">${data.tn || ''}</div></div>
+                        <div style="grid-column: span 4; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>Vessel:</strong><div class="print-field">${data.vn || ''}</div></div>
+                        <div style="grid-column: span 4; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>Flight/Voyage:</strong><div class="print-field">${data.fv || ''}</div></div>
+                        <div style="grid-column: span 4; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>Container No:</strong><div class="print-field">${data.cn || ''}</div></div>
+
+                        <div style="grid-column: span 12; background-color: #fff; padding: 0; border: 1px solid #374151;">
+                            <table class="print-table" style="font-size: 0.75rem;">
+                                <thead><tr><th>Description</th><th>Cost</th><th>Selling</th><th>Profit</th><th>Notes</th></tr></thead>
+                                <tbody>
+                                    ${(data.ch || []).map(c => `<tr><td>${c.l}</td><td>${c.c}</td><td>${c.s}</td><td>${(parseFloat(c.s || 0) - parseFloat(c.c || 0)).toFixed(3)}</td><td>${c.n}</td></tr>`).join('')}
+                                    <tr style="font-weight: bold; background-color: #f3f4f6;"><td>TOTAL:</td><td>${totalCost.toFixed(3)}</td><td>${totalSelling.toFixed(3)}</td><td>${totalProfit.toFixed(3)}</td><td></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="grid-column: span 12; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>REMARKS:</strong><div class="print-field" style="height: 5rem;">${(data.re || '').replace(/\n/g, '<br>')}</div></div>
+                        <div style="grid-column: span 4; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>PREPARED BY:</strong><div class="print-field">${createdByText}</div></div>
+                        <div style="grid-column: span 4; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; position: relative; border: 1px solid #374151;">${checkedStampHtml}<strong>CHECKED BY:</strong><div class="print-field">${checkedByText}</div></div>
+                        <div style="grid-column: span 4; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; position: relative; border: 1px solid #374151;">${approvalStampHtml}<strong>APPROVED BY:</strong><div class="print-field">${approvedByText}</div></div>
+                    </div>
+                </div></body></html>`;
+        }
+    </script>
+</body>
+</html>
