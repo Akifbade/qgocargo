@@ -137,7 +137,27 @@
     </div>
 
     <script type="module">
+        // Import necessary Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
         // --- This page is offline-first. It relies on data synced from the main application. ---
+        
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
+            authDomain: "my-job-file-system.firebaseapp.com",
+            projectId: "my-job-file-system",
+            storageBucket: "my-job-file-system.appspot.com",
+            messagingSenderId: "145307873304",
+            appId: "1:145307873304:web:d661ea6ec118801b4a136d",
+            measurementId: "G-8EHX5K7YHL"
+        };
+        
+        // --- Firebase Initialization ---
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
 
         const loginPrompt = document.getElementById('login-prompt');
         const backupUI = document.getElementById('backup-ui');
@@ -152,16 +172,16 @@
         let sortDirection = 'desc';
         let chartInstances = {};
 
-        // --- Initialization ---
-        document.addEventListener('DOMContentLoaded', () => {
-             // Check for auth state just to guide user, no actual Firebase operations here
-            const isLoggedIn = localStorage.getItem('firebase:host:my-job-file-system.firebaseapp.com');
-            if (isLoggedIn) {
+        // --- Initialization with proper Auth Check ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is signed in, show the main UI
                 loginPrompt.classList.add('hidden');
                 backupUI.classList.remove('hidden');
                 document.getElementById('date-to').valueAsDate = new Date();
                 loadDataFromCacheAndInitialize();
             } else {
+                // User is signed out, show the login prompt
                 loginPrompt.classList.remove('hidden');
                 backupUI.classList.add('hidden');
             }
@@ -488,4 +508,5 @@
     </script>
 </body>
 </html>
+
 
