@@ -58,6 +58,12 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
         }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px 0 rgba(0,0,0,0.06);
+        }
         .btn-primary { background-color: var(--qgo-blue); color: white; }
         .btn-primary:hover { background-color: #0c5383; }
         .btn-secondary { background-color: #e2e8f0; color: #1e293b; border-color: #cbd5e1 }
@@ -66,6 +72,7 @@
         .btn-success:hover { background-color: #429e96; }
         .btn-danger { background-color: #dc2626; color: white; }
         .btn-danger:hover { background-color: #b91c1c; }
+        .btn-xs { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
 
         .overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -276,12 +283,19 @@
             
             <!-- 2. Assign New Delivery -->
             <section class="bg-white p-6 rounded-xl shadow-md">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
-                    <span>Assign New Delivery</span>
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                        <span>Assign New Delivery</span>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="manual-job-toggle" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <label for="manual-job-toggle" class="ml-2 block text-sm font-medium text-gray-700">Create Manual Jobfile</label>
+                    </div>
                 </h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8">
-                    <div class="space-y-4">
+                    <!-- Search section -->
+                    <div id="job-search-section" class="space-y-4">
                         <div class="relative">
                             <label for="job-file-search" class="block text-sm font-medium text-gray-700 mb-1">Search Job File</label>
                             <input type="text" id="job-file-search" class="input-field" placeholder="Job No, Shipper, or Consignee...">
@@ -295,32 +309,49 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Delivery Form -->
                     <form id="delivery-form" class="space-y-4" novalidate>
+                         <!-- Manual entry fields, hidden by default -->
+                        <div id="manual-fields-section" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="manual-job-file-no" class="block text-sm font-medium text-gray-700 mb-1">Job File Number*</label>
+                                <input type="text" id="manual-job-file-no" class="input-field" placeholder="Enter Job File Number">
+                            </div>
+                             <div>
+                                <label for="manual-shipper" class="block text-sm font-medium text-gray-700 mb-1">Shipper*</label>
+                                <input type="text" id="manual-shipper" class="input-field" placeholder="Enter Shipper Name">
+                            </div>
+                             <div class="col-span-1 sm:col-span-2">
+                                <label for="manual-consignee" class="block text-sm font-medium text-gray-700 mb-1">Consignee*</label>
+                                <input type="text" id="manual-consignee" class="input-field" placeholder="Enter Consignee Name">
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label for="delivery-origin" class="block text-sm font-medium text-gray-700 mb-1">Country of Origin</label>
-                                <input type="text" id="delivery-origin" class="input-field" placeholder="Auto-filled from Job">
+                                <input type="text" id="delivery-origin" class="input-field" placeholder="Auto-filled or enter manually">
                             </div>
                             <div>
                                 <label for="delivery-destination" class="block text-sm font-medium text-gray-700 mb-1">Destination</label>
-                                <input type="text" id="delivery-destination" class="input-field" placeholder="Auto-filled from Job">
+                                <input type="text" id="delivery-destination" class="input-field" placeholder="Auto-filled or enter manually">
                             </div>
                             <div>
                                 <label for="delivery-airlines" class="block text-sm font-medium text-gray-700 mb-1">Airlines</label>
-                                <input type="text" id="delivery-airlines" class="input-field" placeholder="Auto-filled from Job">
+                                <input type="text" id="delivery-airlines" class="input-field" placeholder="Auto-filled or enter manually">
                             </div>
                             <div>
                                 <label for="delivery-mawb" class="block text-sm font-medium text-gray-700 mb-1">AWB / MAWB</label>
-                                <input type="text" id="delivery-mawb" class="input-field" placeholder="Auto-filled from Job">
+                                <input type="text" id="delivery-mawb" class="input-field" placeholder="Auto-filled or enter manually">
                             </div>
                             <div class="col-span-1 sm:col-span-2">
                                 <label for="delivery-inv" class="block text-sm font-medium text-gray-700 mb-1">Invoice No.</label>
-                                <input type="text" id="delivery-inv" class="input-field" placeholder="Auto-filled from Job">
+                                <input type="text" id="delivery-inv" class="input-field" placeholder="Auto-filled or enter manually">
                             </div>
                         </div>
 
                         <div>
-                            <label for="delivery-location" class="block text-sm font-medium text-gray-700 mb-1">Delivery Location</label>
+                            <label for="delivery-location" class="block text-sm font-medium text-gray-700 mb-1">Delivery Location*</label>
                             <textarea id="delivery-location" rows="2" class="input-field" placeholder="Enter the full delivery address"></textarea>
                         </div>
                         <div>
@@ -328,7 +359,7 @@
                             <textarea id="additional-notes" rows="2" class="input-field" placeholder="e.g., Contact person, delivery instructions"></textarea>
                         </div>
                         <div>
-                            <label for="driver-select" class="block text-sm font-medium text-gray-700 mb-1">Assign Driver</label>
+                            <label for="driver-select" class="block text-sm font-medium text-gray-700 mb-1">Assign Driver*</label>
                             <select id="driver-select" class="input-field">
                                 <option value="">-- Select a Driver --</option>
                             </select>
@@ -385,7 +416,8 @@
     <div id="confirm-modal" class="overlay">
         <div class="modal-content max-w-sm">
             <h3 class="text-lg font-bold mb-4" id="confirm-title">Confirm Action</h3>
-            <div id="confirm-message" class="mb-4 text-sm">Are you sure?</div>
+            <div id="confirm-message" class="mb-6 text-sm">Are you sure?</div>
+            <div id="confirm-inputs" class="space-y-4"></div>
             <div class="text-right mt-6 space-x-2">
                 <button id="confirm-cancel" class="btn btn-secondary">Cancel</button>
                 <button id="confirm-ok" class="btn btn-danger">Confirm</button>
@@ -404,8 +436,8 @@
                 <div id="user-list-admin" class="space-y-2 max-h-[60vh] overflow-y-auto">
                     <!-- User list will be populated here -->
                 </div>
-                <div class="text-right">
-                    <button onclick="saveUserChanges()" class="btn btn-success">Save Changes</button>
+                <div id="admin-panel-footer" class="flex flex-wrap justify-between items-center mt-6 pt-4 border-t gap-2">
+                    <!-- Buttons will be populated by JS -->
                 </div>
             </div>
         </div>
@@ -706,12 +738,11 @@
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
                 
-                // Create user document in Firestore
                 await setDoc(doc(db, "users", user.uid), {
                     displayName: name,
                     email: email,
                     role: 'driver',
-                    status: 'inactive', // inactive until admin approves
+                    status: 'inactive', 
                     createdAt: serverTimestamp()
                 });
                 
@@ -770,12 +801,11 @@
             document.getElementById('admin-panel-btn').classList.add('hidden');
             document.getElementById('driver-dashboard-btn').classList.add('hidden');
             
-            // Allow any active user to log in. The UI will adapt based on their role.
             if (currentUser.role === 'driver') {
                 document.getElementById('driver-view').style.display = 'block';
                 document.getElementById('header-subtitle').textContent = "View and complete your assigned deliveries.";
                 loadDriverTasks();
-            } else { // Default view for admin, staff, and other roles
+            } else { 
                 document.getElementById('admin-staff-view').style.display = 'block';
                 document.getElementById('header-subtitle').textContent = "Assign, track, and manage deliveries.";
                 if (currentUser.role === 'admin' || currentUser.role === 'staff') {
@@ -826,7 +856,7 @@
         }
         
         function listenForDeliveries() {
-            if (deliveriesUnsubscribe) deliveriesUnsubscribe(); // Unsubscribe from previous listener
+            if (deliveriesUnsubscribe) deliveriesUnsubscribe();
             const deliveriesRef = collection(db, 'deliveries');
             deliveriesUnsubscribe = onSnapshot(deliveriesRef, (snapshot) => {
                 deliveriesCache = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
@@ -863,7 +893,7 @@
             };
 
             const pendingDeliveries = deliveriesCache
-                .filter(d => d.status !== 'Delivered')
+                .filter(d => d.status !== 'Delivered' && d.status !== 'Cancelled')
                 .filter(d => searchFilter(d, pendingSearchTerm));
 
             const completedDeliveries = deliveriesCache
@@ -885,7 +915,7 @@
         }
         
         function renderDashboardMetrics() {
-            const pendingCount = deliveriesCache.filter(d => d.status !== 'Delivered').length;
+            const pendingCount = deliveriesCache.filter(d => d.status !== 'Delivered' && d.status !== 'Cancelled').length;
             const completedCount = deliveriesCache.filter(d => d.status === 'Delivered').length;
             
             document.getElementById('stat-pending').textContent = pendingCount;
@@ -898,12 +928,17 @@
             card.className = 'border p-3 rounded-lg bg-gray-50 delivery-card';
             const jobData = delivery.jobFileData || {};
             let actionButtons = '';
+            const isAdminOrStaff = currentUser.role === 'admin' || currentUser.role === 'staff';
 
             if (delivery.status === 'Delivered') {
-                if (currentUser.role === 'admin') {
-                    actionButtons += `<button class="btn btn-danger btn-xs text-xs" onclick="confirmPodCancel('${delivery.id}', '${jobData.jfn}')">Cancel POD</button>`;
+                if (isAdminOrStaff) {
+                    actionButtons += `<button class="btn btn-danger btn-xs" onclick="confirmPodCancel('${delivery.id}', '${jobData.jfn}')">Cancel POD</button>`;
                 }
-                actionButtons += `${delivery.podId ? `<button class="btn btn-secondary btn-xs text-xs" onclick="openReceiptModal('${delivery.id}')">View Receipt</button>` : ''}`;
+                actionButtons += `${delivery.podId ? `<button class="btn btn-secondary btn-xs" onclick="openReceiptModal('${delivery.id}')">View Receipt</button>` : ''}`;
+            } else { // For pending deliveries
+                if (isAdminOrStaff) {
+                    actionButtons += `<button class="btn btn-danger btn-xs" onclick="confirmDeliveryCancel('${delivery.id}', '${jobData.jfn}')">Cancel Delivery</button>`;
+                }
             }
 
             const deliveredInfo = delivery.status === 'Delivered' ? `
@@ -912,11 +947,14 @@
                         <p class="text-xs"><strong>Receiver:</strong> ${delivery.receiverName || 'N/A'}</p>
                         <p class="text-xs"><strong>Completed:</strong> ${delivery.completedAt?.toDate().toLocaleString() || 'N/A'}</p>
                     </div>
+                </div>` : '';
+            
+            const actionButtonsContainer = `
+                <div class="mt-2 pt-2 border-t flex justify-end items-center">
                     <div class="flex gap-2">
                        ${actionButtons}
                     </div>
-                </div>
-                ` : '';
+                </div>`;
 
             card.innerHTML = `
                 <div class="flex justify-between items-start">
@@ -930,6 +968,7 @@
                     </span>
                 </div>
                 ${deliveredInfo}
+                ${actionButtons ? actionButtonsContainer : ''}
             `;
 
             return card;
@@ -971,12 +1010,14 @@
                     document.getElementById('form-job-file-no').textContent = selectedJobFile.jfn;
                     document.getElementById('form-job-shipper-consignee').textContent = `${selectedJobFile.sh} / ${selectedJobFile.co}`;
                     document.getElementById('job-file-search').value = selectedJobFile.jfn;
-                    // Corrected Auto-fill logic using keys from the main file
                     document.getElementById('delivery-origin').value = selectedJobFile.or || '';
                     document.getElementById('delivery-destination').value = selectedJobFile.de || '';
                     document.getElementById('delivery-airlines').value = selectedJobFile.ca || '';
                     document.getElementById('delivery-mawb').value = selectedJobFile.mawb || '';
                     document.getElementById('delivery-inv').value = selectedJobFile.in || '';
+                    document.getElementById('delivery-location').value = '';
+                    document.getElementById('additional-notes').value = '';
+                    document.getElementById('driver-select').value = '';
                 }
                 document.getElementById('job-file-suggestions').classList.add('hidden');
             }
@@ -984,43 +1025,79 @@
 
         async function handleAssignDelivery(e) {
             e.preventDefault();
-            if (!selectedJobFile) {
-                showNotification("Please select a job file first.", true);
-                return;
-            }
-
+            const isManual = document.getElementById('manual-job-toggle').checked;
             const driverId = document.getElementById('driver-select').value;
             const location = document.getElementById('delivery-location').value.trim();
 
             if (!driverId || !location) {
-                showNotification("Please select a driver and enter a location.", true);
+                showNotification("Please select a driver and enter a delivery location.", true);
                 return;
             }
 
-            // Check for existing delivery
-            const existingDelivery = deliveriesCache.find(delivery => delivery.jobFileId === selectedJobFile.id);
-            if (existingDelivery) {
-                showNotification(`A delivery for Job File "${selectedJobFile.jfn}" has already been assigned.`, true);
-                return;
+            let jobFileData;
+            let jobFileId;
+
+            if (isManual) {
+                const manualJfn = document.getElementById('manual-job-file-no').value.trim();
+                const manualShipper = document.getElementById('manual-shipper').value.trim();
+                const manualConsignee = document.getElementById('manual-consignee').value.trim();
+
+                if (!manualJfn || !manualShipper || !manualConsignee) {
+                    showNotification("Please fill in Job File Number, Shipper, and Consignee for manual entry.", true);
+                    return;
+                }
+
+                const existingDelivery = deliveriesCache.find(delivery => 
+                    delivery.jobFileData.jfn === manualJfn && delivery.isManual);
+                if (existingDelivery) {
+                    showNotification(`A manual delivery for Job File "${manualJfn}" already exists.`, true);
+                    return;
+                }
+                
+                jobFileId = `manual_${Date.now()}`;
+                jobFileData = {
+                    jfn: manualJfn,
+                    sh: manualShipper,
+                    co: manualConsignee,
+                    dsc: '', gw: '', 
+                    mawb: document.getElementById('delivery-mawb').value.trim() || 'N/A',
+                    or: document.getElementById('delivery-origin').value.trim() || 'N/A', 
+                    de: document.getElementById('delivery-destination').value.trim() || 'N/A',
+                    ca: document.getElementById('delivery-airlines').value.trim() || 'N/A',
+                    in: document.getElementById('delivery-inv').value.trim() || 'N/A',
+                };
+            } else {
+                if (!selectedJobFile) {
+                    showNotification("Please select a job file first.", true);
+                    return;
+                }
+                
+                const existingDelivery = deliveriesCache.find(delivery => delivery.jobFileId === selectedJobFile.id);
+                if (existingDelivery) {
+                    showNotification(`A delivery for Job File "${selectedJobFile.jfn}" has already been assigned.`, true);
+                    return;
+                }
+                
+                jobFileId = selectedJobFile.id;
+                jobFileData = {
+                    jfn: selectedJobFile.jfn || 'N/A', sh: selectedJobFile.sh || 'N/A',
+                    co: selectedJobFile.co || 'N/A', dsc: selectedJobFile.dsc || 'N/A',
+                    gw: selectedJobFile.gw || 'N/A',
+                    mawb: document.getElementById('delivery-mawb').value.trim() || 'N/A',
+                    or: document.getElementById('delivery-origin').value.trim() || 'N/A', 
+                    de: document.getElementById('delivery-destination').value.trim() || 'N/A',
+                    ca: document.getElementById('delivery-airlines').value.trim() || 'N/A',
+                    in: document.getElementById('delivery-inv').value.trim() || 'N/A',
+                };
             }
             
             showLoader();
             try {
                 const driver = allUsersCache.find(d => d.id === driverId);
                 const deliveryData = {
-                    jobFileId: selectedJobFile.id,
-                    jobFileData: { // Store a snapshot of key data, reading from the form and using main system keys
-                        jfn: selectedJobFile.jfn || 'N/A',
-                        sh: selectedJobFile.sh || 'N/A',
-                        co: selectedJobFile.co || 'N/A',
-                        dsc: selectedJobFile.dsc || 'N/A',
-                        gw: selectedJobFile.gw || 'N/A',
-                        mawb: document.getElementById('delivery-mawb').value.trim() || 'N/A',
-                        or: document.getElementById('delivery-origin').value.trim() || 'N/A', 
-                        de: document.getElementById('delivery-destination').value.trim() || 'N/A',
-                        ca: document.getElementById('delivery-airlines').value.trim() || 'N/A',
-                        in: document.getElementById('delivery-inv').value.trim() || 'N/A',
-                    },
+                    jobFileId: jobFileId,
+                    jobFileData: jobFileData,
+                    isManual: isManual,
                     deliveryLocation: location,
                     deliveryNotes: document.getElementById('additional-notes')?.value.trim(),
                     driverUid: driver.id,
@@ -1033,11 +1110,15 @@
 
                 showNotification("Delivery assigned successfully!");
                 document.getElementById('delivery-form').reset();
-                document.getElementById('form-job-file-no').textContent = 'Select a job';
-                document.getElementById('form-job-shipper-consignee').textContent = 'N/A';
-                document.getElementById('job-file-search').value = '';
-                selectedJobFile = null;
-
+                
+                if (isManual) {
+                    document.getElementById('manual-fields-section').querySelectorAll('input').forEach(i => i.value = '');
+                } else {
+                    document.getElementById('form-job-file-no').textContent = 'Select a job';
+                    document.getElementById('form-job-shipper-consignee').textContent = 'N/A';
+                    document.getElementById('job-file-search').value = '';
+                    selectedJobFile = null;
+                }
             } catch(error) {
                 console.error("Error assigning delivery:", error);
                 showNotification("Could not assign delivery. Check Firestore permissions.", true);
@@ -1045,6 +1126,31 @@
                 hideLoader();
             }
         }
+        
+        function toggleManualJobEntry() {
+            const isManual = document.getElementById('manual-job-toggle').checked;
+            const searchSection = document.getElementById('job-search-section');
+            const manualFields = document.getElementById('manual-fields-section');
+            const form = document.getElementById('delivery-form');
+            
+            if (isManual) {
+                searchSection.classList.add('hidden');
+                manualFields.classList.remove('hidden');
+                selectedJobFile = null;
+                document.getElementById('job-file-search').value = '';
+                document.getElementById('form-job-file-no').textContent = 'Manual Entry';
+                document.getElementById('form-job-shipper-consignee').textContent = 'N/A';
+                form.reset();
+                document.getElementById('driver-select').value = '';
+            } else {
+                searchSection.classList.remove('hidden');
+                manualFields.classList.add('hidden');
+                form.reset();
+                document.getElementById('driver-select').value = '';
+                document.getElementById('form-job-file-no').textContent = 'Select a job';
+            }
+        }
+
 
         // --- Driver Logic & Simulation ---
         function createDriverTaskCard(task) {
@@ -1107,7 +1213,6 @@
                     listEl.innerHTML = '<p class="text-gray-500">You have no assigned deliveries.</p>';
                 }
                 
-                // Display performance summary on driver page
                 displayDriverPerformanceSummary(currentUser.uid, tasks);
 
             }, (error) => {
@@ -1123,7 +1228,6 @@
             document.getElementById('modal-location').textContent = delivery.deliveryLocation;
             document.getElementById('completion-form').reset();
 
-            // Reset modal to show completion form first
             document.getElementById('completion-form-wrapper').style.display = 'block';
             document.getElementById('post-delivery-qr-wrapper').style.display = 'none';
 
@@ -1143,7 +1247,7 @@
             
             if (!completionSignaturePad) {
                 completionSignaturePad = new SignaturePad(canvas, {
-                    backgroundColor: 'rgb(255, 255, 255)' // Set background to white
+                    backgroundColor: 'rgb(255, 255, 255)'
                 });
             } else {
                 completionSignaturePad.clear();
@@ -1185,7 +1289,7 @@
                     deliveryLocation: deliveryData.deliveryLocation,
                     receiverName: receiverName,
                     receiverMobile: receiverMobile,
-                    signatureDataUrl: signatureDataUrl, // Save as Data URL
+                    signatureDataUrl: signatureDataUrl,
                     completedAt: serverTimestamp(),
                     driverUid: currentUser.uid,
                     driverName: currentUser.displayName,
@@ -1206,7 +1310,6 @@
                     receiverName: receiverName
                 });
 
-                // Transition to QR code view
                 document.getElementById('completion-form-wrapper').style.display = 'none';
                 document.getElementById('post-delivery-qr-wrapper').style.display = 'block';
 
@@ -1333,10 +1436,9 @@
             
             const copyWatermark = isCopy ? `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 8rem; color: rgba(255, 0, 0, 0.15); font-weight: bold; z-index: 1000; pointer-events: none;">COPY</div>` : '';
 
-            // Define logos as Base64 strings to ensure they always load
             const iataLogo = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAwIDMwMCI+PHBhdGggZD0iTTc0LjggMjY2LjR2LTkyLjNINjAuMXY5Mi4zSDIzdjI4LjdoMTA1di0yOC43SDc0Ljh6bTIwOC42LTI4LjdsMTcuMy05Mi4zaDE4LjlsLTE3LjMgOTIuM0gyODMuNHptNDMuMSAwTDMxMS4xIDc0aDQ0bC0xNS40IDk5LjgtMTUuMyA5Mi42aC00My4xbDE1LjQtOTkuNyAxNS4yLTkyLjdoNDQuMmwzMi44IDE5Mi40aC00My41bC0xNS4yLTkyLjZMMzU1IDc0aC00My42bDE1LjQgOTkuOCAxNS4yIDkyLjZoNDMuMXptMTkxLjYgMjguN2g0My44VjI2Nkg1MTguMnYtOTIuM2gtNDMuOHY5Mi4zaC0yMi41djI4LjdoODYuOHYtMjguN3ptOTYuNSAwaDQzLjdWMTAyLjRoLTM4LjlMNjA0IDc0aDk0djIyMC43aDQzLjh2MjguN0g2MDJWMzAwaC0xLjR6bTE5NS4yLTI4LjdsMTcuMy05Mi4zaDE4LjlsLTE3LjMgOTIuM0g4MTUuM3ptNDMuMSAwTjg0MyA3NGg0NC4xbC0xNS40IDk5LjgtMTUuMyA5Mi42aC00My4xbDE1LjQtOTkuNyAxNS4yLTkyLjdoNDQuMmwzMi44IDE5Mi40aC00My41bC0xNS4yLTkyLjZMOTAwLjUgNzRoLTQzLjZsMTUuNCA5OS44IDE1LjIgOTIuNmg0My4xek0xMDY5LjQgNzRoLTM1LjdsLTU0LjUgMzAwaDQ1LjNsMTEuNC02My42aDUzLjVsMTEuMyA2My42aDQ1LjRMMTA2OS40IDc0em0tNi40IDE4NC4xbC0xOC44LTExMC4xLTE4LjggMTEwLjFoMzcuNnoiLz48L3N2Zz4=";
-            const wcaLogo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAACACAMAAABrZuVzAAAAYFBMVEX///8AQ4sAQIsAP4oAO4kAN4gANIcAOYgAOIkAOYoAN4sAOIjp7fUAOIlso9EAM4a/x94gS5QAT5sAUJgAQYpUkcYAQ4zp7vMAYqEAL4AAKnsALoEAMYIAJ3UAKn4AKX/q7/cAUIyTAAADcklEQVR4nO3b63aqOBSG4fAQQkBtqU3tde//ikdbS1sLtTSS5+z9fn+x504yE8jDDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYF/2+0vV/Vn2+z88G/291v+2F/V21d01q/09A6t/Qf0h1l/a/n7t9X+wn8pP1W2v/c/9mY5Xf2h/a/1r/Vv+1/oV+/sZ+ysdVf+k/lr/tL61/pH+rf4b/Wv9e/3b/jf6z5003V/sB7DPqg81v1V/qf/aP1r/TP+2/5b+y/qP3v6d/rf6H/Uf6596+3f65/pf3t/Z/13/tfenbX9v/2t/W//S3sB+7M820n/Wz/S39lf2h/ZH9lv21/b39v/29/bP9s862j/b79u/21/ar9jf2d/bH9i/2b/bb9u/6l/Zf1f+y/q/9l/Uf6T/Rf1b+i/rH9B/s/1H+i/pH+i/vP6v/Tf13+k/tv6n/R+bY/v/LMP2/8M0/b/1L+yv7J+w/8k+JP/V/kn7D/e/uv+L/f/tP9l/6f9X/Tf6X+6/9f+n/p/6n/d/zv/T/yP/b/xP+h/r/8h/6v+g/4n+g/23+v/3/7X/f/1/8B/d/w7+o/xP81/lv4r+K/iv6b+a/ov5b+u/tv47+e/mv5b+S/kv7b+K/hv4b+G/tv4b+C/gv6L+C/iv57+a/mv5r+a/lv6L+W/rv7b+u/tv6T+k/pP7b+k/pP6L+i/ov6L+i/rv6r+6/qv7j+o/uP7T+0/pP7T+0/ov6L+i/ov5r+a/mv5r+a/mv5b+W/lv67+W/rv7T+w/sP7b+w/pP6T+k/tP6L+k/ov6r+q/uv6r+6/tP7T+2/rP+A/uP4D+w/vP6D+8/tP7L+y/tv6b+m/tv6b+o/sP7D+o/ov6T+s/rP4z+M/rP6T+w/sP7T+s/rP6z+s/rP7z+8/tP6L+i/tv6r+u/pv6b+m/tv6b+m/tv6T+o/rP7D+o/rP6z+o/vP7L+i/sv67+q/ru6r+u/uv6j+o/rP4j+I/vP6j+q/uP4j+0/pP6T+0/pP7T+i/qv6L+q/kv5r+a/mv5r+a/kv6b+u/tu6b+u/tu47+e/tv47+O/jv5r+K/tv4b+G/hv4b+e/gv4L+K/gv4b+e/lv5r+a/mv5b+a/mv5r+O/jv67+e/rv7T+g/tP6j+o/qP6j+g/pP6j+k/qP7T+g/tP6T+8/qP7j+q/uP6z+s/vP6z+u/vP67+w/sP7T+w/sP7T+y/sv6j+i/qP6L+m/qP6r+m/rP4D+w/oP6L+y/sP7L+o/pP6T+i/tP6L+0/pP6T+2/pP7b+2/rP67+u/uP4j+4/pP7j+s/pP7z+4/uP6j+w/sP7T+g/pP6z+y/uP6j+8/qP7z+i/rP6z+g/qP6z+o/qP6z+k/rP6T+8/qP7T+k/qP6T+k/qP6T+k/qP6L+wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgH/9A7aQ4B/4cQ/qAAAAAElFTkSuQmCC";
-            const iamLogo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARgAAACACAMAAAB49WnWAAAAQlBMVEX////AADcAAADa2tsAADOysrL6+voAAAb29vYAAAnMzMzp6ekAAAjh4eEAABBMS0toamp+fn4AAATExMSlpaWbm5s2NjZLS0s6ODgI5M0QAAAD0klEQVR4nO2byXaCMAxFIVsJsbrD/V/hAvJpMu6Nplk5/29EDgp6cFAggAAAAAAAAAAAAAAAAAAAAAAAIzY+np29PX5qQ+kPkD6/uG58S+pD3A+hPjH3R8W/tD6Yen3n/5+gr8l/b30x9cfsH/V35n6A+ovU39p/bX1D63/YP/n/S+rv7z+o/tvqn9y/3f+B/kf/L/r/4T/Jf8h98f8P/Nf83/V/zn/Q/4L/z/V/0f/F/1/+b/j/1r/zP+h/wP/R/y//x+3f7b/1/6v/h/6v+P/kP+x/4P/v/o/4f+c/1v+D/0/7X/w/1n/uP5b/g/97/A/1P/d/yn/f/v/2v/j/h/7f+z/iP/X/wP/9/1f8v/A/7v/T//w8//+v5X/P/u/8H/e/+H/d/wv/F/wv+7/X/3//x/7f+D/j/9r/Gf/P/j/+r/6f8//T/t/+D/h/9v/Bf4r/f/2/9v/S/+f+B/8P+v/r/9//T/v/5X/d/yv+l/3f9//Vf8H/N/xf+T/qf+n/rf9//I/8/+X/4P+T/h/6v/N/7v/B/2f9L/2/8p/2/+T/6v/J/wP/F/wv/7/B/5v/5/5v/x/6/+l/5v/1/zP/T/rf/z/p/4v/b/3/+7/t/+f+D/6v9b/w/+D/3v+D/3v8T/t/7f9T/t/7v/r/yP/h/yP/7/8H/h/+H/5f8X/r/5X/v/2/8v/P/w//r/j/8//Gf8//lf+f+r/2/+n/f/zP/H/0P+H/9/+r/6/9P/e/+H/D/0P/B/3P/J/0v+3/l/6v/V/0f+z/m/63/b/yP+n/0f9//X/9v+3/r/8H/H/7f/P/wv+T/9f8X/H/4v+f/n/6X/h/7P/T/xv+X/w/+b/gP+p/w/9X/N/5v+x/yP/p/z/9D/g/57/O/7P+j/sf+D/g/53/E/5/+T/pf9n/W/6v+B/8f+d/yv+7/2f8f/e/6/+P/x//F//P+v/of+n/h/5P+f/kf+X/pf8n/S/5v+v/of9n/Q/9P/a/7P+t/w/8v/U/5P+l/xf9P/I/6X/B/4v/R/y//H/if9v/Q/4P+T/sf/D/9/+t/3f+D/lf93/D/9/+d/3f8v/W/9/+n/v/43/e/yv/L/8f8v/d/0f/b/sf/7/l/+n/x/6v/L/zP/d/3P/H/s/73/n/y//n/z/8n/Q/93/b/w//n/9/7/9D/4f+j/z/8z/f/7v/D/wf+D/qf/z/j/6n/d/y/+b/2/+T/if+H/k/4H/m/5H/i/+v/b/+f+3/l/4X/9/wf+j/of93/N/8P/f/wf87/O/8//E/7/+H/lf8n/F/wf9T/Gf9X/E/6H/F/0P+7/z/+x/z/+l/3/8j/T/yv+x/wv+z/r/8P/H/y//n/l/8v/v/4P+x/4P/p/7f9n/n/6H/e/+H/u/7v+x/8f+L/3f+D/2/+D/uf+L/g/7H/s/8v/V/7f+z/wf9z/N/8H/h/+3/n/9v/f/of+n/if9X/U/9v/s/4v/J/xv/9/zv9D/q/93/q/5n/l/2/9j/x/+T/sf9P/X/4v/h/x//B/4v+x/8/9T/c/8f/+/4n/+/4n/i/8X/Q/9v/e/6H/l/43/K/8X/y/6X/D/1P+H/3/+z/m/+r/p/+3/g/4H/p/73/1/6f+v/qf9X/QAAAAAAAAAAAAAAAAAAAAAAAOCZf9t2f3r9c8sCAAAAAElFTkSuQmCC";
+            const wcaLogo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAACACAMAAABrZuVzAAAAYFBMVEX///8AQ4sAQIsAP4oAO4kAN4gANIcAOYgAOIkAOYoAN4sAOIjp7fUAOIlso9EAM4a/x94gS5QAT5sAUJgAQYpUkcYAQ4zp7vMAYqEAL4AAKnsALoEAMYIAJ3UAKn4AKX/q7/cAUIyTAAADcklEQVR4nO3b63aqOBSG4fAQQkBtqU3tde//ikdbS1sLtTSS5+z9fn+x504yE8jDDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYF/2+0vV/Vn2+z88G/291v+2F/V21d01q/09A6t/Qf0h1l/a/n7t9X+wn8pP1W2v/c/9mY5Xf2h/a/1r/Vv+1/oV+/sZ+ysdVf+k/lr/tL61/pH+rf4b/Wv9e/3b/jf6z5003V/sB7DPqg81v1V/qf/aP1r/TP+2/5b+y/qP3v6d/rf6H/Uf6596+3f65/pf3t/Z/13/tfenbX9v/2t/W//S3sB+7M820n/Wz/S39lf2h/ZH9lv21/b39v/29/bP9s862j/b79u/21/ar9jf2d/bH9i/2b/bb9u/6l/Zf1f+y/q/9l/Uf6T/Rf1b+i/rH9B/s/1H+i/pH+i/vP6v/Tf13+k/tv6n/R+bY/v/LMP2/8M0/b/1L+yv7J+w/8k+JP/V/kn7D/e/uv+L/f/tP9l/6f9X/Tf6X+6/9f+n/p/6n/d/zv/T/yP/b/xP+h/r/8h/6v+g/4n+g/23+v/3/7X/f/1/8B/d/w7+o/xP81/lv4r+K/iv6b+a/ov5b+u/tv47+e/mv5b+S/kv7b+K/hv4b+G/tv4b+C/gv6L+C/iv57+a/mv5r+a/lv6L+W/rv7b+u/tv6T+k/pP7b+k/pP6L+i/ov6L+i/rv6r+6/qv7j+o/uP7T+0/pP7T+0/ov6L+i/ov5r+a/mv5r+a/mv5b+W/lv67+W/rv7T+w/sP7b+w/pP6T+k/tP6L+k/ov6r+q/uv6r+6/tP7T+2/rP+A/uP4D+w/vP6D+8/tP7L+y/tv6b+m/tv6b+o/sP7D+o/ov6T+s/rP4z+M/rP6T+w/sP7T+s/rP6z+s/rP7z+8/tP6L+i/tv6r+u/pv6b+m/tv6b+m/tv6T+o/rP7D+o/rP6z+o/vP7L+i/sv67+q/ru6r+u/uv6j+o/rP4j+I/vP6j+q/uP4j+0/pP6T+0/pP7T+i/qv6L+q/kv5r+a/mv5r+a/kv6b+u/tu6b+u/tu47+e/tv47+O/jv5r+K/tv4b+G/hv4b+e/gv4L+K/gv4b+e/lv5r+a/mv5b+a/mv5r+O/jv67+e/rv7T+g/tP6j+o/qP6j+g/pP6j+k/qP7T+g/tP6T+8/qP7j+q/uP6z+s/vP6z+u/vP67+w/sP7T+w/sP7T+y/sv6j+i/qP6L+m/qP6r+m/rP4D+w/oP6L+y/P7L+o/pP6T+i/tP6L+0/pP6T+2/pP7b+2/rP67+u/uP4j+4/pP7j+s/pP7z+4/uP6j+w/sP7T+g/pP6z+y/uP6j+8/qP7z+i/rP6z+g/qP6z+o/qP6z+k/rP6T+8/qP7T+k/qP6T+k/qP6T+k/qP6L+wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgH/9A7aQ4B/4cQ/qAAAAAElFTSuQmCC";
+            const iamLogo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARgAAACACAMAAAB49WnWAAAAQlBMVEX////AADcAAADa2tsAADOysrL6+voAAAb29vYAAAnMzMzp6ekAAAjh4eEAABBMS0toamp+fn4AAATExMSlpaWbm5s2NjZLS0s6ODgI5M0QAAAD0klEQVR4nO2byXaCMAxFIVsJsbrD/V/hAvJpMu6Nplk5/29EDgp6cFAggAAAAAAAAAAAAAAAAAAAAAAAIzY+np29PX5qQ+kPkD6/uG58S+pD3A+hPjH3R8W/tD6Yen3n/5+gr8l/b30x9cfsH/V35n6A+ovU39p/XX1D63/YP/n/S+rv7z+o/tvqn9y/3f+B/kf/L/r/4T/Jf8h98f8P/Nf83/V/zn/Q/4L/z/V/0f/F/1/+b/j/1r/zP+h/wP/R/y//x+3f7b/1/6v/h/6v+P/kP+x/4P/v/o/4f+c/1v+D/0/7X/w/1n/uP5b/g/97/A/1P/d/yn/f/v/2v/j/h/7f+z/iP/X/wP/9/1f8v/A/7v/T//w8//+v5X/P/u/8H/e/+H/d/wv/F/wv+7/X/3//x/7f+D/j/9r/Gf/P/j/+r/6f8//T/t/+D/h/9v/Bf4r/f/2/9v/S/+f+B/8P+v/r/9//T/v/5X/d/yv+l/3f9//Vf8H/N/xf+T/qf+n/rf9//I/8/+X/4P+T/h/6v/N/7v/B/2f9L/2/8p/2/+T/6v/J/wP/F/wv/7/B/5v/5/5v/x/6/+l/5v/1/zP/T/rf/z/p/4v/b/3/+7/t/+f+D/6v9b/w/+D/3v+D/3v8T/t/7f9T/t/7v/r/yP/h/yP/7/8H/h/+H/5f8X/r/5X/v/2/8v/P/w//r/j/8//Gf8//lf+f+r/2/+n/f/zP/H/0P+H/9/+r/6/9P/e/+H/D/0P/B/3P/J/0v+3/l/6v/V/0f+z/m/63/b/yP+n/0f9//X/9v+3/r/8H/H/7f/P/wv+T/9f8X/H/4v+f/n/6X/h/7P/T/xv+X/w/+b/gP+p/w/9X/N/5v+x/yP/p/z/9D/g/57/O/7P+j/sf+D/g/53/E/5/+T/pf9n/W/6v+B/8f+d/yv+7/2f8f/e/6/+P/x//F//P+v/of+n/h/5P+f/kf+X/pf8n/S/5v+v/of9n/Q/9P/a/7P+t/w/8v/U/5P+l/xf9P/I/6X/B/4v/R/y//H/if9v/Q/4P+T/sf/D/9/+t/3f+D/lf93/D/9/+d/3f8v/W/9/+n/v/43/e/yv/L/8f8v/d/0f/b/sf/7/l/+n/x/6v/L/zP/d/1P/H/s/73/n/y//n/z/8n/Q/93/b/w//n/9/7/9D/4f+j/z/8z/f/7v/D/wf+D/qf/z/j/6n/d/y/+b/2/+T/if+H/k/4H/m/5H/i/+v/b/+f+3/l/4X/9/wf+j/of93/N/8P/f/wf87/O/8//E/7/+H/lf8n/F/wf9T/Gf9X/E/6H/F/0P+7/z/+x/z/+l/3/8j/T/yv+x/wv+z/r/8P/H/y//n/l/8v/v/4P+x/4P/p/7f9n/n/6H/e/+H/u/7v+x/8f+L/3f+D/2/+D/uf+L/g/7H/s/8v/V/7f+z/wf9z/N/8H/h/+3/n/9v/f/of+n/if9X/U/9v/s/4v/J/xv/9/zv9D/q/93/q/5n/l/2/9j/x/+T/sf9P/X/4v/h/x//B/4v+x/8/9T/c/8f/+/4n/+/4n/i/8X/Q/9v/e/6H/l/43/K/8X/y/6X/D/1P+H/3/+z/m/+r/p/+3/g/4H/p/73/1/6f+v/qf9X/QAAAAAAAAAAAAAAAAAAAAAAAOCZf9t2f3r9c8sCAAAAAElFTSuQmCC";
 
             const receiptHTML = `
                 <div class="space-y-4 text-gray-800" style="position: relative;">
@@ -1428,26 +1530,23 @@
             return receiptHTML;
         }
         
-        // Helper to generate a printable/pdf-friendly canvas of the receipt
         async function getReceiptCanvas(isCopy) {
             const receiptHTML = generateReceipt(isCopy);
             
-            // Create a hidden, A4-styled div for rendering
             const printContainer = document.createElement('div');
             printContainer.style.position = 'absolute';
-            printContainer.style.left = '-9999px'; // Move it off-screen
-            printContainer.style.width = '210mm'; // A4 width
+            printContainer.style.left = '-9999px';
+            printContainer.style.width = '210mm';
             printContainer.style.padding = '15mm';
             printContainer.style.backgroundColor = 'white';
             printContainer.style.boxSizing = 'border-box';
             printContainer.innerHTML = receiptHTML;
             document.body.appendChild(printContainer);
 
-            // Re-generate QR codes inside the temporary container before capturing
             generateQRCodes(printContainer);
             
             const canvas = await html2canvas(printContainer, { scale: 2 });
-            document.body.removeChild(printContainer); // Clean up
+            document.body.removeChild(printContainer);
             return canvas;
         }
 
@@ -1471,7 +1570,6 @@
                 const canvasHeight = canvas.height;
                 const ratio = canvasWidth / canvasHeight;
                 
-                // Fit image to page width with some margin
                 const finalWidth = pdfWidth - 40; 
                 const finalHeight = finalWidth / ratio;
                 
@@ -1544,10 +1642,8 @@
                         const deleteButton = canDelete ? `<button onclick="confirmUserDelete('${user.id}', '${user.displayName}')" class="btn btn-danger text-xs">Delete</button>` : '';
                         
                         const userEl = document.createElement('div');
-                        // Mobile-first responsive design for the user list
                         userEl.className = "p-3 border-b space-y-2 md:space-y-0 md:grid md:grid-cols-4 md:gap-4 md:items-center";
                         userEl.innerHTML = `
-                             <!-- User Info (always visible) -->
                             <div class="flex justify-between items-center md:block col-span-1">
                                 <div>
                                     <p class="font-medium">${user.displayName}</p>
@@ -1555,7 +1651,6 @@
                                 </div>
                                 <div class="md:hidden text-sm text-gray-600 capitalize p-1 bg-gray-100 rounded">${user.role}</div>
                             </div>
-                            <!-- Status Select (always visible) -->
                             <div class="col-span-1">
                                 <label class="text-xs font-semibold text-gray-500 md:hidden">Status</label>
                                 <select data-uid="${user.id}" class="input-field status-select text-sm p-2">
@@ -1563,9 +1658,7 @@
                                     <option value="inactive" ${user.status === 'inactive' ? 'selected' : ''}>Inactive</option>
                                 </select>
                             </div>
-                             <!-- Role (visible on medium screens and up) -->
                             <div class="hidden md:block text-sm text-gray-600 capitalize col-span-1">${user.role}</div>
-                             <!-- Actions (always visible) -->
                             <div class="text-right col-span-1">
                                 ${deleteButton}
                             </div>
@@ -1573,6 +1666,21 @@
                         listEl.appendChild(userEl);
                     });
                 }
+                
+                const adminFooter = document.getElementById('admin-panel-footer');
+                let footerHTML = `<button onclick="saveUserChanges()" class="btn btn-success">Save User Changes</button>`;
+
+                if (currentUser.role === 'admin') {
+                     footerHTML = `
+                        <div>
+                            <button onclick="backupAllData()" class="btn btn-secondary">Backup All Data</button>
+                            <button onclick="confirmResetAllData()" class="btn btn-danger ml-2">Reset All Data</button>
+                        </div>
+                        ` + footerHTML;
+                }
+                adminFooter.innerHTML = footerHTML;
+
+
                 openModal('admin-panel-modal');
             } catch (error) {
                 console.error("Error opening admin panel:", error);
@@ -1611,28 +1719,183 @@
             const modal = document.getElementById('confirm-modal');
             modal.querySelector('#confirm-title').textContent = 'Confirm User Deletion';
             modal.querySelector('#confirm-message').innerHTML = `Are you sure you want to delete the user "${userName}"? This will only remove them from the application database, not from Firebase Authentication.`;
+            document.getElementById('confirm-inputs').innerHTML = '';
+            
             openModal('confirm-modal', true);
 
             const okButton = modal.querySelector('#confirm-ok');
-            const handleOkClick = () => {
+            okButton.disabled = false;
+            const newOkButton = okButton.cloneNode(true);
+            okButton.parentNode.replaceChild(newOkButton, okButton);
+            newOkButton.addEventListener('click', () => {
                 deleteUserFromFirestore(userId);
                 closeModal('confirm-modal');
-            };
-            okButton.addEventListener('click', handleOkClick, { once: true });
+            }, { once: true });
         }
         
         window.confirmPodCancel = (deliveryId, jobFileNo) => {
             const modal = document.getElementById('confirm-modal');
             modal.querySelector('#confirm-title').textContent = 'Confirm POD Cancellation';
             modal.querySelector('#confirm-message').innerHTML = `Are you sure you want to cancel the POD for job file "${jobFileNo}"? This will delete the receipt and set the delivery back to "Pending".`;
+            document.getElementById('confirm-inputs').innerHTML = '';
+
             openModal('confirm-modal', true);
 
             const okButton = modal.querySelector('#confirm-ok');
-            const handleOkClick = () => {
+            okButton.disabled = false;
+            const newOkButton = okButton.cloneNode(true);
+            okButton.parentNode.replaceChild(newOkButton, okButton);
+            newOkButton.addEventListener('click', () => {
                 cancelPod(deliveryId);
                 closeModal('confirm-modal');
+            }, { once: true });
+        }
+        
+        window.confirmDeliveryCancel = (deliveryId, jobFileNo) => {
+            const modal = document.getElementById('confirm-modal');
+            modal.querySelector('#confirm-title').textContent = 'Confirm Delivery Cancellation';
+            modal.querySelector('#confirm-message').innerHTML = `Are you sure you want to cancel the delivery for job file "${jobFileNo}"? This action cannot be undone.`;
+            document.getElementById('confirm-inputs').innerHTML = '';
+
+            openModal('confirm-modal', true);
+
+            const okButton = modal.querySelector('#confirm-ok');
+            okButton.disabled = false;
+            const newOkButton = okButton.cloneNode(true);
+            okButton.parentNode.replaceChild(newOkButton, okButton);
+            newOkButton.addEventListener('click', () => {
+                cancelDelivery(deliveryId);
+                closeModal('confirm-modal');
+            }, { once: true });
+        }
+
+        window.confirmResetAllData = () => {
+            const modal = document.getElementById('confirm-modal');
+            modal.querySelector('#confirm-title').textContent = '⚠️ Confirm Full Data Reset ⚠️';
+            modal.querySelector('#confirm-message').innerHTML = `
+                <p class="font-bold text-red-600">This is a destructive action and cannot be undone.</p>
+                <p class="mt-2">This will permanently delete ALL deliveries, ALL receipts (PODs), and ALL feedback.</p>
+            `;
+            
+            const confirmInputs = document.getElementById('confirm-inputs');
+            confirmInputs.innerHTML = `
+                <div>
+                    <label for="reset-phrase" class="block text-sm font-medium text-gray-700">Type "RESET ALL DATA" to confirm:</label>
+                    <input type="text" id="reset-phrase" class="input-field mt-1" autocomplete="off">
+                </div>
+                <div>
+                    <label for="reset-password" class="block text-sm font-medium text-gray-700">Enter password (12345):</label>
+                    <input type="password" id="reset-password" class="input-field mt-1" autocomplete="off">
+                </div>
+            `;
+
+            openModal('confirm-modal', true);
+
+            const okButton = modal.querySelector('#confirm-ok');
+            const phraseInput = document.getElementById('reset-phrase');
+            const passwordInput = document.getElementById('reset-password');
+            okButton.disabled = true;
+
+            const validateReset = () => {
+                const phraseCorrect = phraseInput.value === 'RESET ALL DATA';
+                const passwordCorrect = passwordInput.value === '12345';
+                okButton.disabled = !(phraseCorrect && passwordCorrect);
             };
-            okButton.addEventListener('click', handleOkClick, { once: true });
+
+            phraseInput.addEventListener('input', validateReset);
+            passwordInput.addEventListener('input', validateReset);
+
+            const newOkButton = okButton.cloneNode(true);
+            okButton.parentNode.replaceChild(newOkButton, okButton);
+            newOkButton.addEventListener('click', () => {
+                if (!newOkButton.disabled) {
+                    resetAllData();
+                    closeModal('confirm-modal');
+                }
+            }, { once: true });
+        }
+
+        async function backupAllData() {
+            if (currentUser.role !== 'admin') {
+                showNotification("You do not have permission to perform this action.", true);
+                return;
+            }
+            showLoader();
+            try {
+                const backupData = {};
+                const collectionsToBackup = ['deliveries', 'pods', 'feedback'];
+                
+                await Promise.all(collectionsToBackup.map(async (collectionName) => {
+                    const snapshot = await getDocs(collection(db, collectionName));
+                    backupData[collectionName] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                }));
+
+                const jsonString = JSON.stringify(backupData, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+
+                const date = new Date().toISOString().slice(0, 10);
+                a.href = url;
+                a.download = `qgo_backup_${date}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showNotification("Data backup downloaded successfully!");
+            } catch(error) {
+                console.error("Error during data backup:", error);
+                showNotification("Failed to create backup.", true);
+            } finally {
+                hideLoader();
+            }
+        }
+
+
+        async function resetAllData() {
+            if (currentUser.role !== 'admin') {
+                showNotification("You do not have permission to perform this action.", true);
+                return;
+            }
+
+            showLoader();
+            try {
+                const collectionsToDelete = ['deliveries', 'pods', 'feedback'];
+                
+                for (const collectionName of collectionsToDelete) {
+                     const snapshot = await getDocs(collection(db, collectionName));
+                     const batch = writeBatch(db);
+                     snapshot.docs.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+                }
+
+                showNotification("All application data has been reset successfully!", false);
+                closeModal('admin-panel-modal');
+
+            } catch (error) {
+                console.error("Error resetting data:", error);
+                showNotification("Failed to reset data. Check Firestore rules or console for errors.", true);
+            } finally {
+                hideLoader();
+            }
+        }
+
+
+        async function cancelDelivery(deliveryId) {
+            showLoader();
+            try {
+                const deliveryRef = doc(db, "deliveries", deliveryId);
+                await updateDoc(deliveryRef, { status: "Cancelled" });
+                showNotification("Delivery has been cancelled successfully.", false);
+            } catch (error) {
+                console.error("Error cancelling delivery:", error);
+                showNotification("Failed to cancel delivery. You may not have permissions.", true);
+            } finally {
+                hideLoader();
+            }
         }
 
         async function cancelPod(deliveryId) {
@@ -1667,7 +1930,7 @@
             try {
                 await deleteDoc(doc(db, 'users', userId));
                 showNotification("User deleted successfully from Firestore.", false);
-                openAdminPanel(); // Refresh the list
+                openAdminPanel();
             } catch (error) {
                 console.error("Error deleting user:", error);
                 showNotification("Failed to delete user.", true);
@@ -1697,7 +1960,7 @@
                             </div>
                         </div>`;
                     
-                    const receiptHTML = generateReceipt(false); // Generate without copy watermark
+                    const receiptHTML = generateReceipt(false);
                     document.getElementById('receipt-content-public').innerHTML = receiptHTML;
                     generateQRCodes(document.getElementById('public-pod-view'));
                     
@@ -1765,7 +2028,6 @@
 
             showLoader();
             try {
-                // Fetch feedback on demand
                 const feedbackQuery = query(collection(db, 'feedback'));
                 const feedbackSnapshot = await getDocs(feedbackQuery);
                 feedbackCache = feedbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -1783,7 +2045,7 @@
                     return { ...driver, completed, pending, averageRating, totalRatings, skipped };
                 });
 
-                driverStats.sort((a, b) => b.completed - a.completed); // Sort by most completed
+                driverStats.sort((a, b) => b.completed - a.completed);
 
                 const statsListEl = document.getElementById('driver-stats-list');
                 statsListEl.innerHTML = '';
@@ -1817,8 +2079,8 @@
                                 </div>
                             </div>
                             <div class="flex justify-center md:justify-end gap-2 flex-shrink-0 w-full md:w-auto">
-                                <button onclick="showDriverFeedback('${stat.id}')" class="btn btn-primary btn-xs text-xs">View Feedback</button>
-                                <button onclick="showDriverDeliveries('${stat.id}')" class="btn btn-secondary btn-xs text-xs">View Deliveries</button>
+                                <button onclick="showDriverFeedback('${stat.id}')" class="btn btn-primary btn-xs">View Feedback</button>
+                                <button onclick="showDriverDeliveries('${stat.id}')" class="btn btn-secondary btn-xs">View Deliveries</button>
                             </div>
                         `;
                         statsListEl.appendChild(statCard);
@@ -1827,7 +2089,6 @@
                     statsListEl.innerHTML = '<p class="text-center text-gray-500">No active drivers found.</p>';
                 }
 
-                // Chart.js rendering
                 const chartCanvas = document.getElementById('driver-chart');
                 if (driverChartInstance) {
                     driverChartInstance.destroy();
@@ -1908,7 +2169,6 @@
             document.body.classList.remove('loading');
             showLoader();
             try {
-                // First, check if feedback already exists
                 const feedbackRef = doc(db, 'feedback', feedbackId);
                 const feedbackSnap = await getDoc(feedbackRef);
 
@@ -1930,12 +2190,6 @@
                     throw new Error('Delivery not found.');
                 }
             } catch (error) {
-                // DEVELOPER NOTE: This error is often caused by Firestore security rules.
-                // For this public feedback page to work, unauthenticated users need read access
-                // to individual documents in the 'deliveries' and 'feedback' collections.
-                // Your rules should look something like this:
-                // match /deliveries/{deliveryId} { allow get: if true; ... }
-                // match /feedback/{feedbackId} { allow get: if true; ... }
                 document.getElementById('feedback-form-container').innerHTML = '<p class="text-red-500 font-semibold">COULD NOT LOAD DELIVERY DETAILS.</p><p class="text-xs text-gray-500 mt-2">This may be due to a network issue or a permissions problem. Please try again later.</p>';
                 console.error("Error loading for feedback:", error);
             } finally {
@@ -1943,7 +2197,6 @@
             }
         }
         
-        // --- Feedback Helpers to get Device and IP ---
         function getDeviceDetails() {
             return navigator.userAgent || 'Unknown';
         }
@@ -1960,12 +2213,8 @@
             }
         }
 
-        // UPDATED AND ENHANCED: More comprehensive device parser
         function parseDeviceInfo(ua) {
             if (!ua) return 'N/A';
-
-            // --- More specific models for better readability (Most Reliable Method) ---
-            // Apple
             if (/iPhone16,2/i.test(ua)) return 'iPhone 15 Pro Max';
             if (/iPhone16,1/i.test(ua)) return 'iPhone 15 Pro';
             if (/iPhone15,3/i.test(ua)) return 'iPhone 15 Pro Max';
@@ -1976,8 +2225,6 @@
             if (/iPhone14,2/i.test(ua)) return 'iPhone 13 Pro';
             if (/iPhone13,4/i.test(ua)) return 'iPhone 12 Pro Max';
             if (/iPhone13,3/i.test(ua)) return 'iPhone 12 Pro';
-            
-            // Samsung
             if (/SM-S928/i.test(ua)) return 'Samsung Galaxy S24 Ultra';
             if (/SM-S918/i.test(ua)) return 'Samsung Galaxy S23 Ultra';
             if (/SM-S908/i.test(ua)) return 'Samsung Galaxy S22 Ultra';
@@ -1986,57 +2233,38 @@
             if (/SM-F731/i.test(ua)) return 'Samsung Galaxy Z Flip5';
             if (/SM-A546/i.test(ua)) return 'Samsung Galaxy A54';
             if (/SM-A146/i.test(ua)) return 'Samsung Galaxy A14';
-
-
-            // Google
             if (/Pixel 8 Pro/i.test(ua)) return 'Google Pixel 8 Pro';
             if (/Pixel 8/i.test(ua)) return 'Google Pixel 8';
             if (/Pixel 7 Pro/i.test(ua)) return 'Google Pixel 7 Pro';
             if (/Pixel 7/i.test(ua)) return 'Google Pixel 7';
             if (/Pixel Fold/i.test(ua)) return 'Google Pixel Fold';
-            
-            // Xiaomi / Redmi / Poco
             if (/2201116TG/i.test(ua)) return 'Xiaomi 12 Pro';
             if (/23021RAA2Y/i.test(ua)) return 'Xiaomi 13';
             if (/M2102J20SG/i.test(ua)) return 'Poco F3';
-
-            // OnePlus
             if (/CPH2417/i.test(ua)) return 'OnePlus 11';
             if (/NE2213/i.test(ua)) return 'OnePlus 10 Pro';
-
-
-            // --- Generic Parsing ---
-            // Try to extract model from Android user agent
             if (/android/i.test(ua)) {
-                const modelMatch = ua.match(/\(([^)]+)\)/); // Get everything in parentheses
+                const modelMatch = ua.match(/\(([^)]+)\)/);
                 if (modelMatch && modelMatch[1]) {
                     const parts = modelMatch[1].split(';').map(p => p.trim());
-                    // The model identifier is often the last part.
                     let model = parts[parts.length - 1]; 
-                    
                     if (model) {
-                        // If the last part contains 'Build/', extract the model name before it.
                         const buildIndex = model.toLowerCase().indexOf(' build/');
                         if (buildIndex !== -1) {
                             model = model.substring(0, buildIndex);
                         }
-                        
-                        // Check if the model is not something generic like 'Linux' or the OS version
                         if (model.toLowerCase() !== 'linux' && !model.toLowerCase().startsWith('android')) {
-                            return model.trim(); // This will return the model name or code
+                            return model.trim();
                         }
                     }
                 }
-                return 'Android Device'; // Fallback if no specific model found
+                return 'Android Device';
             }
-            
-            // Generic Fallbacks for other OS
             if (/iphone/i.test(ua)) return 'iPhone';
             if (/ipad/i.test(ua)) return 'iPad';
             if (/macintosh/i.test(ua)) return 'Mac';
             if (/windows nt/i.test(ua)) return 'Windows PC';
             if (/linux/i.test(ua) && !/android/i.test(ua)) return 'Linux PC';
-
             return 'Unknown Device';
         }
 
@@ -2060,7 +2288,6 @@
                 if(!deliverySnap.exists()) throw new Error("Original delivery not found.");
                 const deliveryData = deliverySnap.data();
 
-                // Get device info and IP
                 const deviceInfo = getDeviceDetails();
                 const ipAddress = await getIPAddress();
 
@@ -2071,7 +2298,7 @@
                     rating: parseInt(rating.value, 10),
                     comment: comment,
                     createdAt: serverTimestamp(),
-                    deviceInfo: deviceInfo, // Raw user agent
+                    deviceInfo: deviceInfo,
                     ipAddress: ipAddress
                 };
 
@@ -2109,7 +2336,6 @@
                     
                     let adminInfo = '';
                     if (currentUser.role === 'admin') {
-                        // USE THE NEW PARSER FUNCTION HERE
                         const deviceName = parseDeviceInfo(feedback.deviceInfo);
                         adminInfo = `
                         <div class="mt-2 pt-2 border-t text-xs text-gray-500 space-y-1">
@@ -2308,6 +2534,7 @@
             document.getElementById('job-file-search').addEventListener('input', handleJobFileSearch);
             document.getElementById('job-file-suggestions').addEventListener('click', selectJobFile);
             document.getElementById('delivery-form').addEventListener('submit', handleAssignDelivery);
+            document.getElementById('manual-job-toggle').addEventListener('change', toggleManualJobEntry);
             
             document.getElementById('pending-search').addEventListener('input', renderAllDeliveryViews);
             document.getElementById('completed-search').addEventListener('input', renderAllDeliveryViews);
@@ -2332,23 +2559,21 @@
             });
 
 
-            const confirmCancelBtn = document.getElementById('confirm-cancel');
-            confirmCancelBtn.addEventListener('click', () => {
-                const okButton = document.getElementById('confirm-ok');
-                const newOkButton = okButton.cloneNode(true);
-                okButton.parentNode.replaceChild(newOkButton, okButton);
-                closeModal('confirm-modal');
-            });
+            document.getElementById('confirm-cancel').addEventListener('click', () => closeModal('confirm-modal'));
 
         });
         
         // Make functions globally accessible for inline onclick handlers
         window.saveUserChanges = saveUserChanges;
         window.openReceiptModal = openReceiptModal;
-        window.confirmUserDelete = confirmUserDelete;
-        window.confirmPodCancel = confirmPodCancel;
         window.showDriverDeliveries = showDriverDeliveries;
         window.showDriverFeedback = showDriverFeedback;
+        window.confirmDeliveryCancel = confirmDeliveryCancel;
+        window.confirmPodCancel = confirmPodCancel;
+        window.confirmUserDelete = confirmUserDelete;
+        window.confirmResetAllData = confirmResetAllData;
+        window.backupAllData = backupAllData;
+
 
     </script>
 </body>
