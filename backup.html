@@ -3,102 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Job File Backup</title>
+    <title>Advanced Analytics & Backup Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .print-table { border-collapse: collapse; width: 100%; }
-        .print-table th, .print-table td { border: 1px solid #d1d5db; padding: 0.5rem; text-align: left; }
-        .print-field { border: 1px solid #6b7280; padding: 0.3rem; min-height: 24px; word-break: break-all; }
-        .stamp {
-            position: absolute; top: -10px; right: -10px; padding: 4px 12px;
-            border-radius: 4px; font-size: 14px; font-weight: bold;
-            text-transform: uppercase; transform: rotate(15deg); opacity: 0.8;
-        }
-        .stamp-approved { border: 2px solid #16a34a; color: #16a34a; }
-        .stamp-checked { border: 2px solid #2563eb; color: #2563eb; }
-        .stamp-rejected { border: 2px solid #dc2626; color: #dc2626; }
+        .tab-btn { transition: all 0.2s ease-in-out; }
+        .tab-btn.active { border-color: #4f46e5; background-color: #eef2ff; color: #4f46e5; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .kpi-card { border-left-width: 4px; }
         .loader {
             border: 4px solid #f3f3f3; border-top: 4px solid #4f46e5;
             border-radius: 50%; width: 40px; height: 40px;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        th { cursor: pointer; }
     </style>
 </head>
 <body class="bg-gray-100">
 
-    <div id="app" class="container mx-auto mt-10 p-8 bg-white rounded-lg shadow-lg max-w-4xl">
-        <div class="text-center">
+    <div id="app" class="container mx-auto mt-8 mb-8 p-6 md:p-8 bg-white rounded-lg shadow-xl max-w-7xl">
+        <div class="text-center border-b pb-4 mb-6">
              <img src="http://qgocargo.com/logo.png" alt="QGO Cargo Logo" class="mx-auto h-16 w-auto mb-4">
-            <h1 class="text-3xl font-bold text-gray-800">Advanced Data Backup Tool</h1>
-            <p class="text-gray-600 mt-2">Generate a ZIP archive of individual job files and an analytics report for a selected date range.</p>
+            <h1 class="text-4xl font-bold text-gray-800">Offline Analytics & Backup Dashboard</h1>
+            <p class="text-gray-600 mt-2">Analyze your synced data with graphs and export it in multiple formats.</p>
         </div>
 
         <div id="login-prompt" class="hidden text-center my-8 p-6 bg-yellow-100 text-yellow-800 rounded-lg">
-            <p class="font-semibold">Please log in to the main application first to use this backup tool.</p>
-            <p class="text-sm mt-2">This page requires an active session to securely access your data.</p>
+             <p class="font-semibold">Please log in to the main application first to use this backup tool.</p>
+             <p class="text-sm mt-2">This page requires an active session to securely access your data.</p>
         </div>
         
-        <div id="backup-ui" class="hidden mt-8">
-            <div id="cache-status" class="mb-4 p-4 rounded-lg text-center"></div>
-            
-            <div class="p-6 bg-gray-50 rounded-lg border space-y-6">
-                <div>
-                     <label class="block text-sm font-medium text-gray-700">Select Date Range</label>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
-                        <div>
-                            <label for="date-from" class="text-xs text-gray-600">From</label>
-                            <input type="date" id="date-from" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-                        <div>
-                            <label for="date-to" class="text-xs text-gray-600">To</label>
-                            <input type="date" id="date-to" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button id="generate-excel-btn" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm2-1a1 1 0 00-1 1v2h14V5a1 1 0 00-1-1H4zM3 9v7a1 1 0 001 1h12a1 1 0 001-1V9H3zm2 2a1 1 0 011-1h2a1 1 0 110 2H6a1 1 0 01-1-1zm5 0a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1z" /></svg>
-                        Backup (Excel)
-                    </button>
-                    <button id="generate-html-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM4 8h5v2H4V8zm0 5a1 1 0 011-1h.5a.5.5 0 010 1H5a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
-                        Backup (HTML)
-                    </button>
-                    <button id="generate-json-btn" class="w-full bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
-                       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
-                        Backup (JSON)
-                    </button>
+        <div id="backup-ui" class="hidden">
+            <div id="cache-status" class="mb-6 p-4 rounded-lg text-center"></div>
+
+            <!-- Tabs -->
+            <div class="mb-6">
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                        <button class="tab-btn active whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm" data-tab="dashboard">Dashboard</button>
+                        <button class="tab-btn whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="jobfiles">Job Files List</button>
+                        <button class="tab-btn whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="tools">Backup Tools</button>
+                    </nav>
                 </div>
             </div>
 
-            <div id="status-area" class="mt-6 text-center text-gray-700 space-y-2"></div>
+            <!-- Tab Content -->
+            <div id="dashboard" class="tab-content active">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-5 rounded-lg shadow border-l-4 border-blue-500 kpi-card">
+                        <h3 class="text-sm font-medium text-gray-500">Total Profit</h3>
+                        <p id="kpi-profit" class="mt-1 text-3xl font-semibold text-gray-900">KD 0.000</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-lg shadow border-l-4 border-green-500 kpi-card">
+                        <h3 class="text-sm font-medium text-gray-500">Total Revenue</h3>
+                        <p id="kpi-revenue" class="mt-1 text-3xl font-semibold text-gray-900">KD 0.000</p>
+                    </div>
+                     <div class="bg-white p-5 rounded-lg shadow border-l-4 border-red-500 kpi-card">
+                        <h3 class="text-sm font-medium text-gray-500">Total Cost</h3>
+                        <p id="kpi-cost" class="mt-1 text-3xl font-semibold text-gray-900">KD 0.000</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-lg shadow border-l-4 border-purple-500 kpi-card">
+                        <h3 class="text-sm font-medium text-gray-500">Total Job Files</h3>
+                        <p id="kpi-jobs" class="mt-1 text-3xl font-semibold text-gray-900">0</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-4 rounded-lg shadow"><h3 class="font-semibold text-center mb-2">Profit by User</h3><canvas id="user-profit-chart"></canvas></div>
+                    <div class="bg-white p-4 rounded-lg shadow"><h3 class="font-semibold text-center mb-2">Profit by Salesman</h3><canvas id="salesman-profit-chart"></canvas></div>
+                </div>
+            </div>
+
+            <div id="jobfiles" class="tab-content">
+                <input type="text" id="job-search" class="w-full p-2 border rounded-md mb-4" placeholder="Search by Job No, Shipper, Consignee...">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white shadow rounded-lg">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" onclick="sortTable('jfn')">Job No.</th>
+                                <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" onclick="sortTable('d')">Date</th>
+                                <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" onclick="sortTable('sh')">Shipper</th>
+                                <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" onclick="sortTable('co')">Consignee</th>
+                                <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" onclick="sortTable('totalProfit')">Profit (KD)</th>
+                                <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" onclick="sortTable('createdBy')">Created By</th>
+                                <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" onclick="sortTable('status')">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="job-files-table-body" class="divide-y divide-gray-200">
+                            <!-- JS will populate this -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tools" class="tab-content">
+                 <div class="p-6 bg-gray-50 rounded-lg border space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Select Date Range for Backup</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
+                            <div>
+                                <label for="date-from" class="text-xs text-gray-600">From</label>
+                                <input type="date" id="date-from" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label for="date-to" class="text-xs text-gray-600">To</label>
+                                <input type="date" id="date-to" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <button id="generate-excel-btn" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm2-1a1 1 0 00-1 1v2h14V5a1 1 0 00-1-1H4zM3 9v7a1 1 0 001 1h12a1 1 0 001-1V9H3zm2 2a1 1 0 011-1h2a1 1 0 110 2H6a1 1 0 01-1-1zm5 0a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1z" /></svg>
+                            Backup (Excel)
+                        </button>
+                        <button id="generate-html-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM4 8h5v2H4V8zm0 5a1 1 0 011-1h.5a.5.5 0 010 1H5a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
+                            Backup (HTML)
+                        </button>
+                        <button id="generate-json-btn" class="w-full bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
+                            Backup (JSON)
+                        </button>
+                    </div>
+                </div>
+                <div id="status-area" class="mt-6 text-center text-gray-700 space-y-2"></div>
+            </div>
         </div>
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
-            authDomain: "my-job-file-system.firebaseapp.com",
-            projectId: "my-job-file-system",
-            storageBucket: "my-job-file-system.appspot.com",
-            messagingSenderId: "145307873304",
-            appId: "1:145307873304:web:d661ea6ec118801b4a136d",
-            measurementId: "G-8EHX5K7YHL"
-        };
-        
-        let db, auth;
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
+        // --- This page is offline-first. It relies on data synced from the main application. ---
 
         const loginPrompt = document.getElementById('login-prompt');
         const backupUI = document.getElementById('backup-ui');
@@ -109,20 +148,26 @@
         const cacheStatusDiv = document.getElementById('cache-status');
         
         let cachedJobFiles = [];
+        let sortColumn = 'd';
+        let sortDirection = 'desc';
+        let chartInstances = {};
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+             // Check for auth state just to guide user, no actual Firebase operations here
+            const isLoggedIn = localStorage.getItem('firebase:host:my-job-file-system.firebaseapp.com');
+            if (isLoggedIn) {
                 loginPrompt.classList.add('hidden');
                 backupUI.classList.remove('hidden');
                 document.getElementById('date-to').valueAsDate = new Date();
-                loadDataFromCache();
+                loadDataFromCacheAndInitialize();
             } else {
                 loginPrompt.classList.remove('hidden');
                 backupUI.classList.add('hidden');
             }
         });
-        
-        function loadDataFromCache() {
+
+        function loadDataFromCacheAndInitialize() {
             try {
                 const cachedData = localStorage.getItem('jobFilesBackupCache');
                 if (cachedData) {
@@ -134,9 +179,10 @@
                             <b class="font-semibold">${cachedJobFiles.length}</b> job files loaded from local cache.
                             <span class="text-sm block">Last synced: ${syncDate}</span>
                         </p>
-                        <p class="text-xs text-gray-500 mt-1">For the latest data, please re-sync from the main application's Admin Panel.</p>
+                        <p class="text-xs text-gray-500 mt-1">For the latest data, please re-sync from the main application's Backup section.</p>
                     `;
                     enableButtons();
+                    initializeDashboard();
                 } else {
                     throw new Error("No cache found");
                 }
@@ -146,43 +192,185 @@
                     <p class="text-red-700 bg-red-100 p-3 rounded-md">
                         <b class="font-semibold">No local data cache found.</b>
                     </p>
-                    <p class="text-sm text-gray-600 mt-2">Please go to the main application's <b>Admin Panel</b> and click the <b>"Sync Data for Backup"</b> button first.</p>`;
+                    <p class="text-sm text-gray-600 mt-2">Please go to the main application, click the <b>"Backup Data"</b> button, and then click <b>"Sync Data"</b> first.</p>`;
                 disableButtons();
             }
         }
 
+        function initializeDashboard() {
+            // Process data for analytics
+            const analyticsData = processAnalytics(cachedJobFiles);
+            
+            // Render UI components
+            renderKpiCards(analyticsData);
+            renderCharts(analyticsData);
+            renderJobFilesTable(cachedJobFiles);
+
+            // Setup event listeners
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelector('.tab-btn.active').classList.remove('active');
+                    btn.classList.add('active');
+                    document.querySelector('.tab-content.active').classList.remove('active');
+                    document.getElementById(btn.dataset.tab).classList.add('active');
+                });
+            });
+
+            document.getElementById('job-search').addEventListener('input', (e) => {
+                 const searchTerm = e.target.value.toLowerCase();
+                 const filteredJobs = cachedJobFiles.filter(job => 
+                    (job.jfn || '').toLowerCase().includes(searchTerm) ||
+                    (job.sh || '').toLowerCase().includes(searchTerm) ||
+                    (job.co || '').toLowerCase().includes(searchTerm)
+                );
+                renderJobFilesTable(filteredJobs);
+            });
+        }
+        
+        // --- Analytics Processing ---
+        function processAnalytics(jobs) {
+            let totalJobs = jobs.length;
+            let totalRevenue = 0;
+            let totalCost = 0;
+            let totalProfit = 0;
+            const profitByUser = {};
+            const profitBySalesman = {};
+
+            jobs.forEach(job => {
+                totalRevenue += job.totalSelling || 0;
+                totalCost += job.totalCost || 0;
+                totalProfit += job.totalProfit || 0;
+                const profit = job.totalProfit || 0;
+                const creator = job.createdBy || 'Unknown';
+                const salesman = job.sm || 'N/A';
+                
+                profitByUser[creator] = (profitByUser[creator] || 0) + profit;
+                if (salesman !== 'N/A') {
+                    profitBySalesman[salesman] = (profitBySalesman[salesman] || 0) + profit;
+                }
+            });
+
+            return {
+                totalJobs, totalRevenue, totalCost, totalProfit,
+                profitByUser: Object.entries(profitByUser).sort((a,b) => b[1] - a[1]),
+                profitBySalesman: Object.entries(profitBySalesman).sort((a,b) => b[1] - a[1]),
+            };
+        }
+
+        // --- UI Rendering ---
+        function renderKpiCards(data) {
+            document.getElementById('kpi-profit').textContent = `KD ${data.totalProfit.toFixed(3)}`;
+            document.getElementById('kpi-revenue').textContent = `KD ${data.totalRevenue.toFixed(3)}`;
+            document.getElementById('kpi-cost').textContent = `KD ${data.totalCost.toFixed(3)}`;
+            document.getElementById('kpi-jobs').textContent = data.totalJobs;
+        }
+
+        function renderCharts(data) {
+            renderPieChart('user-profit-chart', data.profitByUser.slice(0, 10));
+            renderPieChart('salesman-profit-chart', data.profitBySalesman.slice(0, 10));
+        }
+        
+        function renderPieChart(canvasId, data) {
+            if (chartInstances[canvasId]) {
+                chartInstances[canvasId].destroy();
+            }
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            const labels = data.map(item => item[0]);
+            const values = data.map(item => item[1]);
+            
+            chartInstances[canvasId] = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Profit',
+                        data: values,
+                        backgroundColor: [
+                            '#4f46e5', '#10b981', '#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6',
+                            '#ec4899', '#6b7280', '#14b8a6', '#f97316'
+                        ],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+        }
+        
+        function renderJobFilesTable(jobs) {
+            const tableBody = document.getElementById('job-files-table-body');
+            if (jobs.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4 text-gray-500">No job files found.</td></tr>`;
+                return;
+            }
+
+            // Sort data
+            jobs.sort((a, b) => {
+                let valA = a[sortColumn] || '';
+                let valB = b[sortColumn] || '';
+                if (sortColumn === 'totalProfit') {
+                    valA = a.totalProfit || 0;
+                    valB = b.totalProfit || 0;
+                }
+                
+                if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            tableBody.innerHTML = jobs.map(job => `
+                <tr class="hover:bg-gray-50">
+                    <td class="py-3 px-4 text-sm font-medium text-gray-900">${job.jfn || ''}</td>
+                    <td class="py-3 px-4 text-sm text-gray-500">${job.d || ''}</td>
+                    <td class="py-3 px-4 text-sm text-gray-500">${job.sh || ''}</td>
+                    <td class="py-3 px-4 text-sm text-gray-500">${job.co || ''}</td>
+                    <td class="py-3 px-4 text-sm font-semibold ${ (job.totalProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'}">${(job.totalProfit || 0).toFixed(3)}</td>
+                    <td class="py-3 px-4 text-sm text-gray-500">${job.createdBy || ''}</td>
+                    <td class="py-3 px-4 text-sm text-gray-500"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        job.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        job.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                        job.status === 'checked' ? 'bg-blue-100 text-blue-800' :
+                        'bg-yellow-100 text-yellow-800'
+                    }">${job.status || 'pending'}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        window.sortTable = function(column) {
+            if (sortColumn === column) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = column;
+                sortDirection = 'desc';
+            }
+            renderJobFilesTable(cachedJobFiles);
+        }
+
+        // --- Button Controls ---
         function disableButtons() {
-            generateExcelBtn.disabled = true;
-            generateHtmlBtn.disabled = true;
-            generateJsonBtn.disabled = true;
-            [generateExcelBtn, generateHtmlBtn, generateJsonBtn].forEach(btn => btn.classList.add('opacity-50', 'cursor-not-allowed'));
+            [generateExcelBtn, generateHtmlBtn, generateJsonBtn].forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            });
         }
 
         function enableButtons() {
-            generateExcelBtn.disabled = false;
-            generateHtmlBtn.disabled = false;
-            generateJsonBtn.disabled = false;
-            [generateExcelBtn, generateHtmlBtn, generateJsonBtn].forEach(btn => btn.classList.remove('opacity-50', 'cursor-not-allowed'));
+            [generateExcelBtn, generateHtmlBtn, generateJsonBtn].forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            });
         }
+        
+        [generateExcelBtn, generateHtmlBtn, generateJsonBtn].forEach(btn => {
+            btn.addEventListener('click', (e) => generateBackup(e.currentTarget.id.split('-')[1]));
+        });
 
-        generateExcelBtn.addEventListener('click', () => generateBackup('excel'));
-        generateHtmlBtn.addEventListener('click', () => generateBackup('html'));
-        generateJsonBtn.addEventListener('click', () => generateBackup('json'));
-
-
-        function safeToDate(timestamp) {
-            if (!timestamp) return null;
-            if (typeof timestamp.toDate === 'function') return timestamp.toDate();
-            if (timestamp instanceof Date) return timestamp;
-            if (typeof timestamp === 'string' || typeof timestamp === 'number') {
-                const d = new Date(timestamp);
-                if (!isNaN(d.getTime())) return d;
-            }
-            if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
-            return null;
-        }
-
-        async function generateBackup(format = 'excel') {
+        // --- Main Backup Logic ---
+        async function generateBackup(format) {
             const fromDate = document.getElementById('date-from').value;
             const toDate = document.getElementById('date-to').value;
 
@@ -200,10 +388,10 @@
             disableButtons();
 
             try {
-                // 1. Filter Job Files from cache
+                // Filter Job Files from cache
                 const from = new Date(fromDate);
                 const to = new Date(toDate);
-                to.setHours(23, 59, 59, 999); // Include the whole end day
+                to.setHours(23, 59, 59, 999); 
 
                 const jobFiles = cachedJobFiles.filter(job => {
                     if (!job.d) return false;
@@ -211,7 +399,7 @@
                     return jobDate >= from && jobDate <= to;
                 });
                 
-                statusArea.innerHTML += `<p>Filtering records... Found ${jobFiles.length} job files in the selected date range.</p>`;
+                statusArea.innerHTML = `<p>Filtering records... Found ${jobFiles.length} job files in the selected date range.</p>`;
 
                 if (jobFiles.length === 0) {
                     statusArea.innerHTML = `<p class="text-yellow-600 font-semibold">No job files found for the selected date range in the local cache.</p>`;
@@ -222,34 +410,28 @@
                 statusArea.innerHTML += `<p>Preparing ZIP file...</p>`;
                 const zip = new JSZip();
 
-                // 2. Generate individual files
                 for (let i = 0; i < jobFiles.length; i++) {
                     const job = jobFiles[i];
                     let fileContent, fileExtension, fileName;
                     
                     if (format === 'excel') {
-                        fileContent = getExcelViewHtml(job);
-                        fileExtension = '.xls';
+                        fileContent = getExcelViewHtml(job); fileExtension = '.xls';
                     } else if (format === 'html') {
-                        fileContent = getBrowserViewHtml(job);
-                        fileExtension = '.html';
+                        fileContent = getBrowserViewHtml(job); fileExtension = '.html';
                     } else { // json
-                        fileContent = JSON.stringify(job, null, 2);
-                        fileExtension = '.json';
+                        fileContent = JSON.stringify(job, (key, value) => (value instanceof Date) ? value.toISOString() : value, 2); fileExtension = '.json';
                     }
                     
                     fileName = `JobFile-${job.jfn.replace(/[\/\\?%*:|"<>]/g, '-')}${fileExtension}`;
                     zip.file(fileName, fileContent);
-                    statusArea.innerHTML += `<p class="text-sm text-gray-500">Generated: ${fileName}</p>`;
+                    statusArea.innerHTML = `<p class="text-sm text-gray-500">Processing ${i + 1} of ${jobFiles.length}: ${fileName}</p>`;
                     await new Promise(resolve => setTimeout(resolve, 5));
                 }
                 
-                // 3. Generate Analytics Report
                 statusArea.innerHTML += `<p>Generating analytics report...</p>`;
                 const analyticsHtml = generateAnalyticsReport(jobFiles);
                 zip.file("Analytics-Report.html", analyticsHtml);
 
-                // 4. Create and download ZIP
                 statusArea.innerHTML += `<p class="font-semibold">Finalizing ZIP archive... Please wait.</p>`;
                 const content = await zip.generateAsync({ type: "blob" });
                 
@@ -265,157 +447,43 @@
             }
         }
         
-        function generateAnalyticsReport(jobs) {
-            let totalJobs = jobs.length;
-            let totalRevenue = 0;
-            let totalCost = 0;
-            let totalProfit = 0;
+        // --- Content Generation Functions (for backups) ---
+        function safeToDate(timestamp) {
+            if (!timestamp) return null;
+            if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
+            return new Date(timestamp);
+        }
 
+        function generateAnalyticsReport(jobs) {
+            let totalJobs = jobs.length, totalRevenue = 0, totalCost = 0, totalProfit = 0;
             jobs.forEach(job => {
                 totalRevenue += job.totalSelling || 0;
                 totalCost += job.totalCost || 0;
                 totalProfit += job.totalProfit || 0;
             });
-
             const fromDate = document.getElementById('date-from').value;
             const toDate = document.getElementById('date-to').value;
             
-            return `
-                <!DOCTYPE html><html><head><title>Analytics Report</title>
-                <script src="https://cdn.tailwindcss.com"><\/script></head>
-                <body class="p-8"><div class="max-w-4xl mx-auto">
-                    <h1 class="text-2xl font-bold text-center">Analytics Report</h1>
-                    <p class="text-center text-gray-600">For period: ${fromDate} to ${toDate}</p>
-                    <div class="grid grid-cols-4 gap-4 text-center my-8">
-                        <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Total Jobs</p><p class="text-2xl font-bold">${totalJobs}</p></div>
-                        <div class="bg-blue-100 p-4 rounded-lg"><p class="text-sm text-blue-800">Total Revenue</p><p class="text-2xl font-bold text-blue-900">KD ${totalRevenue.toFixed(3)}</p></div>
-                        <div class="bg-red-100 p-4 rounded-lg"><p class="text-sm text-red-800">Total Cost</p><p class="text-2xl font-bold text-red-900">KD ${totalCost.toFixed(3)}</p></div>
-                        <div class="bg-green-100 p-4 rounded-lg"><p class="text-sm text-green-800">Total Profit</p><p class="text-2xl font-bold text-green-900">KD ${totalProfit.toFixed(3)}</p></div>
-                    </div>
-                </div></body></html>
-            `;
+            return `<!DOCTYPE html><html><head><title>Analytics Report</title><script src="https://cdn.tailwindcss.com"><\/script></head><body class="p-8"><div class="max-w-4xl mx-auto"><h1 class="text-2xl font-bold text-center">Analytics Report</h1><p class="text-center text-gray-600">For period: ${fromDate} to ${toDate}</p><div class="grid grid-cols-4 gap-4 text-center my-8"><div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Total Jobs</p><p class="text-2xl font-bold">${totalJobs}</p></div><div class="bg-blue-100 p-4 rounded-lg"><p class="text-sm text-blue-800">Total Revenue</p><p class="text-2xl font-bold text-blue-900">KD ${totalRevenue.toFixed(3)}</p></div><div class="bg-red-100 p-4 rounded-lg"><p class="text-sm text-red-800">Total Cost</p><p class="text-2xl font-bold text-red-900">KD ${totalCost.toFixed(3)}</p></div><div class="bg-green-100 p-4 rounded-lg"><p class="text-sm text-green-800">Total Profit</p><p class="text-2xl font-bold text-green-900">KD ${totalProfit.toFixed(3)}</p></div></div></div></body></html>`;
         }
 
         function getExcelViewHtml(data) {
             const excelHeader = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset='UTF-8'><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>${(data.jfn || "JobFile").replace(/[\/\\?%*:|"<>]/g, '-')}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>`;
-
-            let tableRows = `
-                <table border="1">
-                    <tr><td colspan="4" style="font-size:16pt; font-weight:bold; text-align:center;">JOBFILE MANAGEMENT SYSTEM</td></tr>
-                    <tr><td><b>Job File No.</b></td><td>${data.jfn || ''}</td><td><b>Date</b></td><td>${data.d || ''}</td></tr>
-                    <tr><td><b>P.O. #</b></td><td>${data.po || ''}</td><td><b>Invoice No.</b></td><td>${data.in || ''}</td></tr>
-                    <tr><td><b>Billing Date</b></td><td>${data.bd || ''}</td><td><b>Salesman</b></td><td>${data.sm || ''}</td></tr>
-                    <tr><td colspan="4"></td></tr>
-                    <tr><td><b>Shipper</b></td><td colspan="3">${data.sh || ''}</td></tr>
-                    <tr><td><b>Consignee</b></td><td colspan="3">${data.co || ''}</td></tr>
-                    <tr><td colspan="4"></td></tr>
-                    <tr><td><b>MAWB/OBL</b></td><td>${data.mawb || ''}</td><td><b>HAWB/HBL</b></td><td>${data.hawb || ''}</td></tr>
-                    <tr><td><b>Origin</b></td><td>${data.or || ''}</td><td><b>Destination</b></td><td>${data.de || ''}</td></tr>
-                    <tr><td><b>Pieces</b></td><td>${data.pc || ''}</td><td><b>Gross Wt.</b></td><td>${data.gw || ''}</td></tr>
-                    <tr><td><b>Description</b></td><td colspan="3">${data.dsc || ''}</td></tr>
-                    <tr><td colspan="4"></td></tr>
-                    <tr style="font-weight:bold; background-color:#f2f2f2;"><td>Charges Description</td><td>Cost</td><td>Selling</td><td>Profit</td></tr>
-            `;
-
-            (data.ch || []).forEach(c => {
-                tableRows += `<tr><td>${c.l}</td><td>${c.c}</td><td>${c.s}</td><td>${(parseFloat(c.s || 0) - parseFloat(c.c || 0)).toFixed(3)}</td></tr>`;
-            });
-
-            tableRows += `
-                    <tr style="font-weight:bold; background-color:#f2f2f2;">
-                        <td><b>TOTAL</b></td>
-                        <td><b>${(data.totalCost || 0).toFixed(3)}</b></td>
-                        <td><b>${(data.totalSelling || 0).toFixed(3)}</b></td>
-                        <td><b>${(data.totalProfit || 0).toFixed(3)}</b></td>
-                    </tr>
-                    <tr><td colspan="4"></td></tr>
-                    <tr><td><b>Remarks</b></td><td colspan="3">${data.re || ''}</td></tr>
-                </table>
-            `;
-
+            let tableRows = `<table border="1"><tr><td colspan="4" style="font-size:16pt; font-weight:bold; text-align:center;">JOBFILE MANAGEMENT SYSTEM</td></tr><tr><td><b>Job File No.</b></td><td>${data.jfn || ''}</td><td><b>Date</b></td><td>${data.d || ''}</td></tr><tr><td><b>P.O. #</b></td><td>${data.po || ''}</td><td><b>Invoice No.</b></td><td>${data.in || ''}</td></tr><tr><td><b>Billing Date</b></td><td>${data.bd || ''}</td><td><b>Salesman</b></td><td>${data.sm || ''}</td></tr><tr><td colspan="4"></td></tr><tr><td><b>Shipper</b></td><td colspan="3">${data.sh || ''}</td></tr><tr><td><b>Consignee</b></td><td colspan="3">${data.co || ''}</td></tr><tr><td colspan="4"></td></tr><tr><td><b>MAWB/OBL</b></td><td>${data.mawb || ''}</td><td><b>HAWB/HBL</b></td><td>${data.hawb || ''}</td></tr><tr><td><b>Origin</b></td><td>${data.or || ''}</td><td><b>Destination</b></td><td>${data.de || ''}</td></tr><tr><td><b>Pieces</b></td><td>${data.pc || ''}</td><td><b>Gross Wt.</b></td><td>${data.gw || ''}</td></tr><tr><td><b>Description</b></td><td colspan="3">${data.dsc || ''}</td></tr><tr><td colspan="4"></td></tr><tr style="font-weight:bold; background-color:#f2f2f2;"><td>Charges Description</td><td>Cost</td><td>Selling</td><td>Profit</td></tr>`;
+            (data.ch || []).forEach(c => { tableRows += `<tr><td>${c.l}</td><td>${c.c}</td><td>${c.s}</td><td>${(parseFloat(c.s || 0) - parseFloat(c.c || 0)).toFixed(3)}</td></tr>`; });
+            tableRows += `<tr style="font-weight:bold; background-color:#f2f2f2;"><td><b>TOTAL</b></td><td><b>${(data.totalCost || 0).toFixed(3)}</b></td><td><b>${(data.totalSelling || 0).toFixed(3)}</b></td><td><b>${(data.totalProfit || 0).toFixed(3)}</b></td></tr><tr><td colspan="4"></td></tr><tr><td><b>Remarks</b></td><td colspan="3">${data.re || ''}</td></tr></table>`;
             return `${excelHeader}${tableRows}</body></html>`;
         }
 
         function getBrowserViewHtml(data) {
-            // This is the original visual-heavy HTML generation, perfect for browser viewing.
-            const totalCost = data.totalCost || 0;
-            const totalSelling = data.totalSelling || 0;
-            const totalProfit = data.totalProfit || 0;
-            
-            const checkedAtDatePrint = safeToDate(data.checkedAt);
-            const checkedByText = data.checkedBy ? `${data.checkedBy}${checkedAtDatePrint ? ` on ${checkedAtDatePrint.toLocaleDateString()}`: ''}` : 'Pending';
-
-            let approvedByText = 'Pending Approval';
-            const approvedAtDatePrint = safeToDate(data.approvedAt);
-            if (data.status === 'approved') {
-                approvedByText = `${data.approvedBy}${approvedAtDatePrint ? ` on ${approvedAtDatePrint.toLocaleDateString()}` : ''}`;
-            } else if (data.status === 'rejected') {
-                approvedByText = `REJECTED: ${data.rejectionReason}`;
-            }
-            
-            const createdAtDatePrint = safeToDate(data.createdAt);
-            const createdByText = data.createdBy ? `${data.createdBy}${createdAtDatePrint ? ` on ${createdAtDatePrint.toLocaleDateString()}` : ''}` : (data.pb || 'N/A');
-            
-            const checkedStampHtml = data.checkedBy ? `<div class="stamp stamp-checked" style="display: block;">Checked</div>` : '';
-            let approvalStampHtml = '';
-            if (data.status === 'approved') {
-                approvalStampHtml = `<div class="stamp stamp-approved" style="display: block;">Approved</div>`;
-            } else if (data.status === 'rejected') {
-                approvalStampHtml = `<div class="stamp stamp-rejected" style="display: block;">Rejected</div>`;
-            }
-
-            const checkedSymbol = '☑';
-            const uncheckedSymbol = '☐';
-            
+            const totalCost = data.totalCost || 0; const totalSelling = data.totalSelling || 0; const totalProfit = data.totalProfit || 0;
+            const checkedAtDatePrint = safeToDate(data.checkedAt); const checkedByText = data.checkedBy ? `${data.checkedBy}${checkedAtDatePrint ? ` on ${checkedAtDatePrint.toLocaleDateString()}`: ''}` : 'Pending';
+            let approvedByText = 'Pending Approval'; const approvedAtDatePrint = safeToDate(data.approvedAt); if (data.status === 'approved') { approvedByText = `${data.approvedBy}${approvedAtDatePrint ? ` on ${approvedAtDatePrint.toLocaleDateString()}` : ''}`; } else if (data.status === 'rejected') { approvedByText = `REJECTED: ${data.rejectionReason}`; }
+            const createdAtDatePrint = safeToDate(data.createdAt); const createdByText = data.createdBy ? `${data.createdBy}${createdAtDatePrint ? ` on ${createdAtDatePrint.toLocaleDateString()}` : ''}` : (data.pb || 'N/A');
+            const checkedStampHtml = data.checkedBy ? `<div class="stamp stamp-checked" style="display: block;">Checked</div>` : ''; let approvalStampHtml = ''; if (data.status === 'approved') { approvalStampHtml = `<div class="stamp stamp-approved" style="display: block;">Approved</div>`; } else if (data.status === 'rejected') { approvalStampHtml = `<div class="stamp stamp-rejected" style="display: block;">Rejected</div>`;}
+            const checkedSymbol = '☑'; const uncheckedSymbol = '☐';
             const descriptionHtml = `<div style="grid-column: span 12; background-color: #fff; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #374151;"><strong>Description:</strong><div class="print-field">${data.dsc || ''}</div></div>`;
-
-            return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>JobFile ${data.jfn}</title><script src="https://cdn.tailwindcss.com"><\/script><style>body{font-family:'Inter',sans-serif;}.print-table{border-collapse:collapse;width:100%}.print-table th,.print-table td{border:1px solid #d1d5db;padding:.5rem;text-align:left}.print-field{border:1px solid #6b7280;padding:.3rem;min-height:24px;word-break:break-all}.stamp{position:absolute;top:-10px;right:-10px;padding:4px 12px;border-radius:4px;font-size:14px;font-weight:700;text-transform:uppercase;transform:rotate(15deg);opacity:.8}.stamp-approved{border:2px solid #16a34a;color:#16a34a}.stamp-checked{border:2px solid #2563eb;color:#2563eb}.stamp-rejected{border:2px solid #dc2626;color:#dc2626}<\/style></head><body class="p-4">
-                <div class="border border-gray-700 p-2 bg-white">
-                    <div class="grid grid-cols-12 gap-px bg-gray-700" style="border: 1px solid #374151;">
-                        <div class="col-span-3 bg-white p-1 flex items-center" style="border: 1px solid #374151;">
-                            <img src="http://qgocargo.com/logo.png" alt="QGO Cargo Logo" class="h-10 w-auto">
-                        </div>
-                        <div class="col-span-6 bg-white flex items-center justify-center text-xl font-bold" style="border: 1px solid #374151;">JOBFILE MANAGEMENT SYSTEM</div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><div><strong>Date:</strong> ${data.d || ''}</div><div><strong>P.O. #:</strong> ${data.po || ''}</div></div>
-                        <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Job File No.:</strong> ${data.jfn || ''}</div>
-                        <div class="col-span-12 bg-white p-1 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs" style="border: 1px solid #374151;">
-                            <div><strong>Clearance</strong><br>${(data.cl || []).includes('Export') ? checkedSymbol : uncheckedSymbol} Export<br>${(data.cl || []).includes('Import') ? checkedSymbol : uncheckedSymbol} Import<br>${(data.cl || []).includes('Clearance') ? checkedSymbol : uncheckedSymbol} Clearance<br>${(data.cl || []).includes('Local Move') ? checkedSymbol : uncheckedSymbol} Local Move</div>
-                            <div><strong>Product Type</strong><br>${(data.pt || []).includes('Air Freight') ? checkedSymbol : uncheckedSymbol} Air<br>${(data.pt || []).includes('Sea Freight') ? checkedSymbol : uncheckedSymbol} Sea<br>${(data.pt || []).includes('Land Freight') ? checkedSymbol : uncheckedSymbol} Land<br>${(data.pt || []).includes('Others') ? checkedSymbol : uncheckedSymbol} Others</div>
-                        </div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Invoice No.:</strong><div class="print-field">${data.in || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Billing Date:</strong><div class="print-field">${data.bd || ''}</div></div>
-                        <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Salesman:</strong><div class="print-field">${data.sm || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Shipper's Name:</strong><div class="print-field">${data.sh || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Consignee's Name:</strong><div class="print-field">${data.co || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>MAWB/OBL/TCN:</strong><div class="print-field">${data.mawb || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Teams of Shipping:</strong><div class="print-field">${data.ts || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>HAWB/HBL:</strong><div class="print-field">${data.hawb || ''}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Origin:</strong><div class="print-field">${data.or || ''}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Destination:</strong><div class="print-field">${data.de || ''}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>No. of Pieces:</strong><div class="print-field">${data.pc || ''}</div></div>
-                        <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Gross Wt:</strong><div class="print-field">${data.gw || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Volume Wt:</strong><div class="print-field">${data.vw || ''}</div></div>
-                        ${descriptionHtml}
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Carrier/Line/Trucking:</strong><div class="print-field">${data.ca || ''}</div></div>
-                        <div class="col-span-6 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Truck/Driver:</strong><div class="print-field">${data.tn || ''}</div></div>
-                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Vessel:</strong><div class="print-field">${data.vn || ''}</div></div>
-                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Flight/Voyage:</strong><div class="print-field">${data.fv || ''}</div></div>
-                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Container No:</strong><div class="print-field">${data.cn || ''}</div></div>
-                        <div class="col-span-12 bg-white p-0" style="border: 1px solid #374151;">
-                            <table class="print-table w-full text-xs">
-                                <thead><tr><th>Description</th><th>Cost</th><th>Selling</th><th>Profit</th><th>Notes</th></tr></thead>
-                                <tbody>
-                                    ${(data.ch || []).map(c => `<tr><td>${c.l}</td><td>${c.c}</td><td>${c.s}</td><td>${(parseFloat(c.s || 0) - parseFloat(c.c || 0)).toFixed(3)}</td><td>${c.n}</td></tr>`).join('')}
-                                    <tr class="font-bold bg-gray-100"><td>TOTAL:</td><td>${totalCost.toFixed(3)}</td><td>${totalSelling.toFixed(3)}</td><td>${totalProfit.toFixed(3)}</td><td></td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>REMARKS:</strong><div class="print-field h-20">${(data.re || '').replace(/\n/g, '<br>')}</div></div>
-                        <div class="col-span-4 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>PREPARED BY:</strong><div class="print-field">${createdByText}</div></div>
-                        <div class="col-span-4 bg-white p-1 text-xs relative" style="border: 1px solid #374151;">${checkedStampHtml}<strong>CHECKED BY:</strong><div class="print-field">${checkedByText}</div></div>
-                        <div class="col-span-4 bg-white p-1 text-xs relative" style="border: 1px solid #374151;">${approvalStampHtml}<strong>APPROVED BY:</strong><div class="print-field">${approvedByText}</div></div>
-                    </div>
-                </div></body></html>`;
+            return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>JobFile ${data.jfn}</title><script src="https://cdn.tailwindcss.com"><\/script><style>body{font-family:'Inter',sans-serif;}.print-table{border-collapse:collapse;width:100%}.print-table th,.print-table td{border:1px solid #d1d5db;padding:.5rem;text-align:left}.print-field{border:1px solid #6b7280;padding:.3rem;min-height:24px;word-break:break-all}.stamp{position:absolute;top:-10px;right:-10px;padding:4px 12px;border-radius:4px;font-size:14px;font-weight:700;text-transform:uppercase;transform:rotate(15deg);opacity:.8}.stamp-approved{border:2px solid #16a34a;color:#16a34a}.stamp-checked{border:2px solid #2563eb;color:#2563eb}.stamp-rejected{border:2px solid #dc2626;color:#dc2626}<\/style></head><body class="p-4"><div class="border border-gray-700 p-2 bg-white"><div class="grid grid-cols-12 gap-px bg-gray-700" style="border:1px solid #374151"><div class="col-span-3 bg-white p-1 flex items-center" style="border:1px solid #374151"><img src="http://qgocargo.com/logo.png" alt="QGO Cargo Logo" class="h-10 w-auto"></div><div class="col-span-6 bg-white flex items-center justify-center text-xl font-bold" style="border:1px solid #374151">JOBFILE MANAGEMENT SYSTEM</div><div class="col-span-3 bg-white p-1 text-xs" style="border:1px solid #374151"><div><strong>Date:</strong> ${data.d||''}</div><div><strong>P.O. #:</strong> ${data.po||''}</div></div><div class="col-span-12 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>Job File No.:</strong> ${data.jfn||''}</div><div class="col-span-12 bg-white p-1 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs" style="border:1px solid #374151"><div><strong>Clearance</strong><br>${(data.cl||[]).includes('Export')?checkedSymbol:uncheckedSymbol} Export<br>${(data.cl||[]).includes('Import')?checkedSymbol:uncheckedSymbol} Import<br>${(data.cl||[]).includes('Clearance')?checkedSymbol:uncheckedSymbol} Clearance<br>${(data.cl||[]).includes('Local Move')?checkedSymbol:uncheckedSymbol} Local Move</div><div><strong>Product Type</strong><br>${(data.pt||[]).includes('Air Freight')?checkedSymbol:uncheckedSymbol} Air<br>${(data.pt||[]).includes('Sea Freight')?checkedSymbol:uncheckedSymbol} Sea<br>${(data.pt||[]).includes('Land Freight')?checkedSymbol:uncheckedSymbol} Land<br>${(data.pt||[]).includes('Others')?checkedSymbol:uncheckedSymbol} Others</div></div><div class="col-span-6 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>Invoice No.:</strong><div class="print-field">${data.in||''}</div></div><div class="col-span-6 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>Billing Date:</strong><div class="print-field">${data.bd||''}</div></div><div class="col-span-12 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>Salesman:</strong><div class="print-field">${data.sm||''}</div></div><div class="col-span-6 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>Shipper's Name:</strong><div class="print-field">${data.sh||''}</div></div><div class="col-span-6 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>Consignee's Name:</strong><div class="print-field">${data.co||''}</div></div><div class="col-span-6 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>MAWB/OBL/TCN:</strong><div class="print-field">${data.mawb||''}</div></div><div class="col-span-6 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>Teams of Shipping:</strong><div class="print-field">${data.ts||''}</div></div><div class="col-span-6 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>HAWB/HBL:</strong><div class="print-field">${data.hawb||''}</div></div><div class="col-span-3 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>Origin:</strong><div class="print-field">${data.or||''}</div></div><div class="col-span-3 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>Destination:</strong><div class="print-field">${data.de||''}</div></div><div class="col-span-3 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>No. of Pieces:</strong><div class="print-field">${data.pc||''}</div></div><div class="col-span-3 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>Gross Wt:</strong><div class="print-field">${data.gw||''}</div></div><div class="col-span-6 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>Volume Wt:</strong><div class="print-field">${data.vw||''}</div></div>${descriptionHtml}<div class="col-span-6 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>Carrier/Line/Trucking:</strong><div class="print-field">${data.ca||''}</div></div><div class="col-span-6 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>Truck/Driver:</strong><div class="print-field">${data.tn||''}</div></div><div class="col-span-4 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>Vessel:</strong><div class="print-field">${data.vn||''}</div></div><div class="col-span-4 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>Flight/Voyage:</strong><div class="print-field">${data.fv||''}</div></div><div class="col-span-4 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>Container No:</strong><div class="print-field">${data.cn||''}</div></div><div class="col-span-12 bg-white p-0" style="border:1px solid #374151"><table class="print-table w-full text-xs"><thead><tr><th>Description</th><th>Cost</th><th>Selling</th><th>Profit</th><th>Notes</th></tr></thead><tbody>${(data.ch||[]).map(c=>`<tr><td>${c.l}</td><td>${c.c}</td><td>${c.s}</td><td>${(parseFloat(c.s||0)-parseFloat(c.c||0)).toFixed(3)}</td><td>${c.n}</td></tr>`).join('')}<tr class="font-bold bg-gray-100"><td>TOTAL:</td><td>${totalCost.toFixed(3)}</td><td>${totalSelling.toFixed(3)}</td><td>${totalProfit.toFixed(3)}</td><td></td></tr></tbody></table></div><div class="col-span-12 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>REMARKS:</strong><div class="print-field h-20">${(data.re||'').replace(/\n/g,'<br>')}</div></div><div class="col-span-4 bg-white p-1 text-xs" style="border:1px solid #374151"><strong>PREPARED BY:</strong><div class="print-field">${createdByText}</div></div><div class="col-span-4 bg-white p-1 text-xs relative" style="border:1px solid #374151">${checkedStampHtml}<strong>CHECKED BY:</strong><div class="print-field">${checkedByText}</div></div><div class="col-span-4 bg-white p-1 text-xs relative" style="border:1px solid #374151">${approvalStampHtml}<strong>APPROVED BY:</strong><div class="print-field">${approvedByText}</div></div></div></div></body></html>`;
         }
     </script>
 </body>
