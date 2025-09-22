@@ -477,6 +477,10 @@
                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.898 0V3a1 1 0 112 0v2.101a7.002 7.002 0 01-11.898 0V3a1 1 0 01-1-1zM12 10a2 2 0 11-4 0 2 2 0 014 0zM4 10a2 2 0 00-2 2v2a2 2 0 002 2h12a2 2 0 002-2v-2a2 2 0 00-2-2h-1.101A7.002 7.002 0 0010 12c-2.256 0-4.233-.996-5.5-2.543A7.002 7.002 0 004 10z" clip-rule="evenodd" /></svg>
                      <span>New Job</span>
                  </button>
+                 <button onclick="openBackupModal()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6v3.586l-1.293 1.293a1 1 0 001.414 1.414L6 12.414V8a4 4 0 118 0v4.414l1.293 1.293a1 1 0 001.414-1.414L14 11.586V8a6 6 0 00-6-6zM4 16a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1z" /></svg>
+                     <span>Backup Data</span>
+                 </button>
                  <button onclick="printPage()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center space-x-2">
                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" /></svg>
                      <span>Print</span>
@@ -605,26 +609,6 @@
                 <div id="user-list" class="space-y-2 max-h-[40vh] overflow-y-auto"></div>
                 <div class="text-right mt-4">
                     <button onclick="saveUserChanges()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save User Changes</button>
-                </div>
-            </div>
-        
-            <!-- Data Backup & Restore -->
-            <div class="border rounded-lg p-4 mt-6">
-                <h4 class="text-lg font-semibold mb-3">Data Backup & Restore</h4>
-                <p class="text-sm text-gray-600 mb-4">First, sync data to create a local backup, then use the Advanced Backup page to generate ZIP files without using Firebase reads.</p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    <button onclick="syncDataForBackup()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M15.312 11.227c-2.39.78-4.684.78-7.073 0a.75.75 0 01.34-1.459c2.06.673 4.1.673 6.165 0a.75.75 0 011.018 1.119.75.75 0 01-.45.34zm-2.14-3.342a.75.75 0 01.763.218c.39.462.333 1.144-.13 1.533a.75.75 0 01-1.06-1.06c.19-.156.328-.358.428-.591zM8.828 8.12a.75.75 0 01.218-.763c.462-.39 1.144-.333 1.533.13a.75.75 0 11-1.06 1.06c-.156-.19-.358-.328-.59-.428zM4.002 15h11.996a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v6a2 2 0 002 2z" clip-rule="evenodd" /></svg>
-                        1. Sync Data for Backup
-                    </button>
-                    <a href="backup.html" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2.998 13.82a1 1 0 01.707-.293h12.59a1 1 0 110 2H3.705a1 1 0 01-.707-1.707zM6.585 9.293a1 1 0 010 1.414l-2.293 2.293a1 1 0 01-1.414-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L6.585 9.293zM13.414 5.293a1 1 0 010 1.414L11.12 8.999a1 1 0 01-1.414-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L13.414 5.293z" /></svg>
-                        2. Open Advanced Backup
-                    </a>
-                    <button onclick="backupAllData()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
-                        Backup All (JSON)
-                    </button>
                 </div>
             </div>
         </div>
@@ -883,6 +867,29 @@
             </div>
             <div id="recycle-bin-list" class="space-y-2 max-h-[70vh] overflow-y-auto">
                 <!-- JS will populate this list -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup Modal (New) -->
+    <div id="backup-modal" class="overlay">
+        <div class="modal-content max-w-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">Data Backup Tool</h3>
+                <button onclick="closeModal('backup-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div class="border rounded-lg p-4 mt-6 space-y-4">
+                <p class="text-sm text-gray-600">First, sync your data to create a local cache. Then, open the advanced backup page to generate ZIP files of your job files without using extra Firebase reads.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button onclick="syncDataForBackup()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M15.312 11.227c-2.39.78-4.684.78-7.073 0a.75.75 0 01.34-1.459c2.06.673 4.1.673 6.165 0a.75.75 0 011.018 1.119.75.75 0 01-.45.34zm-2.14-3.342a.75.75 0 01.763.218c.39.462.333 1.144-.13 1.533a.75.75 0 01-1.06-1.06c.19-.156.328-.358.428-.591zM8.828 8.12a.75.75 0 01.218-.763c.462-.39 1.144-.333 1.533.13a.75.75 0 11-1.06 1.06c-.156-.19-.358-.328-.59-.428zM4.002 15h11.996a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v6a2 2 0 002 2z" clip-rule="evenodd" /></svg>
+                        1. Sync Data
+                    </button>
+                    <a href="backup.html" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2.998 13.82a1 1 0 01.707-.293h12.59a1 1 0 110 2H3.705a1 1 0 01-.707-1.707zM6.585 9.293a1 1 0 010 1.414l-2.293 2.293a1 1 0 01-1.414-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L6.585 9.293zM13.414 5.293a1 1 0 010 1.414L11.12 8.999a1 1 0 01-1.414-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L13.414 5.293z" /></svg>
+                        2. Open Backup Page
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -3071,6 +3078,10 @@
             tableBody.appendChild(newRow);
         }
         
+        function openBackupModal() {
+            openModal('backup-modal');
+        }
+
         function syncDataForBackup() {
             if (!jobFilesCache || jobFilesCache.length === 0) {
                 showNotification("No job files data available to sync.", true);
@@ -3078,18 +3089,28 @@
             }
 
             try {
+                // For admins, sync all data. For other users, sync only their created files.
+                const dataToSync = currentUser.role === 'admin' 
+                    ? jobFilesCache 
+                    : jobFilesCache.filter(job => job.createdBy === currentUser.displayName);
+
+                if (dataToSync.length === 0) {
+                    showNotification("You have not created any job files to back up.", false);
+                    return;
+                }
+
                 const backupPayload = {
                     lastSynced: new Date().toISOString(),
-                    data: jobFilesCache
+                    data: dataToSync
                 };
                 localStorage.setItem('jobFilesBackupCache', JSON.stringify(backupPayload));
-                showNotification(`Successfully synced ${jobFilesCache.length} job files for the backup tool.`);
+                showNotification(`Successfully synced ${dataToSync.length} job files for the backup tool.`);
             } catch (error) {
                 console.error("Error saving data to localStorage:", error);
                 showNotification("Could not sync data. The browser storage might be full.", true);
             }
         }
-
+    
         function toggleAuthView(showLogin) {
             const nameField = document.getElementById('signup-name-field');
             const emailField = document.getElementById('email-address');
@@ -3927,6 +3948,7 @@
             window.addChargeRow = addChargeRow;
             window.exportAllToExcel = exportAllToExcel;
             window.syncDataForBackup = syncDataForBackup;
+            window.openBackupModal = openBackupModal;
 
             populateTable();
             calculate();
@@ -3935,5 +3957,6 @@
     </script>
 </body>
 </html>
+
 
 
