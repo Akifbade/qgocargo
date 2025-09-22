@@ -44,6 +44,8 @@
         </div>
         
         <div id="backup-ui" class="hidden mt-8">
+            <div id="cache-status" class="mb-4 p-4 rounded-lg text-center"></div>
+            
             <div class="p-6 bg-gray-50 rounded-lg border space-y-6">
                 <div>
                      <label class="block text-sm font-medium text-gray-700">Select Date Range</label>
@@ -58,14 +60,18 @@
                         </div>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <button id="generate-excel-btn" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm2-1a1 1 0 00-1 1v2h14V5a1 1 0 00-1-1H4zM3 9v7a1 1 0 001 1h12a1 1 0 001-1V9H3zm2 2a1 1 0 011-1h2a1 1 0 110 2H6a1 1 0 01-1-1zm5 0a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1z" /></svg>
-                        Download Backup (Excel Files)
+                        Backup (Excel)
                     </button>
                     <button id="generate-html-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM4 8h5v2H4V8zm0 5a1 1 0 011-1h.5a.5.5 0 010 1H5a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
-                        Download Backup (HTML Files)
+                        Backup (HTML)
+                    </button>
+                    <button id="generate-json-btn" class="w-full bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
+                       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
+                        Backup (JSON)
                     </button>
                 </div>
             </div>
@@ -75,12 +81,10 @@
     </div>
 
     <script type="module">
-        // Import Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase Configuration ---
         const firebaseConfig = {
             apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
             authDomain: "my-job-file-system.firebaseapp.com",
@@ -100,21 +104,71 @@
         const backupUI = document.getElementById('backup-ui');
         const generateExcelBtn = document.getElementById('generate-excel-btn');
         const generateHtmlBtn = document.getElementById('generate-html-btn');
+        const generateJsonBtn = document.getElementById('generate-json-btn');
         const statusArea = document.getElementById('status-area');
+        const cacheStatusDiv = document.getElementById('cache-status');
         
+        let cachedJobFiles = [];
+
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 loginPrompt.classList.add('hidden');
                 backupUI.classList.remove('hidden');
                 document.getElementById('date-to').valueAsDate = new Date();
+                loadDataFromCache();
             } else {
                 loginPrompt.classList.remove('hidden');
                 backupUI.classList.add('hidden');
             }
         });
+        
+        function loadDataFromCache() {
+            try {
+                const cachedData = localStorage.getItem('jobFilesBackupCache');
+                if (cachedData) {
+                    const payload = JSON.parse(cachedData);
+                    cachedJobFiles = payload.data || [];
+                    const syncDate = new Date(payload.lastSynced).toLocaleString();
+                    cacheStatusDiv.innerHTML = `
+                        <p class="text-green-700 bg-green-100 p-3 rounded-md">
+                            <b class="font-semibold">${cachedJobFiles.length}</b> job files loaded from local cache.
+                            <span class="text-sm block">Last synced: ${syncDate}</span>
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">For the latest data, please re-sync from the main application's Admin Panel.</p>
+                    `;
+                    enableButtons();
+                } else {
+                    throw new Error("No cache found");
+                }
+            } catch (error) {
+                cachedJobFiles = [];
+                cacheStatusDiv.innerHTML = `
+                    <p class="text-red-700 bg-red-100 p-3 rounded-md">
+                        <b class="font-semibold">No local data cache found.</b>
+                    </p>
+                    <p class="text-sm text-gray-600 mt-2">Please go to the main application's <b>Admin Panel</b> and click the <b>"Sync Data for Backup"</b> button first.</p>`;
+                disableButtons();
+            }
+        }
+
+        function disableButtons() {
+            generateExcelBtn.disabled = true;
+            generateHtmlBtn.disabled = true;
+            generateJsonBtn.disabled = true;
+            [generateExcelBtn, generateHtmlBtn, generateJsonBtn].forEach(btn => btn.classList.add('opacity-50', 'cursor-not-allowed'));
+        }
+
+        function enableButtons() {
+            generateExcelBtn.disabled = false;
+            generateHtmlBtn.disabled = false;
+            generateJsonBtn.disabled = false;
+            [generateExcelBtn, generateHtmlBtn, generateJsonBtn].forEach(btn => btn.classList.remove('opacity-50', 'cursor-not-allowed'));
+        }
 
         generateExcelBtn.addEventListener('click', () => generateBackup('excel'));
         generateHtmlBtn.addEventListener('click', () => generateBackup('html'));
+        generateJsonBtn.addEventListener('click', () => generateBackup('json'));
+
 
         function safeToDate(timestamp) {
             if (!timestamp) return null;
@@ -136,38 +190,58 @@
                 statusArea.innerHTML = `<p class="text-red-500 font-semibold">Please select both a "From" and "To" date.</p>`;
                 return;
             }
+            
+            if (cachedJobFiles.length === 0) {
+                 statusArea.innerHTML = `<p class="text-red-500 font-semibold">No data to back up. Please sync from the main app first.</p>`;
+                 return;
+            }
 
             statusArea.innerHTML = `<div class="flex justify-center items-center gap-3"><div class="loader"></div><p>Starting backup process...</p></div>`;
-            generateExcelBtn.disabled = true;
-            generateHtmlBtn.disabled = true;
-            generateExcelBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            generateHtmlBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            disableButtons();
 
             try {
-                // 1. Fetch Job Files
-                statusArea.innerHTML += `<p>Fetching job files from ${fromDate} to ${toDate}...</p>`;
-                const jobFilesRef = collection(db, 'jobfiles');
-                const q = query(jobFilesRef, where("d", ">=", fromDate), where("d", "<=", toDate));
-                const querySnapshot = await getDocs(q);
-                const jobFiles = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // 1. Filter Job Files from cache
+                const from = new Date(fromDate);
+                const to = new Date(toDate);
+                to.setHours(23, 59, 59, 999); // Include the whole end day
+
+                const jobFiles = cachedJobFiles.filter(job => {
+                    if (!job.d) return false;
+                    const jobDate = new Date(job.d);
+                    return jobDate >= from && jobDate <= to;
+                });
+                
+                statusArea.innerHTML += `<p>Filtering records... Found ${jobFiles.length} job files in the selected date range.</p>`;
 
                 if (jobFiles.length === 0) {
-                    statusArea.innerHTML = `<p class="text-yellow-600 font-semibold">No job files found for the selected date range.</p>`;
+                    statusArea.innerHTML = `<p class="text-yellow-600 font-semibold">No job files found for the selected date range in the local cache.</p>`;
+                    enableButtons();
                     return;
                 }
                 
-                statusArea.innerHTML += `<p>Found ${jobFiles.length} job files. Preparing ZIP file...</p>`;
+                statusArea.innerHTML += `<p>Preparing ZIP file...</p>`;
                 const zip = new JSZip();
 
                 // 2. Generate individual files
                 for (let i = 0; i < jobFiles.length; i++) {
                     const job = jobFiles[i];
-                    const fileContent = format === 'excel' ? getExcelViewHtml(job) : getBrowserViewHtml(job);
-                    const fileExtension = format === 'excel' ? '.xls' : '.html';
-                    const fileName = `JobFile-${job.jfn.replace(/[\/\\?%*:|"<>]/g, '-')}${fileExtension}`;
+                    let fileContent, fileExtension, fileName;
+                    
+                    if (format === 'excel') {
+                        fileContent = getExcelViewHtml(job);
+                        fileExtension = '.xls';
+                    } else if (format === 'html') {
+                        fileContent = getBrowserViewHtml(job);
+                        fileExtension = '.html';
+                    } else { // json
+                        fileContent = JSON.stringify(job, null, 2);
+                        fileExtension = '.json';
+                    }
+                    
+                    fileName = `JobFile-${job.jfn.replace(/[\/\\?%*:|"<>]/g, '-')}${fileExtension}`;
                     zip.file(fileName, fileContent);
                     statusArea.innerHTML += `<p class="text-sm text-gray-500">Generated: ${fileName}</p>`;
-                    await new Promise(resolve => setTimeout(resolve, 10)); // Prevent browser freezing
+                    await new Promise(resolve => setTimeout(resolve, 5));
                 }
                 
                 // 3. Generate Analytics Report
@@ -187,10 +261,7 @@
                 console.error("Backup generation failed:", error);
                 statusArea.innerHTML = `<p class="text-red-500 font-semibold">An error occurred: ${error.message}</p>`;
             } finally {
-                generateExcelBtn.disabled = false;
-                generateHtmlBtn.disabled = false;
-                generateExcelBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                generateHtmlBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                enableButtons();
             }
         }
         
