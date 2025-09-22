@@ -211,6 +211,32 @@
         /* --- Auto-logout warning overlay --- */
         #autologout-warning.hidden { display: none; }
 
+    
+    /* === V2.3: Solid light UI everywhere except LOGIN (keeps glass) === */
+    body { background: #eef2f7; }
+    #app-container .glass-surface, #app-container .modal-content, #main-container .container, #analytics-container .container {
+        background: #ffffff !important;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+    #login-screen .glass-card {
+        background: rgba(255,255,255,0.12);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255,255,255,.3);
+        box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    /* Header and badges */
+    #logo-container img { max-height: 44px; width: auto; display: block; }
+    #version-badge { background: #0ea5e9; color: #fff; border-radius: 8px; padding: 2px 8px; font-weight: 700; font-size: .9rem; vertical-align: middle; }
+
+    
+        /* Profile modal specifics */
+        #profile-modal .modal-content input[disabled] { background: #f3f4f6 !important; cursor: not-allowed; }
+
     </style>
 </head>
 <body class="bg-gray-100">
@@ -223,7 +249,7 @@
     <div class="max-w-md w-full space-y-8">
             <div>
                 <div class="text-center"><img src="http://qgocargo.com/logo.png" alt="QGO Cargo Logo" class="mx-auto h-28 w-auto drop-shadow-lg"></div>
-                <h2 id="auth-title" class="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
+                <h2 id="auth-title" class="mt-6 text-center text-3xl font-extrabold text-white">Sign in to your account</h2>
             </div>
             <div class="mt-8 space-y-6 glass-card p-8 rounded-2xl shadow-2xl border border-white/30 backdrop-blur login-card">
                 <div id="approval-message" class="hidden p-4 text-center text-yellow-800 bg-yellow-100 rounded-lg">
@@ -251,13 +277,13 @@
                         Sign in
                     </button>
                 </div>
-                <p class="mt-2 text-center text-sm text-gray-600">
-                    <a href="#" id="auth-link" class="font-medium text-indigo-600 hover:text-indigo-500">
+                <p class="mt-2 text-center text-sm text-gray-200">
+                    <a href="#" id="auth-link" class="font-medium text-indigo-400 hover:text-indigo-300">
                         Create a new account
                     </a>
                 </p>
                 <div class="text-center mt-2 text-sm">
-                    <a href="#" id="forgot-password-link" class="font-medium text-indigo-600 hover:text-indigo-500">
+                    <a href="#" id="forgot-password-link" class="font-medium text-indigo-400 hover:text-indigo-300">
                         Forgot your password?
                     </a>
                 </div>
@@ -272,7 +298,7 @@
             <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div class="flex items-center">
                     <div id="logo-container" class="mr-4"><img src="http://qgocargo.com/logo.png" alt="QGO Cargo Logo" class="h-10 w-auto"></div>
-                    <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 border-l-4 border-gray-300 pl-4">JOB FILE</h1>
+                    <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 border-l-4 border-gray-300 pl-4">JOBFILE MANAGEMENT SYSTEM <span id="version-badge"></span></h1>
                 </div>
                 <div class="text-right w-full sm:w-auto">
                     <div class="flex items-center mb-2">
@@ -297,6 +323,7 @@
                 <div>
                     <button id="activity-log-btn" class="admin-only bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Activity Log</button>
                     <button id="app-settings-btn" class="bg-slate-700 hover:bg-slate-800 text-white font-bold py-1 px-3 rounded text-sm mr-2">App Settings</button>
+                    <button id="profile-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-3 rounded text-sm mr-2">Profile</button>
                     <button id="admin-panel-btn" class="admin-only bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Admin Panel</button>
                     <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Logout</button>
                 </div>
@@ -584,17 +611,25 @@
             <!-- Data Backup & Restore -->
             <div class="border rounded-lg p-4 mt-6">
                 <h4 class="text-lg font-semibold mb-3">Data Backup & Restore</h4>
-                <p class="text-sm text-gray-600 mb-4">Backup all job files and user data to a single JSON file. This can be used for offline storage or to restore the database to a previous state.</p>
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <button onclick="backupAllData()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2">
+                <p class="text-sm text-gray-600 mb-4">Backup all job files to JSON for offline storage or restoration. Export to Excel for reporting.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <button onclick="backupAllData()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
-                        Backup All Data
+                        Backup (JSON)
                     </button>
-                    <label for="restore-file-input" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 cursor-pointer">
+                    <label for="restore-file-input" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 cursor-pointer">
                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                         Restore From File
+                         Restore (JSON)
                          <input type="file" id="restore-file-input" class="hidden" accept=".json" onchange="handleRestoreFile(event)">
                     </label>
+                    <button onclick="exportAllToExcel()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm2-1a1 1 0 00-1 1v2h14V5a1 1 0 00-1-1H4zM3 9v7a1 1 0 001 1h12a1 1 0 001-1V9H3zm2 2a1 1 0 011-1h2a1 1 0 110 2H6a1 1 0 01-1-1zm5 0a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1z" /></svg>
+                        Export (Excel)
+                    </button>
+                    <a href="backup.html" target="_blank" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM4 8h5v2H4V8zm0 5a1 1 0 011-1h.5a.5.5 0 010 1H5a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
+                        Advanced Backup
+                    </a>
                 </div>
             </div>
         </div>
@@ -755,6 +790,58 @@
     </div>
 
 
+    
+    <!-- Profile Modal -->
+    <div id="profile-modal" class="overlay">
+        <div class="modal-content max-w-xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">Your Profile</h3>
+                <button onclick="closeModal('profile-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div class="space-y-6">
+                <div class="border rounded-lg p-4">
+                    <h4 class="text-lg font-semibold mb-2">Basic Info</h4>
+                    <div class="grid grid-cols-1 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Email (read-only)</label>
+                            <input id="profile-email" type="email" class="input-field w-full" disabled>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Display Name</label>
+                            <input id="profile-display-name" type="text" class="input-field w-full" placeholder="Your name">
+                        </div>
+                    </div>
+                    <div class="text-right mt-3">
+                        <button id="save-profile-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save Profile</button>
+                    </div>
+                </div>
+
+                <div class="border rounded-lg p-4">
+                    <h4 class="text-lg font-semibold mb-2">Change Password</h4>
+                    <div class="grid grid-cols-1 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Current Password</label>
+                            <input id="pw-current" type="password" class="input-field w-full" placeholder="Current password">
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">New Password</label>
+                                <input id="pw-new" type="password" class="input-field w-full" placeholder="New password (min 6 chars)">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Confirm New Password</label>
+                                <input id="pw-confirm" type="password" class="input-field w-full" placeholder="Re-type new password">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right mt-3">
+                        <button id="change-password-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">Change Password</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Activity Log Modal -->
     <div id="activity-log-modal" class="overlay">
         <div class="modal-content max-w-4xl">
@@ -810,7 +897,7 @@
     <script type="module">
         // Import Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, setPersistence, browserLocalPersistence, updateProfile, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, query, where, serverTimestamp, getDocs, writeBatch, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- Global variables ---
@@ -847,6 +934,7 @@
         }
 
         
+        const appVersion = "V2.4.2";
         // --- App Settings & Inactivity Logic ---
         function getStoredSettings() {
             try {
@@ -954,6 +1042,71 @@
             if (saveBtn && !saveBtn.__bound) { saveBtn.onclick = saveAppSettings; saveBtn.__bound = true; }
         });
 
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const vb = document.getElementById('version-badge');
+            if (vb) vb.textContent = appVersion;
+        });
+    
+        
+        // --- Profile & Password Management ---
+        function openProfileModal() {
+            try {
+                if (!currentUser) { showNotification("Not logged in.", true); return; }
+                const email = currentUser.email || "";
+                const name = currentUser.displayName || "";
+                const emailEl = document.getElementById("profile-email");
+                const nameEl = document.getElementById("profile-display-name");
+                if (emailEl) emailEl.value = email;
+                if (nameEl) nameEl.value = name;
+                openModal("profile-modal");
+            } catch (e) {
+                console.error(e);
+                showNotification("Could not open profile.", true);
+            }
+        }
+
+        async function saveProfileBasic() {
+            try {
+                if (!currentUser) { showNotification("Not logged in.", true); return; }
+                const nameEl = document.getElementById("profile-display-name");
+                const name = (nameEl?.value || "").trim();
+                await updateProfile(currentUser, { displayName: name || null });
+                showNotification("Profile updated.");
+            } catch (e) {
+                console.error(e);
+                showNotification("Failed to update profile.", true);
+            }
+        }
+
+        async function handleChangePassword() {
+            try {
+                if (!currentUser) { showNotification("Not logged in.", true); return; }
+                const cur = document.getElementById("pw-current")?.value || "";
+                const pw1 = document.getElementById("pw-new")?.value || "";
+                const pw2 = document.getElementById("pw-confirm")?.value || "";
+                if (!cur || !pw1 || !pw2) { showNotification("Fill all password fields.", true); return; }
+                if (pw1 !== pw2) { showNotification("New passwords do not match.", true); return; }
+                if (pw1.length < 6) { showNotification("Password must be at least 6 characters.", true); return; }
+
+                // Re-authenticate if needed
+                const cred = EmailAuthProvider.credential(currentUser.email, cur);
+                await reauthenticateWithCredential(currentUser, cred);
+
+                await updatePassword(currentUser, pw1);
+                document.getElementById("pw-current").value = "";
+                document.getElementById("pw-new").value = "";
+                document.getElementById("pw-confirm").value = "";
+                showNotification("Password changed successfully.");
+            } catch (e) {
+                console.error(e);
+                let msg = "Failed to change password.";
+                if (e && e.code === "auth/wrong-password") msg = "Current password is incorrect.";
+                if (e && e.code === "auth/too-many-requests") msg = "Too many attempts. Try later.";
+                showNotification(msg, true);
+            }
+        }
+
         // --- Firebase Configuration ---
         const firebaseConfig = {
             apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
@@ -1015,6 +1168,9 @@
                         }
                         
                         console.log("User logged in:", currentUser);
+                        const profBtn = document.getElementById("profile-btn"); if (profBtn) profBtn.onclick = openProfileModal;
+                        const saveProf = document.getElementById("save-profile-btn"); if (saveProf) saveProf.onclick = saveProfileBasic;
+                        const chgPw = document.getElementById("change-password-btn"); if (chgPw) chgPw.onclick = handleChangePassword;
                         
                 // Wire App Settings button
                 const settingsBtn = document.getElementById('app-settings-btn');
@@ -2329,6 +2485,93 @@
 
             reader.readAsText(file);
         }
+        
+        async function exportAllToExcel() {
+            if (currentUser.role !== 'admin') {
+                showNotification("Access denied. Only admins can perform exports.", true);
+                return;
+            }
+            if (!jobFilesCache || jobFilesCache.length === 0) {
+                showNotification("No job files to export.", true);
+                return;
+            }
+
+            showLoader();
+            
+            // Use a timeout to allow the loader to render before the heavy processing begins
+            setTimeout(() => {
+                try {
+                    const headers = [
+                        'Job File No', 'Date', 'P.O. #', 'Status', 'Shipper', 'Consignee', 
+                        'MAWB/OBL', 'Origin', 'Destination', 'Description', 'Total Cost (KD)', 
+                        'Total Selling (KD)', 'Total Profit (KD)', 'Prepared By', 'Checked By', 
+                        'Approved By', 'Remarks'
+                    ];
+                    
+                    let tableHTML = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset='UTF-8'><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>JobFiles</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table border="1"><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>`;
+
+                    const sortedJobs = [...jobFilesCache].sort((a, b) => {
+                        const dateA = new Date(a.d || 0);
+                        const dateB = new Date(b.d || 0);
+                        return dateB - dateA;
+                    });
+
+                    for (const job of sortedJobs) {
+                        const checkedByText = job.checkedBy ? `${job.checkedBy} on ${safeToDate(job.checkedAt)?.toLocaleDateString() || ''}`.trim() : 'Pending';
+                        let approvedByText = 'Pending';
+                        if (job.status === 'approved') {
+                            approvedByText = `${job.approvedBy} on ${safeToDate(job.approvedAt)?.toLocaleDateString() || ''}`.trim();
+                        } else if (job.status === 'rejected') {
+                            approvedByText = `Rejected by ${job.rejectedBy || ''}: ${job.rejectionReason || ''}`.trim();
+                        }
+
+                        const rowData = [
+                            job.jfn || '',
+                            job.d || '',
+                            job.po || '',
+                            job.status || 'pending',
+                            job.sh || '',
+                            job.co || '',
+                            job.mawb || '',
+                            job.or || '',
+                            job.de || '',
+                            job.dsc || '',
+                            (job.totalCost || 0).toFixed(3),
+                            (job.totalSelling || 0).toFixed(3),
+                            (job.totalProfit || 0).toFixed(3),
+                            job.createdBy || job.pb || '',
+                            job.status === 'pending' ? 'Pending' : checkedByText,
+                            approvedByText,
+                            job.re || ''
+                        ];
+                        
+                        tableHTML += `<tr>${rowData.map(cell => `<td>${String(cell).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</td>`).join('')}</tr>`;
+                    }
+
+                    tableHTML += '</tbody></table></body></html>';
+                    
+                    const blob = new Blob([tableHTML], { type: 'application/vnd.ms-excel' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    const link = document.createElement('a');
+                    const date = new Date().toISOString().slice(0, 10);
+                    link.download = `qgo-cargo-export-${date}.xls`;
+                    link.href = url;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+
+                    showNotification("Excel export started successfully.");
+
+                } catch (error) {
+                    console.error("Excel export failed:", error);
+                    showNotification("An error occurred during export.", true);
+                } finally {
+                    hideLoader();
+                }
+            }, 100);
+        }
 
 
         // --- UI Functions ---
@@ -2606,6 +2849,7 @@
             
             printWindow.document.write(`<html><head><title>${title}</title>`);
             printWindow.document.write(styles);
+            printWindow.document.write('</head><body>');
             printWindow.document.write(content);
             printWindow.document.write('</body></html>');
             printWindow.document.close();
@@ -2620,133 +2864,26 @@
         function printAnalytics() {
             const analyticsBody = document.getElementById('analytics-body').innerHTML;
             const printContent = `
-                <style>
-                    body { padding: 1.5rem; background-color: white !important; }
-                    #sort-analytics, button, select, .analytics-table td:last-child, .analytics-table th:last-child { display: none !important; }
-                    .modal-content { box-shadow: none; border: none; }
-                
-        /* --- Login glass & video background --- */
-        #login-screen { position: relative; }
-        #login-screen #bg-video { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-        }
-        .glass-card input.input-field {
-            background: rgba(255,255,255,0.85);
-        }
-        @media (prefers-reduced-motion: reduce) {
-            #bg-video { display: none; }
-        }
-        @media print {
-            #bg-video { display: none !important; }
-        }
-
-    
-        /* --- Enhanced input fields & login card spacing --- */
-        .login-card { max-width: 480px; }
-        .input-field {
-            padding: 0.875rem 1rem !important;
-            height: 3rem;
-            border-radius: 0.75rem !important;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 1px 2px rgba(0,0,0,0.05);
-        }
-        .input-field::placeholder { opacity: .8; }
-        .input-field:focus {
-            border-color: rgba(79,70,229,.6) !important;
-            box-shadow: 0 0 0 4px rgba(79,70,229,.25) !important;
-        }
-        .rounded-md.shadow-sm.-space-y-px > div + div {
-            margin-top: .9rem;
-        }
-
-    
-        /* --- App Settings modal minor tweaks --- */
-        #app-settings-modal .modal-content input[type="number"]::-webkit-outer-spin-button,
-        #app-settings-modal .modal-content input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-
-    
-        /* Overlay darkness adjustable via CSS variable */
-        :root { --login-overlay: rgba(0,0,0,.40); }
-        #login-screen > .bg-black\/40 { background-color: var(--login-overlay) !important; }
-
-    
-        /* --- Auto-logout warning overlay --- */
-        #autologout-warning.hidden { display: none; }
-
-    </style>
-                </head><body>
                 <h1 class="text-3xl font-bold mb-6 text-center">Analytics Report</h1>
                 ${analyticsBody}
             `;
-            createPrintWindow('Analytics Report', printContent);
+            createPrintWindow('Analytics Report', `
+                 <style>
+                    body { padding: 1.5rem; background-color: white !important; }
+                    #sort-analytics, button, select, #analytics-search-bar, .analytics-table td:last-child, .analytics-table th:last-child { display: none !important; }
+                    .modal-content { box-shadow: none; border: none; }
+                </style>
+                ${printContent}`);
         }
 
         function printPreview() {
             const previewBody = document.getElementById('preview-body').innerHTML;
-            const printContent = `
+            createPrintWindow('Job File Preview', `
                 <style>
                     body { padding: 0; margin: 0; background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                     .no-print { display: none !important; }
-                
-        /* --- Login glass & video background --- */
-        #login-screen { position: relative; }
-        #login-screen #bg-video { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-        }
-        .glass-card input.input-field {
-            background: rgba(255,255,255,0.85);
-        }
-        @media (prefers-reduced-motion: reduce) {
-            #bg-video { display: none; }
-        }
-        @media print {
-            #bg-video { display: none !important; }
-        }
-
-    
-        /* --- Enhanced input fields & login card spacing --- */
-        .login-card { max-width: 480px; }
-        .input-field {
-            padding: 0.875rem 1rem !important;
-            height: 3rem;
-            border-radius: 0.75rem !important;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 1px 2px rgba(0,0,0,0.05);
-        }
-        .input-field::placeholder { opacity: .8; }
-        .input-field:focus {
-            border-color: rgba(79,70,229,.6) !important;
-            box-shadow: 0 0 0 4px rgba(79,70,229,.25) !important;
-        }
-        .rounded-md.shadow-sm.-space-y-px > div + div {
-            margin-top: .9rem;
-        }
-
-    
-        /* --- App Settings modal minor tweaks --- */
-        #app-settings-modal .modal-content input[type="number"]::-webkit-outer-spin-button,
-        #app-settings-modal .modal-content input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-
-    
-        /* Overlay darkness adjustable via CSS variable */
-        :root { --login-overlay: rgba(0,0,0,.40); }
-        #login-screen > .bg-black\/40 { background-color: var(--login-overlay) !important; }
-
-    
-        /* --- Auto-logout warning overlay --- */
-        #autologout-warning.hidden { display: none; }
-
-    </style>
-                </head><body>
-                ${previewBody}
-            `;
-            createPrintWindow('Job File Preview', printContent);
+                </style>
+                ${previewBody}`);
         }
 
         function getPrintViewHtml(data, isPublicView = false) {
@@ -2787,9 +2924,9 @@
                 <div class="border border-gray-700 p-2 bg-white">
                     <div class="grid grid-cols-12 gap-px bg-gray-700" style="border: 1px solid #374151;">
                         <div class="col-span-3 bg-white p-1 flex items-center" style="border: 1px solid #374151;">
-                            <div class="text-xl font-bold" style="color: #0E639C;">Q'go<span style="color: #4FB8AF;">Cargo</span></div>
+                            <img src="http://qgocargo.com/logo.png" alt="QGO Cargo Logo" class="h-10 w-auto">
                         </div>
-                        <div class="col-span-6 bg-white flex items-center justify-center text-xl font-bold" style="border: 1px solid #374151;">JOB FILE</div>
+                        <div class="col-span-6 bg-white flex items-center justify-center text-xl font-bold" style="border: 1px solid #374151;">JOBFILE MANAGEMENT SYSTEM</div>
                         <div class="col-span-3 bg-white p-1 text-xs" style="border: 1px solid #374151;"><div><strong>Date:</strong> ${data.d || ''}</div><div><strong>P.O. #:</strong> ${data.po || ''}</div></div>
                         
                         <div class="col-span-12 bg-white p-1 text-xs" style="border: 1px solid #374151;"><strong>Job File No.:</strong> ${data.jfn || ''}</div>
@@ -3774,6 +3911,7 @@
             window.saveChargeDescription = saveChargeDescription;
             window.deleteChargeDescription = deleteChargeDescription;
             window.addChargeRow = addChargeRow;
+            window.exportAllToExcel = exportAllToExcel;
 
             populateTable();
             calculate();
