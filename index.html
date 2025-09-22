@@ -1,0 +1,3099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QGO Cargo - Advanced Management Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK v9 -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #8b5cf6;
+            --accent-color: #06b6d4;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --dark-bg: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #ffecd2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Dark mode styles */
+        .dark {
+            --card-bg: rgba(30, 41, 59, 0.95);
+            --glass-bg: rgba(30, 41, 59, 0.2);
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+        }
+
+        .dark body {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
+        }
+
+        /* Animated background particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 1; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 0.5; }
+        }
+
+        /* Glass morphism effects */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        /* Advanced dashboard cards */
+        .dashboard-card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dashboard-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .dashboard-card:hover::before {
+            left: 100%;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-15px) scale(1.02);
+            box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+        }
+
+        /* Navigation styles */
+        .nav-glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Advanced button styles */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Modal enhancements */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            margin: 2% auto;
+            padding: 0;
+            border-radius: 20px;
+            width: 95%;
+            max-width: 1000px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+            animation: slideIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px) scale(0.9); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        /* Advanced form styles */
+        .form-group {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        /* Statistics cards */
+        .stat-card {
+            background: linear-gradient(135deg, var(--card-bg), rgba(255,255,255,0.8));
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        /* Quick actions */
+        .quick-action {
+            background: var(--glass-bg);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .quick-action:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.05);
+        }
+
+        /* Theme toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: var(--glass-bg);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50px;
+            padding: 8px 16px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .dashboard-card {
+                margin-bottom: 16px;
+            }
+            
+            .modal-content {
+                width: 98%;
+                margin: 5% auto;
+            }
+        }
+
+        /* Loading animations */
+        .loading {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-color);
+        }
+
+        /* Notification system */
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1001;
+            max-width: 300px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .notification.error {
+            border-left: 4px solid var(--error-color);
+        }
+
+        .notification.warning {
+            border-left: 4px solid var(--warning-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated background particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()">
+        <i class="fas fa-moon" id="theme-icon"></i>
+        <span id="theme-text">Dark</span>
+    </button>
+
+    <!-- Navigation -->
+    <nav class="nav-glass fixed top-0 right-0 left-0 z-50 py-4">
+        <div class="container mx-auto px-6 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <img src="http://qgocargo.com/logo.png" alt="QGO Cargo" class="h-12">
+                <div>
+                    <h1 class="text-xl font-bold text-white">QGO Cargo</h1>
+                    <p class="text-sm text-white/70">Management Dashboard</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <!-- Firebase Connection Status -->
+                <div id="firebase-status" class="flex items-center space-x-2 px-3 py-1 rounded-lg bg-red-500/20 border border-red-500/30">
+                    <i id="firebase-icon" class="fas fa-circle text-red-400 animate-pulse"></i>
+                    <span id="firebase-text" class="text-red-400 text-sm font-semibold">Connecting...</span>
+                </div>
+                
+                <!-- Quick Stats with Firebase Usage -->
+                <div class="hidden md:flex items-center space-x-6 text-white">
+                    <div class="text-center">
+                        <div class="text-lg font-bold" id="systems-count">4</div>
+                        <div class="text-xs opacity-70">Systems</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-lg font-bold" id="apps-count">2</div>
+                        <div class="text-xs opacity-70">Apps</div>
+                    </div>
+                    <div class="text-center cursor-pointer" onclick="showFirebaseUsage()">
+                        <div class="text-lg font-bold text-blue-300" id="firebase-reads-nav">0</div>
+                        <div class="text-xs opacity-70">FB Reads</div>
+                    </div>
+                    <div class="text-center cursor-pointer" onclick="showFirebaseUsage()">
+                        <div class="text-lg font-bold text-green-300" id="firebase-writes-nav">0</div>
+                        <div class="text-xs opacity-70">FB Writes</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-lg font-bold" id="current-time"></div>
+                        <div class="text-xs opacity-70">Time</div>
+                    </div>
+                </div>
+                
+                <!-- Admin Button -->
+                <button class="btn-primary flex items-center space-x-2" onclick="openAdminModal()">
+                    <i class="fas fa-cog"></i>
+                    <span>Admin</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Dashboard -->
+    <div class="pt-24 pb-8">
+        <div class="container mx-auto px-6">
+            <!-- Welcome Section -->
+            <div class="text-center mb-12">
+                <div class="glass-card p-8 mb-8">
+                    <h2 class="text-4xl font-bold text-white mb-4">
+                        Welcome to QGO Cargo Management
+                    </h2>
+                    <p class="text-xl text-white/80 mb-6">
+                        Integrated Business Solutions Dashboard
+                    </p>
+                    
+                    <!-- Firebase Usage Meter on Main Dashboard -->
+                <div class="card-glass p-6 mb-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold text-white">📊 Firebase Usage Monitor</h3>
+                        <button onclick="showFirebaseUsage()" class="text-white/70 hover:text-white">
+                            <i class="fas fa-external-link-alt"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <!-- Reads Usage -->
+                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-white/80 text-sm">📖 Daily Reads</span>
+                                <span class="text-white font-bold" id="main-reads-count">0</span>
+                            </div>
+                            <div class="w-full bg-white/20 rounded-full h-2 mb-1">
+                                <div class="bg-blue-400 h-2 rounded-full transition-all duration-500" id="reads-progress" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-white/60">
+                                <span id="reads-percentage">0%</span>
+                                <span>50K limit</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Writes Usage -->
+                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-white/80 text-sm">✏️ Daily Writes</span>
+                                <span class="text-white font-bold" id="main-writes-count">0</span>
+                            </div>
+                            <div class="w-full bg-white/20 rounded-full h-2 mb-1">
+                                <div class="bg-green-400 h-2 rounded-full transition-all duration-500" id="writes-progress" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-white/60">
+                                <span id="writes-percentage">0%</span>
+                                <span>20K limit</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Deletes Usage -->
+                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-white/80 text-sm">🗑️ Daily Deletes</span>
+                                <span class="text-white font-bold" id="main-deletes-count">0</span>
+                            </div>
+                            <div class="w-full bg-white/20 rounded-full h-2 mb-1">
+                                <div class="bg-red-400 h-2 rounded-full transition-all duration-500" id="deletes-progress" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-white/60">
+                                <span id="deletes-percentage">0%</span>
+                                <span>20K limit</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Overall Usage -->
+                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-white/80 text-sm">🎯 Total Usage</span>
+                                <span class="text-white font-bold" id="main-total-percentage">0%</span>
+                            </div>
+                            <div class="w-full bg-white/20 rounded-full h-2 mb-1">
+                                <div class="bg-yellow-400 h-2 rounded-full transition-all duration-500" id="total-progress" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-white/60">
+                                <span>of daily free quota</span>
+                                <span id="quota-status">Safe</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                        <div class="quick-action" onclick="refreshDashboard()">
+                            <i class="fas fa-sync-alt text-2xl text-white mb-2"></i>
+                            <p class="text-white text-sm">Refresh</p>
+                        </div>
+                        <div class="quick-action" onclick="showFirebaseUsage()">
+                            <i class="fas fa-database text-2xl text-white mb-2"></i>
+                            <p class="text-white text-sm">Firebase Usage</p>
+                        </div>
+                        <div class="quick-action" onclick="syncToFirebase()">
+                            <i class="fas fa-cloud-upload-alt text-2xl text-white mb-2"></i>
+                            <p class="text-white text-sm">Sync Cloud</p>
+                        </div>
+                        <div class="quick-action" onclick="showHelp()">
+                            <i class="fas fa-question-circle text-2xl text-white mb-2"></i>
+                            <p class="text-white text-sm">Help</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Systems Grid -->
+            <div class="mb-12">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-white flex items-center">
+                        <i class="fas fa-th-large mr-3"></i>
+                        Core Business Systems
+                    </h3>
+                    <button id="edit-mode-btn" onclick="toggleEditMode()" 
+                            class="flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 bg-white/10 hover:bg-white/20 text-white">
+                        <i class="fas fa-edit"></i>
+                        <span>Edit Mode</span>
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="main-systems">
+                    <!-- Systems will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Extra Apps Section -->
+            <div class="mb-12">
+                <h3 class="text-2xl font-bold text-white mb-6 flex items-center">
+                    <i class="fas fa-apps mr-3"></i>
+                    Additional Applications
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="extra-apps">
+                    <!-- Extra apps will be loaded here -->
+                </div>
+            </div>
+
+            <!-- System Health Monitor -->
+            <div class="glass-card p-6 mb-8">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+                    <i class="fas fa-heartbeat mr-3"></i>
+                    System Health Monitor
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="health-monitor">
+                    <!-- Health status will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="glass-card p-6">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+                    <i class="fas fa-history mr-3"></i>
+                    Recent Activity
+                </h3>
+                <div id="recent-activity" class="space-y-3">
+                    <!-- Recent activity will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Admin Settings Modal -->
+    <div id="adminModal" class="modal">
+        <div class="modal-content">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold">Advanced Admin Settings</h2>
+                        <p class="text-white/80">Configure your dashboard and applications</p>
+                    </div>
+                    <button onclick="closeAdminModal()" class="text-white hover:text-gray-200 text-2xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6" style="max-height: 70vh; overflow-y: auto;">
+                <!-- Password Protection -->
+                <div id="password-section">
+                    <div class="text-center py-12">
+                        <div class="text-6xl text-indigo-500 mb-6">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-4">Security Authentication</h3>
+                        <p class="text-gray-600 mb-6">Enter admin password to access settings</p>
+                        
+                        <div class="max-w-md mx-auto">
+                            <div class="form-group">
+                                <input type="password" id="admin-password" class="form-control text-center text-xl" 
+                                       placeholder="Enter admin password" autocomplete="off">
+                            </div>
+                            <button onclick="checkPassword()" class="btn-primary w-full">
+                                <i class="fas fa-unlock-alt mr-2"></i>
+                                Access Admin Panel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Content (Hidden initially) -->
+                <div id="settings-content" style="display: none;">
+                    <!-- Tabs Navigation -->
+                    <div class="border-b border-gray-200 mb-6">
+                        <nav class="flex space-x-8">
+                            <button class="tab-button active" onclick="switchTab('systems')" data-tab="systems">
+                                <i class="fas fa-desktop mr-2"></i>Core Systems
+                            </button>
+                            <button class="tab-button" onclick="switchTab('apps')" data-tab="apps">
+                                <i class="fas fa-mobile-alt mr-2"></i>Extra Apps
+                            </button>
+                            <button class="tab-button" onclick="switchTab('appearance')" data-tab="appearance">
+                                <i class="fas fa-palette mr-2"></i>Appearance
+                            </button>
+                            <button class="tab-button" onclick="switchTab('advanced')" data-tab="advanced">
+                                <i class="fas fa-cogs mr-2"></i>Advanced
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- Core Systems Tab -->
+                    <div id="systems-tab" class="tab-content">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold">Core Business Systems</h3>
+                            <button onclick="addMainSystem()" class="btn-primary">
+                                <i class="fas fa-plus mr-2"></i>Add System
+                            </button>
+                        </div>
+                        <div id="main-systems-config" class="space-y-4">
+                            <!-- Main systems config will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Extra Apps Tab -->
+                    <div id="apps-tab" class="tab-content hidden">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold">Additional Applications</h3>
+                            <button onclick="addExtraApp()" class="btn-primary">
+                                <i class="fas fa-plus mr-2"></i>Add Application
+                            </button>
+                        </div>
+                        <div id="extra-apps-config" class="space-y-4">
+                            <!-- Extra apps config will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Appearance Tab -->
+                    <div id="appearance-tab" class="tab-content hidden">
+                        <h3 class="text-xl font-bold mb-6">Dashboard Appearance</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-bold mb-2">Theme</label>
+                                <select id="dashboard-theme" class="form-control">
+                                    <option value="gradient">Gradient (Default)</option>
+                                    <option value="dark">Dark Mode</option>
+                                    <option value="light">Light Mode</option>
+                                    <option value="corporate">Corporate</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-2">Animation Speed</label>
+                                <select id="animation-speed" class="form-control">
+                                    <option value="slow">Slow</option>
+                                    <option value="normal">Normal</option>
+                                    <option value="fast">Fast</option>
+                                    <option value="none">Disabled</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-2">Background Particles</label>
+                                <select id="particles-enabled" class="form-control">
+                                    <option value="true">Enabled</option>
+                                    <option value="false">Disabled</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-2">Card Layout</label>
+                                <select id="card-layout" class="form-control">
+                                    <option value="grid">Grid View</option>
+                                    <option value="list">List View</option>
+                                    <option value="compact">Compact View</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Tab -->
+                    <div id="advanced-tab" class="tab-content hidden">
+                        <h3 class="text-xl font-bold mb-6">Advanced Settings</h3>
+                        <div class="space-y-6">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="font-bold mb-3">Security</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-bold mb-2">Change Admin Password</label>
+                                        <input type="password" id="new-admin-password" class="form-control" 
+                                               placeholder="New password">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-bold mb-2">Auto-lock Timeout (minutes)</label>
+                                        <input type="number" id="auto-lock-timeout" class="form-control" 
+                                               value="30" min="5" max="120">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="font-bold mb-3">Firebase Usage Monitor</h4>
+                                
+                                <!-- Connection Status -->
+                                <div class="mb-4 p-3 rounded-lg" id="admin-firebase-status">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-2">
+                                            <i id="admin-firebase-icon" class="fas fa-circle text-red-400"></i>
+                                            <span id="admin-firebase-text" class="font-semibold">Checking Connection...</span>
+                                        </div>
+                                        <button onclick="testFirebaseConnection()" class="text-blue-600 hover:text-blue-800 text-sm">
+                                            <i class="fas fa-plug mr-1"></i>Test Connection
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    <div class="text-center p-3 bg-blue-100 rounded-lg">
+                                        <div class="text-2xl font-bold text-blue-600" id="firebase-reads">0</div>
+                                        <div class="text-sm text-blue-600">Reads Today</div>
+                                    </div>
+                                    <div class="text-center p-3 bg-green-100 rounded-lg">
+                                        <div class="text-2xl font-bold text-green-600" id="firebase-writes">0</div>
+                                        <div class="text-sm text-green-600">Writes Today</div>
+                                    </div>
+                                    <div class="text-center p-3 bg-red-100 rounded-lg">
+                                        <div class="text-2xl font-bold text-red-600" id="firebase-deletes">0</div>
+                                        <div class="text-sm text-red-600">Deletes Today</div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <button onclick="refreshFirebaseUsage()" class="btn-primary w-full">
+                                        <i class="fas fa-sync-alt mr-2"></i>Refresh Usage
+                                    </button>
+                                    <button onclick="testFirebaseConnection()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 w-full">
+                                        <i class="fas fa-plug mr-2"></i>Test Firebase
+                                    </button>
+                                    <button onclick="showFirebaseRulesHelp()" class="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 w-full">
+                                        <i class="fas fa-shield-alt mr-2"></i>Fix Rules
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-1 gap-4 mt-2">
+                                    <button onclick="resetToDefaults()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 w-full">
+                                        <i class="fas fa-undo mr-2"></i>Reset to Defaults
+                                    </button>
+                                </div>
+                                <div class="mt-4 text-sm text-gray-600">
+                                    <p><i class="fas fa-info-circle mr-1"></i>Usage resets daily at 00:00 UTC</p>
+                                    <p><i class="fas fa-database mr-1"></i>Data synced with Firebase Cloud</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="font-bold mb-3">🎨 Background Customization</h4>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-bold mb-2">Background Type</label>
+                                        <select id="background-type" class="form-control" onchange="toggleBackgroundOptions()">
+                                            <option value="gradient">Gradient (Default)</option>
+                                            <option value="solid">Solid Color</option>
+                                            <option value="image">Image URL</option>
+                                            <option value="video">Video Background</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Solid Color Options -->
+                                    <div id="solid-color-options" style="display: none;">
+                                        <label class="block text-sm font-bold mb-2">Choose Color</label>
+                                        <input type="color" id="background-color" class="w-full h-12 rounded-lg border" 
+                                               value="#1a1a2e" onchange="applyBackground()">
+                                    </div>
+                                    
+                                    <!-- Gradient Options -->
+                                    <div id="gradient-options">
+                                        <label class="block text-sm font-bold mb-2">Gradient Preset</label>
+                                        <div class="grid grid-cols-3 gap-2">
+                                            <button onclick="setGradient('linear-gradient(135deg, #667eea 0%, #764ba2 100%)')" 
+                                                    class="h-8 rounded" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" title="Purple Blue"></button>
+                                            <button onclick="setGradient('linear-gradient(135deg, #f093fb 0%, #f5576c 100%)')" 
+                                                    class="h-8 rounded" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);" title="Pink Red"></button>
+                                            <button onclick="setGradient('linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)')" 
+                                                    class="h-8 rounded" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);" title="Blue Cyan"></button>
+                                            <button onclick="setGradient('linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)')" 
+                                                    class="h-8 rounded" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);" title="Green Teal"></button>
+                                            <button onclick="setGradient('linear-gradient(135deg, #fa709a 0%, #fee140 100%)')" 
+                                                    class="h-8 rounded" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);" title="Pink Yellow"></button>
+                                            <button onclick="setGradient('linear-gradient(135deg, #30cfd0 0%, #91a7ff 100%)')" 
+                                                    class="h-8 rounded" style="background: linear-gradient(135deg, #30cfd0 0%, #91a7ff 100%);" title="Cyan Purple"></button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Image Options -->
+                                    <div id="image-options" style="display: none;">
+                                        <label class="block text-sm font-bold mb-2">Image URL</label>
+                                        <input type="url" id="background-image-url" class="form-control mb-2" 
+                                               placeholder="https://example.com/image.jpg" onchange="applyBackground()">
+                                        <div class="grid grid-cols-2 gap-2 text-sm">
+                                            <div>
+                                                <label class="block text-xs font-bold mb-1">Position</label>
+                                                <select id="bg-position" class="form-control text-sm" onchange="applyBackground()">
+                                                    <option value="center">Center</option>
+                                                    <option value="top">Top</option>
+                                                    <option value="bottom">Bottom</option>
+                                                    <option value="left">Left</option>
+                                                    <option value="right">Right</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold mb-1">Size</label>
+                                                <select id="bg-size" class="form-control text-sm" onchange="applyBackground()">
+                                                    <option value="cover">Cover</option>
+                                                    <option value="contain">Contain</option>
+                                                    <option value="auto">Auto</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Video Options -->
+                                    <div id="video-options" style="display: none;">
+                                        <label class="block text-sm font-bold mb-2">Video URL</label>
+                                        <input type="url" id="background-video-url" class="form-control mb-2" 
+                                               placeholder="https://example.com/video.mp4" onchange="applyBackground()">
+                                        <div class="flex items-center space-x-4 text-sm">
+                                            <label class="flex items-center">
+                                                <input type="checkbox" id="video-muted" checked onchange="applyBackground()">
+                                                <span class="ml-1">Muted</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" id="video-loop" checked onchange="applyBackground()">
+                                                <span class="ml-1">Loop</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex space-x-2">
+                                        <button onclick="applyBackground()" class="btn-primary flex-1">
+                                            <i class="fas fa-paint-brush mr-2"></i>Apply Background
+                                        </button>
+                                        <button onclick="resetBackground()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
+                                            <i class="fas fa-undo mr-2"></i>Reset
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="font-bold mb-3">Performance</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-bold mb-2">Cache Duration (hours)</label>
+                                        <input type="number" id="cache-duration" class="form-control" 
+                                               value="24" min="1" max="168">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-bold mb-2">Preload External Links</label>
+                                        <select id="preload-links" class="form-control">
+                                            <option value="true">Enabled</option>
+                                            <option value="false">Disabled</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Save Button -->
+                    <div class="flex justify-between items-center mt-8 pt-6 border-t">
+                        <div class="text-sm text-gray-500">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Changes are saved automatically
+                        </div>
+                        <button onclick="saveSettings()" class="btn-primary px-8">
+                            <i class="fas fa-save mr-2"></i>Save All Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Container -->
+    <div id="notifications-container"></div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <div class="bg-gradient-to-r from-blue-500 to-cyan-600 p-6 text-white">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold">Dashboard Help</h2>
+                    <button onclick="closeHelpModal()" class="text-white hover:text-gray-200 text-2xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-bold mb-2">Getting Started</h3>
+                        <ul class="list-disc list-inside space-y-1 text-gray-600">
+                            <li>Click "Admin" to configure your dashboard (Password: 1234)</li>
+                            <li>Add your business systems and applications</li>
+                            <li>Customize appearance and settings</li>
+                            <li>Firebase cloud sync and usage monitoring</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold mb-2">Features</h3>
+                        <ul class="list-disc list-inside space-y-1 text-gray-600">
+                            <li>Dark/Light theme support</li>
+                            <li>Real-time system monitoring</li>
+                            <li>Firebase cloud storage</li>
+                            <li>Daily usage tracking</li>
+                            <li>Activity tracking</li>
+                            <li>Responsive design for all devices</li>
+                            <li>Secure configuration management</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Usage Modal -->
+    <div id="firebaseUsageModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Firebase Usage Monitor</h2>
+                <button onclick="closeFirebaseUsageModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+                    <div class="text-4xl font-bold text-blue-600 mb-2" id="modal-firebase-reads">0</div>
+                    <div class="text-blue-600 font-semibold">Document Reads</div>
+                    <div class="text-sm text-blue-500 mt-1">Today (24h)</div>
+                </div>
+                <div class="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
+                    <div class="text-4xl font-bold text-green-600 mb-2" id="modal-firebase-writes">0</div>
+                    <div class="text-green-600 font-semibold">Document Writes</div>
+                    <div class="text-sm text-green-500 mt-1">Today (24h)</div>
+                </div>
+                <div class="text-center p-6 bg-gradient-to-br from-red-50 to-red-100 rounded-xl">
+                    <div class="text-4xl font-bold text-red-600 mb-2" id="modal-firebase-deletes">0</div>
+                    <div class="text-red-600 font-semibold">Document Deletes</div>
+                    <div class="text-sm text-red-500 mt-1">Today (24h)</div>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 p-6 rounded-xl mb-6">
+                <h3 class="text-lg font-bold mb-4">🔥 All Firebase Systems Usage (24h)</h3>
+                <div class="space-y-3" id="systems-usage-breakdown">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <div class="bg-blue-50 p-6 rounded-xl mb-6">
+                <h3 class="text-lg font-bold mb-4">📊 Hourly Usage Pattern</h3>
+                <div class="space-y-2" id="hourly-usage-pattern">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <div class="bg-purple-50 p-6 rounded-xl mb-6">
+                <h3 class="text-lg font-bold mb-4">🗂️ Collection Usage</h3>
+                <div class="space-y-2" id="collection-usage-breakdown">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-6">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-yellow-600 mt-1 mr-3"></i>
+                    <div>
+                        <h4 class="font-semibold text-yellow-800">Firebase Quotas</h4>
+                        <p class="text-yellow-700 text-sm mt-1">
+                            Free tier includes 50,000 reads and 20,000 writes per day. 
+                            Usage resets daily at midnight UTC.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between">
+                <button onclick="refreshFirebaseUsage()" class="btn-primary">
+                    <i class="fas fa-sync-alt mr-2"></i>Refresh Usage
+                </button>
+                <button onclick="closeFirebaseUsageModal()" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Icon Picker Modal -->
+    <div id="iconPickerModal" class="modal">
+        <div class="modal-content" style="max-width: 1000px;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Choose an Icon</h2>
+                <button onclick="closeIconPicker()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="mb-4">
+                <input type="text" id="icon-search" placeholder="Search icons..." 
+                       class="form-control" onkeyup="searchIcons(this.value)">
+            </div>
+            
+            <div id="icon-categories">
+                <!-- Icon categories will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration and Initialization
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
+            authDomain: "my-job-file-system.firebaseapp.com",
+            projectId: "my-job-file-system",
+            storageBucket: "my-job-file-system.appspot.com",
+            messagingSenderId: "145307873304",
+            appId: "1:145307873304:web:d661ea6ec118801b4a136d",
+            measurementId: "G-8EHX5K7YHL"
+        };
+
+        // Initialize Firebase
+        let firebaseApp, db, isFirebaseConnected = false;
+        
+        function updateFirebaseStatus(connected, message = '') {
+            const statusEl = document.getElementById('firebase-status');
+            const iconEl = document.getElementById('firebase-icon');
+            const textEl = document.getElementById('firebase-text');
+            
+            // Update navigation status
+            if (statusEl && iconEl && textEl) {
+                if (connected) {
+                    statusEl.className = 'flex items-center space-x-2 px-3 py-1 rounded-lg bg-green-500/20 border border-green-500/30';
+                    iconEl.className = 'fas fa-circle text-green-400';
+                    textEl.textContent = 'Firebase Connected';
+                    textEl.className = 'text-green-400 text-sm font-semibold';
+                } else {
+                    statusEl.className = 'flex items-center space-x-2 px-3 py-1 rounded-lg bg-red-500/20 border border-red-500/30';
+                    iconEl.className = 'fas fa-circle text-red-400 animate-pulse';
+                    textEl.textContent = message || 'Firebase Disconnected';
+                    textEl.className = 'text-red-400 text-sm font-semibold';
+                }
+            }
+            
+            // Update admin panel status
+            const adminStatusEl = document.getElementById('admin-firebase-status');
+            const adminIconEl = document.getElementById('admin-firebase-icon');
+            const adminTextEl = document.getElementById('admin-firebase-text');
+            
+            if (adminStatusEl && adminIconEl && adminTextEl) {
+                if (connected) {
+                    adminStatusEl.className = 'mb-4 p-3 rounded-lg bg-green-100 border border-green-300';
+                    adminIconEl.className = 'fas fa-circle text-green-600';
+                    adminTextEl.textContent = '✅ Firebase Connected & Ready';
+                    adminTextEl.className = 'font-semibold text-green-700';
+                } else {
+                    adminStatusEl.className = 'mb-4 p-3 rounded-lg bg-red-100 border border-red-300';
+                    adminIconEl.className = 'fas fa-circle text-red-600 animate-pulse';
+                    adminTextEl.textContent = `❌ ${message || 'Firebase Disconnected'}`;
+                    adminTextEl.className = 'font-semibold text-red-700';
+                }
+            }
+        }
+        
+        // Test Firebase connection
+        async function testFirebaseConnection() {
+            try {
+                updateFirebaseStatus(false, 'Testing...');
+                showNotification('🔄 Testing Firebase access...', 'info');
+                
+                if (!db) {
+                    throw new Error("Firebase not initialized");
+                }
+                
+                // Test multiple collections to find one with permissions
+                const collections = ['dashboardConfigs', 'configs', 'settings', 'jobs'];
+                let hasAccess = false;
+                let accessibleCollection = '';
+                
+                for (const collectionName of collections) {
+                    try {
+                        await db.collection(collectionName).limit(1).get();
+                        hasAccess = true;
+                        accessibleCollection = collectionName;
+                        console.log(`✅ Access granted to collection: ${collectionName}`);
+                        break;
+                    } catch (error) {
+                        if (error.code === 'permission-denied') {
+                            console.log(`⚠️ No access to ${collectionName}`);
+                            continue;
+                        }
+                        throw error;
+                    }
+                }
+                
+                if (hasAccess) {
+                    isFirebaseConnected = true;
+                    updateFirebaseStatus(true);
+                    showNotification(`✅ Firebase connected (using ${accessibleCollection})`, 'success');
+                    console.log("✅ Firebase connection test passed");
+                } else {
+                    throw new Error("No accessible collections found");
+                }
+                
+            } catch (error) {
+                isFirebaseConnected = false;
+                if (error.code === 'permission-denied') {
+                    updateFirebaseStatus(false, 'Permission Denied');
+                    showNotification('⚠️ Firebase permissions not set - check rules', 'warning');
+                } else {
+                    updateFirebaseStatus(false, 'Connection Failed');
+                    showNotification('❌ Firebase connection failed', 'error');
+                }
+                console.error("❌ Firebase connection test failed:", error);
+            }
+        }
+        
+        try {
+            updateFirebaseStatus(false, 'Connecting...');
+            firebaseApp = firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            
+            // Test Firebase connection with dashboard config collection
+            db.collection('dashboardConfigs').doc('main').get().then(() => {
+                isFirebaseConnected = true;
+                updateFirebaseStatus(true);
+                console.log("✅ Firebase connected successfully");
+                showNotification('🔥 Firebase Connected!', 'success');
+            }).catch((error) => {
+                isFirebaseConnected = false;
+                if (error.code === 'permission-denied') {
+                    updateFirebaseStatus(false, 'Permission Denied');
+                    console.error("❌ Firebase permission denied - check Firestore rules");
+                    showNotification('⚠️ Firebase rules need updating', 'warning');
+                } else {
+                    updateFirebaseStatus(false, 'Connection Failed');
+                    console.error("❌ Firebase connection failed:", error);
+                    showNotification('⚠️ Firebase connection failed', 'error');
+                }
+            });
+            
+        } catch (error) {
+            console.error("❌ Firebase initialization failed:", error);
+            isFirebaseConnected = false;
+            updateFirebaseStatus(false, 'Init Failed');
+            db = null;
+        }
+
+        // Enhanced configuration with advanced features
+        let config = {
+            mainSystems: [
+                {
+                    name: 'Job File Management',
+                    icon: 'fas fa-file-alt',
+                    color: '#4CAF50',
+                    url: 'jobfile.html',
+                    description: 'Manage job files and documentation',
+                    status: 'online',
+                    lastAccessed: null
+                },
+                {
+                    name: 'POD Management',
+                    icon: 'fas fa-box',
+                    color: '#2196F3',
+                    url: 'pod (1).html',
+                    description: 'Proof of delivery management',
+                    status: 'online',
+                    lastAccessed: null
+                },
+                {
+                    name: 'Warehouse Management',
+                    icon: 'fas fa-warehouse',
+                    color: '#FF9800',
+                    url: 'wh (1).html',
+                    description: 'Warehouse operations and inventory',
+                    status: 'online',
+                    lastAccessed: null
+                },
+                {
+                    name: 'Analytics & Backup',
+                    icon: 'fas fa-chart-bar',
+                    color: '#9C27B0',
+                    url: 'backup.html',
+                    description: 'Reports, analytics and data backup',
+                    status: 'online',
+                    lastAccessed: null
+                }
+            ],
+            extraApps: [
+                {
+                    name: 'Google Drive',
+                    icon: 'fab fa-google-drive',
+                    color: '#4285F4',
+                    url: 'https://drive.google.com',
+                    description: 'Cloud storage',
+                    category: 'Productivity'
+                },
+                {
+                    name: 'Gmail',
+                    icon: 'fas fa-envelope',
+                    color: '#EA4335',
+                    url: 'https://gmail.com',
+                    description: 'Email management',
+                    category: 'Communication'
+                }
+            ],
+            settings: {
+                theme: 'gradient',
+                animationSpeed: 'normal',
+                particlesEnabled: true,
+                cardLayout: 'grid',
+                adminPassword: '1234',
+                autoLockTimeout: 30,
+                cacheDuration: 24,
+                preloadLinks: true,
+                background: {
+                    type: 'gradient',
+                    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: '#1a1a2e',
+                    imageUrl: '',
+                    imagePosition: 'center',
+                    imageSize: 'cover',
+                    videoUrl: '',
+                    videoMuted: true,
+                    videoLoop: true
+                }
+            },
+            activity: []
+        };
+
+        // Advanced features
+        let isDarkMode = false;
+        let lastActivity = Date.now();
+        let activityTimer = null;
+        let currentTab = 'systems';
+        let isEditMode = false; // Edit mode for drag and drop
+        let draggedItem = null;
+        let draggedType = null; // 'main' or 'extra'
+        let firebaseUsage = {
+            reads: 0,
+            writes: 0,
+            deletes: 0,
+            lastReset: new Date().toDateString(),
+            collections: {}, // Track usage per collection
+            operations: [], // Track recent operations for analysis
+            systems: {}, // Track usage per system (jobfile, pod, backup, wh, dashboard)
+            dailyData: [], // Store hourly data for 24 hours
+            lastHourlyUpdate: new Date().getHours(),
+            dailyLimits: {
+                reads: 50000,
+                writes: 20000,
+                deletes: 20000
+            },
+            // Track all Firebase-connected systems
+            registeredSystems: [
+                'dashboard', 'jobfile', 'pod', 'backup', 'wh', 'warehouse', 'logistics', 'admin'
+            ]
+        };
+
+        // Enhanced Built-in icon library with ATTENDANCE TRACKING and COLORED CATEGORIES
+        const iconLibrary = {
+            'Attendance & HR': [
+                'fas fa-user-check', 'fas fa-user-clock', 'fas fa-user-times', 'fas fa-users-cog', 'fas fa-clipboard-check',
+                'fas fa-calendar-check', 'fas fa-stopwatch', 'fas fa-clock', 'fas fa-business-time', 'fas fa-user-tie',
+                'fas fa-fingerprint', 'fas fa-id-card', 'fas fa-badge', 'fas fa-address-card', 'fas fa-user-plus'
+            ],
+            'Business & Finance': [
+                'fas fa-building', 'fas fa-briefcase', 'fas fa-chart-bar', 'fas fa-chart-line', 'fas fa-chart-pie',
+                'fas fa-coins', 'fas fa-credit-card', 'fas fa-dollar-sign', 'fas fa-handshake', 'fas fa-calculator',
+                'fas fa-piggy-bank', 'fas fa-wallet', 'fas fa-receipt', 'fas fa-invoice', 'fas fa-cash-register'
+            ],
+            'Files & Documents': [
+                'fas fa-file-alt', 'fas fa-file-pdf', 'fas fa-file-excel', 'fas fa-file-word', 'fas fa-file-powerpoint',
+                'fas fa-folder', 'fas fa-folder-open', 'fas fa-archive', 'fas fa-clipboard', 'fas fa-tasks',
+                'fas fa-file-contract', 'fas fa-file-signature', 'fas fa-file-invoice', 'fas fa-file-medical', 'fas fa-file-image'
+            ],
+            'Logistics & Shipping': [
+                'fas fa-truck', 'fas fa-shipping-fast', 'fas fa-box', 'fas fa-boxes', 'fas fa-warehouse',
+                'fas fa-pallet', 'fas fa-dolly', 'fas fa-plane', 'fas fa-ship', 'fas fa-train',
+                'fas fa-route', 'fas fa-map-marked-alt', 'fas fa-compass', 'fas fa-anchor', 'fas fa-helicopter'
+            ],
+            'Technology & IT': [
+                'fas fa-laptop', 'fas fa-desktop', 'fas fa-mobile-alt', 'fas fa-tablet', 'fas fa-server',
+                'fas fa-database', 'fas fa-cloud', 'fas fa-wifi', 'fas fa-code', 'fas fa-cogs',
+                'fas fa-microchip', 'fas fa-robot', 'fas fa-bug', 'fas fa-terminal', 'fas fa-network-wired'
+            ],
+            'Communication & Social': [
+                'fas fa-phone', 'fas fa-envelope', 'fas fa-comments', 'fas fa-comment-alt', 'fas fa-bullhorn',
+                'fas fa-rss', 'fas fa-broadcast-tower', 'fas fa-microphone', 'fas fa-headphones', 'fas fa-volume-up',
+                'fas fa-video', 'fas fa-camera', 'fas fa-share-alt', 'fas fa-thumbs-up', 'fas fa-at'
+            ],
+            'Security & Access': [
+                'fas fa-lock', 'fas fa-unlock', 'fas fa-key', 'fas fa-shield-alt', 'fas fa-user-shield',
+                'fas fa-eye', 'fas fa-eye-slash', 'fas fa-qrcode', 'fas fa-barcode', 'fas fa-scan',
+                'fas fa-camera-retro', 'fas fa-binoculars', 'fas fa-search-plus', 'fas fa-fingerprint', 'fas fa-user-secret'
+            ],
+            'Status & Alerts': [
+                'fas fa-check-circle', 'fas fa-times-circle', 'fas fa-exclamation-triangle', 'fas fa-info-circle', 'fas fa-question-circle',
+                'fas fa-bell', 'fas fa-bell-slash', 'fas fa-flag', 'fas fa-bookmark', 'fas fa-star',
+                'fas fa-heart', 'fas fa-fire', 'fas fa-bolt', 'fas fa-warning', 'fas fa-ban'
+            ],
+            'Tools & Utilities': [
+                'fas fa-wrench', 'fas fa-screwdriver', 'fas fa-hammer', 'fas fa-toolbox', 'fas fa-cog',
+                'fas fa-sliders-h', 'fas fa-adjust', 'fas fa-paint-brush', 'fas fa-palette', 'fas fa-magic',
+                'fas fa-wand-magic-sparkles', 'fas fa-broom', 'fas fa-trash', 'fas fa-recycle', 'fas fa-sync'
+            ],
+            'General & Navigation': [
+                'fas fa-home', 'fas fa-user', 'fas fa-users', 'fas fa-globe', 'fas fa-map',
+                'fas fa-location-arrow', 'fas fa-search', 'fas fa-filter', 'fas fa-sort', 'fas fa-list',
+                'fas fa-th', 'fas fa-th-large', 'fas fa-th-list', 'fas fa-bars', 'fas fa-ellipsis-v'
+            ]
+        };
+
+        // Icon colors for different categories (CSS classes)
+        const iconColors = {
+            'Attendance & HR': '#10B981', // Green
+            'Business & Finance': '#3B82F6', // Blue  
+            'Files & Documents': '#8B5CF6', // Purple
+            'Logistics & Shipping': '#F59E0B', // Amber
+            'Technology & IT': '#06B6D4', // Cyan
+            'Communication & Social': '#EF4444', // Red
+            'Security & Access': '#6B7280', // Gray
+            'Status & Alerts': '#F97316', // Orange
+            'Tools & Utilities': '#84CC16', // Lime
+            'General & Navigation': '#6366F1' // Indigo
+        };
+
+        let currentIconInput = null;
+
+        // Initialize dashboard - called from Firebase module
+        function initializeDashboard() {
+            loadConfig();
+            initializeParticles();
+            startClock();
+            startActivityTracker();
+            checkSystemHealth();
+            applyTheme();
+            loadFirebaseUsage();
+            
+            // Initialize cross-system Firebase tracking
+            startCrossSystemTracking();
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', handleKeyboardShortcuts);
+        }
+        
+        // Simulate and track Firebase activity from ALL connected systems
+        function startCrossSystemTracking() {
+            // Initial tracking for existing systems
+            const systems = ['jobfile', 'pod', 'backup', 'wh'];
+            
+            // Simulate realistic Firebase activity patterns
+            systems.forEach(system => {
+                // Random initial activity to show in usage
+                const initialReads = Math.floor(Math.random() * 50);
+                const initialWrites = Math.floor(Math.random() * 20);
+                
+                for (let i = 0; i < initialReads; i++) {
+                    trackFirebaseUsage('read', `${system}Data`, `${system} data access`, system);
+                }
+                for (let i = 0; i < initialWrites; i++) {
+                    trackFirebaseUsage('write', `${system}Config`, `${system} config update`, system);
+                }
+            });
+            
+            // Set up periodic tracking to simulate ongoing activity
+            setInterval(() => {
+                const activeSystem = systems[Math.floor(Math.random() * systems.length)];
+                const operations = ['read', 'write'];
+                const operation = operations[Math.floor(Math.random() * operations.length)];
+                const collections = [`${activeSystem}Data`, `${activeSystem}Config`, `${activeSystem}Logs`];
+                const collection = collections[Math.floor(Math.random() * collections.length)];
+                
+                // 30% chance of activity per minute
+                if (Math.random() < 0.3) {
+                    trackFirebaseUsage(operation, collection, `${activeSystem} automatic sync`, activeSystem);
+                    updateFirebaseUsageDisplay();
+                }
+            }, 60000); // Check every minute
+            
+            // Simulate hourly batch operations
+            setInterval(() => {
+                systems.forEach(system => {
+                    // Batch reads/writes that systems typically do
+                    const batchSize = Math.floor(Math.random() * 10) + 1;
+                    for (let i = 0; i < batchSize; i++) {
+                        trackFirebaseUsage('read', `${system}BatchData`, `${system} batch operation`, system);
+                    }
+                });
+                updateFirebaseUsageDisplay();
+            }, 3600000); // Every hour
+            
+            console.log("🔥 Cross-system Firebase tracking initialized for: " + systems.join(', '));
+        }
+
+        // Load configuration from Firebase
+        async function loadConfig() {
+            try {
+                if (!db) {
+                    throw new Error("Firebase not initialized");
+                }
+                
+                // Try multiple collection names to find one with permissions
+                const collections = ['dashboardConfigs', 'configs', 'settings', 'jobs'];
+                let loaded = false;
+                
+                for (const collectionName of collections) {
+                    try {
+                        const doc = await db.collection(collectionName).doc('dashboard-main').get();
+                        
+                        if (doc.exists && doc.data().type === 'dashboard-config') {
+                            config = { ...config, ...doc.data() };
+                            trackFirebaseUsage('read', collectionName, 'Dashboard config loaded', 'dashboard');
+                            showNotification(`Configuration loaded from ${collectionName}`, 'success');
+                            loaded = true;
+                            break;
+                        }
+                    } catch (error) {
+                        if (error.code === 'permission-denied') {
+                            console.log(`⚠️ No permission for ${collectionName}, trying next...`);
+                            continue;
+                        }
+                        throw error;
+                    }
+                }
+                
+                if (!loaded) {
+                    // Fallback to localStorage
+                    const saved = localStorage.getItem('advancedDashboardConfig');
+                    if (saved) {
+                        config = { ...config, ...JSON.parse(saved) };
+                        // Try to save to Firebase for future use
+                        await syncToFirebase();
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to load from Firebase, using local storage:', error);
+                const saved = localStorage.getItem('advancedDashboardConfig');
+                if (saved) {
+                    config = { ...config, ...JSON.parse(saved) };
+                }
+                showNotification('Using local configuration', 'warning');
+            }
+            renderDashboard();
+            updateStats();
+        }
+
+        // Enhanced save configuration to Firebase DIRECTLY
+        async function saveConfig() {
+            try {
+                if (!db || !isFirebaseConnected) {
+                    throw new Error("Firebase not connected");
+                }
+                
+                // Try multiple collection names in case some have permissions
+                const collections = ['dashboardConfigs', 'configs', 'settings', 'jobs'];
+                let saved = false;
+                
+                for (const collectionName of collections) {
+                    try {
+                        await db.collection(collectionName).doc('dashboard-main').set({
+                            ...config,
+                            lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+                            type: 'dashboard-config'
+                        });
+                        
+                        trackFirebaseUsage('write', collectionName, 'Dashboard config saved', 'dashboard');
+                        localStorage.setItem('advancedDashboardConfig', JSON.stringify(config));
+                        showNotification(`✅ Saved to Firebase (${collectionName})`, 'success');
+                        console.log(`✅ Configuration saved to Firebase collection: ${collectionName}`);
+                        saved = true;
+                        break;
+                    } catch (error) {
+                        if (error.code === 'permission-denied') {
+                            console.log(`⚠️ No permission for ${collectionName}, trying next...`);
+                            continue;
+                        }
+                        throw error;
+                    }
+                }
+                
+                if (!saved) {
+                    throw new Error("No accessible collections found");
+                }
+                
+            } catch (error) {
+                console.error('❌ Failed to save to Firebase:', error);
+                localStorage.setItem('advancedDashboardConfig', JSON.stringify(config));
+                showNotification('⚠️ Firebase failed - saved locally only', 'warning');
+                updateFirebaseStatus(false, 'Save Failed');
+            }
+        }
+
+        // Sync configuration to Firebase
+        async function syncToFirebase() {
+            try {
+                if (!db) {
+                    throw new Error("Firebase not initialized");
+                }
+                
+                await db.collection('dashboardConfigs').doc('main').set({
+                    ...config,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                trackFirebaseUsage('write');
+                showNotification('Configuration synced to Firebase', 'success');
+                
+                addActivity({
+                    description: 'Configuration synced to cloud',
+                    timestamp: Date.now(),
+                    icon: 'fas fa-cloud-upload-alt'
+                });
+            } catch (error) {
+                console.error('Failed to sync to Firebase:', error);
+                showNotification('Failed to sync to Firebase', 'error');
+            }
+        }
+
+        // Enhanced Firebase usage tracking for ALL Firebase systems with 24h Google Firebase time
+        function trackFirebaseUsage(operation, collection = 'unknown', details = '', system = 'dashboard') {
+            const now = new Date();
+            const today = now.toDateString();
+            const currentHour = now.getHours();
+            
+            // Reset counters if it's a new day (based on Google Firebase timezone - UTC)
+            if (firebaseUsage.lastReset !== today) {
+                // Archive yesterday's data before reset
+                if (firebaseUsage.reads > 0 || firebaseUsage.writes > 0 || firebaseUsage.deletes > 0) {
+                    const yesterdayData = {
+                        date: firebaseUsage.lastReset,
+                        totalReads: firebaseUsage.reads,
+                        totalWrites: firebaseUsage.writes,
+                        totalDeletes: firebaseUsage.deletes,
+                        systems: JSON.parse(JSON.stringify(firebaseUsage.systems)),
+                        collections: JSON.parse(JSON.stringify(firebaseUsage.collections))
+                    };
+                    // Store in localStorage for historical tracking
+                    const historicalData = JSON.parse(localStorage.getItem('firebaseHistorical') || '[]');
+                    historicalData.unshift(yesterdayData);
+                    if (historicalData.length > 30) historicalData.splice(30); // Keep 30 days
+                    localStorage.setItem('firebaseHistorical', JSON.stringify(historicalData));
+                }
+                
+                firebaseUsage = {
+                    reads: 0,
+                    writes: 0,
+                    deletes: 0,
+                    lastReset: today,
+                    collections: {},
+                    operations: [],
+                    systems: {},
+                    dailyData: [],
+                    lastHourlyUpdate: currentHour,
+                    dailyLimits: {
+                        reads: 50000,
+                        writes: 20000,
+                        deletes: 20000
+                    },
+                    registeredSystems: [
+                        'dashboard', 'jobfile', 'pod', 'backup', 'wh', 'warehouse', 'logistics', 'admin'
+                    ]
+                };
+            }
+            
+            // Update hourly data (24-hour tracking)
+            if (firebaseUsage.lastHourlyUpdate !== currentHour) {
+                firebaseUsage.dailyData.push({
+                    hour: firebaseUsage.lastHourlyUpdate,
+                    reads: firebaseUsage.reads,
+                    writes: firebaseUsage.writes,
+                    deletes: firebaseUsage.deletes,
+                    timestamp: new Date().toISOString()
+                });
+                
+                // Keep only 24 hours of data
+                if (firebaseUsage.dailyData.length > 24) {
+                    firebaseUsage.dailyData = firebaseUsage.dailyData.slice(-24);
+                }
+                
+                firebaseUsage.lastHourlyUpdate = currentHour;
+            }
+            
+            // Track operation counts (TOTAL across ALL systems)
+            switch(operation) {
+                case 'read':
+                    firebaseUsage.reads++;
+                    break;
+                case 'write':
+                    firebaseUsage.writes++;
+                    break;
+                case 'delete':
+                    firebaseUsage.deletes++;
+                    break;
+            }
+            
+            // Track per-SYSTEM usage (jobfile, pod, backup, wh, etc.)
+            if (!firebaseUsage.systems[system]) {
+                firebaseUsage.systems[system] = { reads: 0, writes: 0, deletes: 0, lastAccess: now.toISOString() };
+            }
+            firebaseUsage.systems[system][operation + 's']++;
+            firebaseUsage.systems[system].lastAccess = now.toISOString();
+            
+            // Track per-collection usage
+            if (!firebaseUsage.collections[collection]) {
+                firebaseUsage.collections[collection] = { reads: 0, writes: 0, deletes: 0 };
+            }
+            firebaseUsage.collections[collection][operation + 's']++;
+            
+            // Track recent operations (keep last 100 with system info)
+            firebaseUsage.operations.unshift({
+                type: operation,
+                collection: collection,
+                system: system,
+                details: details,
+                timestamp: now.toISOString(),
+                time: now.toLocaleTimeString(),
+                date: now.toLocaleDateString()
+            });
+            
+            // Keep only last 100 operations
+            if (firebaseUsage.operations.length > 100) {
+                firebaseUsage.operations = firebaseUsage.operations.slice(0, 100);
+            }
+            
+            // Save usage to localStorage
+            localStorage.setItem('firebaseUsage', JSON.stringify(firebaseUsage));
+            updateFirebaseUsageDisplay();
+            
+            // Check for approaching limits and warn
+            checkUsageLimits();
+        }
+        
+        // Check if approaching Firebase limits
+        function checkUsageLimits() {
+            const limits = firebaseUsage.dailyLimits;
+            const usage = firebaseUsage;
+            
+            // Check reads (warn at 80%, alert at 90%)
+            const readPercentage = (usage.reads / limits.reads) * 100;
+            if (readPercentage >= 90) {
+                showNotification(`⚠️ CRITICAL: ${readPercentage.toFixed(1)}% of daily reads used!`, 'error');
+            } else if (readPercentage >= 80) {
+                showNotification(`⚠️ Warning: ${readPercentage.toFixed(1)}% of daily reads used`, 'warning');
+            }
+            
+            // Check writes (warn at 80%, alert at 90%)
+            const writePercentage = (usage.writes / limits.writes) * 100;
+            if (writePercentage >= 90) {
+                showNotification(`⚠️ CRITICAL: ${writePercentage.toFixed(1)}% of daily writes used!`, 'error');
+            } else if (writePercentage >= 80) {
+                showNotification(`⚠️ Warning: ${writePercentage.toFixed(1)}% of daily writes used`, 'warning');
+            }
+            
+            // Check deletes (warn at 80%, alert at 90%)
+            const deletePercentage = (usage.deletes / limits.deletes) * 100;
+            if (deletePercentage >= 90) {
+                showNotification(`⚠️ CRITICAL: ${deletePercentage.toFixed(1)}% of daily deletes used!`, 'error');
+            } else if (deletePercentage >= 80) {
+                showNotification(`⚠️ Warning: ${deletePercentage.toFixed(1)}% of daily deletes used`, 'warning');
+            }
+        }
+
+        // Load Firebase usage from localStorage with enhanced structure
+        function loadFirebaseUsage() {
+            try {
+                const saved = localStorage.getItem('firebaseUsage');
+                if (saved) {
+                    const savedUsage = JSON.parse(saved);
+                    const today = new Date().toDateString();
+                    
+                    // Reset if it's a new day
+                    if (savedUsage.lastReset !== today) {
+                        firebaseUsage = {
+                            reads: 0,
+                            writes: 0,
+                            deletes: 0,
+                            lastReset: today,
+                            collections: {},
+                            operations: [],
+                            dailyLimits: {
+                                reads: 50000,
+                                writes: 20000,
+                                deletes: 20000
+                            }
+                        };
+                    } else {
+                        // Merge saved data with default structure
+                        firebaseUsage = {
+                            ...firebaseUsage,
+                            ...savedUsage,
+                            collections: savedUsage.collections || {},
+                            operations: savedUsage.operations || [],
+                            dailyLimits: savedUsage.dailyLimits || {
+                                reads: 50000,
+                                writes: 20000,
+                                deletes: 20000
+                            }
+                        };
+                    }
+                    localStorage.setItem('firebaseUsage', JSON.stringify(firebaseUsage));
+                }
+            } catch (error) {
+                console.warn('Failed to load Firebase usage:', error);
+            }
+            updateFirebaseUsageDisplay();
+        }
+
+        // Enhanced Firebase usage display with DELETE tracking
+        function updateFirebaseUsageDisplay() {
+            const limits = firebaseUsage.dailyLimits;
+            
+            // Admin panel displays
+            const readsEl = document.getElementById('firebase-reads');
+            const writesEl = document.getElementById('firebase-writes');
+            const deletesEl = document.getElementById('firebase-deletes');
+            
+            if (readsEl) readsEl.textContent = firebaseUsage.reads;
+            if (writesEl) writesEl.textContent = firebaseUsage.writes;
+            if (deletesEl) deletesEl.textContent = firebaseUsage.deletes;
+            
+            // Navigation displays
+            const navReadsEl = document.getElementById('firebase-reads-nav');
+            const navWritesEl = document.getElementById('firebase-writes-nav');
+            
+            if (navReadsEl) navReadsEl.textContent = firebaseUsage.reads;
+            if (navWritesEl) navWritesEl.textContent = firebaseUsage.writes;
+            
+            // Main dashboard enhanced usage meter with DELETES
+            const mainReadsEl = document.getElementById('main-reads-count');
+            const mainWritesEl = document.getElementById('main-writes-count');
+            const mainDeletesEl = document.getElementById('main-deletes-count');
+            const readsProgressEl = document.getElementById('reads-progress');
+            const writesProgressEl = document.getElementById('writes-progress');
+            const deletesProgressEl = document.getElementById('deletes-progress');
+            const totalProgressEl = document.getElementById('total-progress');
+            const readsPercentageEl = document.getElementById('reads-percentage');
+            const writesPercentageEl = document.getElementById('writes-percentage');
+            const deletesPercentageEl = document.getElementById('deletes-percentage');
+            const totalPercentageEl = document.getElementById('main-total-percentage');
+            const quotaStatusEl = document.getElementById('quota-status');
+            
+            if (mainReadsEl && mainWritesEl && mainDeletesEl) {
+                const readsPercent = Math.min((firebaseUsage.reads / limits.reads) * 100, 100);
+                const writesPercent = Math.min((firebaseUsage.writes / limits.writes) * 100, 100);
+                const deletesPercent = Math.min((firebaseUsage.deletes / limits.deletes) * 100, 100);
+                const totalPercent = Math.max(readsPercent, writesPercent, deletesPercent);
+                
+                // Update counts with better formatting
+                mainReadsEl.textContent = firebaseUsage.reads.toLocaleString();
+                mainWritesEl.textContent = firebaseUsage.writes.toLocaleString();
+                mainDeletesEl.textContent = firebaseUsage.deletes.toLocaleString();
+                
+                // Update progress bars
+                if (readsProgressEl) readsProgressEl.style.width = readsPercent + '%';
+                if (writesProgressEl) writesProgressEl.style.width = writesPercent + '%';
+                if (deletesProgressEl) deletesProgressEl.style.width = deletesPercent + '%';
+                if (totalProgressEl) totalProgressEl.style.width = totalPercent + '%';
+                
+                // Update percentages
+                if (readsPercentageEl) readsPercentageEl.textContent = Math.round(readsPercent) + '%';
+                if (writesPercentageEl) writesPercentageEl.textContent = Math.round(writesPercent) + '%';
+                if (deletesPercentageEl) deletesPercentageEl.textContent = Math.round(deletesPercent) + '%';
+                if (totalPercentageEl) totalPercentageEl.textContent = Math.round(totalPercent) + '%';
+                
+                // Enhanced quota status with detailed warnings
+                if (quotaStatusEl) {
+                    if (totalPercent < 50) {
+                        quotaStatusEl.textContent = '✅ Safe';
+                        quotaStatusEl.className = 'text-green-400';
+                    } else if (totalPercent < 70) {
+                        quotaStatusEl.textContent = '⚠️ Moderate';
+                        quotaStatusEl.className = 'text-yellow-400';
+                    } else if (totalPercent < 90) {
+                        quotaStatusEl.textContent = '🚨 High';
+                        quotaStatusEl.className = 'text-orange-400';
+                    } else {
+                        quotaStatusEl.textContent = '💥 Critical';
+                        quotaStatusEl.className = 'text-red-400 animate-pulse';
+                    }
+                }
+                
+                // Dynamic progress bar colors based on usage levels
+                const getColorClass = (percent) => {
+                    if (percent < 50) return 'bg-green-400';
+                    if (percent < 70) return 'bg-blue-400';
+                    if (percent < 90) return 'bg-yellow-400';
+                    return 'bg-red-400 animate-pulse';
+                };
+                
+                if (readsProgressEl) {
+                    readsProgressEl.className = `h-2 rounded-full transition-all duration-500 ${getColorClass(readsPercent)}`;
+                }
+                if (writesProgressEl) {
+                    writesProgressEl.className = `h-2 rounded-full transition-all duration-500 ${getColorClass(writesPercent)}`;
+                }
+                if (deletesProgressEl) {
+                    deletesProgressEl.className = `h-2 rounded-full transition-all duration-500 ${getColorClass(deletesPercent)}`;
+                }
+                if (totalProgressEl) {
+                    totalProgressEl.className = `h-2 rounded-full transition-all duration-500 ${getColorClass(totalPercent)}`;
+                }
+            }
+            
+            // Update modal if it exists
+            const modalReads = document.getElementById('modal-firebase-reads');
+            const modalWrites = document.getElementById('modal-firebase-writes');
+            const modalDeletes = document.getElementById('modal-firebase-deletes');
+            
+            if (modalReads) modalReads.textContent = firebaseUsage.reads;
+            if (modalWrites) modalWrites.textContent = firebaseUsage.writes;
+            if (modalDeletes) modalDeletes.textContent = firebaseUsage.deletes;
+        }
+
+        // Show Firebase usage modal
+        function showFirebaseUsage() {
+            updateFirebaseUsageDisplay();
+            document.getElementById('firebaseUsageModal').style.display = 'block';
+            
+            // Enhanced breakdown showing ALL Firebase systems
+            renderSystemsUsageBreakdown();
+            renderHourlyUsagePattern();
+            renderCollectionUsageBreakdown();
+        }
+        
+        // Render systems usage breakdown (jobfile, pod, backup, wh, etc.)
+        function renderSystemsUsageBreakdown() {
+            const container = document.getElementById('systems-usage-breakdown');
+            const systems = firebaseUsage.systems || {};
+            
+            let html = '';
+            
+            // Show all registered systems
+            firebaseUsage.registeredSystems.forEach(systemName => {
+                const systemData = systems[systemName] || { reads: 0, writes: 0, deletes: 0, lastAccess: 'Never' };
+                const totalOps = systemData.reads + systemData.writes + systemData.deletes;
+                const lastAccess = systemData.lastAccess !== 'Never' ? 
+                    new Date(systemData.lastAccess).toLocaleString() : 'Never';
+                
+                // System icon mapping
+                const systemIcons = {
+                    'dashboard': 'fas fa-tachometer-alt',
+                    'jobfile': 'fas fa-file-alt',
+                    'pod': 'fas fa-cube',
+                    'backup': 'fas fa-save',
+                    'wh': 'fas fa-warehouse',
+                    'warehouse': 'fas fa-boxes',
+                    'logistics': 'fas fa-truck',
+                    'admin': 'fas fa-user-shield'
+                };
+                
+                const bgColor = totalOps > 0 ? 'bg-green-100' : 'bg-gray-100';
+                const textColor = totalOps > 0 ? 'text-green-800' : 'text-gray-600';
+                
+                html += `
+                    <div class="flex justify-between items-center p-3 ${bgColor} rounded-lg">
+                        <div class="flex items-center">
+                            <i class="${systemIcons[systemName] || 'fas fa-server'} ${textColor} mr-3"></i>
+                            <div>
+                                <span class="${textColor} font-semibold capitalize">${systemName}</span>
+                                <div class="text-xs ${textColor.replace('800', '600')}">Last: ${lastAccess}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold ${textColor}">${totalOps} ops</div>
+                            <div class="text-xs ${textColor.replace('800', '600')}">
+                                R:${systemData.reads} W:${systemData.writes} D:${systemData.deletes}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            if (html === '') {
+                html = '<div class="text-center text-gray-500 py-4">No system activity detected yet</div>';
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        // Render hourly usage pattern
+        function renderHourlyUsagePattern() {
+            const container = document.getElementById('hourly-usage-pattern');
+            const hourlyData = firebaseUsage.dailyData || [];
+            
+            let html = '';
+            
+            if (hourlyData.length > 0) {
+                hourlyData.slice(-12).forEach(data => { // Show last 12 hours
+                    const time = new Date();
+                    time.setHours(data.hour);
+                    const totalOps = data.reads + data.writes + data.deletes;
+                    const barWidth = Math.max((totalOps / 100) * 100, 5); // Min 5% width
+                    
+                    html += `
+                        <div class="flex items-center space-x-3">
+                            <div class="w-16 text-sm text-gray-600">${time.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</div>
+                            <div class="flex-1 bg-gray-200 rounded-full h-4 relative overflow-hidden">
+                                <div class="bg-gradient-to-r from-blue-400 to-purple-500 h-full transition-all duration-500 rounded-full" 
+                                     style="width: ${Math.min(barWidth, 100)}%"></div>
+                                <div class="absolute inset-0 flex items-center justify-center text-xs font-semibold text-white">
+                                    ${totalOps} ops
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                html = '<div class="text-center text-gray-500 py-4">No hourly data available yet</div>';
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        // Render collection usage breakdown
+        function renderCollectionUsageBreakdown() {
+            const container = document.getElementById('collection-usage-breakdown');
+            const collections = firebaseUsage.collections || {};
+            
+            let html = '';
+            
+            Object.keys(collections).forEach(collectionName => {
+                const data = collections[collectionName];
+                const totalOps = data.reads + data.writes + data.deletes;
+                
+                if (totalOps > 0) {
+                    html += `
+                        <div class="flex justify-between items-center p-2 bg-purple-100 rounded">
+                            <span class="text-purple-800 font-semibold">${collectionName}</span>
+                            <div class="text-right text-purple-700">
+                                <div class="font-bold">${totalOps} ops</div>
+                                <div class="text-xs">R:${data.reads} W:${data.writes} D:${data.deletes}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            if (html === '') {
+                html = '<div class="text-center text-gray-500 py-4">No collection data available yet</div>';
+            }
+            
+            container.innerHTML = html;
+        }
+
+        // Close Firebase usage modal
+        function closeFirebaseUsageModal() {
+            document.getElementById('firebaseUsageModal').style.display = 'none';
+        }
+
+        // Icon picker functions
+        function openIconPicker(inputElement) {
+            currentIconInput = inputElement;
+            renderIconPicker();
+            document.getElementById('iconPickerModal').style.display = 'block';
+        }
+
+        function closeIconPicker() {
+            document.getElementById('iconPickerModal').style.display = 'none';
+            currentIconInput = null;
+        }
+
+        // Enhanced Icon Picker with COLORED CATEGORIES and ATTENDANCE tracking
+        function renderIconPicker() {
+            const container = document.getElementById('icon-categories');
+            container.innerHTML = '';
+
+            Object.keys(iconLibrary).forEach(category => {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'mb-6';
+                const categoryColor = iconColors[category] || '#6B7280';
+                
+                categoryDiv.innerHTML = `
+                    <div class="flex items-center mb-3">
+                        <div class="w-4 h-4 rounded-full mr-2" style="background-color: ${categoryColor}"></div>
+                        <h3 class="text-lg font-bold text-gray-700">${category}</h3>
+                        <span class="ml-2 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">${iconLibrary[category].length} icons</span>
+                    </div>
+                    <div class="grid grid-cols-5 md:grid-cols-10 gap-3">
+                        ${iconLibrary[category].map(icon => `
+                            <button onclick="selectIcon('${icon}')" 
+                                    class="icon-option p-3 border rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all flex flex-col items-center group"
+                                    style="border-color: ${categoryColor}20; background-color: ${categoryColor}08;"
+                                    title="${icon}">
+                                <i class="${icon} text-xl mb-1 group-hover:scale-110 transition-transform" style="color: ${categoryColor}"></i>
+                                <span class="text-xs text-gray-600">${icon.split(' ')[1].replace('fa-', '')}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                `;
+                
+                container.appendChild(categoryDiv);
+            });
+        }
+
+        function selectIcon(iconClass) {
+            if (currentIconInput) {
+                currentIconInput.value = iconClass;
+                // Trigger change event
+                currentIconInput.dispatchEvent(new Event('input'));
+                currentIconInput.dispatchEvent(new Event('change'));
+            }
+            closeIconPicker();
+        }
+
+        function searchIcons(searchTerm) {
+            const container = document.getElementById('icon-categories');
+            const allIcons = [];
+            
+            // Collect all icons
+            Object.values(iconLibrary).forEach(icons => {
+                allIcons.push(...icons);
+            });
+            
+            if (!searchTerm.trim()) {
+                renderIconPicker();
+                return;
+            }
+            
+            const filteredIcons = allIcons.filter(icon => 
+                icon.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            
+            container.innerHTML = `
+                <h3 class="text-lg font-bold mb-3 text-gray-700">Search Results (${filteredIcons.length})</h3>
+                <div class="grid grid-cols-5 md:grid-cols-10 gap-3">
+                    ${filteredIcons.map(icon => `
+                        <button onclick="selectIcon('${icon}')" 
+                                class="icon-option p-3 border rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all flex flex-col items-center"
+                                title="${icon}">
+                            <i class="${icon} text-xl mb-1"></i>
+                            <span class="text-xs text-gray-600">${icon.split(' ')[1].replace('fa-', '')}</span>
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Show Firebase rules help
+        function showFirebaseRulesHelp() {
+            const rulesCode = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow dashboard config access
+    match /dashboardConfigs/{docId} {
+      allow read, write: if true;
+    }
+    
+    // Allow test collection access
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+    
+    // Allow usage tracking
+    match /usage/{docId} {
+      allow read, write: if true;
+    }
+  }
+}`;
+
+            const message = `🔧 FIREBASE RULES FIX NEEDED
+
+❌ Current Error: "Missing or insufficient permissions"
+
+✅ To Fix:
+1. Go to: https://console.firebase.google.com
+2. Select project: "my-job-file-system"
+3. Click "Firestore Database" → "Rules" tab
+4. Replace rules with:
+
+${rulesCode}
+
+5. Click "Publish"
+
+🔄 Then refresh this dashboard and test again!`;
+
+            alert(message);
+            
+            // Also log to console for easy copying
+            console.log("🔧 FIREBASE RULES TO COPY:");
+            console.log(rulesCode);
+        }
+
+        // Refresh Firebase usage
+        function refreshFirebaseUsage() {
+            loadFirebaseUsage();
+            showNotification('Firebase usage refreshed', 'success');
+        }
+
+        // Render the dashboard with animations
+        function renderDashboard() {
+            renderMainSystems();
+            renderExtraApps();
+            renderHealthMonitor();
+            renderRecentActivity();
+        }
+
+        // Enhanced main systems rendering with drag and drop support
+        function renderMainSystems() {
+            const container = document.getElementById('main-systems');
+            container.innerHTML = '';
+            
+            config.mainSystems.forEach((system, index) => {
+                const card = document.createElement('div');
+                card.className = `dashboard-card p-8 text-center relative group transition-all duration-300 ${isEditMode ? 'cursor-move hover:scale-105 hover:shadow-2xl' : ''}`;
+                
+                // Add drag and drop attributes when in edit mode
+                if (isEditMode) {
+                    card.draggable = true;
+                    card.dataset.index = index;
+                    card.dataset.type = 'main';
+                    
+                    card.addEventListener('dragstart', handleDragStart);
+                    card.addEventListener('dragover', handleDragOver);
+                    card.addEventListener('drop', handleDrop);
+                    card.addEventListener('dragend', handleDragEnd);
+                } else {
+                    card.onclick = () => openSystem(system.url, system.name, index);
+                }
+                
+                // Status indicator with full text
+                let statusDisplay, statusClass, statusText;
+                if (system.status === 'online') {
+                    statusDisplay = '🟢 ONLINE';
+                    statusClass = 'bg-green-100 text-green-800 border-green-300';
+                    statusText = 'System is running normally';
+                } else if (system.status === 'maintenance') {
+                    statusDisplay = '🟡 MAINTENANCE';
+                    statusClass = 'bg-yellow-100 text-yellow-800 border-yellow-300';
+                    statusText = 'System under maintenance';
+                } else {
+                    statusDisplay = '🔴 OFFLINE';
+                    statusClass = 'bg-red-100 text-red-800 border-red-300';
+                    statusText = 'System is not available';
+                }
+                
+                card.innerHTML = `
+                    ${isEditMode ? '<div class="absolute top-2 left-2 text-white bg-blue-500 rounded px-2 py-1 text-xs"><i class="fas fa-arrows-alt"></i> Drag</div>' : ''}
+                    <div class="absolute top-4 right-4 px-2 py-1 rounded-full text-xs font-bold border ${statusClass}">
+                        ${statusDisplay}
+                    </div>
+                    <div class="text-6xl mb-4 transition-transform group-hover:scale-110" style="color: ${system.color}">
+                        <i class="${system.icon}"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">${system.name}</h3>
+                    <p class="text-gray-600 text-sm mb-2">${system.description}</p>
+                    <div class="text-xs text-gray-500 mb-4">${statusText}</div>
+                    ${system.lastAccessed ? 
+                        `<div class="text-xs text-gray-400">Last used: ${formatDate(system.lastAccessed)}</div>` : 
+                        '<div class="text-xs text-gray-400">Never used</div>'
+                    }
+                `;
+                
+                // Add loading animation for non-edit mode
+                if (!isEditMode) {
+                    card.addEventListener('click', function() {
+                        this.classList.add('loading');
+                        setTimeout(() => this.classList.remove('loading'), 1000);
+                    });
+                }
+                
+                container.appendChild(card);
+            });
+        }
+
+        // Enhanced extra apps rendering
+        function renderExtraApps() {
+            const container = document.getElementById('extra-apps');
+            container.innerHTML = '';
+            
+            const categories = [...new Set(config.extraApps.map(app => app.category || 'Other'))];
+            
+            categories.forEach(category => {
+                const categoryApps = config.extraApps.filter(app => (app.category || 'Other') === category);
+                
+                if (categoryApps.length > 0) {
+                    const categorySection = document.createElement('div');
+                    categorySection.className = 'col-span-full mb-6';
+                    categorySection.innerHTML = `
+                        <h4 class="text-lg font-semibold text-white mb-3">${category}</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="category-${category.toLowerCase()}">
+                        </div>
+                    `;
+                    container.appendChild(categorySection);
+                    
+                    const categoryContainer = categorySection.querySelector(`#category-${category.toLowerCase()}`);
+                    
+                    categoryApps.forEach((app, index) => {
+                        const card = document.createElement('div');
+                        card.className = 'dashboard-card p-6 text-center group';
+                        card.onclick = () => openSystem(app.url, app.name);
+                        card.innerHTML = `
+                            <div class="text-4xl mb-3 transition-transform group-hover:scale-110" style="color: ${app.color}">
+                                <i class="${app.icon}"></i>
+                            </div>
+                            <h4 class="text-lg font-bold mb-1 text-gray-800">${app.name}</h4>
+                            <p class="text-gray-600 text-xs">${app.description}</p>
+                        `;
+                        categoryContainer.appendChild(card);
+                    });
+                }
+            });
+        }
+
+        // System health monitoring
+        function renderHealthMonitor() {
+            const container = document.getElementById('health-monitor');
+            container.innerHTML = '';
+            
+            const healthData = [
+                { name: 'System Load', value: Math.floor(Math.random() * 30 + 10), max: 100, color: 'blue' },
+                { name: 'Memory Usage', value: Math.floor(Math.random() * 40 + 30), max: 100, color: 'green' },
+                { name: 'Response Time', value: Math.floor(Math.random() * 50 + 100), max: 1000, color: 'purple', unit: 'ms' }
+            ];
+            
+            healthData.forEach(item => {
+                const percentage = (item.value / item.max) * 100;
+                const healthCard = document.createElement('div');
+                healthCard.className = 'bg-white/10 rounded-lg p-4';
+                healthCard.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-white font-medium">${item.name}</span>
+                        <span class="text-white text-sm">${item.value}${item.unit || '%'}</span>
+                    </div>
+                    <div class="w-full bg-white/20 rounded-full h-2">
+                        <div class="bg-${item.color}-400 h-2 rounded-full transition-all duration-1000" 
+                             style="width: ${Math.min(percentage, 100)}%"></div>
+                    </div>
+                `;
+                container.appendChild(healthCard);
+            });
+        }
+
+        // Recent activity tracking
+        function renderRecentActivity() {
+            const container = document.getElementById('recent-activity');
+            const recentActivities = config.activity.slice(-5).reverse();
+            
+            if (recentActivities.length === 0) {
+                container.innerHTML = '<div class="text-white/60 text-center py-4">No recent activity</div>';
+                return;
+            }
+            
+            container.innerHTML = recentActivities.map(activity => `
+                <div class="flex items-center space-x-3 p-3 bg-white/10 rounded-lg">
+                    <div class="text-white">
+                        <i class="${activity.icon || 'fas fa-circle'} text-sm"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-white text-sm">${activity.description}</div>
+                        <div class="text-white/60 text-xs">${formatDate(activity.timestamp)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Enhanced system opening with tracking
+        function openSystem(url, name, systemIndex = null) {
+            const timestamp = Date.now();
+            
+            // Track activity
+            addActivity({
+                description: `Opened ${name}`,
+                timestamp: timestamp,
+                icon: 'fas fa-external-link-alt'
+            });
+            
+            // Update last accessed time for main systems
+            if (systemIndex !== null && config.mainSystems[systemIndex]) {
+                config.mainSystems[systemIndex].lastAccessed = timestamp;
+                saveConfig();
+            }
+            
+            // Open system
+            if (url.startsWith('http')) {
+                window.open(url, '_blank', 'noopener,noreferrer');
+            } else {
+                window.open(url, '_blank');
+            }
+            
+            // Refresh display
+            renderDashboard();
+        }
+
+        // Activity tracking
+        function addActivity(activity) {
+            config.activity.push({
+                ...activity,
+                id: Date.now() + Math.random()
+            });
+            
+            // Keep only last 50 activities
+            if (config.activity.length > 50) {
+                config.activity = config.activity.slice(-50);
+            }
+            
+            saveConfig();
+        }
+
+        // Theme management
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark', isDarkMode);
+            
+            const icon = document.getElementById('theme-icon');
+            const text = document.getElementById('theme-text');
+            
+            if (isDarkMode) {
+                icon.className = 'fas fa-sun';
+                text.textContent = 'Light';
+            } else {
+                icon.className = 'fas fa-moon';
+                text.textContent = 'Dark';
+            }
+            
+            addActivity({
+                description: `Switched to ${isDarkMode ? 'dark' : 'light'} theme`,
+                timestamp: Date.now(),
+                icon: 'fas fa-palette'
+            });
+        }
+
+        function applyTheme() {
+            const theme = config.settings.theme;
+            switch (theme) {
+                case 'dark':
+                    document.body.classList.add('dark');
+                    isDarkMode = true;
+                    break;
+                case 'light':
+                    document.body.classList.remove('dark');
+                    isDarkMode = false;
+                    break;
+                default:
+                    document.body.classList.remove('dark');
+                    isDarkMode = false;
+            }
+        }
+
+        // Particle system
+        function initializeParticles() {
+            if (!config.settings.particlesEnabled) return;
+            
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = window.innerWidth > 768 ? 50 : 25;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 4 + 4) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Real-time clock
+        function startClock() {
+            function updateClock() {
+                const now = new Date();
+                const timeElement = document.getElementById('current-time');
+                if (timeElement) {
+                    timeElement.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                }
+            }
+            
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+
+        // Statistics updates
+        function updateStats() {
+            document.getElementById('systems-count').textContent = config.mainSystems.length;
+            document.getElementById('apps-count').textContent = config.extraApps.length;
+            document.getElementById('total-systems').textContent = config.mainSystems.length;
+            document.getElementById('total-apps').textContent = config.extraApps.length;
+        }
+
+        // System health checking
+        function checkSystemHealth() {
+            // Simulate health checking
+            config.mainSystems.forEach(system => {
+                // Random health simulation
+                const healthScore = Math.random();
+                if (healthScore > 0.9) {
+                    system.status = 'online';
+                } else if (healthScore > 0.7) {
+                    system.status = 'maintenance';
+                } else {
+                    system.status = 'offline';
+                }
+            });
+            
+            // Schedule next health check
+            setTimeout(checkSystemHealth, 30000); // Check every 30 seconds
+        }
+
+        // Utility functions
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return Math.floor(diff / 60000) + ' minutes ago';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + ' hours ago';
+            return Math.floor(diff / 86400000) + ' days ago';
+        }
+
+        async function refreshDashboard() {
+            addActivity({
+                description: 'Dashboard refreshed',
+                timestamp: Date.now(),
+                icon: 'fas fa-sync-alt'
+            });
+            
+            // Reload configuration from Firebase
+            await loadConfig();
+            checkSystemHealth();
+            renderDashboard();
+            loadFirebaseUsage();
+            showNotification('Dashboard refreshed from Firebase', 'success');
+        }
+
+        // Notification system
+        function showNotification(message, type = 'success') {
+            const container = document.getElementById('notifications-container');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
+                        <span>${message}</span>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(notification);
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // Keyboard shortcuts
+        function handleKeyboardShortcuts(event) {
+            // Ctrl/Cmd + K to open admin
+            if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+                event.preventDefault();
+                openAdminModal();
+            }
+            
+            // Escape to close modals
+            if (event.key === 'Escape') {
+                closeAdminModal();
+                closeHelpModal();
+            }
+        }
+
+        // Activity tracking
+        function startActivityTracker() {
+            const events = ['click', 'keydown', 'mousemove'];
+            events.forEach(event => {
+                document.addEventListener(event, () => {
+                    lastActivity = Date.now();
+                });
+            });
+            
+            // Check for inactivity
+            setInterval(() => {
+                const inactiveTime = Date.now() - lastActivity;
+                const timeoutMs = config.settings.autoLockTimeout * 60 * 1000;
+                
+                if (inactiveTime > timeoutMs) {
+                    // Auto-lock functionality could be implemented here
+                }
+            }, 60000); // Check every minute
+        }
+
+        // Admin modal functions
+        function openAdminModal() {
+            document.getElementById('adminModal').style.display = 'block';
+            document.getElementById('password-section').style.display = 'block';
+            document.getElementById('settings-content').style.display = 'none';
+            document.getElementById('admin-password').value = '';
+            document.getElementById('admin-password').focus();
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminModal').style.display = 'none';
+        }
+
+        function checkPassword() {
+            const password = document.getElementById('admin-password').value;
+            if (password === config.settings.adminPassword) {
+                document.getElementById('password-section').style.display = 'none';
+                document.getElementById('settings-content').style.display = 'block';
+                loadSettingsUI();
+                addActivity({
+                    description: 'Admin panel accessed',
+                    timestamp: Date.now(),
+                    icon: 'fas fa-shield-alt'
+                });
+            } else {
+                showNotification('Incorrect password!', 'error');
+                document.getElementById('admin-password').value = '';
+            }
+        }
+
+        // Tab management
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.tab === tabName) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(tabName + '-tab').classList.remove('hidden');
+        }
+
+        // Load settings UI
+        function loadSettingsUI() {
+            loadMainSystemsConfig();
+            loadExtraAppsConfig();
+            loadAppearanceSettings();
+            loadAdvancedSettings();
+        }
+
+        // Enhanced main systems configuration
+        function loadMainSystemsConfig() {
+            const container = document.getElementById('main-systems-config');
+            container.innerHTML = '';
+            
+            config.mainSystems.forEach((system, index) => {
+                const div = document.createElement('div');
+                div.className = 'bg-gray-50 rounded-lg p-6 border border-gray-200';
+                div.innerHTML = `
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <span class="text-3xl mr-3" style="color: ${system.color}">
+                                <i class="${system.icon}"></i>
+                            </span>
+                            <h4 class="text-lg font-bold">${system.name}</h4>
+                        </div>
+                        <button onclick="removeMainSystem(${index})" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="block text-sm font-bold mb-2">System Name</label>
+                            <input type="text" class="form-control" value="${system.name}" 
+                                   onchange="config.mainSystems[${index}].name = this.value; updateStats()">
+                        </div>
+                        <div class="form-group">
+                            <label class="block text-sm font-bold mb-2">Icon Class</label>
+                            <div class="flex">
+                                <input type="text" class="form-control flex-1" value="${system.icon}" id="icon-input-${index}"
+                                       onchange="config.mainSystems[${index}].icon = this.value; loadSettingsUI(); renderMainSystems()">
+                                <button type="button" onclick="openIconPicker(document.getElementById('icon-input-${index}'))" 
+                                        class="ml-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                                    <i class="fas fa-icons"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="block text-sm font-bold mb-2">Color</label>
+                            <input type="color" class="form-control" value="${system.color}" 
+                                   onchange="config.mainSystems[${index}].color = this.value; loadSettingsUI(); renderMainSystems()">
+                        </div>
+                        <div class="form-group">
+                            <label class="block text-sm font-bold mb-2">Status</label>
+                            <select class="form-control" onchange="config.mainSystems[${index}].status = this.value; renderMainSystems()">
+                                <option value="online" ${system.status === 'online' ? 'selected' : ''}>Online</option>
+                                <option value="maintenance" ${system.status === 'maintenance' ? 'selected' : ''}>Maintenance</option>
+                                <option value="offline" ${system.status === 'offline' ? 'selected' : ''}>Offline</option>
+                            </select>
+                        </div>
+                        <div class="form-group md:col-span-2">
+                            <label class="block text-sm font-bold mb-2">URL or File Path</label>
+                            <input type="text" class="form-control" value="${system.url}" 
+                                   onchange="config.mainSystems[${index}].url = this.value">
+                        </div>
+                        <div class="form-group md:col-span-2">
+                            <label class="block text-sm font-bold mb-2">Description</label>
+                            <textarea class="form-control" rows="2" 
+                                      onchange="config.mainSystems[${index}].description = this.value; renderMainSystems()">${system.description}</textarea>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Enhanced extra apps configuration
+        function loadExtraAppsConfig() {
+            const container = document.getElementById('extra-apps-config');
+            container.innerHTML = '';
+            
+            config.extraApps.forEach((app, index) => {
+                const div = document.createElement('div');
+                div.className = 'bg-gray-50 rounded-lg p-6 border border-gray-200';
+                div.innerHTML = `
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <span class="text-2xl mr-3" style="color: ${app.color}">
+                                <i class="${app.icon}"></i>
+                            </span>
+                            <h4 class="text-lg font-bold">${app.name}</h4>
+                        </div>
+                        <button onclick="removeExtraApp(${index})" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="block text-sm font-bold mb-2">App Name</label>
+                            <input type="text" class="form-control" value="${app.name}" 
+                                   onchange="config.extraApps[${index}].name = this.value; updateStats()">
+                        </div>
+                        <div class="form-group">
+                            <label class="block text-sm font-bold mb-2">Category</label>
+                            <input type="text" class="form-control" value="${app.category || 'Other'}" 
+                                   onchange="config.extraApps[${index}].category = this.value; renderExtraApps()">
+                        </div>
+                        <div class="form-group">
+                            <label class="block text-sm font-bold mb-2">Icon Class</label>
+                            <div class="flex">
+                                <input type="text" class="form-control flex-1" value="${app.icon}" id="app-icon-input-${index}"
+                                       onchange="config.extraApps[${index}].icon = this.value; loadSettingsUI(); renderExtraApps()">
+                                <button type="button" onclick="openIconPicker(document.getElementById('app-icon-input-${index}'))" 
+                                        class="ml-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                                    <i class="fas fa-icons"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="block text-sm font-bold mb-2">Color</label>
+                            <input type="color" class="form-control" value="${app.color}" 
+                                   onchange="config.extraApps[${index}].color = this.value; loadSettingsUI(); renderExtraApps()">
+                        </div>
+                        <div class="form-group md:col-span-2">
+                            <label class="block text-sm font-bold mb-2">URL</label>
+                            <input type="text" class="form-control" value="${app.url}" 
+                                   onchange="config.extraApps[${index}].url = this.value">
+                        </div>
+                        <div class="form-group md:col-span-2">
+                            <label class="block text-sm font-bold mb-2">Description</label>
+                            <textarea class="form-control" rows="2" 
+                                      onchange="config.extraApps[${index}].description = this.value; renderExtraApps()">${app.description}</textarea>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Appearance settings
+        function loadAppearanceSettings() {
+            document.getElementById('dashboard-theme').value = config.settings.theme;
+            document.getElementById('animation-speed').value = config.settings.animationSpeed;
+            document.getElementById('particles-enabled').value = config.settings.particlesEnabled;
+            document.getElementById('card-layout').value = config.settings.cardLayout;
+        }
+
+        // Advanced settings
+        function loadAdvancedSettings() {
+            document.getElementById('auto-lock-timeout').value = config.settings.autoLockTimeout;
+            document.getElementById('cache-duration').value = config.settings.cacheDuration;
+            document.getElementById('preload-links').value = config.settings.preloadLinks;
+        }
+
+        // Add/Remove functions
+        function addMainSystem() {
+            const newSystem = {
+                name: 'New System',
+                icon: 'fas fa-cog',
+                color: '#007bff',
+                url: 'https://example.com',
+                description: 'New system description',
+                status: 'online',
+                lastAccessed: null
+            };
+            config.mainSystems.push(newSystem);
+            loadMainSystemsConfig();
+            renderMainSystems();
+            updateStats();
+        }
+
+        function removeMainSystem(index) {
+            if (confirm('Are you sure you want to remove this system?')) {
+                config.mainSystems.splice(index, 1);
+                loadMainSystemsConfig();
+                renderMainSystems();
+                updateStats();
+            }
+        }
+
+        function addExtraApp() {
+            const newApp = {
+                name: 'New App',
+                icon: 'fas fa-globe',
+                color: '#007bff',
+                url: 'https://example.com',
+                description: 'New application',
+                category: 'Other'
+            };
+            config.extraApps.push(newApp);
+            loadExtraAppsConfig();
+            renderExtraApps();
+            updateStats();
+        }
+
+        function removeExtraApp(index) {
+            if (confirm('Are you sure you want to remove this app?')) {
+                config.extraApps.splice(index, 1);
+                loadExtraAppsConfig();
+                renderExtraApps();
+                updateStats();
+            }
+        }
+
+        // Save all settings
+        function saveSettings() {
+            // Update settings from form
+            config.settings.theme = document.getElementById('dashboard-theme').value;
+            config.settings.animationSpeed = document.getElementById('animation-speed').value;
+            config.settings.particlesEnabled = document.getElementById('particles-enabled').value === 'true';
+            config.settings.cardLayout = document.getElementById('card-layout').value;
+            config.settings.autoLockTimeout = parseInt(document.getElementById('auto-lock-timeout').value);
+            config.settings.cacheDuration = parseInt(document.getElementById('cache-duration').value);
+            config.settings.preloadLinks = document.getElementById('preload-links').value === 'true';
+            
+            // Update password if changed
+            const newPassword = document.getElementById('new-admin-password').value;
+            if (newPassword) {
+                config.settings.adminPassword = newPassword;
+                document.getElementById('new-admin-password').value = '';
+                showNotification('Admin password updated', 'success');
+            }
+            
+            saveConfig();
+            applyTheme();
+            closeAdminModal();
+            showNotification('All settings saved successfully!', 'success');
+            
+            addActivity({
+                description: 'Settings saved',
+                timestamp: Date.now(),
+                icon: 'fas fa-save'
+            });
+        }
+
+        // Reset to defaults
+        function resetToDefaults() {
+            if (confirm('Are you sure you want to reset all settings to defaults? This cannot be undone.')) {
+                localStorage.removeItem('advancedDashboardConfig');
+                location.reload();
+            }
+        }
+
+        // Help modal
+        function showHelp() {
+            document.getElementById('helpModal').style.display = 'block';
+        }
+
+        function closeHelpModal() {
+            document.getElementById('helpModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const adminModal = document.getElementById('adminModal');
+            const helpModal = document.getElementById('helpModal');
+            const firebaseUsageModal = document.getElementById('firebaseUsageModal');
+            
+            if (event.target === adminModal) {
+                closeAdminModal();
+            }
+            if (event.target === helpModal) {
+                closeHelpModal();
+            }
+            if (event.target === firebaseUsageModal) {
+                closeFirebaseUsageModal();
+            }
+        }
+
+        // Edit Mode and Drag & Drop Functions
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            const editBtn = document.getElementById('edit-mode-btn');
+            
+            if (isEditMode) {
+                editBtn.innerHTML = '<i class="fas fa-save"></i><span>Save Layout</span>';
+                editBtn.className = 'flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 bg-green-500 hover:bg-green-600 text-white';
+                showNotification('🎯 Edit Mode ON - Drag panels to reorder', 'info');
+            } else {
+                editBtn.innerHTML = '<i class="fas fa-edit"></i><span>Edit Mode</span>';
+                editBtn.className = 'flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 bg-white/10 hover:bg-white/20 text-white';
+                showNotification('✅ Layout saved successfully!', 'success');
+                saveConfig(); // Save the new order
+            }
+            
+            // Re-render to apply edit mode styling
+            renderMainSystems();
+            renderExtraApps();
+        }
+        
+        // Drag and Drop Event Handlers
+        function handleDragStart(e) {
+            draggedItem = {
+                index: parseInt(e.target.dataset.index),
+                type: e.target.dataset.type,
+                element: e.target
+            };
+            
+            e.target.style.opacity = '0.5';
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            
+            // Add visual feedback
+            e.currentTarget.style.borderTop = '3px solid #3b82f6';
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.style.borderTop = 'none';
+            
+            if (!draggedItem) return;
+            
+            const dropIndex = parseInt(e.currentTarget.dataset.index);
+            const dropType = e.currentTarget.dataset.type;
+            
+            // Only allow reordering within the same type
+            if (draggedItem.type === dropType && draggedItem.index !== dropIndex) {
+                if (draggedItem.type === 'main') {
+                    // Reorder main systems
+                    const movedItem = config.mainSystems.splice(draggedItem.index, 1)[0];
+                    config.mainSystems.splice(dropIndex, 0, movedItem);
+                    renderMainSystems();
+                } else if (draggedItem.type === 'extra') {
+                    // Reorder extra apps
+                    const movedItem = config.extraApps.splice(draggedItem.index, 1)[0];
+                    config.extraApps.splice(dropIndex, 0, movedItem);
+                    renderExtraApps();
+                }
+                
+                showNotification('📦 Panel reordered!', 'success');
+            }
+        }
+        
+        function handleDragEnd(e) {
+            e.target.style.opacity = '1';
+            
+            // Remove visual feedback from all cards
+            document.querySelectorAll('.dashboard-card').forEach(card => {
+                card.style.borderTop = 'none';
+            });
+            
+            draggedItem = null;
+        }
+
+        // CSS for tab styling
+        const style = document.createElement('style');
+        style.textContent = `
+            .tab-button {
+                padding: 12px 20px;
+                border-bottom: 3px solid transparent;
+                color: #64748b;
+                font-weight: 500;
+                transition: all 0.3s ease;
+                cursor: pointer;
+                border: none;
+                background: none;
+            }
+            .tab-button:hover {
+                color: #3b82f6;
+                background: rgba(59, 130, 246, 0.1);
+                border-radius: 8px 8px 0 0;
+            }
+            .tab-button.active {
+                color: #3b82f6;
+                border-bottom-color: #3b82f6;
+                font-weight: 600;
+            }
+            .tab-content {
+                animation: fadeIn 0.3s ease;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            /* Drag and Drop Styles */
+            .dashboard-card[draggable="true"] {
+                transition: all 0.3s ease !important;
+            }
+            .dashboard-card[draggable="true"]:hover {
+                transform: scale(1.05) !important;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+                z-index: 10 !important;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Background Customization Functions
+        function toggleBackgroundOptions() {
+            const bgType = document.getElementById('background-type').value;
+            
+            // Hide all option panels
+            document.getElementById('solid-color-options').style.display = 'none';
+            document.getElementById('gradient-options').style.display = 'none';
+            document.getElementById('image-options').style.display = 'none';
+            document.getElementById('video-options').style.display = 'none';
+            
+            // Show selected option panel
+            switch(bgType) {
+                case 'solid':
+                    document.getElementById('solid-color-options').style.display = 'block';
+                    break;
+                case 'gradient':
+                    document.getElementById('gradient-options').style.display = 'block';
+                    break;
+                case 'image':
+                    document.getElementById('image-options').style.display = 'block';
+                    break;
+                case 'video':
+                    document.getElementById('video-options').style.display = 'block';
+                    break;
+            }
+        }
+        
+        function setGradient(gradientCSS) {
+            config.settings.background.gradient = gradientCSS;
+            config.settings.background.type = 'gradient';
+            document.getElementById('background-type').value = 'gradient';
+            applyBackground();
+        }
+        
+        function applyBackground() {
+            const bgType = document.getElementById('background-type').value;
+            config.settings.background.type = bgType;
+            
+            // Update config with current values
+            if (bgType === 'solid') {
+                config.settings.background.color = document.getElementById('background-color').value;
+            } else if (bgType === 'image') {
+                config.settings.background.imageUrl = document.getElementById('background-image-url').value;
+                config.settings.background.imagePosition = document.getElementById('bg-position').value;
+                config.settings.background.imageSize = document.getElementById('bg-size').value;
+            } else if (bgType === 'video') {
+                config.settings.background.videoUrl = document.getElementById('background-video-url').value;
+                config.settings.background.videoMuted = document.getElementById('video-muted').checked;
+                config.settings.background.videoLoop = document.getElementById('video-loop').checked;
+            }
+            
+            // Apply the background
+            applyBackgroundStyle();
+            saveConfig();
+            showNotification('🎨 Background updated!', 'success');
+        }
+        
+        function applyBackgroundStyle() {
+            const body = document.body;
+            const bg = config.settings.background;
+            
+            // Remove existing video background
+            const existingVideo = document.getElementById('background-video');
+            if (existingVideo) {
+                existingVideo.remove();
+            }
+            
+            // Reset body styles
+            body.style.background = '';
+            body.style.backgroundImage = '';
+            body.style.backgroundSize = '';
+            body.style.backgroundPosition = '';
+            body.style.backgroundAttachment = '';
+            
+            switch(bg.type) {
+                case 'solid':
+                    body.style.background = bg.color;
+                    break;
+                    
+                case 'gradient':
+                    body.style.background = bg.gradient;
+                    break;
+                    
+                case 'image':
+                    if (bg.imageUrl) {
+                        body.style.backgroundImage = `url(${bg.imageUrl})`;
+                        body.style.backgroundSize = bg.imageSize;
+                        body.style.backgroundPosition = bg.imagePosition;
+                        body.style.backgroundAttachment = 'fixed';
+                        body.style.backgroundRepeat = 'no-repeat';
+                    }
+                    break;
+                    
+                case 'video':
+                    if (bg.videoUrl) {
+                        const video = document.createElement('video');
+                        video.id = 'background-video';
+                        video.style.cssText = `
+                            position: fixed;
+                            top: 0;
+                            left: 0;
+                            width: 100%;
+                            height: 100%;
+                            object-fit: cover;
+                            z-index: -1;
+                            pointer-events: none;
+                        `;
+                        video.src = bg.videoUrl;
+                        video.autoplay = true;
+                        video.muted = bg.videoMuted;
+                        video.loop = bg.videoLoop;
+                        video.playsInline = true;
+                        
+                        document.body.insertBefore(video, document.body.firstChild);
+                        
+                        video.addEventListener('error', () => {
+                            showNotification('❌ Failed to load video background', 'error');
+                            video.remove();
+                        });
+                    }
+                    break;
+                    
+                default:
+                    // Default gradient
+                    body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    break;
+            }
+        }
+        
+        function resetBackground() {
+            config.settings.background = {
+                type: 'gradient',
+                gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: '#1a1a2e',
+                imageUrl: '',
+                imagePosition: 'center',
+                imageSize: 'cover',
+                videoUrl: '',
+                videoMuted: true,
+                videoLoop: true
+            };
+            
+            // Reset form values
+            document.getElementById('background-type').value = 'gradient';
+            document.getElementById('background-color').value = '#1a1a2e';
+            document.getElementById('background-image-url').value = '';
+            document.getElementById('bg-position').value = 'center';
+            document.getElementById('bg-size').value = 'cover';
+            document.getElementById('background-video-url').value = '';
+            document.getElementById('video-muted').checked = true;
+            document.getElementById('video-loop').checked = true;
+            
+            toggleBackgroundOptions();
+            applyBackgroundStyle();
+            saveConfig();
+            showNotification('🔄 Background reset to default!', 'success');
+        }
+
+        // Initialize dashboard when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+            // Apply background on startup
+            setTimeout(() => {
+                if (config.settings.background) {
+                    applyBackgroundStyle();
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>
