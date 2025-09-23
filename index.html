@@ -1147,12 +1147,23 @@
             db = firebase.firestore();
             
             // Test Firebase connection with dashboard config collection
-            db.collection('dashboardConfigs').doc('main').get().then(() => {
+            db.collection('dashboardConfigs').doc('main').get().then(async () => {
                 isFirebaseConnected = true;
                 updateFirebaseStatus(true);
                 console.log("✅ Firebase connected successfully");
                 showNotification('🔥 Firebase Connected!', 'success');
-            }).catch((error) => {
+                
+                // NOW load global config after Firebase is confirmed connected
+                await loadConfig();
+                await loadFirebaseUsage();
+                
+                // Update the UI with loaded global config
+                renderDashboard();
+                updateStats();
+                loadSettingsUI();
+                loadAdvancedSettings();
+                
+            }).catch(async (error) => {
                 isFirebaseConnected = false;
                 if (error.code === 'permission-denied') {
                     updateFirebaseStatus(false, 'Permission Denied');
@@ -1163,6 +1174,9 @@
                     console.error("❌ Firebase connection failed:", error);
                     showNotification('⚠️ Firebase connection failed', 'error');
                 }
+                
+                // Show error - require Firebase for global synchronization
+                showNotification('🚨 Firebase required for global settings sync!', 'error');
             });
             
         } catch (error) {
@@ -1355,13 +1369,12 @@
 
         // Initialize dashboard - called from Firebase module
         function initializeDashboard() {
-            loadConfig();
+            // Config and Firebase usage will be loaded after Firebase connection
             initializeParticles();
             startClock();
             startActivityTracker();
             checkSystemHealth();
             applyTheme();
-            loadFirebaseUsage();
             
             // Initialize cross-system Firebase tracking
             startCrossSystemTracking();
@@ -1422,9 +1435,11 @@
         // Load GLOBAL configuration from Firebase (same for all users)
         async function loadConfig() {
             try {
-                if (!db) {
-                    throw new Error("Firebase not initialized");
+                if (!db || !isFirebaseConnected) {
+                    throw new Error("Firebase not properly connected");
                 }
+                
+                console.log('🔄 Loading global configuration from Firebase...');
                 
                 // Load GLOBAL config - same for all users across all PCs (NO localStorage fallback)
                 const collections = ['globalConfig', 'dashboardConfigs', 'configs'];
@@ -1432,10 +1447,13 @@
                 
                 for (const collectionName of collections) {
                     try {
+                        console.log(`🔍 Checking collection: ${collectionName}`);
                         const doc = await db.collection(collectionName).doc('global-dashboard-config').get();
                         
                         if (doc.exists) {
                             const globalData = doc.data();
+                            console.log('📥 Global config data found:', globalData);
+                            
                             // Use ONLY Firebase global data
                             config = { 
                                 ...globalData,
@@ -1443,9 +1461,11 @@
                                 type: 'dashboard-config'
                             };
                             trackFirebaseUsage('read', collectionName, 'Global config loaded', 'dashboard');
-                            showNotification(`🌐 Global configuration loaded from Firebase - Synchronized across all devices!`, 'success');
+                            showNotification(`🌐 Global configuration loaded from Firebase - Synced across all devices!`, 'success');
                             loaded = true;
                             break;
+                        } else {
+                            console.log(`📭 No document found in ${collectionName}`);
                         }
                     } catch (error) {
                         if (error.code === 'permission-denied') {
@@ -1468,10 +1488,6 @@
                 showNotification('⚠️ Firebase connection required for global settings', 'error');
                 // DO NOT fall back to localStorage - force Firebase usage
             }
-            renderDashboard();
-            updateStats();
-            loadSettingsUI();
-            loadAdvancedSettings();
         }
 
         // Save GLOBAL configuration to Firebase (shared by all users)
@@ -1485,12 +1501,15 @@
                     throw new Error("Firebase not connected");
                 }
                 
+                console.log('💾 Saving global configuration to Firebase...', config);
+                
                 // Save to GLOBAL config - same for all users across all PCs
                 const collections = ['globalConfig', 'dashboardConfigs', 'configs'];
                 let saved = false;
                 
                 for (const collectionName of collections) {
                     try {
+                        console.log(`🔄 Attempting to save to collection: ${collectionName}`);
                         await db.collection(collectionName).doc('global-dashboard-config').set({
                             ...config,
                             lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
