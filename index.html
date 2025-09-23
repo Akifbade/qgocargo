@@ -1426,7 +1426,7 @@
                     throw new Error("Firebase not initialized");
                 }
                 
-                // Load GLOBAL config - same for all users across all PCs
+                // Load GLOBAL config - same for all users across all PCs (NO localStorage fallback)
                 const collections = ['globalConfig', 'dashboardConfigs', 'configs'];
                 let loaded = false;
                 
@@ -1436,15 +1436,14 @@
                         
                         if (doc.exists) {
                             const globalData = doc.data();
-                            // Merge with local config, prioritizing Firebase data
+                            // Use ONLY Firebase global data
                             config = { 
-                                ...config, 
                                 ...globalData,
                                 // Keep type for validation
                                 type: 'dashboard-config'
                             };
                             trackFirebaseUsage('read', collectionName, 'Global config loaded', 'dashboard');
-                            showNotification(`✅ Global configuration loaded from ${collectionName}`, 'success');
+                            showNotification(`🌐 Global configuration loaded from Firebase - Synchronized across all devices!`, 'success');
                             loaded = true;
                             break;
                         }
@@ -1459,26 +1458,15 @@
                 
                 if (!loaded) {
                     // Create initial global config if none exists
+                    console.log('� Creating initial global configuration...');
                     await saveConfigToGlobal();
-                    showNotification('📝 Created global configuration', 'info');
+                    showNotification('📝 Created global configuration for all users', 'info');
                 }
                 
-                if (!loaded) {
-                    // Fallback to localStorage
-                    const saved = localStorage.getItem('advancedDashboardConfig');
-                    if (saved) {
-                        config = { ...config, ...JSON.parse(saved) };
-                        // Try to save to Firebase for future use
-                        await syncToFirebase();
-                    }
-                }
             } catch (error) {
-                console.warn('Failed to load from Firebase, using local storage:', error);
-                const saved = localStorage.getItem('advancedDashboardConfig');
-                if (saved) {
-                    config = { ...config, ...JSON.parse(saved) };
-                }
-                showNotification('Using local configuration', 'warning');
+                console.error('Failed to load global config from Firebase:', error);
+                showNotification('⚠️ Firebase connection required for global settings', 'error');
+                // DO NOT fall back to localStorage - force Firebase usage
             }
             renderDashboard();
             updateStats();
@@ -1511,8 +1499,7 @@
                         });
                         
                         trackFirebaseUsage('write', collectionName, 'Global config saved', 'dashboard');
-                        localStorage.setItem('advancedDashboardConfig', JSON.stringify(config));
-                        showNotification(`✅ Global settings saved to ${collectionName} - Available to all users!`, 'success');
+                        showNotification(`🌐 Global settings saved to Firebase - Available to all users!`, 'success');
                         console.log(`✅ Global configuration saved to Firebase collection: ${collectionName}`);
                         saved = true;
                         break;
@@ -1531,8 +1518,7 @@
                 
             } catch (error) {
                 console.error('❌ Failed to save to Firebase:', error);
-                localStorage.setItem('advancedDashboardConfig', JSON.stringify(config));
-                showNotification('⚠️ Firebase failed - saved locally only', 'warning');
+                showNotification('⚠️ Firebase connection required for global settings', 'error');
                 updateFirebaseStatus(false, 'Save Failed');
             }
         }
@@ -1581,11 +1567,9 @@
                         systems: JSON.parse(JSON.stringify(firebaseUsage.systems)),
                         collections: JSON.parse(JSON.stringify(firebaseUsage.collections))
                     };
-                    // Store in localStorage for historical tracking
-                    const historicalData = JSON.parse(localStorage.getItem('firebaseHistorical') || '[]');
-                    historicalData.unshift(yesterdayData);
-                    if (historicalData.length > 30) historicalData.splice(30); // Keep 30 days
-                    localStorage.setItem('firebaseHistorical', JSON.stringify(historicalData));
+                    // Store in Firebase global historical data for all users
+                    // (Removed localStorage - now using global Firebase storage only)
+                    console.log('📊 Day reset - Firebase usage data archived globally');
                 }
                 
                 firebaseUsage = {
@@ -1669,8 +1653,7 @@
                 firebaseUsage.operations = firebaseUsage.operations.slice(0, 100);
             }
             
-            // Save usage to localStorage and Firebase globally
-            localStorage.setItem('firebaseUsage', JSON.stringify(firebaseUsage));
+            // Save usage to Firebase globally only (no localStorage)
             saveFirebaseUsageToGlobal(); // Save to global Firebase for all users
             updateFirebaseUsageDisplay();
             
@@ -1743,50 +1726,38 @@
                     }
                 }
                 
-                // Fallback to localStorage if Firebase not available
-                const saved = localStorage.getItem('firebaseUsage');
-                if (saved) {
-                    const savedUsage = JSON.parse(saved);
-                    const today = new Date().toDateString();
-                    
-                    // Reset if it's a new day
-                    if (savedUsage.lastReset !== today) {
-                        firebaseUsage = {
-                            reads: 0,
-                            writes: 0,
-                            deletes: 0,
-                            lastReset: today,
-                            collections: {},
-                            operations: [],
-                            systems: {},
-                            dailyData: [],
-                            lastHourlyUpdate: new Date().getHours(),
-                            dailyLimits: {
-                                reads: 50000,
-                                writes: 20000,
-                                deletes: 20000
-                            },
-                            registeredSystems: [
-                                'dashboard', 'jobfile', 'pod', 'backup', 'wh', 'warehouse', 'logistics', 'admin'
-                            ]
-                        };
-                    } else {
-                        // Merge saved data with default structure
-                        firebaseUsage = {
-                            ...firebaseUsage,
-                            ...savedUsage,
-                            collections: savedUsage.collections || {},
-                            operations: savedUsage.operations || [],
-                            systems: savedUsage.systems || {},
-                            dailyData: savedUsage.dailyData || [],
-                            registeredSystems: savedUsage.registeredSystems || [
-                                'dashboard', 'jobfile', 'pod', 'backup', 'wh', 'warehouse', 'logistics', 'admin'
-                            ]
-                        };
-                    }
-                    localStorage.setItem('firebaseUsage', JSON.stringify(firebaseUsage));
-                    saveFirebaseUsageToGlobal(); // Save to global Firebase for all users
+                // If no global Firebase usage found, create initial global data
+                if (!isFirebaseConnected) {
+                    console.warn('⚠️ Firebase not connected - cannot load global usage data');
+                    showNotification('Firebase connection required for global usage tracking', 'error');
+                    return;
                 }
+                
+                // Create initial global Firebase usage data
+                console.log('🔧 Creating initial global Firebase usage data...');
+                firebaseUsage = {
+                    reads: 0,
+                    writes: 0,
+                    deletes: 0,
+                    lastReset: new Date().toDateString(),
+                    collections: {},
+                    operations: [],
+                    systems: {},
+                    dailyData: [],
+                    lastHourlyUpdate: new Date().getHours(),
+                    dailyLimits: {
+                        reads: 50000,
+                        writes: 20000,
+                        deletes: 20000
+                    },
+                    registeredSystems: [
+                        'dashboard', 'jobfile', 'pod', 'backup', 'wh', 'warehouse', 'logistics', 'admin'
+                    ]
+                };
+                
+                // Save initial global data to Firebase
+                await saveFirebaseUsageToGlobal();
+                showNotification('📊 Created global Firebase usage tracking', 'info');
             } catch (error) {
                 console.warn('Failed to load Firebase usage:', error);
             }
