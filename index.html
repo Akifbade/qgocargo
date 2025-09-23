@@ -406,7 +406,7 @@
                     <!-- Firebase Usage Meter on Main Dashboard -->
                 <div class="card-glass p-6 mb-8">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-xl font-bold text-white">📊 Firebase Usage Monitor</h3>
+                        <h3 class="text-xl font-bold text-white">🌐 Global Firebase Usage Monitor</h3>
                         <button onclick="showFirebaseUsage()" class="text-white/70 hover:text-white">
                             <i class="fas fa-external-link-alt"></i>
                         </button>
@@ -555,7 +555,7 @@
             <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h2 class="text-2xl font-bold">Advanced Admin Settings</h2>
+                        <h2 class="text-2xl font-bold">🌐 Global Admin Settings</h2>
                         <p class="text-white/80">Configure your dashboard and applications</p>
                     </div>
                     <button onclick="closeAdminModal()" class="text-white hover:text-gray-200 text-2xl">
@@ -590,6 +590,17 @@
 
                 <!-- Settings Content (Hidden initially) -->
                 <div id="settings-content" style="display: none;">
+                    <!-- Global Settings Notice -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                        <div class="flex items-center">
+                            <i class="fas fa-globe text-blue-600 mr-2"></i>
+                            <div class="text-blue-800">
+                                <strong>Global Settings:</strong> Changes made here affect ALL users across all devices and systems.
+                                <br><span class="text-sm">Settings are synchronized in real-time via Firebase.</span>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Tabs Navigation -->
                     <div class="border-b border-gray-200 mb-6">
                         <nav class="flex space-x-8">
@@ -689,13 +700,13 @@
                                     <div>
                                         <label class="block text-sm font-bold mb-2">Auto-lock Timeout (minutes)</label>
                                         <input type="number" id="auto-lock-timeout" class="form-control" 
-                                               value="30" min="5" max="120">
+                                               value="30" min="5" max="120" onchange="config.settings.autoLockTimeout = parseInt(this.value); saveConfigToGlobal()">
                                     </div>
                                 </div>
                             </div>
                             
                             <div class="bg-gray-50 p-4 rounded-lg">
-                                <h4 class="font-bold mb-3">Firebase Usage Monitor</h4>
+                                <h4 class="font-bold mb-3">🌐 Global Firebase Usage Monitor</h4>
                                 
                                 <!-- Connection Status -->
                                 <div class="mb-4 p-3 rounded-lg" id="admin-firebase-status">
@@ -751,7 +762,7 @@
                                 <div class="space-y-4">
                                     <div>
                                         <label class="block text-sm font-bold mb-2">Background Type</label>
-                                        <select id="background-type" class="form-control" onchange="toggleBackgroundOptions()">
+                                        <select id="background-type" class="form-control" onchange="toggleBackgroundOptions(); saveConfigToGlobal()">
                                             <option value="gradient">Gradient (Default)</option>
                                             <option value="solid">Solid Color</option>
                                             <option value="image">Image URL</option>
@@ -846,11 +857,11 @@
                                     <div>
                                         <label class="block text-sm font-bold mb-2">Cache Duration (hours)</label>
                                         <input type="number" id="cache-duration" class="form-control" 
-                                               value="24" min="1" max="168">
+                                               value="24" min="1" max="168" onchange="config.settings.cacheDuration = parseInt(this.value); saveConfigToGlobal()">
                                     </div>
                                     <div>
                                         <label class="block text-sm font-bold mb-2">Preload External Links</label>
-                                        <select id="preload-links" class="form-control">
+                                        <select id="preload-links" class="form-control" onchange="config.settings.preloadLinks = this.value === 'true'; saveConfigToGlobal()">
                                             <option value="true">Enabled</option>
                                             <option value="false">Disabled</option>
                                         </select>
@@ -921,10 +932,21 @@
     <div id="firebaseUsageModal" class="modal">
         <div class="modal-content" style="max-width: 800px;">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold">Firebase Usage Monitor</h2>
+                <h2 class="text-2xl font-bold">🌐 Global Firebase Usage Monitor</h2>
                 <button onclick="closeFirebaseUsageModal()" class="text-gray-500 hover:text-gray-700">
                     <i class="fas fa-times text-xl"></i>
                 </button>
+            </div>
+            
+            <!-- Global Data Notice -->
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                <div class="flex items-center">
+                    <i class="fas fa-globe text-green-600 mr-2"></i>
+                    <div class="text-green-800">
+                        <strong>Global Data:</strong> This shows Firebase usage across ALL users and systems in real-time.
+                        <br><span class="text-sm">Includes dashboard, jobfile, pod, backup, wh, warehouse, logistics, and admin systems.</span>
+                    </div>
+                </div>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -1397,25 +1419,32 @@
             console.log("🔥 Cross-system Firebase tracking initialized for: " + systems.join(', '));
         }
 
-        // Load configuration from Firebase
+        // Load GLOBAL configuration from Firebase (same for all users)
         async function loadConfig() {
             try {
                 if (!db) {
                     throw new Error("Firebase not initialized");
                 }
                 
-                // Try multiple collection names to find one with permissions
-                const collections = ['dashboardConfigs', 'configs', 'settings', 'jobs'];
+                // Load GLOBAL config - same for all users across all PCs
+                const collections = ['globalConfig', 'dashboardConfigs', 'configs'];
                 let loaded = false;
                 
                 for (const collectionName of collections) {
                     try {
-                        const doc = await db.collection(collectionName).doc('dashboard-main').get();
+                        const doc = await db.collection(collectionName).doc('global-dashboard-config').get();
                         
-                        if (doc.exists && doc.data().type === 'dashboard-config') {
-                            config = { ...config, ...doc.data() };
-                            trackFirebaseUsage('read', collectionName, 'Dashboard config loaded', 'dashboard');
-                            showNotification(`Configuration loaded from ${collectionName}`, 'success');
+                        if (doc.exists) {
+                            const globalData = doc.data();
+                            // Merge with local config, prioritizing Firebase data
+                            config = { 
+                                ...config, 
+                                ...globalData,
+                                // Keep type for validation
+                                type: 'dashboard-config'
+                            };
+                            trackFirebaseUsage('read', collectionName, 'Global config loaded', 'dashboard');
+                            showNotification(`✅ Global configuration loaded from ${collectionName}`, 'success');
                             loaded = true;
                             break;
                         }
@@ -1426,6 +1455,12 @@
                         }
                         throw error;
                     }
+                }
+                
+                if (!loaded) {
+                    // Create initial global config if none exists
+                    await saveConfigToGlobal();
+                    showNotification('📝 Created global configuration', 'info');
                 }
                 
                 if (!loaded) {
@@ -1447,31 +1482,38 @@
             }
             renderDashboard();
             updateStats();
+            loadSettingsUI();
+            loadAdvancedSettings();
         }
 
-        // Enhanced save configuration to Firebase DIRECTLY
+        // Save GLOBAL configuration to Firebase (shared by all users)
         async function saveConfig() {
+            await saveConfigToGlobal();
+        }
+        
+        async function saveConfigToGlobal() {
             try {
                 if (!db || !isFirebaseConnected) {
                     throw new Error("Firebase not connected");
                 }
                 
-                // Try multiple collection names in case some have permissions
-                const collections = ['dashboardConfigs', 'configs', 'settings', 'jobs'];
+                // Save to GLOBAL config - same for all users across all PCs
+                const collections = ['globalConfig', 'dashboardConfigs', 'configs'];
                 let saved = false;
                 
                 for (const collectionName of collections) {
                     try {
-                        await db.collection(collectionName).doc('dashboard-main').set({
+                        await db.collection(collectionName).doc('global-dashboard-config').set({
                             ...config,
                             lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-                            type: 'dashboard-config'
+                            updatedBy: navigator.userAgent.split(')')[0] + ')', // Browser info
+                            type: 'global-dashboard-config'
                         });
                         
-                        trackFirebaseUsage('write', collectionName, 'Dashboard config saved', 'dashboard');
+                        trackFirebaseUsage('write', collectionName, 'Global config saved', 'dashboard');
                         localStorage.setItem('advancedDashboardConfig', JSON.stringify(config));
-                        showNotification(`✅ Saved to Firebase (${collectionName})`, 'success');
-                        console.log(`✅ Configuration saved to Firebase collection: ${collectionName}`);
+                        showNotification(`✅ Global settings saved to ${collectionName} - Available to all users!`, 'success');
+                        console.log(`✅ Global configuration saved to Firebase collection: ${collectionName}`);
                         saved = true;
                         break;
                     } catch (error) {
@@ -1627,8 +1669,9 @@
                 firebaseUsage.operations = firebaseUsage.operations.slice(0, 100);
             }
             
-            // Save usage to localStorage
+            // Save usage to localStorage and Firebase globally
             localStorage.setItem('firebaseUsage', JSON.stringify(firebaseUsage));
+            saveFirebaseUsageToGlobal(); // Save to global Firebase for all users
             updateFirebaseUsageDisplay();
             
             // Check for approaching limits and warn
@@ -1665,9 +1708,42 @@
             }
         }
 
-        // Load Firebase usage from localStorage with enhanced structure
-        function loadFirebaseUsage() {
+        // Load GLOBAL Firebase usage from Firebase (shared by all users)
+        async function loadFirebaseUsage() {
             try {
+                // Try to load GLOBAL Firebase usage from Firebase first
+                if (db && isFirebaseConnected) {
+                    const collections = ['globalUsage', 'firebaseUsage', 'usage'];
+                    
+                    for (const collectionName of collections) {
+                        try {
+                            const doc = await db.collection(collectionName).doc('global-firebase-usage').get();
+                            
+                            if (doc.exists) {
+                                const globalUsage = doc.data();
+                                firebaseUsage = {
+                                    ...firebaseUsage,
+                                    ...globalUsage,
+                                    collections: globalUsage.collections || {},
+                                    operations: globalUsage.operations || [],
+                                    systems: globalUsage.systems || {},
+                                    dailyData: globalUsage.dailyData || [],
+                                    registeredSystems: globalUsage.registeredSystems || [
+                                        'dashboard', 'jobfile', 'pod', 'backup', 'wh', 'warehouse', 'logistics', 'admin'
+                                    ]
+                                };
+                                
+                                console.log('✅ Global Firebase usage loaded from:', collectionName);
+                                updateFirebaseUsageDisplay();
+                                return;
+                            }
+                        } catch (error) {
+                            console.log(`⚠️ No permission for ${collectionName}, trying next...`);
+                        }
+                    }
+                }
+                
+                // Fallback to localStorage if Firebase not available
                 const saved = localStorage.getItem('firebaseUsage');
                 if (saved) {
                     const savedUsage = JSON.parse(saved);
@@ -1682,11 +1758,17 @@
                             lastReset: today,
                             collections: {},
                             operations: [],
+                            systems: {},
+                            dailyData: [],
+                            lastHourlyUpdate: new Date().getHours(),
                             dailyLimits: {
                                 reads: 50000,
                                 writes: 20000,
                                 deletes: 20000
-                            }
+                            },
+                            registeredSystems: [
+                                'dashboard', 'jobfile', 'pod', 'backup', 'wh', 'warehouse', 'logistics', 'admin'
+                            ]
                         };
                     } else {
                         // Merge saved data with default structure
@@ -1695,19 +1777,47 @@
                             ...savedUsage,
                             collections: savedUsage.collections || {},
                             operations: savedUsage.operations || [],
-                            dailyLimits: savedUsage.dailyLimits || {
-                                reads: 50000,
-                                writes: 20000,
-                                deletes: 20000
-                            }
+                            systems: savedUsage.systems || {},
+                            dailyData: savedUsage.dailyData || [],
+                            registeredSystems: savedUsage.registeredSystems || [
+                                'dashboard', 'jobfile', 'pod', 'backup', 'wh', 'warehouse', 'logistics', 'admin'
+                            ]
                         };
                     }
                     localStorage.setItem('firebaseUsage', JSON.stringify(firebaseUsage));
+                    saveFirebaseUsageToGlobal(); // Save to global Firebase for all users
                 }
             } catch (error) {
                 console.warn('Failed to load Firebase usage:', error);
             }
             updateFirebaseUsageDisplay();
+        }
+        
+        // Save GLOBAL Firebase usage to Firebase
+        async function saveFirebaseUsageToGlobal() {
+            if (!db || !isFirebaseConnected) return;
+            
+            try {
+                const collections = ['globalUsage', 'firebaseUsage', 'usage'];
+                
+                for (const collectionName of collections) {
+                    try {
+                        await db.collection(collectionName).doc('global-firebase-usage').set({
+                            ...firebaseUsage,
+                            lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+                            type: 'global-firebase-usage'
+                        });
+                        
+                        console.log('✅ Global Firebase usage saved to:', collectionName);
+                        showNotification('🌐 Global Firebase usage updated - Visible to all users!', 'success');
+                        break;
+                    } catch (error) {
+                        console.log(`⚠️ No permission for ${collectionName}, trying next...`);
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to save global Firebase usage:', error);
+            }
         }
 
         // Enhanced Firebase usage display with DELETE tracking
@@ -2088,7 +2198,7 @@ ${rulesCode}
         // Refresh Firebase usage
         function refreshFirebaseUsage() {
             loadFirebaseUsage();
-            showNotification('Firebase usage refreshed', 'success');
+            showNotification('🌐 Global Firebase usage refreshed', 'success');
         }
 
         // Render the dashboard with animations
@@ -2322,6 +2432,10 @@ ${rulesCode}
                 timestamp: Date.now(),
                 icon: 'fas fa-palette'
             });
+            
+            // Save theme preference globally
+            config.settings.darkMode = isDarkMode;
+            saveConfigToGlobal();
         }
 
         function applyTheme() {
@@ -2569,13 +2683,13 @@ ${rulesCode}
                         <div class="form-group">
                             <label class="block text-sm font-bold mb-2">System Name</label>
                             <input type="text" class="form-control" value="${system.name}" 
-                                   onchange="config.mainSystems[${index}].name = this.value; updateStats()">
+                                   onchange="config.mainSystems[${index}].name = this.value; updateStats(); saveConfigToGlobal()">
                         </div>
                         <div class="form-group">
                             <label class="block text-sm font-bold mb-2">Icon Class</label>
                             <div class="flex">
                                 <input type="text" class="form-control flex-1" value="${system.icon}" id="icon-input-${index}"
-                                       onchange="config.mainSystems[${index}].icon = this.value; loadSettingsUI(); renderMainSystems()">
+                                       onchange="config.mainSystems[${index}].icon = this.value; loadSettingsUI(); renderMainSystems(); saveConfigToGlobal()">
                                 <button type="button" onclick="openIconPicker(document.getElementById('icon-input-${index}'))" 
                                         class="ml-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
                                     <i class="fas fa-icons"></i>
@@ -2585,11 +2699,11 @@ ${rulesCode}
                         <div class="form-group">
                             <label class="block text-sm font-bold mb-2">Color</label>
                             <input type="color" class="form-control" value="${system.color}" 
-                                   onchange="config.mainSystems[${index}].color = this.value; loadSettingsUI(); renderMainSystems()">
+                                   onchange="config.mainSystems[${index}].color = this.value; loadSettingsUI(); renderMainSystems(); saveConfigToGlobal()">
                         </div>
                         <div class="form-group">
                             <label class="block text-sm font-bold mb-2">Status</label>
-                            <select class="form-control" onchange="config.mainSystems[${index}].status = this.value; renderMainSystems()">
+                            <select class="form-control" onchange="config.mainSystems[${index}].status = this.value; renderMainSystems(); saveConfigToGlobal()">
                                 <option value="online" ${system.status === 'online' ? 'selected' : ''}>Online</option>
                                 <option value="maintenance" ${system.status === 'maintenance' ? 'selected' : ''}>Maintenance</option>
                                 <option value="offline" ${system.status === 'offline' ? 'selected' : ''}>Offline</option>
@@ -2598,12 +2712,12 @@ ${rulesCode}
                         <div class="form-group md:col-span-2">
                             <label class="block text-sm font-bold mb-2">URL or File Path</label>
                             <input type="text" class="form-control" value="${system.url}" 
-                                   onchange="config.mainSystems[${index}].url = this.value">
+                                   onchange="config.mainSystems[${index}].url = this.value; saveConfigToGlobal()">
                         </div>
                         <div class="form-group md:col-span-2">
                             <label class="block text-sm font-bold mb-2">Description</label>
                             <textarea class="form-control" rows="2" 
-                                      onchange="config.mainSystems[${index}].description = this.value; renderMainSystems()">${system.description}</textarea>
+                                      onchange="config.mainSystems[${index}].description = this.value; renderMainSystems(); saveConfigToGlobal()">${system.description}</textarea>
                         </div>
                     </div>
                 `;
@@ -2635,18 +2749,18 @@ ${rulesCode}
                         <div class="form-group">
                             <label class="block text-sm font-bold mb-2">App Name</label>
                             <input type="text" class="form-control" value="${app.name}" 
-                                   onchange="config.extraApps[${index}].name = this.value; updateStats()">
+                                   onchange="config.extraApps[${index}].name = this.value; updateStats(); saveConfigToGlobal()">
                         </div>
                         <div class="form-group">
                             <label class="block text-sm font-bold mb-2">Category</label>
                             <input type="text" class="form-control" value="${app.category || 'Other'}" 
-                                   onchange="config.extraApps[${index}].category = this.value; renderExtraApps()">
+                                   onchange="config.extraApps[${index}].category = this.value; renderExtraApps(); saveConfigToGlobal()">
                         </div>
                         <div class="form-group">
                             <label class="block text-sm font-bold mb-2">Icon Class</label>
                             <div class="flex">
                                 <input type="text" class="form-control flex-1" value="${app.icon}" id="app-icon-input-${index}"
-                                       onchange="config.extraApps[${index}].icon = this.value; loadSettingsUI(); renderExtraApps()">
+                                       onchange="config.extraApps[${index}].icon = this.value; loadSettingsUI(); renderExtraApps(); saveConfigToGlobal()">
                                 <button type="button" onclick="openIconPicker(document.getElementById('app-icon-input-${index}'))" 
                                         class="ml-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
                                     <i class="fas fa-icons"></i>
@@ -2656,17 +2770,17 @@ ${rulesCode}
                         <div class="form-group">
                             <label class="block text-sm font-bold mb-2">Color</label>
                             <input type="color" class="form-control" value="${app.color}" 
-                                   onchange="config.extraApps[${index}].color = this.value; loadSettingsUI(); renderExtraApps()">
+                                   onchange="config.extraApps[${index}].color = this.value; loadSettingsUI(); renderExtraApps(); saveConfigToGlobal()">
                         </div>
                         <div class="form-group md:col-span-2">
                             <label class="block text-sm font-bold mb-2">URL</label>
                             <input type="text" class="form-control" value="${app.url}" 
-                                   onchange="config.extraApps[${index}].url = this.value">
+                                   onchange="config.extraApps[${index}].url = this.value; saveConfigToGlobal()">
                         </div>
                         <div class="form-group md:col-span-2">
                             <label class="block text-sm font-bold mb-2">Description</label>
                             <textarea class="form-control" rows="2" 
-                                      onchange="config.extraApps[${index}].description = this.value; renderExtraApps()">${app.description}</textarea>
+                                      onchange="config.extraApps[${index}].description = this.value; renderExtraApps(); saveConfigToGlobal()">${app.description}</textarea>
                         </div>
                     </div>
                 `;
@@ -2758,10 +2872,10 @@ ${rulesCode}
                 showNotification('Admin password updated', 'success');
             }
             
-            saveConfig();
+            saveConfigToGlobal();
             applyTheme();
             closeAdminModal();
-            showNotification('All settings saved successfully!', 'success');
+            showNotification('🌐 All settings saved globally!', 'success');
             
             addActivity({
                 description: 'Settings saved',
@@ -2816,8 +2930,8 @@ ${rulesCode}
             } else {
                 editBtn.innerHTML = '<i class="fas fa-edit"></i><span>Edit Mode</span>';
                 editBtn.className = 'flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 bg-white/10 hover:bg-white/20 text-white';
-                showNotification('✅ Layout saved successfully!', 'success');
-                saveConfig(); // Save the new order
+                showNotification('✅ Layout saved globally!', 'success');
+                saveConfigToGlobal(); // Save the new order globally
             }
             
             // Re-render to apply edit mode styling
@@ -2979,8 +3093,8 @@ ${rulesCode}
             
             // Apply the background
             applyBackgroundStyle();
-            saveConfig();
-            showNotification('🎨 Background updated!', 'success');
+            saveConfigToGlobal();
+            showNotification('� Background updated globally!', 'success');
         }
         
         function applyBackgroundStyle() {
