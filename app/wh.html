@@ -19,16 +19,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-        import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging.js';
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp, getDocs } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
-
-        window.FirebaseApp = { initializeApp, getMessaging, getToken, onMessage, getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp, getDocs };
-    </script>
-
     <!-- Custom Google Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -138,9 +128,9 @@
             <!-- Login Form -->
             <div id="login-card" class="card">
                  <div class="text-3xl font-bold text-blue-700 mb-6 text-center flex items-center justify-center gap-2">
-                    <i data-feather="truck"></i>
-                    <span>Qgo Cargo</span>
-                </div>
+                     <i data-feather="truck"></i>
+                     <span>Qgo Cargo</span>
+                 </div>
                 <h2 class="text-xl font-bold text-center mb-6 text-gray-700">Login to your Account</h2>
                 <form id="login-form" class="space-y-4">
                     <div>
@@ -161,9 +151,9 @@
             <!-- Registration Form -->
             <div id="register-card" class="card hidden">
                  <div class="text-3xl font-bold text-blue-700 mb-6 text-center flex items-center justify-center gap-2">
-                    <i data-feather="truck"></i>
-                    <span>Qgo Cargo</span>
-                </div>
+                     <i data-feather="truck"></i>
+                     <span>Qgo Cargo</span>
+                 </div>
                 <h2 class="text-xl font-bold text-center mb-6 text-gray-700">Create an Account</h2>
                 <form id="register-form" class="space-y-4">
                     <div>
@@ -197,7 +187,7 @@
             <!-- Sidebar Navigation -->
             <aside id="sidebar" class="sidebar bg-white w-64 min-h-full p-4 shadow-lg fixed lg:relative transform -translate-x-full lg:translate-x-0 z-40">
                 <div class="text-3xl font-bold text-blue-700 mb-8 flex items-center gap-2">
-                    <img src="https://qgocargo.com/logo.png" alt="Qgo Cargo Logo" class="h-10 w-10">
+                    <img src="https://qgocargo.com/logo.png" alt="Qgo Cargo Logo" class="h-10 w-10" onerror="this.style.display='none'">
                     <span>Qgo Cargo</span>
                 </div>
                 <nav id="app-nav">
@@ -254,10 +244,11 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, deleteDoc, query, where, getDocs, updateDoc, writeBatch, getDoc, serverTimestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-messaging.js";
         
         // --- TEMPLATES --- //
         const AnalyticsTemplate = `
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6">
                 <div class="card flex items-center">
                     <div class="bg-blue-100 p-3 sm:p-4 rounded-full mr-4"><i data-feather="users" class="text-blue-500"></i></div>
                     <div>
@@ -266,24 +257,31 @@
                     </div>
                 </div>
                 <div class="card flex items-center">
-                    <div class="bg-green-100 p-3 sm:p-4 rounded-full mr-4"><i data-feather="archive" class="text-green-500"></i></div>
+                    <div class="bg-yellow-100 p-3 sm:p-4 rounded-full mr-4"><i data-feather="loader" class="text-yellow-500"></i></div>
                     <div>
-                        <p class="text-gray-500 text-sm">Inventory Items</p>
-                        <p id="total-inventory" class="text-xl sm:text-2xl font-bold">0</p>
+                        <p class="text-gray-500 text-sm">Ongoing Jobs</p>
+                        <p id="ongoing-jobs" class="text-xl sm:text-2xl font-bold">0</p>
                     </div>
                 </div>
                 <div class="card flex items-center">
-                    <div class="bg-yellow-100 p-3 sm:p-4 rounded-full mr-4"><i data-feather="calendar" class="text-yellow-500"></i></div>
+                    <div class="bg-green-100 p-3 sm:p-4 rounded-full mr-4"><i data-feather="check-square" class="text-green-500"></i></div>
                     <div>
-                        <p class="text-gray-500 text-sm">Schedules Today</p>
-                        <p id="schedules-today" class="text-xl sm:text-2xl font-bold">0</p>
+                        <p class="text-gray-500 text-sm">Finished Today</p>
+                        <p id="jobs-finished-today" class="text-xl sm:text-2xl font-bold">0</p>
                     </div>
                 </div>
                  <div class="card flex items-center">
                     <div class="bg-purple-100 p-3 sm:p-4 rounded-full mr-4"><i data-feather="check-circle" class="text-purple-500"></i></div>
                     <div>
-                        <p class="text-gray-500 text-sm">Jobs Finished</p>
+                        <p class="text-gray-500 text-sm">Finished This Month</p>
                         <p id="jobs-finished-this-month" class="text-xl sm:text-2xl font-bold">0</p>
+                    </div>
+                </div>
+                 <div class="card flex items-center">
+                    <div class="bg-red-100 p-3 sm:p-4 rounded-full mr-4"><i data-feather="alert-octagon" class="text-red-500"></i></div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Damaged Items</p>
+                        <p id="damaged-items-count" class="text-xl sm:text-2xl font-bold">0</p>
                     </div>
                 </div>
             </div>
@@ -293,7 +291,7 @@
             </div>
             <div class="mt-6">
                 <div class="card">
-                    <h3 class="font-semibold mb-4">Crew Performance</h3>
+                    <h3 class="font-semibold mb-4">Crew Performance (Jobs This Month)</h3>
                     <canvas id="crewPerformanceChart"></canvas>
                 </div>
             </div>
@@ -351,7 +349,7 @@
             <div class="space-y-8">
                 <div class="card">
                     <h2 class="text-xl font-semibold mb-4">Inventory Report</h2>
-                    <div class="flex items-center gap-4">
+                    <div class="flex flex-wrap items-center gap-4">
                         <button id="print-inventory-report" class="btn btn-secondary"><i data-feather="printer"></i>Print</button>
                         <button id="pdf-inventory-report" class="btn btn-secondary"><i data-feather="file"></i>Download PDF</button>
                         <button id="excel-inventory-report" class="btn btn-secondary"><i data-feather="grid"></i>Export to Excel</button>
@@ -359,19 +357,41 @@
                 </div>
                 <div class="card">
                     <h2 class="text-xl font-semibold mb-4">Job Details Report</h2>
-                    <div class="flex flex-col sm:flex-row items-center gap-4 mb-4">
+                    <div class="flex flex-col sm:flex-row items-center gap-4 mb-4 flex-wrap">
                          <label class="font-medium">From:</label>
                          <input type="date" id="report-start-date" class="border rounded-md p-2">
                          <label class="font-medium">To:</label>
                          <input type="date" id="report-end-date" class="border rounded-md p-2">
                          <button id="generate-job-report" class="btn btn-primary">Generate Report</button>
                     </div>
-                    <div id="job-report-actions" class="hidden items-center gap-4 mt-4">
+                    <div id="job-report-actions" class="hidden items-center gap-4 mt-4 flex-wrap">
                         <button id="print-job-report" class="btn btn-secondary"><i data-feather="printer"></i>Print</button>
                         <button id="pdf-job-report" class="btn btn-secondary"><i data-feather="file"></i>Download PDF</button>
                         <button id="excel-job-report" class="btn btn-secondary"><i data-feather="grid"></i>Export to Excel</button>
                     </div>
                     <div id="job-report-container" class="mt-6"></div>
+                </div>
+                <div class="card">
+                    <h2 class="text-xl font-semibold mb-4">Material Usage Report</h2>
+                    <div class="flex flex-col sm:flex-row items-center gap-4 mb-4 flex-wrap">
+                         <label class="font-medium">Select Material:</label>
+                         <select id="material-usage-select" class="w-full sm:w-auto border rounded-md p-2">
+                            <option value="">-- Select an Item --</option>
+                         </select>
+                         <button id="generate-material-report-btn" class="btn btn-primary">Generate Report</button>
+                    </div>
+                    <div id="material-usage-report-container" class="mt-6"></div>
+                </div>
+                <div class="card">
+                    <h2 class="text-xl font-semibold mb-4">Damaged Items Report</h2>
+                    <div class="flex flex-col sm:flex-row items-center gap-4 mb-4 flex-wrap">
+                         <label class="font-medium">From:</label>
+                         <input type="date" id="damage-report-start-date" class="border rounded-md p-2">
+                         <label class="font-medium">To:</label>
+                         <input type="date" id="damage-report-end-date" class="border rounded-md p-2">
+                         <button id="generate-damage-report-btn" class="btn btn-primary">Generate Report</button>
+                    </div>
+                    <div id="damage-report-container" class="mt-6"></div>
                 </div>
             </div>
         `;
@@ -451,13 +471,13 @@
         
         // --- IMPORTANT FIREBASE CONFIGURATION --- //
         const firebaseConfig = {
-            apiKey: "AIzaSyD6tMBDcZSR32ZwWIwc_ff2zHp26tSesMw",
-            authDomain: "qgowhm.firebaseapp.com",
-            projectId: "qgowhm",
-            storageBucket: "qgowhm.firebasestorage.app",
-            messagingSenderId: "331703931357",
-            appId: "1:331703931357:web:b25ed7f60db706b1072634",
-            measurementId: "G-5VXETKM4H8"
+            apiKey: "AIzaSyD6tMBDcZSR32ZwWIwc_ff2zHp26tSesMw",
+            authDomain: "qgowhm.firebaseapp.com",
+            projectId: "qgowhm",
+            storageBucket: "qgowhm.appspot.com", // FIX: Corrected to standard format
+            messagingSenderId: "331703931357",
+            appId: "1:331703931357:web:b25ed7f60db706b1072634",
+            measurementId: "G-5VXETKM4H8"
         };
         // --- END OF CONFIGURATION --- //
 
@@ -476,20 +496,15 @@
                         type: 'admin_broadcast'
                     });
                     
-                    // Show local notification for admin
-                    if (Notification.permission === 'granted') {
-                        new Notification(title, { 
-                            body: message, 
-                            icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"%3E%3Crect width="192" height="192" fill="%233182ce" rx="24"/%3E%3Cpath d="M48 64h96v8H48v-8zm0 24h96v8H48v-8zm0 24h64v8H48v-8z" fill="white"/%3E%3Ccircle cx="80" cy="120" r="16" fill="white"/%3E%3Ccircle cx="112" cy="120" r="16" fill="white"/%3E%3Crect x="72" y="136" width="48" height="8" fill="white" rx="4"/%3E%3C/svg%3E' 
-                        });
-                    }
+                    showModal(`<div class="p-4 text-center"><p class="text-lg font-medium">Notification sent successfully!</p><div class="flex justify-center mt-6"><button class="close-modal-btn btn btn-primary">OK</button></div></div>`);
+                    feather.replace();
                     
-                    alert('Notification sent to all users!');
                     document.getElementById('notification-title').value = '';
                     document.getElementById('notification-message').value = '';
                 } catch (error) {
                     console.error('Error sending notification:', error);
-                    alert('Error sending notification. Please try again.');
+                    showModal(`<div class="p-4 text-center"><p class="text-lg font-medium text-red-600">Error sending notification. Please try again.</p><div class="flex justify-center mt-6"><button class="close-modal-btn btn btn-primary">OK</button></div></div>`);
+                    feather.replace();
                 }
             }
         }
@@ -497,31 +512,9 @@
         // Initialize Firebase Cloud Messaging
         async function initFCM() {
             try {
-                // Request notification permission
                 const permission = await Notification.requestPermission();
                 if (permission === 'granted') {
                     console.log('Notification permission granted');
-                    
-                    // Try to get FCM token (only works with proper VAPID key setup)
-                    try {
-                        const token = await getToken(messaging, {
-                            vapidKey: 'BNzs8b3MdxMeIdB64LIXNYlcvOuvtXzg5fMPrNQN_hR2OQfGLBzAJI-LNt1VaDEPhqtyWXbDIQ_P0zxjffI86Ls'
-                        });
-                        
-                        if (token) {
-                            console.log('FCM Token:', token);
-                            // Store token in user's document for admin to use
-                            if (auth.currentUser) {
-                                await setDoc(doc(db, `${dataPath}/userTokens`, auth.currentUser.uid), {
-                                    fcmToken: token,
-                                    userId: auth.currentUser.uid,
-                                    timestamp: serverTimestamp()
-                                });
-                            }
-                        }
-                    } catch (fcmError) {
-                        console.warn('FCM not configured, using real-time notifications only:', fcmError);
-                    }
                 }
             } catch (error) {
                 console.error('FCM initialization error:', error);
@@ -538,20 +531,12 @@
         }
 
         async function initFirebase() {
-            // Register service worker for PWA
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('sw.js')
-                    .then(registration => console.log('SW registered successfully'))
-                    .catch(error => console.log('SW registration failed:', error));
-            }
-            
             try {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
                 messaging = getMessaging(app);
                 
-                // Initialize FCM
                 initFCM();
                 
                 onAuthStateChanged(auth, async (user) => {
@@ -566,38 +551,50 @@
                         const regRef = doc(db, 'registrations', user.uid);
                         const regDoc = await getDoc(regRef);
 
-                        if (regDoc.exists() && regDoc.data().status === 'approved') {
-                            const adminUID = regDoc.data().adminUID;
-                            userId = adminUID;
+                        if (regDoc.exists()) { // User is in the registration system
+                            const regData = regDoc.data();
+                            if (regData.status === 'approved') {
+                                if (!regData.adminUID) {
+                                    console.error("Approved user is missing adminUID in registrations document:", user.uid);
+                                    document.getElementById('login-error').textContent = 'Account configuration error. Please contact admin.';
+                                    await signOut(auth);
+                                } else {
+                                    // This is an approved, regular user.
+                                    userId = regData.adminUID;
+                                    dataPath = `users/${userId}`;
+                                    currentUserIsAdmin = false;
+                                    document.getElementById('user-info').textContent = user.email;
+                                    authContainer.classList.add('hidden');
+                                    appContainer.classList.remove('hidden');
+                                    attachDataListeners();
+                                    switchTab('analytics');
+                                }
+                            } else { // 'pending' or other status
+                                // This is a pending user. Show the message and sign out.
+                                loginCard.classList.add('hidden');
+                                registerCard.classList.add('hidden');
+                                pendingCard.classList.remove('hidden');
+                                feather.replace();
+                                await signOut(auth); // This will re-trigger onAuthStateChanged with user=null
+                            }
+                        } else {
+                            // User is NOT in the registration system. Assume they are an admin or a new admin.
+                            const userRootRef = doc(db, `users/${user.uid}`);
+                            const userRootDoc = await getDoc(userRootRef);
+                            if(!userRootDoc.exists()){
+                                await setDoc(userRootRef, { isAdmin: true, createdAt: serverTimestamp() });
+                            }
+                            // Proceed as admin
+                            userId = user.uid;
                             dataPath = `users/${userId}`;
-                            currentUserIsAdmin = false;
-                            document.getElementById('user-info').textContent = user.email;
+                            currentUserIsAdmin = true;
+                            
+                            document.getElementById('user-info').textContent = user.email + ' (Admin)';
                             authContainer.classList.add('hidden');
                             appContainer.classList.remove('hidden');
                             attachDataListeners();
+                            attachPendingUsersListener();
                             switchTab('analytics');
-                        } else if (regDoc.exists() && regDoc.data().status === 'pending') {
-                            loginCard.classList.add('hidden');
-                            registerCard.classList.add('hidden');
-                            pendingCard.classList.remove('hidden');
-                            feather.replace();
-                            await signOut(auth);
-                        } else {
-                           const userRootRef = doc(db, `users/${user.uid}`);
-                           const userRootDoc = await getDoc(userRootRef);
-                           if(!userRootDoc.exists()){
-                               await setDoc(userRootRef, { isAdmin: true, createdAt: serverTimestamp() });
-                           }
-                           userId = user.uid;
-                           dataPath = `users/${userId}`;
-                           currentUserIsAdmin = true;
-                           
-                           document.getElementById('user-info').textContent = user.email + ' (Admin)';
-                           authContainer.classList.add('hidden');
-                           appContainer.classList.remove('hidden');
-                           attachDataListeners();
-                           attachPendingUsersListener();
-                           switchTab('analytics'); 
                         }
                     } else {
                         // No user logged in
@@ -652,19 +649,6 @@
                 query(collection(db, notificationsCollectionPath), orderBy('timestamp', 'desc')),
                 (snapshot) => {
                     const newNotifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    
-                    // Show notification for new messages (not from current user)
-                    newNotifications.forEach(notification => {
-                        if (notification.sentBy !== auth.currentUser?.uid) {
-                            if (Notification.permission === 'granted') {
-                                new Notification(notification.title, {
-                                    body: notification.message,
-                                    icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"%3E%3Crect width="192" height="192" fill="%233182ce" rx="24"/%3E%3Cpath d="M48 64h96v8H48v-8zm0 24h96v8H48v-8zm0 24h64v8H48v-8z" fill="white"/%3E%3Ccircle cx="80" cy="120" r="16" fill="white"/%3E%3Ccircle cx="112" cy="120" r="16" fill="white"/%3E%3Crect x="72" y="136" width="48" height="8" fill="white" rx="4"/%3E%3C/svg%3E',
-                                    tag: notification.id // Prevent duplicate notifications
-                                });
-                            }
-                        }
-                    });
                     
                     // Update notifications display in UI
                     renderNotifications(newNotifications);
@@ -830,11 +814,11 @@
             if(!rolesContainer) return;
             rolesContainer.innerHTML = (window.appState.roles || []).map(role => `
                  <div class="flex justify-between items-center p-3 border rounded-md">
-                    <p class="font-semibold">${role.name}</p>
-                    <div class="flex items-center gap-2">
-                        <button class="edit-role-btn text-blue-500 hover:text-blue-700 p-2" data-id="${role.id}"><i data-feather="edit-2"></i></button>
-                        <button class="delete-role-btn text-red-500 hover:text-red-700 p-2" data-id="${role.id}"><i data-feather="trash-2"></i></button>
-                    </div>
+                     <p class="font-semibold">${role.name}</p>
+                     <div class="flex items-center gap-2">
+                         <button class="edit-role-btn text-blue-500 hover:text-blue-700 p-2" data-id="${role.id}"><i data-feather="edit-2"></i></button>
+                         <button class="delete-role-btn text-red-500 hover:text-red-700 p-2" data-id="${role.id}"><i data-feather="trash-2"></i></button>
+                     </div>
                  </div>
             `).join('') || '<p class="text-center text-gray-500 py-4">No roles created yet.</p>';
             feather.replace();
@@ -1049,28 +1033,27 @@
             try {
                 const totalUsersEl = document.getElementById('total-users');
                 if (totalUsersEl) totalUsersEl.textContent = window.appState.users.length;
+                
+                const allSchedulesQuery = query(collection(db, `${dataPath}/schedules`));
+                const allSchedulesSnapshot = await getDocs(allSchedulesQuery);
+                const allSchedules = allSchedulesSnapshot.docs.map(doc => doc.data());
 
-                const totalInventoryEl = document.getElementById('total-inventory');
-                if (totalInventoryEl) totalInventoryEl.textContent = window.appState.inventory.length;
+                const today = new Date();
+                const todayStr = today.toISOString().split('T')[0];
+                const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+                
+                const ongoingJobs = allSchedules.filter(s => s.status === 'Pending' || s.status === 'Pending Confirmation').length;
+                document.getElementById('ongoing-jobs').textContent = ongoingJobs;
+                
+                const jobsFinishedToday = allSchedules.filter(s => s.status === 'Finished' && s.date === todayStr).length;
+                document.getElementById('jobs-finished-today').textContent = jobsFinishedToday;
+                
+                const jobsFinishedThisMonth = allSchedules.filter(s => s.status === 'Finished' && s.date >= startOfMonth).length;
+                document.getElementById('jobs-finished-this-month').textContent = jobsFinishedThisMonth;
 
-                const schedulesTodayEl = document.getElementById('schedules-today');
-                if (schedulesTodayEl) schedulesTodayEl.textContent = window.appState.schedules.length;
-
-                // Performance Analytics Card
-                const jobsFinishedEl = document.getElementById('jobs-finished-this-month');
-                if (jobsFinishedEl) {
-                    const startOfMonth = new Date();
-                    startOfMonth.setDate(1);
-                    startOfMonth.setHours(0, 0, 0, 0);
-                    
-                    const finishedQuery = query(
-                        collection(db, `${dataPath}/schedules`), 
-                        where("status", "==", "Finished"),
-                        where("completionTime", ">=", startOfMonth.toISOString())
-                    );
-                    const querySnapshot = await getDocs(finishedQuery);
-                    jobsFinishedEl.textContent = querySnapshot.size;
-                }
+                const damagedItemsQuery = query(collection(db, `${dataPath}/damagedItems`));
+                const damagedItemsSnapshot = await getDocs(damagedItemsQuery);
+                document.getElementById('damaged-items-count').textContent = damagedItemsSnapshot.size;
 
             } catch (e) {
                 console.error("Error updating dashboard cards:", e);
@@ -1099,7 +1082,7 @@
                      scheduleChartInstance = new Chart(scheduleCtx, {
                         type: 'bar',
                         data: { labels: [], datasets: [{ label: 'Tasks', data: [] }] },
-                        options: { responsive: true, plugins: { legend: { display: false }, title: { display: true, text: 'Tasks by Status' } }, scales: { y: { beginAtZero: true } } }
+                        options: { responsive: true, plugins: { legend: { display: false }, title: { display: true, text: 'Tasks by Status (Today)' } }, scales: { y: { beginAtZero: true } } }
                     });
                 }
 
@@ -1162,20 +1145,23 @@
                 startOfMonth.setDate(1);
                 startOfMonth.setHours(0, 0, 0, 0);
 
-                const finishedQuery = query(
-                    collection(db, `${dataPath}/schedules`), 
-                    where("status", "==", "Finished"),
+                // FIX: Query only by date range, then filter by status in code to avoid needing a composite index.
+                const monthQuery = query(
+                    collection(db, `${dataPath}/schedules`),
                     where("completionTime", ">=", startOfMonth.toISOString())
                 );
-                const querySnapshot = await getDocs(finishedQuery);
+                const querySnapshot = await getDocs(monthQuery);
 
                 querySnapshot.forEach(doc => {
                     const schedule = doc.data();
-                    schedule.assignedUserIds.forEach(userId => {
-                        if (userJobCounts.has(userId)) {
-                            userJobCounts.set(userId, userJobCounts.get(userId) + 1);
-                        }
-                    });
+                    // FIX: Filter for finished status here
+                    if (schedule.status === 'Finished') {
+                        schedule.assignedUserIds.forEach(userId => {
+                            if (userJobCounts.has(userId)) {
+                                userJobCounts.set(userId, userJobCounts.get(userId) + 1);
+                            }
+                        });
+                    }
                 });
 
                 const sortedUsers = [...userJobCounts.entries()].sort((a, b) => b[1] - a[1]);
@@ -1194,7 +1180,7 @@
         
         // --- DATA MANIPULATION --- //
         async function addUser(userData) { try { await addDoc(collection(db, `${dataPath}/crew`), userData); } catch(e) { console.error("Firestore Error: Could not add crew member.", e); } }
-        async function updateUser(id, userData) { try { await setDoc(doc(db, `${dataPath}/crew/${id}`), userData); } catch(e) { console.error("Firestore Error: Could not update crew member.", e); } }
+        async function updateUser(id, userData) { try { await setDoc(doc(db, `${dataPath}/crew/${id}`), userData, { merge: true }); } catch(e) { console.error("Firestore Error: Could not update crew member.", e); } }
         async function deleteUser(id) { try { await deleteDoc(doc(db, `${dataPath}/crew/${id}`)); } catch(e) { console.error("Firestore Error: Could not delete crew member.", e); } }
         async function addRole(roleData) { try { await addDoc(collection(db, `${dataPath}/roles`), roleData); } catch(e) { console.error("Firestore Error: Could not add role.", e); } }
         async function updateRole(id, roleData) { try { await setDoc(doc(db, `${dataPath}/roles/${id}`), roleData); } catch(e) { console.error("Firestore Error: Could not update role.", e); } }
@@ -1204,13 +1190,41 @@
         async function deleteInventory(id) { try { await deleteDoc(doc(db, `${dataPath}/inventory/${id}`)); } catch(e) { console.error("Firestore Error: Could not delete inventory.", e); } }
         async function addSchedule(schedule) { try { await addDoc(collection(db, `${dataPath}/schedules`), schedule); } catch(e) { console.error("Firestore Error: Could not add schedule.", e); } }
         async function updateSchedule(id, schedule) { try { await setDoc(doc(db, `${dataPath}/schedules/${id}`), schedule, { merge: true }); } catch(e) { console.error("Firestore Error: Could not update schedule.", e); } }
-        async function deleteSchedule(id) { try { await deleteDoc(doc(db, `${dataPath}/schedules/${id}`)); } catch(e) { console.error("Firestore Error: Could not delete schedule.", e); } }
         async function addVehicle(vehicleData) { try { await addDoc(collection(db, `${dataPath}/vehicles`), vehicleData); } catch(e) { console.error("Firestore Error: Could not add vehicle.", e); } }
         async function updateVehicle(id, vehicleData) { try { await setDoc(doc(db, `${dataPath}/vehicles/${id}`), vehicleData); } catch(e) { console.error("Firestore Error: Could not update vehicle.", e); } }
         async function deleteVehicle(id) { try { await deleteDoc(doc(db, `${dataPath}/vehicles/${id}`)); } catch(e) { console.error("Firestore Error: Could not delete vehicle.", e); } }
         async function addMaintenanceLog(vehicleId, logData) { try { await addDoc(collection(db, `${dataPath}/vehicles/${vehicleId}/maintenanceLogs`), logData); } catch(e) { console.error("Firestore Error: Could not add maintenance log.", e); } }
         async function deleteMaintenanceLog(vehicleId, logId) { try { await deleteDoc(doc(db, `${dataPath}/vehicles/${vehicleId}/maintenanceLogs/${logId}`)); } catch(e) { console.error("Firestore Error: Could not delete maintenance log.", e); } }
         
+        async function deleteSchedule(id) {
+            const schedule = window.appState.schedules.find(s => s.id === id);
+            if (!schedule) return;
+            
+            try {
+                const batch = writeBatch(db);
+
+                // Return materials to inventory if they haven't been confirmed as returned yet
+                if (Array.isArray(schedule.materialsUsed) && schedule.materialsUsed.length > 0 && !schedule.materialsConfirmed) {
+                    for (const material of schedule.materialsUsed) {
+                        const itemRef = doc(db, `${dataPath}/inventory/${material.itemId}`);
+                        const itemDoc = await getDoc(itemRef);
+                        if (itemDoc.exists()) {
+                            const currentQty = Number(itemDoc.data().quantity);
+                            batch.update(itemRef, { quantity: currentQty + material.quantity });
+                        }
+                    }
+                }
+
+                // Delete the schedule
+                const scheduleRef = doc(db, `${dataPath}/schedules/${id}`);
+                batch.delete(scheduleRef);
+
+                await batch.commit();
+            } catch (e) {
+                console.error("Firestore Error: Could not delete schedule and update inventory.", e);
+            }
+        }
+
         async function updateScheduleStatus(id, scheduleData) {
             try {
                 const scheduleRef = doc(db, `${dataPath}/schedules/${id}`);
@@ -1233,7 +1247,7 @@
         async function confirmMaterialReturns(id, reconciliationData) {
             try {
                 const batch = writeBatch(db);
-                // 1. Update Inventory
+                // 1. Update Inventory with good items
                 for (const [itemId, returnedQtyStr] of Object.entries(reconciliationData.returnedItems)) {
                     const returnedQty = Number(returnedQtyStr);
                     if(isNaN(returnedQty) || returnedQty < 0) continue;
@@ -1246,7 +1260,25 @@
                     }
                 }
                 
-                // 2. Update Schedule
+                // 2. Log Damaged Items
+                for (const [itemId, damagedQtyStr] of Object.entries(reconciliationData.damagedItems)) {
+                    const damagedQty = Number(damagedQtyStr);
+                    if (isNaN(damagedQty) || damagedQty <= 0) continue;
+                    
+                    const item = window.appState.inventory.find(i => i.id === itemId);
+                    const damageLogRef = doc(collection(db, `${dataPath}/damagedItems`));
+                    batch.set(damageLogRef, {
+                        itemId: itemId,
+                        itemName: item?.name || 'Unknown Item',
+                        quantity: damagedQty,
+                        scheduleId: id,
+                        date: new Date().toISOString().split('T')[0],
+                        timestamp: serverTimestamp()
+                    });
+                }
+
+
+                // 3. Update Schedule
                 const scheduleRef = doc(db, `${dataPath}/schedules/${id}`);
                 batch.update(scheduleRef, {
                     status: 'Finished',
@@ -1256,6 +1288,7 @@
                     materialReturnPhotoData: reconciliationData.photoData,
                     reconciliationDetails: {
                         returnedItems: reconciliationData.returnedItems,
+                        damagedItems: reconciliationData.damagedItems,
                         discrepancyNotes: reconciliationData.discrepancyNotes,
                     }
                 });
@@ -1353,6 +1386,7 @@
         function showUserModal(userToEdit = null) {
             const modalTitle = userToEdit ? 'Edit Crew Member' : 'Create New Crew Member';
             const roleOptions = window.appState.roles.map(r => `<option value="${r.id}" ${userToEdit?.roleId === r.id ? 'selected' : ''}>${r.name}</option>`).join('');
+            const isRegisteredUser = userToEdit?.authUID;
 
             const modalHTML = `
                 <div class="flex justify-between items-center mb-6">
@@ -1361,39 +1395,54 @@
                 </div>
                 <form id="user-modal-form" class="space-y-4">
                     <input type="hidden" name="id" value="${userToEdit?.id || ''}">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                        <input type="text" name="name" required class="w-full border border-gray-300 rounded-md p-2" value="${userToEdit?.name || ''}">
-                    </div>
-                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">4-Digit PIN</label>
-                        <input type="number" name="pin" pattern="\\d{4}" title="PIN must be 4 digits" class="w-full border border-gray-300 rounded-md p-2" value="${userToEdit?.pin || ''}" placeholder="e.g., 1234">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                        <select name="roleId" required class="w-full border border-gray-300 rounded-md p-2">
-                            <option value="">Select a role</option>
-                            ${roleOptions}
-                        </select>
-                    </div>
-                    <div id="role-specific-fields" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
-                            <input type="tel" name="mobileNumber" class="w-full border rounded-md p-2" value="${userToEdit?.mobileNumber || ''}">
+                    <input type="hidden" name="authUID" value="${userToEdit?.authUID || ''}">
+                    
+                    <fieldset class="border rounded-md p-3">
+                        <legend class="text-sm font-medium text-gray-700 px-1">Basic Info</legend>
+                        <div class="space-y-4 pt-2">
+                             <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                <input type="text" name="name" required class="w-full border border-gray-300 rounded-md p-2" value="${userToEdit?.name || ''}">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                                <input type="email" name="email" required class="w-full border border-gray-300 rounded-md p-2 ${isRegisteredUser ? 'bg-gray-100' : ''}" value="${userToEdit?.email || ''}" ${isRegisteredUser ? 'readonly' : ''}>
+                            </div>
+                             <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">4-Digit PIN</label>
+                                <input type="number" name="pin" pattern="\\d{4}" title="PIN must be 4 digits" class="w-full border border-gray-300 rounded-md p-2" value="${userToEdit?.pin || ''}" placeholder="e.g., 1234">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Role (Category)</label>
+                                <select name="roleId" required class="w-full border border-gray-300 rounded-md p-2">
+                                    <option value="">Select a role</option>
+                                    ${roleOptions}
+                                </select>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Civil ID Number</label>
-                            <input type="text" name="civilId" class="w-full border rounded-md p-2" value="${userToEdit?.civilId || ''}">
+                    </fieldset>
+
+                    <fieldset class="border rounded-md p-3">
+                        <legend class="text-sm font-medium text-gray-700 px-1">Additional Details</legend>
+                        <div class="space-y-4 pt-2">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                                <input type="tel" name="mobileNumber" class="w-full border rounded-md p-2" value="${userToEdit?.mobileNumber || ''}">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Civil ID Number</label>
+                                <input type="text" name="civilId" class="w-full border rounded-md p-2" value="${userToEdit?.civilId || ''}">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Truck Type</label>
+                                <input type="text" name="truckType" class="w-full border rounded-md p-2" value="${userToEdit?.truckType || ''}">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Truck Number</label>
+                                <input type="text" name="truckNumber" class="w-full border rounded-md p-2" value="${userToEdit?.truckNumber || ''}">
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Truck Type</label>
-                            <input type="text" name="truckType" class="w-full border rounded-md p-2" value="${userToEdit?.truckType || ''}">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Truck Number</label>
-                            <input type="text" name="truckNumber" class="w-full border rounded-md p-2" value="${userToEdit?.truckNumber || ''}">
-                        </div>
-                    </div>
+                    </fieldset>
                     <div class="flex justify-end gap-4 !mt-6">
                        <button type="button" class="close-modal-btn btn btn-secondary">Cancel</button>
                        <button type="submit" class="btn btn-primary">Save Member</button>
@@ -1445,25 +1494,25 @@
                     <input type="hidden" name="id" value="${scheduleToEdit?.id || ''}">
                     <input type="hidden" name="date" value="${scheduleToEdit?.date || date}">
                      <div><label class="block text-sm font-medium mb-1">Task / Job Site</label>
-                        <input type="text" name="task" required class="w-full border rounded-md p-2" value="${scheduleToEdit?.task || ''}"></div>
+                         <input type="text" name="task" required class="w-full border rounded-md p-2" value="${scheduleToEdit?.task || ''}"></div>
                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div><label class="block text-sm font-medium mb-1">Job Site Address</label>
-                           <input type="text" name="address" class="w-full border rounded-md p-2" value="${scheduleToEdit?.address || ''}"></div>
+                         <div><label class="block text-sm font-medium mb-1">Job Site Address</label>
+                            <input type="text" name="address" class="w-full border rounded-md p-2" value="${scheduleToEdit?.address || ''}"></div>
                          <div><label class="block text-sm font-medium mb-1">Vehicle/Equipment</label>
-                           <input type="text" name="vehicle" class="w-full border rounded-md p-2" value="${scheduleToEdit?.vehicle || ''}"></div>
+                            <input type="text" name="vehicle" class="w-full border rounded-md p-2" value="${scheduleToEdit?.vehicle || ''}"></div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div><label class="block text-sm font-medium mb-1">Start Time</label>
-                           <input type="time" name="startTime" required class="w-full border rounded-md p-2" value="${scheduleToEdit?.startTime || ''}"></div>
+                            <input type="time" name="startTime" required class="w-full border rounded-md p-2" value="${scheduleToEdit?.startTime || ''}"></div>
                         <div><label class="block text-sm font-medium mb-1">End Time</label>
-                           <input type="time" name="endTime" required class="w-full border rounded-md p-2" value="${scheduleToEdit?.endTime || ''}"></div>
+                            <input type="time" name="endTime" required class="w-full border rounded-md p-2" value="${scheduleToEdit?.endTime || ''}"></div>
                     </div>
                      <div><label class="block text-sm font-medium mb-1">Priority</label>
-                        <select name="priority" class="w-full border rounded-md p-2">
-                            <option value="Low" ${scheduleToEdit?.priority === 'Low' ? 'selected' : ''}>Low</option>
-                            <option value="Medium" ${scheduleToEdit?.priority === 'Medium' ? 'selected' : ''}>Medium</option>
-                            <option value="High" ${scheduleToEdit?.priority === 'High' ? 'selected' : ''}>High</option>
-                        </select></div>
+                         <select name="priority" class="w-full border rounded-md p-2">
+                             <option value="Low" ${scheduleToEdit?.priority === 'Low' ? 'selected' : ''}>Low</option>
+                             <option value="Medium" ${scheduleToEdit?.priority === 'Medium' ? 'selected' : ''}>Medium</option>
+                             <option value="High" ${scheduleToEdit?.priority === 'High' ? 'selected' : ''}>High</option>
+                         </select></div>
                     <div><label class="block text-sm font-medium mb-1">Assign Crew</label>
                         <div class="border rounded-md p-2 h-40 overflow-y-auto space-y-1">${userCheckboxes}</div>
                     </div>
@@ -1494,7 +1543,8 @@
                 const task = document.querySelector('#schedule-modal-form [name="task"]').value;
                 const address = document.querySelector('#schedule-modal-form [name="address"]').value;
                 if(!task) {
-                    alert('Please enter a task before generating notes.');
+                    showModal(`<div class="p-4 text-center"><p class="text-lg font-medium">Please enter a task before generating notes.</p><div class="flex justify-center mt-6"><button class="close-modal-btn btn btn-primary">OK</button></div></div>`);
+                    feather.replace();
                     return;
                 }
 
@@ -1523,7 +1573,8 @@
                     document.getElementById('schedule-notes').value = notes;
                 } catch (error) {
                     console.error("Gemini API Error:", error);
-                    alert("Could not generate notes. Please try again.");
+                    showModal(`<div class="p-4 text-center"><p class="text-lg font-medium">Could not generate notes. Please try again.</p><div class="flex justify-center mt-6"><button class="close-modal-btn btn btn-primary">OK</button></div></div>`);
+                    feather.replace();
                 } finally {
                     btn.textContent = '✨ Generate with AI';
                     btn.disabled = false;
@@ -1605,8 +1656,9 @@
                          const stock = Number(row.querySelector('.material-item-quantity').max || '0');
                          const oldQty = (scheduleToEdit?.materialsUsed?.find(m => m.itemId === itemId)?.quantity || 0);
                          if (quantity > stock + oldQty) {
-                             alert(`Not enough stock for ${itemName}. Only ${stock + oldQty} available.`);
-                             hasError = true;
+                            showModal(`<div class="p-4 text-center"><p class="text-lg font-medium">Not enough stock for ${itemName}. Only ${stock + oldQty} available.</p><div class="flex justify-center mt-6"><button class="close-modal-btn btn btn-primary">OK</button></div></div>`);
+                            feather.replace();
+                            hasError = true;
                          }
                         materialsUsed.push({ itemId, itemName, quantity });
                     }
@@ -1626,7 +1678,8 @@
                     if (change !== 0) {
                         const itemRef = doc(db, `${dataPath}/inventory/${itemId}`);
                         const currentItem = window.appState.inventory.find(i => i.id === itemId);
-                        batch.update(itemRef, { quantity: currentItem.quantity - change });
+                        // FIX: Correctly add back to inventory or subtract from it.
+                        batch.update(itemRef, { quantity: currentItem.quantity + change });
                     }
                 }
                 // --- End Inventory Logic ---
@@ -1658,11 +1711,20 @@
             if (!schedule || !schedule.materialsUsed || schedule.materialsUsed.length === 0) return;
             
             const reconciliationFields = schedule.materialsUsed.map((item, index) => `
-                    <div class="grid grid-cols-3 gap-2 items-center">
-                        <label for="recon-item-${index}" class="col-span-2 text-sm font-medium text-gray-700">${item.itemName} (Used: ${item.quantity})</label>
-                        <input type="number" id="recon-item-${index}" name="${item.itemId}" required class="w-full border rounded-md p-2" placeholder="Returned Qty" max="${item.quantity}" min="0" value="${item.quantity}">
+                <div class="grid grid-cols-1 gap-2 border-t pt-3 mt-3">
+                     <p class="font-medium text-gray-800">${item.itemName} (Used: ${item.quantity})</p>
+                     <div class="grid grid-cols-2 gap-2">
+                         <div>
+                            <label for="recon-good-${index}" class="text-sm font-medium text-gray-700">Good Qty</label>
+                            <input type="number" id="recon-good-${index}" data-item-id="${item.itemId}" data-item-name="${item.itemName}" name="good-${item.itemId}" class="w-full border rounded-md p-2 good-qty-input" placeholder="Good" max="${item.quantity}" min="0" value="${item.quantity}">
+                         </div>
+                         <div>
+                            <label for="recon-damaged-${index}" class="text-sm font-medium text-gray-700">Damaged Qty</label>
+                            <input type="number" id="recon-damaged-${index}" name="damaged-${item.itemId}" class="w-full border rounded-md p-2 damaged-qty-input" placeholder="Damaged" max="${item.quantity}" min="0" value="0">
+                        </div>
                     </div>
-                `).join('');
+                </div>
+            `).join('');
 
             const modalHTML = `
                 <div class="flex justify-between items-center mb-6">
@@ -1672,7 +1734,7 @@
                 <form id="confirm-return-form" class="space-y-4">
                     <input type="hidden" name="id" value="${id}">
                     <div class="space-y-3 p-3 border rounded-md bg-gray-50">
-                        <h3 class="font-semibold mb-2">Returned Quantities</h3>
+                        <h3 class="font-semibold mb-2">Returned & Damaged Quantities</h3>
                         ${reconciliationFields}
                     </div>
                     <div>
@@ -1706,22 +1768,21 @@
                 const formData = new FormData(e.target);
                 const scheduleId = formData.get('id');
                 
-                if(!formData.get('photoData')) {
-                    showModal('<div class="p-4 text-center"><p class="text-red-600 font-medium">Please upload a photo of the returned materials.</p><div class="flex justify-center mt-6"><button class="close-modal-btn btn btn-primary">OK</button></div></div>');
-                    return;
-                }
-
                 const returnedItems = {};
-                for (let [key, value] of formData.entries()) {
-                    if (key !== 'id' && key !== 'photoData' && key !== 'discrepancyNotes') {
-                        returnedItems[key] = value;
-                    }
-                }
+                const damagedItems = {};
+
+                document.querySelectorAll('.good-qty-input').forEach(input => {
+                    if (input.value) returnedItems[input.dataset.itemId] = input.value;
+                });
+                document.querySelectorAll('.damaged-qty-input').forEach(input => {
+                     if (input.value) damagedItems[input.dataset.itemId] = input.value;
+                });
 
                 const reconciliationData = {
                     photoData: formData.get('photoData'),
                     discrepancyNotes: formData.get('discrepancyNotes'),
-                    returnedItems: returnedItems
+                    returnedItems: returnedItems,
+                    damagedItems: damagedItems
                 };
                 
                 await confirmMaterialReturns(scheduleId, reconciliationData);
@@ -1823,7 +1884,8 @@
                 e.preventDefault();
                 const roleId = e.target.roleId.value;
                 if(!roleId) {
-                    alert('Please select a role.');
+                    showModal(`<div class="p-4 text-center"><p class="text-lg font-medium">Please select a role.</p><div class="flex justify-center mt-6"><button class="close-modal-btn btn btn-primary">OK</button></div></div>`);
+                    feather.replace();
                     return;
                 }
                 const batch = writeBatch(db);
@@ -1914,7 +1976,7 @@
                         <input type="hidden" id="inventory-photo-data" name="imageData" value="${item.imageData || ''}">
                         <button type="button" id="add-inventory-photo-btn" class="btn btn-secondary w-full mt-1"><i data-feather="camera"></i>Add Photo</button>
                         <img id="inventory-photo-preview" src="${item.imageData || ''}" class="mt-2 w-24 h-24 rounded-md object-cover border ${item.imageData ? '' : 'hidden'}">
-                    </div>
+                     </div>
                      <div class="flex justify-end gap-4 !mt-6">
                        <button type="button" class="close-modal-btn btn btn-secondary">Cancel</button>
                        <button type="submit" class="btn btn-primary">Save Changes</button>
@@ -2004,7 +2066,8 @@
                     messageTextarea.value = refinedMessage;
                 } catch(error) {
                     console.error("Gemini API error:", error);
-                    alert("Could not refine message. Please try again.");
+                    showModal(`<div class="p-4 text-center"><p class="text-lg font-medium">Could not refine message. Please try again.</p><div class="flex justify-center mt-6"><button class="close-modal-btn btn btn-primary">OK</button></div></div>`);
+                    feather.replace();
                 } finally {
                     btn.textContent = '✨ Refine with AI';
                     btn.disabled = false;
@@ -2071,7 +2134,7 @@
             document.querySelectorAll('.delete-vehicle-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); showConfirmationModal('Delete this vehicle and all its logs?', () => deleteVehicle(e.currentTarget.dataset.id)); }));
 
             // Load maintenance logs when a vehicle details section is opened
-            document.querySelectorAll('details').forEach(detail => {
+            document.querySelectorAll('#maintenance-tab details').forEach(detail => {
                 detail.addEventListener('toggle', async (event) => {
                     if (event.target.open) {
                         const vehicleId = event.target.querySelector('.add-log-btn').dataset.id;
@@ -2186,6 +2249,34 @@
             if (tabId === 'analytics') { 
                 initCharts(); 
             }
+            if (tabId === 'reports') {
+                const select = document.getElementById('material-usage-select');
+                if(select) {
+                    select.innerHTML = '<option value="">-- Select an Item --</option>' + 
+                        window.appState.inventory.map(item => `<option value="${item.id}">${item.name}</option>`).join('');
+                }
+            }
+        }
+        
+        function exportToCsv(filename, rows) {
+            const processRow = (row) => row.map(val => {
+                let finalVal = (val === null || val === undefined) ? '' : String(val);
+                if (/[",\n]/.test(finalVal)) {
+                    finalVal = `"${finalVal.replace(/"/g, '""')}"`;
+                }
+                return finalVal;
+            }).join(',');
+
+            const csvContent = "data:text/csv;charset=utf-8," 
+                + rows.map(processRow).join('\n');
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -2267,10 +2358,6 @@
             document.getElementById('notifications-tab').innerHTML = NotificationsTemplate;
             
             initFirebase().then(() => {
-                // Request notification permission
-                if ('Notification' in window && Notification.permission === 'default') {
-                    Notification.requestPermission();
-                }
                 feather.replace(); 
                 if(document.getElementById('schedule-date')) {
                     document.getElementById('schedule-date').value = new Date().toISOString().split('T')[0];
@@ -2299,19 +2386,190 @@
                     // Re-attach notifications listener to refresh
                     attachNotificationsListener();
                 });
-                document.getElementById('clear-notifications-btn')?.addEventListener('click', async () => {
-                    if (confirm('Are you sure you want to clear all notifications?')) {
+                document.getElementById('clear-notifications-btn')?.addEventListener('click', () => {
+                    showConfirmationModal('Are you sure you want to clear all notifications?', async () => {
                         try {
                             const notificationsRef = collection(db, `${dataPath}/notifications`);
                             const snapshot = await getDocs(notificationsRef);
                             const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
                             await Promise.all(deletePromises);
-                            alert('All notifications cleared!');
                         } catch (error) {
                             console.error('Error clearing notifications:', error);
-                            alert('Error clearing notifications');
                         }
+                    });
+                });
+
+                // --- REPORTING EVENT LISTENERS --- //
+                document.getElementById('pdf-inventory-report')?.addEventListener('click', () => {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    doc.autoTable({
+                        head: [['Item Name', 'SKU', 'Quantity']],
+                        body: window.appState.inventory.map(item => [item.name, item.sku || 'N/A', item.quantity]),
+                    });
+                    doc.save('inventory-report.pdf');
+                });
+                document.getElementById('excel-inventory-report')?.addEventListener('click', () => {
+                    const rows = [
+                        ['Item Name', 'SKU', 'Quantity'],
+                        ...window.appState.inventory.map(item => [item.name, item.sku || 'N/A', item.quantity])
+                    ];
+                    exportToCsv('inventory-report.csv', rows);
+                });
+                document.getElementById('generate-job-report')?.addEventListener('click', async () => {
+                    const startDate = document.getElementById('report-start-date').value;
+                    const endDate = document.getElementById('report-end-date').value;
+                    if (!startDate || !endDate) {
+                        showModal(`<div class="p-4 text-center"><p class="text-lg font-medium">Please select a start and end date.</p><div class="flex justify-center mt-6"><button class="close-modal-btn btn btn-primary">OK</button></div></div>`);
+                        feather.replace();
+                        return;
                     }
+                    const q = query(collection(db, `${dataPath}/schedules`), where('date', '>=', startDate), where('date', '<=', endDate));
+                    const snapshot = await getDocs(q);
+                    const jobs = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                    
+                    if(jobs.length === 0) {
+                        document.getElementById('job-report-container').innerHTML = `<p class="text-center text-gray-500 py-4">No jobs found in this date range.</p>`;
+                        document.getElementById('job-report-actions').classList.add('hidden');
+                        return;
+                    }
+
+                    const tableRows = jobs.map(job => `
+                        <tr>
+                            <td class="py-2 px-3">${job.date}</td>
+                            <td class="py-2 px-3">${job.task}</td>
+                            <td class="py-2 px-3">${job.status}</td>
+                        </tr>
+                    `).join('');
+
+                    document.getElementById('job-report-container').innerHTML = `
+                        <table class="min-w-full bg-white text-sm">
+                            <thead class="bg-gray-50"><tr>
+                                <th class="py-2 px-3 text-left font-medium">Date</th>
+                                <th class="py-2 px-3 text-left font-medium">Task</th>
+                                <th class="py-2 px-3 text-left font-medium">Status</th>
+                            </tr></thead>
+                            <tbody class="divide-y">${tableRows}</tbody>
+                        </table>
+                    `;
+                    document.getElementById('job-report-actions').classList.remove('hidden');
+
+                    document.getElementById('pdf-job-report').onclick = () => {
+                         const { jsPDF } = window.jspdf;
+                         const doc = new jsPDF();
+                         doc.autoTable({
+                            head: [['Date', 'Task', 'Status']],
+                            body: jobs.map(j => [j.date, j.task, j.status])
+                         });
+                         doc.save('job-report.pdf');
+                    };
+                    document.getElementById('excel-job-report').onclick = () => {
+                        const rows = [['Date', 'Task', 'Status'], ...jobs.map(j => [j.date, j.task, j.status])];
+                        exportToCsv('job-report.csv', rows);
+                    };
+                });
+
+
+                document.getElementById('generate-material-report-btn')?.addEventListener('click', async () => {
+                    const itemId = document.getElementById('material-usage-select').value;
+                    if (!itemId) {
+                        showModal(`<div class="p-4 text-center"><p class="text-lg font-medium">Please select a material first.</p><div class="flex justify-center mt-6"><button class="close-modal-btn btn btn-primary">OK</button></div></div>`);
+                        feather.replace();
+                        return;
+                    }
+
+                    const container = document.getElementById('material-usage-report-container');
+                    container.innerHTML = `<p class="text-center">Generating report...</p>`;
+
+                    const q = query(collection(db, `${dataPath}/schedules`));
+                    const querySnapshot = await getDocs(q);
+                    
+                    const usage = [];
+                    querySnapshot.forEach(doc => {
+                        const schedule = doc.data();
+                        if (Array.isArray(schedule.materialsUsed)) {
+                            schedule.materialsUsed.forEach(material => {
+                                if (material.itemId === itemId) {
+                                    usage.push({
+                                        date: schedule.date,
+                                        task: schedule.task,
+                                        quantity: material.quantity
+                                    });
+                                }
+                            });
+                        }
+                    });
+
+                    if (usage.length === 0) {
+                        container.innerHTML = `<p class="text-center text-gray-500 py-4">No usage found for this material.</p>`;
+                        return;
+                    }
+
+                    const tableRows = usage.sort((a,b) => new Date(b.date) - new Date(a.date)).map(u => `
+                        <tr class="hover:bg-gray-50">
+                            <td class="py-3 px-4">${u.date}</td>
+                            <td class="py-3 px-4">${u.task}</td>
+                            <td class="py-3 px-4 text-center font-semibold">${u.quantity}</td>
+                        </tr>
+                    `).join('');
+
+                    container.innerHTML = `
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full bg-white">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                        <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">Job/Task</th>
+                                        <th class="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase">Quantity Used</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                    ${tableRows}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+
+                });
+
+                document.getElementById('generate-damage-report-btn')?.addEventListener('click', async () => {
+                    const startDate = document.getElementById('damage-report-start-date').value;
+                    const endDate = document.getElementById('damage-report-end-date').value;
+                    if (!startDate || !endDate) {
+                        showModal(`<div class="p-4 text-center"><p class="text-lg font-medium">Please select a start and end date.</p><div class="flex justify-center mt-6"><button class="close-modal-btn btn btn-primary">OK</button></div></div>`);
+                        feather.replace();
+                        return;
+                    }
+                     const container = document.getElementById('damage-report-container');
+                    container.innerHTML = `<p class="text-center">Generating report...</p>`;
+
+                    const q = query(collection(db, `${dataPath}/damagedItems`), where('date', '>=', startDate), where('date', '<=', endDate));
+                    const snapshot = await getDocs(q);
+                    const items = snapshot.docs.map(doc => doc.data());
+
+                     if (items.length === 0) {
+                        container.innerHTML = `<p class="text-center text-gray-500 py-4">No damaged items found in this date range.</p>`;
+                        return;
+                    }
+                     const tableRows = items.map(item => `
+                        <tr class="hover:bg-gray-50">
+                            <td class="py-3 px-4">${item.date}</td>
+                            <td class="py-3 px-4">${item.itemName}</td>
+                            <td class="py-3 px-4 text-center">${item.quantity}</td>
+                        </tr>
+                    `).join('');
+                     container.innerHTML = `
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full bg-white">
+                                <thead class="bg-gray-50"><tr>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">Item Name</th>
+                                    <th class="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase">Quantity Damaged</th>
+                                </tr></thead>
+                                <tbody class="divide-y divide-gray-200">${tableRows}</tbody>
+                            </table>
+                        </div>
+                    `;
                 });
             });
         });
@@ -2319,3 +2577,4 @@
     </script>
 </body>
 </html>
+
