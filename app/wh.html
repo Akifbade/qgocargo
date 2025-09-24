@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Qgo Cargo - Crew & Inventory Management</title>
-    <link rel="manifest" href="manifest.json">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -114,6 +113,112 @@
         details > summary::-webkit-details-marker {
             display: none;
         }
+        
+        /* Floating Testing Tool Styles */
+        #floating-test-tool {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            border-radius: 50%;
+            cursor: move;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+
+        #floating-test-tool:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        }
+
+        #test-panel {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            width: 350px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            z-index: 10001;
+            display: none;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-content {
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .feature-section {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+
+        .feature-input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .feature-textarea {
+            width: 100%;
+            height: 80px;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+        }
+
+        .highlight-overlay {
+            position: fixed;
+            border: 3px solid #ff0000;
+            background: rgba(255, 0, 0, 0.1);
+            pointer-events: none;
+            z-index: 9998;
+        }
+
+        .btn-info {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background-color: #1976D2;
+        }
+
+        .btn-warning {
+            background-color: #ff9800;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: #f57c00;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -199,6 +304,8 @@
                         <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-800 hover:text-white transition-colors duration-200 mt-2" data-tab="maintenance"><i data-feather="tool" class="mr-3"></i>Maintenance</a></li>
                         <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-800 hover:text-white transition-colors duration-200 mt-2" data-tab="admin"><i data-feather="shield" class="mr-3"></i>Admin Panel</a></li>
                         <li><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-800 hover:text-white transition-colors duration-200 mt-2" data-tab="notifications"><i data-feather="bell" class="mr-3"></i>Notifications</a></li>
+                        <li id="testing-tab-link" class="hidden"><a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-800 hover:text-white transition-colors duration-200 mt-2" data-tab="testing"><i data-feather="check-circle" class="mr-3"></i>Testing</a></li>
+
                     </ul>
                 </nav>
             </aside>
@@ -225,8 +332,69 @@
                 <div id="maintenance-tab" class="tab-content hidden"></div>
                 <div id="admin-tab" class="tab-content hidden"></div>
                 <div id="notifications-tab" class="tab-content hidden"></div>
+                <div id="testing-tab" class="tab-content hidden"></div>
 
             </main>
+        </div>
+    </div>
+
+    <!-- Floating Testing Tool -->
+    <div id="floating-test-tool" onclick="toggleTestPanel()" style="
+        position: fixed; top: 20px; right: 20px; width: 60px; height: 60px;
+        background: linear-gradient(45deg, #4CAF50, #45a049); border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        color: white; font-size: 24px; cursor: pointer; z-index: 10000;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    ">🔧</div>
+
+    <div id="test-panel" style="
+        position: fixed; top: 100px; right: 20px; width: 350px;
+        background: white; border-radius: 10px; display: none;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3); z-index: 10001; overflow: hidden;
+    ">
+        <div style="background: #4CAF50; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+            <span>Qgo Cargo Testing Tool</span>
+            <button onclick="closeTestPanel()" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;">×</button>
+        </div>
+        <div style="padding: 20px; max-height: 500px; overflow-y: auto;">
+            <div style="margin-bottom: 15px; padding: 10px; border: 2px dashed #ddd; border-radius: 5px; background: #f9f9f9;">
+                <h4>Testing Session</h4>
+                <input type="text" id="feature-name" placeholder="Feature Name (e.g., Labour Profile, Email Field)" style="width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px;">
+                <textarea id="issue-description" placeholder="Describe the issue or change needed..." style="width: 100%; height: 60px; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; resize: vertical;"></textarea>
+                <select id="issue-type" style="width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="bug">Bug Report</option>
+                    <option value="change">Change Request</option>
+                    <option value="enhancement">Enhancement</option>
+                    <option value="ui-issue">UI Issue</option>
+                </select>
+                <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                    <button onclick="startElementCapture()" style="background-color: #2196F3; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">📍 Point & Capture</button>
+                    <button onclick="startContinuousCapture()" style="background-color: #9C27B0; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">🔄 Multi-Click</button>
+                    <button onclick="addToSession()" style="background-color: #ff9800; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">➕ Add to Session</button>
+                    <button onclick="saveTestReport()" style="background-color: #3182ce; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">💾 Save Report</button>
+                    <button onclick="clearSession()" style="background-color: #e53e3e; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">�️ Clear Session</button>
+                </div>
+                <div id="session-counter" style="margin-top: 5px; font-size: 12px; color: #666;"></div>
+            </div>
+            
+            <div id="current-session" style="margin-bottom: 15px; padding: 10px; border: 2px solid #4CAF50; border-radius: 5px; background: #f0fff0; display: none;">
+                <h4 style="color: #2e7d32;">Current Session Items (<span id="session-count">0</span>)</h4>
+                <div id="session-items" style="max-height: 150px; overflow-y: auto;"></div>
+            </div>
+
+            <div style="margin-bottom: 15px; padding: 10px; border: 2px dashed #ddd; border-radius: 5px; background: #f9f9f9;">
+                <h4>Element Info</h4>
+                <div id="element-info" style="font-size: 12px; color: #666;">
+                    Click "Point & Capture" and then click on any element
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px; padding: 10px; border: 2px dashed #ddd; border-radius: 5px; background: #f9f9f9;">
+                <h4>Saved Reports (Total: <span id="test-report-count">0</span>)</h4>
+                <button onclick="exportTestReports()" style="background-color: #ff9800; color: white; padding: 8px 15px; margin: 5px; border: none; border-radius: 4px; cursor: pointer;">📄 Export All Reports</button>
+                <button onclick="clearTestReports()" style="background-color: #e53e3e; color: white; padding: 8px 15px; margin: 5px; border: none; border-radius: 4px; cursor: pointer;">🗑️ Clear All</button>
+                <div id="test-reports-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; margin-top: 10px;"></div>
+            </div>
         </div>
     </div>
 
@@ -237,6 +405,983 @@
         </div>
     </div>
 
+
+    <!-- Testing Tool Functions - Global Scope -->
+    <script>
+        // Global testing tool variables and functions
+        let testingReports = JSON.parse(localStorage.getItem('qgoCargoTestReports') || '[]');
+        let isCapturingElement = false;
+        let continuousCapture = false;
+        let capturedElement = null;
+        let currentSession = [];
+        let sessionId = null;
+
+        function toggleTestPanel() {
+            const panel = document.getElementById('test-panel');
+            if (panel.style.display === 'none' || panel.style.display === '') {
+                panel.style.display = 'block';
+                updateTestReportsList();
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+
+        function closeTestPanel() {
+            document.getElementById('test-panel').style.display = 'none';
+        }
+
+        function startElementCapture() {
+            isCapturingElement = true;
+            document.body.style.cursor = 'crosshair';
+            
+            // Add instruction overlay
+            const instruction = document.createElement('div');
+            instruction.id = 'capture-instruction';
+            const bgColor = continuousCapture ? '#9C27B0' : '#ff4444';
+            const message = continuousCapture ? 
+                'CONTINUOUS MODE: Click multiple elements, ESC to stop' : 
+                'Click on any element to capture it (ESC to cancel)';
+            
+            instruction.style.cssText = `
+                position: fixed; top: 10px; left: 50%;
+                transform: translateX(-50%); background: ${bgColor};
+                color: white; padding: 10px 20px; border-radius: 20px;
+                z-index: 10002; font-weight: bold;
+            `;
+            instruction.textContent = message;
+            document.body.appendChild(instruction);
+
+            function captureHandler(e) {
+                if (isCapturingElement && !e.target.closest('#test-panel') && !e.target.closest('#floating-test-tool')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    capturedElement = e.target;
+                    analyzeElement(e.target);
+                    
+                    if (continuousCapture) {
+                        // In continuous mode, automatically add to session without asking for details
+                        quickAddToSession();
+                        
+                        // Update instruction for next capture
+                        const inst = document.getElementById('capture-instruction');
+                        if (inst) {
+                            inst.textContent = `Captured ${currentSession.length} element(s). Click next element or ESC to stop.`;
+                            inst.style.backgroundColor = '#4CAF50'; // Green for success
+                            setTimeout(() => {
+                                if (inst) {
+                                    inst.textContent = 'Click on next element to capture (ESC to stop continuous capture)';
+                                    inst.style.backgroundColor = '#9C27B0'; // Purple for continuous mode
+                                }
+                            }, 1500);
+                        }
+                    } else {
+                        // Single capture mode - stop capturing
+                        isCapturingElement = false;
+                        document.body.style.cursor = 'default';
+                        
+                        const inst = document.getElementById('capture-instruction');
+                        if (inst) inst.remove();
+                        
+                        document.removeEventListener('click', captureHandler, true);
+                        document.removeEventListener('keydown', escapeHandler);
+                    }
+                }
+            }
+
+            function escapeHandler(e) {
+                if (e.key === 'Escape') {
+                    isCapturingElement = false;
+                    continuousCapture = false;
+                    document.body.style.cursor = 'default';
+                    const inst = document.getElementById('capture-instruction');
+                    if (inst) inst.remove();
+                    document.removeEventListener('click', captureHandler, true);
+                    document.removeEventListener('keydown', escapeHandler);
+                    
+                    // Show bulk editing interface for continuous mode
+                    if (currentSession.length > 0) {
+                        showBulkEditDialog();
+                    }
+                }
+            }
+
+            document.addEventListener('click', captureHandler, true);
+            document.addEventListener('keydown', escapeHandler);
+        }
+
+        function startContinuousCapture() {
+            continuousCapture = true;
+            startElementCapture();
+        }
+
+        function analyzeElement(element) {
+            const rect = element.getBoundingClientRect();
+            
+            const elementInfo = {
+                tagName: element.tagName.toLowerCase(),
+                id: element.id || 'No ID',
+                className: element.className || 'No classes',
+                text: element.textContent?.trim().substring(0, 100) || 'No text',
+                position: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                xpath: getElementXPath(element),
+                cssSelector: getElementCSSSelector(element)
+            };
+
+            displayElementInfo(elementInfo);
+            highlightElement(element);
+        }
+
+        function getElementXPath(element) {
+            if (!element || element.nodeType !== 1) return '';
+            if (element.id) return `//*[@id="${element.id}"]`;
+            
+            const parts = [];
+            while (element && element.nodeType === 1) {
+                let index = 0;
+                let sibling = element.previousSibling;
+                while (sibling) {
+                    if (sibling.nodeType === 1 && sibling.tagName === element.tagName) index++;
+                    sibling = sibling.previousSibling;
+                }
+                const tagName = element.tagName.toLowerCase();
+                const pathIndex = index > 0 ? `[${index + 1}]` : '';
+                parts.unshift(`${tagName}${pathIndex}`);
+                element = element.parentElement;
+                if (parts.length > 5) break;
+            }
+            return '/' + parts.join('/');
+        }
+
+        function getElementCSSSelector(element) {
+            if (element.id) return `#${element.id}`;
+            const parts = [];
+            while (element && element.nodeType === 1) {
+                let selector = element.tagName.toLowerCase();
+                if (element.className) {
+                    selector += '.' + element.className.trim().split(/\s+/).join('.');
+                }
+                parts.unshift(selector);
+                element = element.parentElement;
+                if (parts.length > 3) break;
+            }
+            return parts.join(' > ');
+        }
+
+        function highlightElement(element) {
+            document.querySelectorAll('.highlight-overlay').forEach(el => el.remove());
+            const rect = element.getBoundingClientRect();
+            const highlight = document.createElement('div');
+            highlight.className = 'highlight-overlay';
+            highlight.style.cssText = `
+                position: fixed; border: 3px solid #ff0000; background: rgba(255, 0, 0, 0.1);
+                pointer-events: none; z-index: 9998;
+                top: ${rect.top + window.scrollY}px; left: ${rect.left + window.scrollX}px;
+                width: ${rect.width}px; height: ${rect.height}px;
+            `;
+            document.body.appendChild(highlight);
+            setTimeout(() => { if (highlight.parentNode) highlight.parentNode.removeChild(highlight); }, 3000);
+        }
+
+        function displayElementInfo(info) {
+            const elementInfoDiv = document.getElementById('element-info');
+            elementInfoDiv.innerHTML = `
+                <strong>Captured Element:</strong><br>
+                <strong>Tag:</strong> ${info.tagName}<br>
+                <strong>ID:</strong> ${info.id}<br>
+                <strong>Classes:</strong> ${info.className}<br>
+                <strong>Text:</strong> ${info.text}<br>
+                <strong>Position:</strong> ${Math.round(info.position.left)}, ${Math.round(info.position.top)}<br>
+                <strong>Size:</strong> ${Math.round(info.position.width)} x ${Math.round(info.position.height)}<br>
+                <strong>CSS Selector:</strong><br><code style="font-size:10px;">${info.cssSelector}</code><br>
+                <strong>XPath:</strong><br><code style="font-size:10px;">${info.xpath}</code>
+            `;
+        }
+
+        function saveTestReport() {
+            // Check if we have session items or single item
+            if (currentSession.length > 0) {
+                // Save as session report
+                const sessionReport = {
+                    id: Date.now(),
+                    sessionId: sessionId,
+                    timestamp: new Date().toLocaleString(),
+                    type: 'multi_capture_session',
+                    totalItems: currentSession.length,
+                    sessionItems: currentSession,
+                    currentTab: document.querySelector('.nav-link.active')?.textContent || 'Unknown Tab',
+                    pageInfo: { url: window.location.href, title: document.title },
+                    summary: {
+                        bugReports: currentSession.filter(item => item.issueType === 'bug').length,
+                        changeRequests: currentSession.filter(item => item.issueType === 'change').length,
+                        enhancements: currentSession.filter(item => item.issueType === 'enhancement').length,
+                        uiIssues: currentSession.filter(item => item.issueType === 'ui-issue').length
+                    },
+                    aiPrompt: generateSessionAIPrompt(currentSession)
+                };
+
+                testingReports.push(trackChangesInReport(sessionReport));
+                
+                // Clear session after saving
+                currentSession = [];
+                sessionId = null;
+                updateSessionDisplay();
+                
+                alert(`Session report saved with ${sessionReport.totalItems} items!`);
+            } else {
+                // Save single item report
+                const featureName = document.getElementById('feature-name').value.trim();
+                const issueDescription = document.getElementById('issue-description').value.trim();
+                const issueType = document.getElementById('issue-type').value;
+
+                if (!featureName || !issueDescription) {
+                    alert('Please fill in feature name and description');
+                    return;
+                }
+
+                const report = {
+                    id: Date.now(),
+                    timestamp: new Date().toLocaleString(),
+                    type: 'single_item',
+                    featureName, issueDescription, issueType,
+                    currentTab: document.querySelector('.nav-link.active')?.textContent || 'Unknown Tab',
+                    elementInfo: capturedElement ? {
+                        tagName: capturedElement.tagName.toLowerCase(),
+                        id: capturedElement.id || 'No ID',
+                        className: capturedElement.className || 'No classes',
+                        text: capturedElement.textContent?.trim().substring(0, 200) || 'No text',
+                        xpath: getElementXPath(capturedElement),
+                        cssSelector: getElementCSSSelector(capturedElement),
+                        beforeState: captureElementState(capturedElement)
+                    } : null,
+                    pageInfo: { url: window.location.href, title: document.title },
+                    aiPrompt: generateAIPrompt({ featureName, issueDescription, issueType, currentTab: document.querySelector('.nav-link.active')?.textContent || 'Unknown Tab', elementInfo: capturedElement ? { tagName: capturedElement.tagName.toLowerCase(), id: capturedElement.id || 'No ID', className: capturedElement.className || 'No classes', xpath: getElementXPath(capturedElement), cssSelector: getElementCSSSelector(capturedElement) } : null })
+                };
+
+                testingReports.push(trackChangesInReport(report));
+                alert('Single test report saved successfully!');
+            }
+
+            localStorage.setItem('qgoCargoTestReports', JSON.stringify(testingReports));
+            
+            document.getElementById('feature-name').value = '';
+            document.getElementById('issue-description').value = '';
+            document.getElementById('element-info').innerHTML = 'Click "Point & Capture" and then click on any element';
+            capturedElement = null;
+
+            updateTestReportsList();
+        }
+
+        function generateSessionAIPrompt(sessionItems) {
+            const summary = sessionItems.reduce((acc, item) => {
+                acc[item.issueType] = (acc[item.issueType] || 0) + 1;
+                return acc;
+            }, {});
+
+            let prompt = `
+QIGO CARGO APPLICATION - MULTI-CAPTURE TESTING SESSION REPORT:
+
+Application: Qgo Cargo - Crew & Inventory Management System
+Session Date: ${new Date().toLocaleString()}
+Total Items: ${sessionItems.length}
+
+SESSION SUMMARY:
+- Bug Reports: ${summary.bug || 0}
+- Change Requests: ${summary.change || 0} 
+- Enhancements: ${summary.enhancement || 0}
+- UI Issues: ${summary['ui-issue'] || 0}
+
+DETAILED ITEMS:
+`;
+
+            sessionItems.forEach((item, index) => {
+                prompt += `
+${index + 1}. FEATURE: ${item.featureName}
+   TYPE: ${item.issueType}
+   DESCRIPTION: ${item.issueDescription}
+   ELEMENT: ${item.elementInfo?.tagName || 'N/A'}${item.elementInfo?.id !== 'No ID' ? ' #' + item.elementInfo.id : ''}
+   CSS SELECTOR: ${item.elementInfo?.cssSelector || 'N/A'}
+   TIMESTAMP: ${item.timestamp}
+   
+`;
+            });
+
+            prompt += `
+CONTEXT:
+This is a Firebase-based web application with multiple issues/changes identified in a single testing session.
+
+REQUESTED ACTIONS:
+1. Analyze all items in priority order (bugs first, then changes, then enhancements)
+2. Provide comprehensive solutions for each item
+3. Consider interdependencies between changes
+4. Maintain Firebase functionality and data flow
+5. Provide before/after code snippets for each change
+
+IMPLEMENTATION PRIORITY:
+1. Critical bugs (if any)
+2. Change requests 
+3. UI issues
+4. Enhancements
+
+Please provide detailed solutions for each item with code examples.
+`;
+
+            return prompt.trim();
+        }
+
+        function generateAIPrompt(report) {
+            return `
+QIGO CARGO APPLICATION - TESTING REPORT FOR AI ASSISTANCE:
+
+Application: Qgo Cargo - Crew & Inventory Management System
+Tab/Section: ${report.currentTab}
+Feature: ${report.featureName}
+Issue Type: ${report.issueType}
+Reported On: ${new Date().toLocaleString()}
+
+PROBLEM DESCRIPTION:
+${report.issueDescription}
+
+TECHNICAL DETAILS:
+${report.elementInfo ? `
+- Element: ${report.elementInfo.tagName}
+- ID: ${report.elementInfo.id}
+- Classes: ${report.elementInfo.className}
+- CSS Selector: ${report.elementInfo.cssSelector}
+- XPath: ${report.elementInfo.xpath}
+` : 'No element captured'}
+
+CONTEXT:
+This is a Firebase-based web application using:
+- Firebase Firestore for data storage
+- Firebase Authentication
+- Tailwind CSS for styling
+- Chart.js for analytics
+- jsPDF for PDF generation
+
+REQUESTED ACTION:
+Please analyze this issue and provide a solution to fix the problem described above. 
+Consider the Firebase integration and existing code structure when providing the fix.
+
+IMPORTANT: Maintain the existing Firebase functionality and don't break the current data flow.
+            `.trim();
+        }
+
+        function updateTestReportsList() {
+            const reportsList = document.getElementById('test-reports-list');
+            const reportCount = document.getElementById('test-report-count');
+            
+            reportCount.textContent = testingReports.length;
+            
+            if (testingReports.length === 0) {
+                reportsList.innerHTML = '<div style="padding:10px;color:#666;">No test reports saved yet</div>';
+                return;
+            }
+
+            reportsList.innerHTML = testingReports.map(report => {
+                if (report.type === 'multi_capture_session') {
+                    return `
+                        <div onclick="viewTestReport(${report.id})" style="padding:10px;border-bottom:1px solid #eee;cursor:pointer; background: #f0f8ff;">
+                            <div style="display: flex; justify-content: between; align-items: center;">
+                                <div style="flex: 1;">
+                                    <strong>🗂️ SESSION REPORT (${report.totalItems} items)</strong><br>
+                                    <small style="color: #666;">${report.timestamp} | Tab: ${report.currentTab}</small><br>
+                                    <div style="font-size: 11px; color: #888;">
+                                        Bugs: ${report.summary.bugReports} | Changes: ${report.summary.changeRequests} | 
+                                        Enhancements: ${report.summary.enhancements} | UI: ${report.summary.uiIssues}
+                                    </div>
+                                </div>
+                                <span style="background: #4CAF50; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px;">MULTI</span>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const statusColor = report.changeTracking?.implementationStatus === 'completed' ? '#4CAF50' : '#ff9800';
+                    return `
+                        <div onclick="viewTestReport(${report.id})" style="padding:10px;border-bottom:1px solid #eee;cursor:pointer; position: relative;">
+                            <div style="display: flex; justify-content: between; align-items: center;">
+                                <div style="flex: 1;">
+                                    <strong>${report.featureName || 'Single Item'}</strong> - ${report.issueType}<br>
+                                    <small style="color: #666;">${report.timestamp}</small>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: end;">
+                                    <span style="background: ${statusColor}; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px;">
+                                        ${report.changeTracking?.implementationStatus || 'PENDING'}
+                                    </span>
+                                    ${report.elementInfo ? '<span style="font-size: 10px; color: #888;">📍 Element Captured</span>' : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }).join('');
+        }
+
+        function viewTestReport(reportId) {
+            const report = testingReports.find(r => r.id === reportId);
+            if (!report) return;
+
+            if (report.type === 'multi_capture_session') {
+                // Show session report details
+                let sessionDetails = `SESSION REPORT DETAILS:\n\n`;
+                sessionDetails += `Total Items: ${report.totalItems}\n`;
+                sessionDetails += `Session Date: ${report.timestamp}\n`;
+                sessionDetails += `Tab: ${report.currentTab}\n\n`;
+                sessionDetails += `SUMMARY:\n`;
+                sessionDetails += `- Bug Reports: ${report.summary.bugReports}\n`;
+                sessionDetails += `- Change Requests: ${report.summary.changeRequests}\n`;
+                sessionDetails += `- Enhancements: ${report.summary.enhancements}\n`;
+                sessionDetails += `- UI Issues: ${report.summary.uiIssues}\n\n`;
+                sessionDetails += `DETAILED ITEMS:\n`;
+                
+                report.sessionItems.forEach((item, index) => {
+                    sessionDetails += `${index + 1}. ${item.featureName} (${item.issueType})\n`;
+                    sessionDetails += `   Description: ${item.issueDescription}\n`;
+                    if (item.elementInfo) {
+                        sessionDetails += `   Element: ${item.elementInfo.tagName}${item.elementInfo.id !== 'No ID' ? '#' + item.elementInfo.id : ''}\n`;
+                    }
+                    sessionDetails += `\n`;
+                });
+
+                sessionDetails += `\n🤖 COMPLETE AI PROMPT COPIED TO CONSOLE!\n`;
+                sessionDetails += `Check browser console (F12) to copy the full detailed prompt for AI assistance.`;
+
+                alert(sessionDetails);
+                console.log('=== MULTI-CAPTURE SESSION AI PROMPT ===');
+                console.log(report.aiPrompt);
+                console.log('=== END AI PROMPT ===');
+            } else {
+                // Show single item report details
+                let details = `SINGLE ITEM REPORT:\n\n`;
+                details += `Feature: ${report.featureName}\n`;
+                details += `Type: ${report.issueType}\n`;
+                details += `Description: ${report.issueDescription}\n`;
+                details += `Timestamp: ${report.timestamp}\n`;
+                details += `Tab: ${report.currentTab}\n\n`;
+
+                if (report.elementInfo) {
+                    details += `CAPTURED ELEMENT:\n`;
+                    details += `- Tag: ${report.elementInfo.tagName}\n`;
+                    details += `- ID: ${report.elementInfo.id}\n`;
+                    details += `- Classes: ${report.elementInfo.className}\n`;
+                    details += `- Text: ${report.elementInfo.text?.substring(0, 100)}...\n\n`;
+                }
+
+                if (report.changeTracking) {
+                    details += `CHANGE TRACKING:\n`;
+                    details += `- Status: ${report.changeTracking.implementationStatus || 'Pending'}\n`;
+                    if (report.changeTracking.expectedChanges) {
+                        details += `- Expected Changes: ${report.changeTracking.expectedChanges.length}\n`;
+                    }
+                    details += `\n`;
+                }
+
+                details += `🤖 AI PROMPT COPIED TO CONSOLE!\n`;
+                details += `Check browser console (F12) to copy the prompt for AI assistance.`;
+
+                alert(details);
+                console.log('=== SINGLE ITEM AI PROMPT ===');
+                console.log(report.aiPrompt);
+                console.log('=== END AI PROMPT ===');
+            }
+        }
+
+        function exportTestReports() {
+            if (testingReports.length === 0) {
+                alert('No test reports to export');
+                return;
+            }
+            const dataStr = JSON.stringify({
+                application: 'Qgo Cargo - Crew & Inventory Management',
+                exportDate: new Date().toISOString(),
+                totalReports: testingReports.length,
+                reports: testingReports
+            }, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `qgo-cargo-test-reports-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+        }
+
+        function clearTestReports() {
+            if (testingReports.length === 0) return;
+            if (confirm('Are you sure you want to clear all test reports?')) {
+                testingReports = [];
+                localStorage.removeItem('qgoCargoTestReports');
+                updateTestReportsList();
+            }
+        }
+
+        // New functions for multi-capture and change tracking
+        function quickAddToSession() {
+            // Quick add for continuous capture - no prompts, just capture element info
+            if (!sessionId) {
+                sessionId = 'SESSION_' + Date.now();
+            }
+
+            const sessionItem = {
+                id: Date.now(),
+                featureName: `Element ${currentSession.length + 1}`, // Auto-generate name
+                issueDescription: 'Multi-capture item - details to be added later', // Placeholder
+                issueType: 'bug', // Default type
+                captured: new Date().toISOString(),
+                elementInfo: capturedElement ? {
+                    tagName: capturedElement.tagName.toLowerCase(),
+                    id: capturedElement.id || 'No ID',
+                    className: capturedElement.className || 'No classes',
+                    text: capturedElement.textContent?.trim().substring(0, 100) || 'No text',
+                    xpath: getElementXPath(capturedElement),
+                    cssSelector: getElementCSSSelector(capturedElement),
+                    originalValue: getElementValue(capturedElement),
+                    screenshot: captureElementScreenshot(capturedElement)
+                } : null,
+                changeTracking: capturedElement ? {
+                    beforeState: captureElementState(capturedElement),
+                    implementationStatus: 'pending',
+                    expectedChanges: []
+                } : null
+            };
+
+            currentSession.push(sessionItem);
+            updateSessionDisplay();
+            
+            // Clear element info for next capture
+            document.getElementById('element-info').innerHTML = 'Element captured! Click next element...';
+        }
+
+        function addToSession() {
+            const featureName = document.getElementById('feature-name').value.trim();
+            const issueDescription = document.getElementById('issue-description').value.trim();
+            const issueType = document.getElementById('issue-type').value;
+
+            if (!featureName || !issueDescription) {
+                alert('Please fill in feature name and description before adding to session');
+                return;
+            }
+
+            if (!sessionId) {
+                sessionId = 'SESSION_' + Date.now();
+            }
+
+            const sessionItem = {
+                id: Date.now(),
+                featureName,
+                issueDescription,
+                issueType,
+                elementInfo: capturedElement ? {
+                    tagName: capturedElement.tagName.toLowerCase(),
+                    id: capturedElement.id || 'No ID',
+                    className: capturedElement.className || 'No classes',
+                    text: capturedElement.textContent?.trim().substring(0, 100) || 'No text',
+                    xpath: getElementXPath(capturedElement),
+                    cssSelector: getElementCSSSelector(capturedElement),
+                    originalValue: getElementValue(capturedElement),
+                    screenshot: captureElementScreenshot(capturedElement)
+                } : null,
+                timestamp: new Date().toLocaleString(),
+                changeTracking: {
+                    beforeState: capturedElement ? captureElementState(capturedElement) : null,
+                    afterState: null, // Will be filled when change is implemented
+                    changeImplemented: false,
+                    implementationDate: null
+                }
+            };
+
+            currentSession.push(sessionItem);
+            updateSessionDisplay();
+            
+            // Clear form for next capture
+            document.getElementById('feature-name').value = '';
+            document.getElementById('issue-description').value = '';
+            document.getElementById('element-info').innerHTML = 'Click "Point & Capture" and then click on any element';
+            capturedElement = null;
+
+            alert(`Added to session! Total items: ${currentSession.length}`);
+        }
+
+        function clearSession() {
+            if (currentSession.length === 0) return;
+            if (confirm('Clear current testing session? All unsaved items will be lost.')) {
+                currentSession = [];
+                sessionId = null;
+                updateSessionDisplay();
+            }
+        }
+
+        function updateSessionDisplay() {
+            const sessionDiv = document.getElementById('current-session');
+            const sessionCount = document.getElementById('session-count');
+            const sessionItems = document.getElementById('session-items');
+            const sessionCounter = document.getElementById('session-counter');
+
+            if (currentSession.length === 0) {
+                sessionDiv.style.display = 'none';
+                sessionCounter.textContent = '';
+            } else {
+                sessionDiv.style.display = 'block';
+                sessionCount.textContent = currentSession.length;
+                sessionCounter.textContent = `Session: ${currentSession.length} items captured`;
+                
+                sessionItems.innerHTML = currentSession.map((item, index) => `
+                    <div style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 5px; background: white;">
+                        <div style="display: flex; justify-content: between; align-items: center;">
+                            <div style="flex: 1;">
+                                <strong>${index + 1}. ${item.featureName}</strong> - ${item.issueType}
+                                <div style="font-size: 12px; color: #666;">${item.issueDescription.substring(0, 100)}...</div>
+                                ${item.elementInfo ? `<div style="font-size: 11px; color: #888;">Element: ${item.elementInfo.tagName}${item.elementInfo.id !== 'No ID' ? '#' + item.elementInfo.id : ''}</div>` : ''}
+                            </div>
+                            <button onclick="removeFromSession(${index})" style="background: #ff4444; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 10px;">✕</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function showBulkEditDialog() {
+            const dialog = document.createElement('div');
+            dialog.id = 'bulk-edit-dialog';
+            dialog.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.8); z-index: 10003;
+                display: flex; justify-content: center; align-items: center;
+            `;
+
+            const dialogContent = document.createElement('div');
+            dialogContent.style.cssText = `
+                background: white; padding: 20px; border-radius: 10px;
+                max-width: 800px; max-height: 80vh; overflow-y: auto;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            `;
+
+            dialogContent.innerHTML = `
+                <h3 style="margin: 0 0 15px 0; color: #333;">🎯 Bulk Edit Captured Elements (${currentSession.length} items)</h3>
+                <p style="color: #666; margin-bottom: 20px;">Now add names and descriptions for your captured elements:</p>
+                
+                <div id="bulk-edit-items" style="margin-bottom: 20px;">
+                    ${currentSession.map((item, index) => `
+                        <div style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #f9f9f9;">
+                            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                                <strong style="color: #2196F3; margin-right: 10px;">Element ${index + 1}:</strong>
+                                <code style="background: #e1e1e1; padding: 2px 6px; border-radius: 4px; font-size: 11px;">
+                                    ${item.elementInfo?.tagName || 'unknown'}${item.elementInfo?.id !== 'No ID' ? '#' + item.elementInfo?.id : ''}
+                                </code>
+                            </div>
+                            
+                            <div style="margin-bottom: 10px;">
+                                <label style="display: block; font-weight: bold; margin-bottom: 3px;">Feature Name:</label>
+                                <input type="text" id="bulk-name-${index}" placeholder="Enter feature name..." 
+                                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                            
+                            <div style="margin-bottom: 10px;">
+                                <label style="display: block; font-weight: bold; margin-bottom: 3px;">Issue Type:</label>
+                                <select id="bulk-type-${index}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                    <option value="bug">🐛 Bug</option>
+                                    <option value="enhancement">✨ Enhancement</option>
+                                    <option value="change-request">🔄 Change Request</option>
+                                    <option value="ui-issue">🎨 UI Issue</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label style="display: block; font-weight: bold; margin-bottom: 3px;">Description:</label>
+                                <textarea id="bulk-desc-${index}" placeholder="Describe the issue or change needed..." 
+                                          style="width: 100%; height: 60px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; resize: vertical;"></textarea>
+                            </div>
+                            
+                            ${item.elementInfo?.text ? `<div style="margin-top: 8px; font-size: 12px; color: #666;"><strong>Element text:</strong> "${item.elementInfo.text}"</div>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button onclick="cancelBulkEdit()" style="padding: 10px 20px; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer;">
+                        Cancel
+                    </button>
+                    <button onclick="applyBulkEdit()" style="padding: 10px 20px; border: none; background: #4CAF50; color: white; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                        ✅ Apply & Save Session
+                    </button>
+                </div>
+            `;
+
+            dialog.appendChild(dialogContent);
+            document.body.appendChild(dialog);
+        }
+
+        function cancelBulkEdit() {
+            const dialog = document.getElementById('bulk-edit-dialog');
+            if (dialog) dialog.remove();
+        }
+
+        function applyBulkEdit() {
+            // Update each session item with the new details
+            let allFilled = true;
+            
+            currentSession.forEach((item, index) => {
+                const name = document.getElementById(`bulk-name-${index}`).value.trim();
+                const type = document.getElementById(`bulk-type-${index}`).value;
+                const desc = document.getElementById(`bulk-desc-${index}`).value.trim();
+                
+                if (!name || !desc) {
+                    allFilled = false;
+                    return;
+                }
+                
+                item.featureName = name;
+                item.issueType = type;
+                item.issueDescription = desc;
+            });
+            
+            if (!allFilled) {
+                alert('Please fill in all feature names and descriptions before applying!');
+                return;
+            }
+            
+            // Close dialog and update display
+            const dialog = document.getElementById('bulk-edit-dialog');
+            if (dialog) dialog.remove();
+            
+            updateSessionDisplay();
+            
+            alert(`✅ Bulk edit completed!\n${currentSession.length} elements updated.\nClick "Save Session" to create your report.`);
+        }
+
+        function removeFromSession(index) {
+            currentSession.splice(index, 1);
+            updateSessionDisplay();
+        }
+
+        function captureElementState(element) {
+            return {
+                tagName: element.tagName.toLowerCase(),
+                id: element.id,
+                className: element.className,
+                textContent: element.textContent?.trim(),
+                innerHTML: element.innerHTML?.substring(0, 500),
+                attributes: Array.from(element.attributes).reduce((acc, attr) => {
+                    acc[attr.name] = attr.value;
+                    return acc;
+                }, {}),
+                computedStyles: {
+                    display: getComputedStyle(element).display,
+                    visibility: getComputedStyle(element).visibility,
+                    backgroundColor: getComputedStyle(element).backgroundColor,
+                    color: getComputedStyle(element).color,
+                    fontSize: getComputedStyle(element).fontSize
+                },
+                value: getElementValue(element),
+                position: element.getBoundingClientRect()
+            };
+        }
+
+        function getElementValue(element) {
+            if (!element) return null;
+            if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+                return element.value;
+            } else if (element.tagName === 'SELECT') {
+                return element.selectedOptions[0]?.text || element.value;
+            }
+            return element.textContent?.trim();
+        }
+
+        function captureElementScreenshot(element) {
+            // Placeholder for screenshot - in a real implementation, you'd use canvas or library
+            const rect = element.getBoundingClientRect();
+            return `Screenshot placeholder: Element at ${Math.round(rect.left)}, ${Math.round(rect.top)} (${Math.round(rect.width)}x${Math.round(rect.height)})`;
+        }
+
+        function trackChangesInReport(report) {
+            // Add change tracking information to reports
+            report.changeTracking = {
+                detectedChanges: [],
+                implementationStatus: 'pending',
+                beforeAfterComparison: null,
+                codeChanges: [],
+                testingNotes: []
+            };
+
+            // If this is a change request, add specific change detection
+            if (report.issueType === 'change' && report.elementInfo) {
+                report.changeTracking.expectedChanges = [
+                    {
+                        type: 'content_change',
+                        element: report.elementInfo.cssSelector,
+                        currentValue: report.elementInfo.text,
+                        expectedValue: report.issueDescription,
+                        priority: 'high'
+                    }
+                ];
+            }
+
+            return report;
+        }
+
+        // Missing handler functions for testing mode buttons
+        function handleGenerateDummyData() {
+            console.log('Generating dummy data...');
+            
+            try {
+                // Generate sample crew data
+                const dummyCrews = [
+                    { name: 'Ahmed Hassan', role: 'Captain', civilId: 'CID001', email: 'ahmed.hassan@example.com', phone: '+965-12345678', status: 'active' },
+                    { name: 'Sarah Mohammed', role: 'Engineer', civilId: 'CID002', email: 'sarah.mohammed@example.com', phone: '+965-87654321', status: 'active' },
+                    { name: 'Omar Ali', role: 'Mechanic', civilId: 'CID003', email: 'omar.ali@example.com', phone: '+965-11223344', status: 'inactive' },
+                    { name: 'Fatima Abdullah', role: 'Navigator', civilId: 'CID004', email: 'fatima.abdullah@example.com', phone: '+965-44556677', status: 'active' },
+                    { name: 'Khalid Yousef', role: 'Cargo Handler', civilId: 'CID005', email: 'khalid.yousef@example.com', phone: '+965-99887766', status: 'active' }
+                ];
+
+                // Generate sample inventory data
+                const dummyInventory = [
+                    { name: 'Container A-001', type: 'Standard Container', location: 'Port-A', status: 'available', weight: 2500 },
+                    { name: 'Container B-002', type: 'Refrigerated', location: 'Port-B', status: 'in-use', weight: 3200 },
+                    { name: 'Crane Unit-01', type: 'Heavy Machinery', location: 'Yard-1', status: 'maintenance', weight: 15000 },
+                    { name: 'Forklift FL-003', type: 'Light Equipment', location: 'Warehouse-C', status: 'available', weight: 800 },
+                    { name: 'Cargo Truck CT-005', type: 'Transport Vehicle', location: 'Gate-2', status: 'in-use', weight: 4500 }
+                ];
+
+                // Add dummy data to Firebase (if connected) or show in console
+                console.log('Generated Dummy Crew Data:', dummyCrews);
+                console.log('Generated Dummy Inventory Data:', dummyInventory);
+                
+                // Show success message
+                alert(`✅ Dummy Data Generated Successfully!\n\nCreated:\n• ${dummyCrews.length} crew members\n• ${dummyInventory.length} inventory items\n\nCheck browser console (F12) for details.`);
+                
+                // You can add Firebase integration here later
+                // Example: addDoc(collection(db, 'crews'), crewData);
+                
+            } catch (error) {
+                console.error('Error generating dummy data:', error);
+                alert('❌ Error generating dummy data. Check console for details.');
+            }
+        }
+
+        function handleClearDummyData() {
+            console.log('Clearing dummy data...');
+            
+            if (confirm('⚠️ Are you sure you want to clear all dummy data?\n\nThis action cannot be undone.')) {
+                try {
+                    // Clear local storage testing data
+                    localStorage.removeItem('qgoCargoTestReports');
+                    localStorage.removeItem('qgo-testing-reports');
+                    
+                    console.log('Dummy data cleared from local storage');
+                    
+                    // Show success message
+                    alert('✅ Dummy Data Cleared Successfully!\n\n• Local test reports removed\n• Storage cleaned\n\nNote: Firebase data (if any) would need separate cleanup.');
+                    
+                    // You can add Firebase cleanup here later
+                    // Example: batch delete operations
+                    
+                } catch (error) {
+                    console.error('Error clearing dummy data:', error);
+                    alert('❌ Error clearing dummy data. Check console for details.');
+                }
+            }
+        }
+
+        function handleRunSystemCheck() {
+            console.log('Running system check...');
+            
+            try {
+                const checks = [];
+                
+                // Check local storage
+                const testReports = localStorage.getItem('qgoCargoTestReports');
+                checks.push({
+                    name: 'Local Storage',
+                    status: testReports ? 'OK' : 'Empty',
+                    details: testReports ? `${JSON.parse(testReports).length} reports stored` : 'No test reports found'
+                });
+                
+                // Check testing tool
+                const testPanel = document.getElementById('test-panel');
+                checks.push({
+                    name: 'Testing Tool',
+                    status: testPanel ? 'OK' : 'Missing',
+                    details: testPanel ? 'Testing panel available' : 'Testing panel not found'
+                });
+                
+                // Check Firebase connection (placeholder)
+                checks.push({
+                    name: 'Firebase Connection',
+                    status: 'Unknown',
+                    details: 'Firebase auth and firestore status would be checked here'
+                });
+                
+                // Check essential elements
+                const essentialElements = [
+                    'generate-dummy-data-btn',
+                    'clear-dummy-data-btn', 
+                    'floating-test-tool'
+                ];
+                
+                let elementsFound = 0;
+                essentialElements.forEach(id => {
+                    if (document.getElementById(id)) elementsFound++;
+                });
+                
+                checks.push({
+                    name: 'UI Elements',
+                    status: elementsFound === essentialElements.length ? 'OK' : 'Issues',
+                    details: `${elementsFound}/${essentialElements.length} essential elements found`
+                });
+                
+                // Display results
+                const resultsText = checks.map(check => 
+                    `${check.name}: ${check.status}\n  ${check.details}`
+                ).join('\n\n');
+                
+                console.log('System Check Results:', checks);
+                alert(`🔍 System Check Complete!\n\n${resultsText}\n\nFull details logged to console (F12).`);
+                
+            } catch (error) {
+                console.error('Error during system check:', error);
+                alert('❌ Error during system check. Check console for details.');
+            }
+        }
+
+        function handleGenerateTestReport() {
+            console.log('Generating test report...');
+            
+            try {
+                const reports = JSON.parse(localStorage.getItem('qgoCargoTestReports') || '[]');
+                const timestamp = new Date().toISOString();
+                
+                const reportSummary = {
+                    generatedAt: timestamp,
+                    totalReports: reports.length,
+                    reportTypes: {},
+                    systemInfo: {
+                        userAgent: navigator.userAgent,
+                        timestamp: timestamp,
+                        url: window.location.href
+                    }
+                };
+                
+                // Count report types
+                reports.forEach(report => {
+                    if (report.type === 'multi_capture_session') {
+                        report.sessionItems?.forEach(item => {
+                            reportSummary.reportTypes[item.issueType] = (reportSummary.reportTypes[item.issueType] || 0) + 1;
+                        });
+                    } else {
+                        reportSummary.reportTypes[report.issueType] = (reportSummary.reportTypes[report.issueType] || 0) + 1;
+                    }
+                });
+                
+                console.log('Test Report Summary:', reportSummary);
+                
+                const summaryText = `📊 Test Report Generated!\n\nTotal Reports: ${reportSummary.totalReports}\n\nIssue Types:\n${Object.entries(reportSummary.reportTypes).map(([type, count]) => `• ${type}: ${count}`).join('\n')}\n\nGenerated: ${new Date(timestamp).toLocaleString()}\n\nFull details in console (F12).`;
+                
+                alert(summaryText);
+                
+            } catch (error) {
+                console.error('Error generating test report:', error);
+                alert('❌ Error generating test report. Check console for details.');
+            }
+        }
+    </script>
 
     <!-- Firebase and App Logic -->
     <script type="module">
@@ -463,6 +1608,37 @@
                 </div>
             </div>
         `;
+        
+        const TestingTemplate = `
+            <div class="space-y-8">
+                <div class="card">
+                    <h2 class="text-xl font-semibold mb-4">Data Management</h2>
+                    <div class="flex flex-wrap gap-4">
+                         <button id="generate-dummy-data-btn" class="btn btn-primary"><i data-feather="plus-circle" class="mr-2"></i>Generate Dummy Data</button>
+                         <button id="clear-dummy-data-btn" class="btn btn-danger"><i data-feather="trash-2" class="mr-2"></i>Clear Dummy Data</button>
+                    </div>
+                     <p class="text-sm text-gray-500 mt-4">Generate sample crew, inventory, and schedules to test system functionality. Clear the data when you are finished.</p>
+                </div>
+
+                <div class="card">
+                    <h2 class="text-xl font-semibold mb-4">System Check</h2>
+                     <button id="run-system-check-btn" class="btn btn-secondary mb-4"><i data-feather="play-circle" class="mr-2"></i>Run System Check</button>
+                     <div id="system-check-results" class="space-y-2"></div>
+                </div>
+
+                <div class="card">
+                     <h2 class="text-xl font-semibold mb-4">Feedback & Bug Report</h2>
+                     <div class="space-y-4">
+                        <div>
+                            <label for="feedback-notes" class="block text-sm font-medium text-gray-700 mb-1">Testing Notes & Comments</label>
+                            <textarea id="feedback-notes" class="w-full border rounded-md p-2 h-32" placeholder="Describe any issues or suggestions here..."></textarea>
+                        </div>
+                        <button id="generate-test-report-btn" class="btn btn-primary"><i data-feather="download" class="mr-2"></i>Generate Report</button>
+                     </div>
+                </div>
+            </div>
+        `;
+
 
         // --- FIREBASE CONFIG & INITIALIZATION --- //
         let db, auth, userId, app, dataPath, currentUserIsAdmin, messaging;
@@ -564,6 +1740,7 @@
                                     dataPath = `users/${userId}`;
                                     currentUserIsAdmin = false;
                                     document.getElementById('user-info').textContent = user.email;
+                                    document.getElementById('testing-tab-link').classList.add('hidden');
                                     authContainer.classList.add('hidden');
                                     appContainer.classList.remove('hidden');
                                     attachDataListeners();
@@ -590,6 +1767,7 @@
                             currentUserIsAdmin = true;
                             
                             document.getElementById('user-info').textContent = user.email + ' (Admin)';
+                             document.getElementById('testing-tab-link').classList.remove('hidden');
                             authContainer.classList.add('hidden');
                             appContainer.classList.remove('hidden');
                             attachDataListeners();
@@ -606,6 +1784,8 @@
                         loginCard.classList.remove('hidden');
                         registerCard.classList.add('hidden');
                         pendingCard.classList.add('hidden');
+                        document.getElementById('testing-tab-link').classList.add('hidden');
+
 
                         if (usersUnsubscribe) usersUnsubscribe();
                         if (inventoryUnsubscribe) inventoryUnsubscribe();
@@ -748,7 +1928,10 @@
             if(!container) return;
             container.innerHTML = (window.appState.pendingUsers || []).map(user => `
                 <div class="flex justify-between items-center p-3 border rounded-md bg-yellow-50">
-                    <p class="font-medium text-yellow-800">${user.email}</p>
+                    <div>
+                        <p class="font-medium text-yellow-800">${user.name || user.email}</p>
+                        <p class="text-sm text-yellow-600">Civil ID: ${user.civilId || user.email || 'Not provided'}</p>
+                    </div>
                     <button class="approve-user-btn btn btn-success" data-id="${user.id}" data-email="${user.email}">Approve</button>
                 </div>
             `).join('') || '<p class="text-center text-gray-500 py-4">No pending approvals.</p>';
@@ -842,7 +2025,7 @@
                 return `
                     <div class="flex justify-between items-center p-3 border rounded-md hover:bg-gray-50">
                         <div>
-                            <p class="font-medium">${user.name} (${user.email})</p>
+                            <p class="font-medium">${user.name} (Civil ID: ${user.civilId || user.email || 'N/A'})</p>
                             <p class="text-sm text-gray-500">Current Role: <span class="font-semibold">${role?.name || 'Unassigned'}</span></p>
                         </div>
                         <button class="edit-user-role-btn btn btn-secondary !p-2" data-id="${user.id}"><i data-feather="edit-2"></i> Change Role</button>
@@ -1178,6 +2361,8 @@
             }
         }
         
+        // Testing functions are now in global scope above
+        
         // --- DATA MANIPULATION --- //
         async function addUser(userData) { try { await addDoc(collection(db, `${dataPath}/crew`), userData); } catch(e) { console.error("Firestore Error: Could not add crew member.", e); } }
         async function updateUser(id, userData) { try { await setDoc(doc(db, `${dataPath}/crew/${id}`), userData, { merge: true }); } catch(e) { console.error("Firestore Error: Could not update crew member.", e); } }
@@ -1405,8 +2590,8 @@
                                 <input type="text" name="name" required class="w-full border border-gray-300 rounded-md p-2" value="${userToEdit?.name || ''}">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                                <input type="email" name="email" required class="w-full border border-gray-300 rounded-md p-2 ${isRegisteredUser ? 'bg-gray-100' : ''}" value="${userToEdit?.email || ''}" ${isRegisteredUser ? 'readonly' : ''}>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Civil ID</label>
+                                <input type="text" name="civilId" required class="w-full border border-gray-300 rounded-md p-2 ${isRegisteredUser ? 'bg-gray-100' : ''}" value="${userToEdit?.civilId || ''}" ${isRegisteredUser ? 'readonly' : ''} placeholder="Enter Civil ID number">
                             </div>
                              <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">4-Digit PIN</label>
@@ -2356,9 +3541,18 @@
             document.getElementById('maintenance-tab').innerHTML = MaintenanceTemplate;
             document.getElementById('admin-tab').innerHTML = AdminTemplate;
             document.getElementById('notifications-tab').innerHTML = NotificationsTemplate;
+            document.getElementById('testing-tab').innerHTML = TestingTemplate;
             
             initFirebase().then(() => {
                 feather.replace(); 
+                
+                // Initialize testing tool - simple version
+                setTimeout(() => {
+                    if (typeof updateTestReportsList === 'function') {
+                        updateTestReportsList();
+                    }
+                }, 100);
+                
                 if(document.getElementById('schedule-date')) {
                     document.getElementById('schedule-date').value = new Date().toISOString().split('T')[0];
                 }
@@ -2571,10 +3765,17 @@
                         </div>
                     `;
                 });
+
+                 // --- TESTING MODE EVENT LISTENERS --- //
+                document.getElementById('generate-dummy-data-btn')?.addEventListener('click', handleGenerateDummyData);
+                document.getElementById('clear-dummy-data-btn')?.addEventListener('click', handleClearDummyData);
+                document.getElementById('run-system-check-btn')?.addEventListener('click', handleRunSystemCheck);
+                document.getElementById('generate-test-report-btn')?.addEventListener('click', handleGenerateTestReport);
             });
         });
 
     </script>
 </body>
 </html>
+
 
