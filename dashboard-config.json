@@ -1,18 +1,6 @@
 {
   "apps": [
     {
-      "id": 5,
-      "name": "Notion",
-      "description": "All-in-one workspace for notes and collaboration",
-      "url": "https://notion.so",
-      "category": "Productivity",
-      "status": "maintenance",
-      "version": "stable",
-      "openMode": "iframe",
-      "icon": "fas fa-sticky-note",
-      "lastUsed": "2025-09-25T08:33:56.630Z"
-    },
-    {
       "id": 6,
       "name": "Slack",
       "description": "Team communication and collaboration platform",
@@ -49,6 +37,6 @@
       "lastUsed": "2025-09-25T05:33:56.630Z"
     }
   ],
-  "timestamp": "2025-09-25T12:40:28.793Z",
+  "timestamp": "2025-09-25T12:40:30.914Z",
   "version": "1.0"
 }
