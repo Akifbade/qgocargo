@@ -1,18 +1,6 @@
 {
   "apps": [
     {
-      "id": 3,
-      "name": "VS Code Online",
-      "description": "Online code editor and development environment",
-      "url": "https://vscode.dev",
-      "category": "Development",
-      "status": "online",
-      "version": "beta",
-      "openMode": "iframe",
-      "icon": "fas fa-code",
-      "lastUsed": "2025-09-25T10:33:56.630Z"
-    },
-    {
       "id": 4,
       "name": "Figma",
       "description": "Collaborative design and prototyping tool",
@@ -73,6 +61,6 @@
       "lastUsed": "2025-09-25T05:33:56.630Z"
     }
   ],
-  "timestamp": "2025-09-25T12:40:26.097Z",
+  "timestamp": "2025-09-25T12:40:27.554Z",
   "version": "1.0"
 }
