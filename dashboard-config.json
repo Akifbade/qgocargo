@@ -1,5 +1,102 @@
 {
-  "apps": [],
-  "timestamp": "2025-09-25T12:40:45.097Z",
+  "apps": [
+    {
+      "id": 1,
+      "name": "Gmail",
+      "description": "Professional email management and communication platform",
+      "url": "https://mail.google.com",
+      "category": "Communication",
+      "status": "online",
+      "version": "stable",
+      "openMode": "new_tab",
+      "icon": "fab fa-google",
+      "lastUsed": "2025-09-25T12:42:41.375Z"
+    },
+    {
+      "id": 2,
+      "name": "GitHub",
+      "description": "Code repository and version control system",
+      "url": "https://github.com",
+      "category": "Development",
+      "status": "online",
+      "version": "stable",
+      "openMode": "new_tab",
+      "icon": "fab fa-github",
+      "lastUsed": "2025-09-25T11:42:41.375Z"
+    },
+    {
+      "id": 3,
+      "name": "VS Code Online",
+      "description": "Online code editor and development environment",
+      "url": "https://vscode.dev",
+      "category": "Development",
+      "status": "online",
+      "version": "beta",
+      "openMode": "iframe",
+      "icon": "fas fa-code",
+      "lastUsed": "2025-09-25T10:42:41.375Z"
+    },
+    {
+      "id": 4,
+      "name": "Figma",
+      "description": "Collaborative design and prototyping tool",
+      "url": "https://figma.com",
+      "category": "Design",
+      "status": "online",
+      "version": "stable",
+      "openMode": "new_tab",
+      "icon": "fab fa-figma",
+      "lastUsed": "2025-09-25T09:42:41.375Z"
+    },
+    {
+      "id": 5,
+      "name": "Notion",
+      "description": "All-in-one workspace for notes and collaboration",
+      "url": "https://notion.so",
+      "category": "Productivity",
+      "status": "maintenance",
+      "version": "stable",
+      "openMode": "iframe",
+      "icon": "fas fa-sticky-note",
+      "lastUsed": "2025-09-25T08:42:41.375Z"
+    },
+    {
+      "id": 6,
+      "name": "Slack",
+      "description": "Team communication and collaboration platform",
+      "url": "https://slack.com",
+      "category": "Communication",
+      "status": "online",
+      "version": "stable",
+      "openMode": "new_tab",
+      "icon": "fab fa-slack",
+      "lastUsed": "2025-09-25T07:42:41.375Z"
+    },
+    {
+      "id": 7,
+      "name": "Trello",
+      "description": "Project management and task organization",
+      "url": "https://trello.com",
+      "category": "Productivity",
+      "status": "offline",
+      "version": "beta",
+      "openMode": "iframe",
+      "icon": "fab fa-trello",
+      "lastUsed": "2025-09-25T06:42:41.375Z"
+    },
+    {
+      "id": 8,
+      "name": "Analytics",
+      "description": "Google Analytics dashboard for website insights",
+      "url": "https://analytics.google.com",
+      "category": "Analytics",
+      "status": "online",
+      "version": "stable",
+      "openMode": "new_tab",
+      "icon": "fas fa-chart-line",
+      "lastUsed": "2025-09-25T05:42:41.375Z"
+    }
+  ],
+  "timestamp": "2025-09-25T12:42:41.376Z",
   "version": "1.0"
 }
