@@ -1,18 +1,5 @@
 {
-  "apps": [
-    {
-      "id": 7,
-      "name": "Trello",
-      "description": "Project management and task organization",
-      "url": "https://trello.com",
-      "category": "Productivity",
-      "status": "offline",
-      "version": "beta",
-      "openMode": "iframe",
-      "icon": "fab fa-trello",
-      "lastUsed": "2025-09-25T06:33:56.630Z"
-    }
-  ],
-  "timestamp": "2025-09-25T12:40:36.921Z",
+  "apps": [],
+  "timestamp": "2025-09-25T12:40:45.097Z",
   "version": "1.0"
 }
