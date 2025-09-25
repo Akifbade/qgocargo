@@ -11,20 +11,8 @@
       "openMode": "iframe",
       "icon": "fab fa-trello",
       "lastUsed": "2025-09-25T06:33:56.630Z"
-    },
-    {
-      "id": 8,
-      "name": "Analytics",
-      "description": "Google Analytics dashboard for website insights",
-      "url": "https://analytics.google.com",
-      "category": "Analytics",
-      "status": "online",
-      "version": "stable",
-      "openMode": "new_tab",
-      "icon": "fas fa-chart-line",
-      "lastUsed": "2025-09-25T05:33:56.630Z"
     }
   ],
-  "timestamp": "2025-09-25T12:40:33.922Z",
+  "timestamp": "2025-09-25T12:40:36.921Z",
   "version": "1.0"
 }
