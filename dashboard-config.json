@@ -1,18 +1,6 @@
 {
   "apps": [
     {
-      "id": 6,
-      "name": "Slack",
-      "description": "Team communication and collaboration platform",
-      "url": "https://slack.com",
-      "category": "Communication",
-      "status": "online",
-      "version": "stable",
-      "openMode": "new_tab",
-      "icon": "fab fa-slack",
-      "lastUsed": "2025-09-25T07:33:56.630Z"
-    },
-    {
       "id": 7,
       "name": "Trello",
       "description": "Project management and task organization",
@@ -37,6 +25,6 @@
       "lastUsed": "2025-09-25T05:33:56.630Z"
     }
   ],
-  "timestamp": "2025-09-25T12:40:30.914Z",
+  "timestamp": "2025-09-25T12:40:33.922Z",
   "version": "1.0"
 }
