@@ -1,18 +1,6 @@
 {
   "apps": [
     {
-      "id": 4,
-      "name": "Figma",
-      "description": "Collaborative design and prototyping tool",
-      "url": "https://figma.com",
-      "category": "Design",
-      "status": "online",
-      "version": "stable",
-      "openMode": "new_tab",
-      "icon": "fab fa-figma",
-      "lastUsed": "2025-09-25T09:33:56.630Z"
-    },
-    {
       "id": 5,
       "name": "Notion",
       "description": "All-in-one workspace for notes and collaboration",
@@ -61,6 +49,6 @@
       "lastUsed": "2025-09-25T05:33:56.630Z"
     }
   ],
-  "timestamp": "2025-09-25T12:40:27.554Z",
+  "timestamp": "2025-09-25T12:40:28.793Z",
   "version": "1.0"
 }
