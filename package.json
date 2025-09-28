@@ -1,19 +1,32 @@
 {
-  "name": "qgo-cargo-management",
-  "private": true,
+  "name": "warehouse-management-system",
   "version": "1.0.0",
-  "type": "module",
+  "description": "Comprehensive warehouse management system with role-based access control",
+  "main": "index.html",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "start": "node simple-server.js",
+    "dev": "node simple-server.js",
+    "build": "echo 'Static site - no build needed'",
+    "deploy": "netlify deploy --prod",
+    "deploy:vercel": "vercel --prod"
   },
-  "dependencies": {
-    "firebase": "^10.7.1",
-    "chart.js": "^4.4.0",
-    "qrcode": "^1.5.3"
+  "keywords": [
+    "warehouse",
+    "management",
+    "logistics",
+    "inventory",
+    "shipment",
+    "barcode",
+    "admin",
+    "mobile"
+  ],
+  "author": "Warehouse Management System",
+  "license": "MIT",
+  "homepage": "https://github.com/yourusername/warehouse-management-system",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/warehouse-management-system.git"
   },
-  "devDependencies": {
-    "vite": "^5.0.0"
-  }
+  "dependencies": {},
+  "devDependencies": {}
 }

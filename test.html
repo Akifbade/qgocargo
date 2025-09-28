@@ -3,439 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚀 Safe Universal Testing Tool - File Launcher</title>
+    <title>Warehouse System Test</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: #f5f5f5;
         }
-
-        .container {
+        .test-card {
             background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 600px;
-            width: 100%;
-        }
-
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 2rem;
-        }
-
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 1.1rem;
-        }
-
-        .file-input-area, .url-input-area {
-            border: 3px dashed #ddd;
             border-radius: 10px;
-            padding: 30px 20px;
-            margin-bottom: 25px;
-            transition: all 0.3s ease;
+            padding: 2rem;
+            margin: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-
-        .file-input-area:hover, .url-input-area:hover {
-            border-color: #667eea;
-            background: #f8f9ff;
-        }
-
-        .file-input {
-            display: none;
-        }
-
-        .file-input-label {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .success { border-left: 5px solid #10b981; }
+        .error { border-left: 5px solid #ef4444; }
+        .warning { border-left: 5px solid #f59e0b; }
+        button {
+            background: #2563eb;
             color: white;
-            padding: 15px 30px;
-            border-radius: 50px;
-            cursor: pointer;
-            font-size: 1.1rem;
-            font-weight: 600;
-            transition: transform 0.2s ease;
-            margin-bottom: 15px;
-        }
-
-        .file-input-label:hover {
-            transform: translateY(-2px);
-        }
-
-        .file-info {
-            margin-top: 15px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border-left: 4px solid #28a745;
-            display: none;
-        }
-
-        .launch-btn {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
+            padding: 0.75rem 1.5rem;
             border: none;
-            padding: 15px 40px;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: 600;
+            border-radius: 5px;
             cursor: pointer;
-            transition: all 0.2s ease;
-            margin-top: 20px;
-            display: inline-block;
+            margin: 0.5rem;
         }
-
-        .launch-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
-        }
-
-        .url-input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            margin-bottom: 15px;
-        }
-
-        .status {
-            margin-top: 20px;
-            padding: 10px;
-            border-radius: 5px;
-            display: none;
-        }
-
-        .status.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .status.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .instructions {
-            background: #e3f2fd;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 30px;
-            text-align: left;
-        }
-
-        .instructions h3 {
-            color: #1976d2;
-            margin-bottom: 15px;
-        }
-
-        .instructions ol {
-            color: #555;
-            line-height: 1.6;
-        }
-
-        .instructions li {
-            margin-bottom: 8px;
-        }
-
-        .safe-mode {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 5px;
-            padding: 10px;
-            margin-top: 15px;
-        }
+        button:hover { background: #1d4ed8; }
+        .status { font-weight: bold; margin: 0.5rem 0; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🚀 Safe Universal Testing Tool</h1>
-        <p class="subtitle">Test HTML files or websites safely without modification</p>
+    <h1>🏭 Enhanced Warehouse Management System</h1>
+    
+    <div class="test-card success">
+        <h2>✅ System Status</h2>
+        <p><strong>Version:</strong> Enhanced v2.0 with Advanced Features</p>
+        <p><strong>New Features Added:</strong></p>
+        <ul>
+            <li>📤 Released Shipments History & Analytics</li>
+            <li>🗺️ Interactive Warehouse Map with Rack Management</li>
+            <li>📊 Advanced Reporting & CSV Export</li>
+            <li>🔍 Enhanced Search & Filtering</li>
+            <li>📱 Mobile-Responsive Design</li>
+        </ul>
+    </div>
+
+    <div class="test-card">
+        <h2>🚀 Quick Start Guide</h2>
+        <p><strong>To access the full system:</strong></p>
+        <ol>
+            <li>Open <code>index.html</code> directly in your browser, or</li>
+            <li>Set up a local web server in this directory</li>
+            <li>Navigate through the new sections: "Released History" and "Warehouse Map"</li>
+        </ol>
+        <button onclick="window.location.href='index.html'">🏭 Open Warehouse System</button>
+    </div>
+
+    <div class="test-card">
+        <h2>🆕 New Features Overview</h2>
         
-        <div class="file-input-area">
-            <input type="file" id="htmlFile" accept=".html,.htm" class="file-input">
-            <label for="htmlFile" class="file-input-label">
-                📁 Choose HTML File
-            </label>
-            <p style="color: #666; margin-top: 10px;">Select any HTML file to test safely</p>
-        </div>
+        <h3>📤 Released Shipments Section</h3>
+        <ul>
+            <li><strong>Complete History:</strong> Track all released shipments with full details</li>
+            <li><strong>Time-based Filters:</strong> Today, This Week, This Month, Custom dates</li>
+            <li><strong>Advanced Search:</strong> Search by barcode, shipper, consignee, or rack</li>
+            <li><strong>Analytics:</strong> Revenue tracking, average storage duration</li>
+            <li><strong>Export:</strong> CSV export for data analysis</li>
+        </ul>
 
-        <div style="text-align: center; margin: 20px 0; color: #666; font-weight: bold;">
-            -- OR --
-        </div>
+        <h3>🗺️ Warehouse Map Section</h3>
+        <ul>
+            <li><strong>Visual Layout:</strong> Interactive 200-rack warehouse grid (20x10)</li>
+            <li><strong>Real-time Status:</strong> See occupied, free, warning, and overdue racks</li>
+            <li><strong>Rack Details:</strong> Click any rack for detailed shipment information</li>
+            <li><strong>Quick Actions:</strong> Release shipments directly from the map</li>
+            <li><strong>Filtering:</strong> Filter by zone (A-T) and occupancy status</li>
+            <li><strong>Statistics:</strong> Warehouse utilization metrics</li>
+        </ul>
+    </div>
 
-        <div class="url-input-area">
-            <label style="display: block; font-weight: 600; color: #333; margin-bottom: 10px;">🌐 Enter Website URL:</label>
-            <input type="url" id="websiteUrl" class="url-input" placeholder="https://example.com or http://localhost:3000">
-            <button class="launch-btn" onclick="launchUrl()">
-                🚀 Launch URL with Testing Tool
-            </button>
-        </div>
+    <div class="test-card warning">
+        <h2>⚠️ System Requirements</h2>
+        <p><strong>For full functionality, ensure:</strong></p>
+        <ul>
+            <li>✅ Supabase database is configured (config.js)</li>
+            <li>✅ All JavaScript files are loaded</li>
+            <li>✅ Internet connection for CDN resources</li>
+            <li>✅ Modern web browser with JavaScript enabled</li>
+        </ul>
+    </div>
 
-        <div id="fileInfo" class="file-info">
-            <p><strong>Selected file:</strong> <span id="fileName"></span></p>
-            <p><strong>Size:</strong> <span id="fileSize"></span></p>
-        </div>
+    <div class="test-card">
+        <h2>🎯 Testing the New Features</h2>
+        
+        <h3>Test Released Shipments:</h3>
+        <ol>
+            <li>Create and release a test shipment</li>
+            <li>Navigate to "Released History" tab</li>
+            <li>Try different filters and search functions</li>
+            <li>View invoice and export CSV</li>
+        </ol>
 
-        <button id="launchBtn" class="launch-btn" style="display: none;" onclick="launchFile()">
-            🧪 Launch File with Testing Tool
-        </button>
-
-        <div id="status" class="status"></div>
-
-        <div class="instructions">
-            <h3>📋 How to use:</h3>
-            <ol>
-                <li><strong>For HTML Files:</strong> Click "Choose HTML File" and select your file, then click "Launch File with Testing Tool"</li>
-                <li><strong>For Websites:</strong> Enter any URL (like https://google.com or your local app) and click "Launch URL with Testing Tool"</li>
-                <li>The original app opens normally in a new window with testing tool overlay</li>
-                <li>Look for the green floating tool button (🔧) in the bottom-right corner</li>
-                <li>Use the top control bar to toggle tools, refresh, or go fullscreen</li>
-            </ol>
-            <div class="safe-mode">
-                <strong>🛡️ Safe Mode:</strong> Your original HTML/website is never modified. The testing tool runs as a separate overlay! Your apps remain completely intact.
-            </div>
-        </div>
+        <h3>Test Warehouse Map:</h3>
+        <ol>
+            <li>Navigate to "Warehouse Map" tab</li>
+            <li>Click on different rack cells</li>
+            <li>Use zone and status filters</li>
+            <li>Try quick release from rack details</li>
+        </ol>
     </div>
 
     <script>
-        let selectedFile = null;
-
-        document.getElementById('htmlFile').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                selectedFile = file;
-                document.getElementById('fileName').textContent = file.name;
-                document.getElementById('fileSize').textContent = (file.size / 1024).toFixed(2) + ' KB';
-                document.getElementById('fileInfo').style.display = 'block';
-                document.getElementById('launchBtn').style.display = 'inline-block';
-                showStatus('File selected successfully!', 'success');
-            }
-        });
-
-        function showStatus(message, type) {
-            const status = document.getElementById('status');
-            status.textContent = message;
-            status.className = 'status ' + type;
-            status.style.display = 'block';
+        // Simple connectivity test
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🏭 Enhanced Warehouse Management System Test Page Loaded');
             
-            setTimeout(() => {
-                status.style.display = 'none';
-            }, 3000);
-        }
-
-        function launchFile() {
-            if (!selectedFile) {
-                showStatus('Please select an HTML file first!', 'error');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const htmlContent = e.target.result;
-                const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent);
-                openSafeTester(dataUrl, 'HTML File: ' + selectedFile.name);
-            };
-            reader.readAsText(selectedFile);
-        }
-
-        function launchUrl() {
-            const url = document.getElementById('websiteUrl').value.trim();
-            if (!url) {
-                showStatus('Please enter a valid URL!', 'error');
-                return;
-            }
-
-            try {
-                new URL(url);
-                openSafeTester(url, 'Website: ' + url);
-            } catch {
-                showStatus('Please enter a valid URL (e.g., https://example.com)!', 'error');
-            }
-        }
-
-        function openSafeTester(source, title) {
-            const launcherHtml = '<!DOCTYPE html>' +
-'<html lang="en">' +
-'<head>' +
-    '<meta charset="UTF-8">' +
-    '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
-    '<title>🧪 Testing Mode - ' + title + '</title>' +
-    '<style>' +
-        '* { margin: 0; padding: 0; box-sizing: border-box; }' +
-        'body { font-family: Arial, sans-serif; height: 100vh; overflow: hidden; }' +
-        '#top-bar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 10004; }' +
-        '#app-frame { width: 100%; height: calc(100vh - 40px); border: none; }' +
-        '.top-bar-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 5px 12px; border-radius: 15px; cursor: pointer; margin-left: 8px; font-size: 12px; }' +
-        '.top-bar-btn:hover { background: rgba(255,255,255,0.3); }' +
-        '#status-indicator { background: #4CAF50; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; }' +
-        '#floating-test-tool { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background-color: #4CAF50; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10000; box-shadow: 0 4px 8px rgba(0,0,0,0.3); font-size: 28px; color: white; }' +
-        '#floating-test-tool:hover { background-color: #45a049; transform: scale(1.1); }' +
-        '#test-panel { position: fixed; top: 50px; right: 20px; width: 420px; background: white; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10001; display: none; max-height: calc(100vh - 100px); overflow-y: auto; }' +
-        '.panel-header { background: #667eea; color: white; padding: 12px; font-weight: bold; display: flex; justify-content: space-between; }' +
-        '.panel-content { padding: 15px; }' +
-        '.form-group { margin-bottom: 12px; }' +
-        '.form-group label { display: block; margin-bottom: 4px; font-weight: 500; }' +
-        '.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box; }' +
-        '.form-group textarea { height: 60px; }' +
-        '.btn { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin: 3px; }' +
-        '.btn-primary { background-color: #2196F3; color: white; }' +
-        '.btn-success { background-color: #4CAF50; color: white; }' +
-        '.btn-danger { background-color: #f44336; color: white; }' +
-        '#element-info { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; padding: 10px; font-size: 12px; margin-top: 10px; }' +
-    '</style>' +
-'</head>' +
-'<body>' +
-    '<div id="top-bar">' +
-        '<div>' +
-            '<span id="status-indicator">🧪 SAFE TESTING MODE</span>' +
-            '<span style="margin-left: 15px; opacity: 0.9;">' + title + '</span>' +
-        '</div>' +
-        '<div>' +
-            '<button class="top-bar-btn" onclick="toggleTool()">🔧 Toggle Tool</button>' +
-            '<button class="top-bar-btn" onclick="refreshApp()">🔄 Refresh</button>' +
-            '<button class="top-bar-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>' +
-        '</div>' +
-    '</div>' +
-    '<iframe id="app-frame" src="' + source + '"></iframe>' +
-    '<div id="floating-test-tool" onclick="togglePanel()">🔧</div>' +
-    '<div id="test-panel">' +
-        '<div class="panel-header">' +
-            '<span>🧪 Testing Tool</span>' +
-            '<button onclick="closePanel()" style="background:none;border:none;color:white;font-size:18px;cursor:pointer;">×</button>' +
-        '</div>' +
-        '<div class="panel-content">' +
-            '<div class="form-group">' +
-                '<label>Feature Name:</label>' +
-                '<input type="text" id="feature-name" placeholder="Enter feature name...">' +
-            '</div>' +
-            '<div class="form-group">' +
-                '<label>Issue Type:</label>' +
-                '<select id="issue-type">' +
-                    '<option value="bug">🐛 Bug</option>' +
-                    '<option value="enhancement">✨ Enhancement</option>' +
-                    '<option value="ui-issue">🎨 UI Issue</option>' +
-                    '<option value="change-request">🔄 Change Request</option>' +
-                '</select>' +
-            '</div>' +
-            '<div class="form-group">' +
-                '<label>Description:</label>' +
-                '<textarea id="issue-description" placeholder="Describe the issue..."></textarea>' +
-            '</div>' +
-            '<div class="form-group" style="border-top: 2px solid #eee; padding-top: 15px; margin-top: 15px;">' +
-                '<label><span style="color: #9c27b0;">🤖 AI Testing Assistant</span></label>' +
-                '<div style="margin-bottom: 10px;">' +
-                    '<button onclick="aiAnalyzeFeature()" class="btn" style="background: #9c27b0; color: white; margin-right: 5px;">🧠 AI Analyze</button>' +
-                    '<button onclick="aiSuggestTests()" class="btn" style="background: #ff5722; color: white; margin-right: 5px;">💡 Test Ideas</button>' +
-                '</div>' +
-                '<div>' +
-                    '<button onclick="aiBugHunt()" class="btn" style="background: #e91e63; color: white; margin-right: 5px;">🐛 Bug Hunt</button>' +
-                    '<button onclick="aiUXReview()" class="btn" style="background: #3f51b5; color: white; margin-right: 5px;">🎨 UX Review</button>' +
-                '</div>' +
-                '<div style="margin-top: 8px;">' +
-                    '<button onclick="aiFullAudit()" class="btn" style="background: #ff9800; color: white; width: 48%; margin-right: 4%;">🚀 Full AI Audit</button>' +
-                    '<button onclick="aiAutoFill()" class="btn" style="background: #4caf50; color: white; width: 48%;">🤖 Auto Fill</button>' +
-                '</div>' +
-            '</div>' +
-            '<div>' +
-                '<button onclick="captureElement()" class="btn btn-primary">📍 Live Capture</button>' +
-                '<button onclick="showCaptureHistory()" class="btn" style="background: #6c757d; color: white;">📋 History (' + (typeof capturedElements !== "undefined" ? "0" : "0") + ')</button>' +
-                '<button onclick="clearCaptures()" class="btn" style="background: #dc3545; color: white;">🗑️ Clear</button>' +
-            '</div>' +
-            '<div style="margin-top: 5px; font-size: 11px; color: #666;">Quick Capture:</div>' +
-            '<div style="margin-top: 3px;">' +
-                '<button onclick="quickCapture(\'button\')" class="btn" style="background: #17a2b8; color: white; font-size: 10px; padding: 4px 6px; margin: 2px;">🔘 Button</button>' +
-                '<button onclick="quickCapture(\'input\')" class="btn" style="background: #28a745; color: white; font-size: 10px; padding: 4px 6px; margin: 2px;">📝 Input</button>' +
-                '<button onclick="quickCapture(\'link\')" class="btn" style="background: #ffc107; color: black; font-size: 10px; padding: 4px 6px; margin: 2px;">🔗 Link</button>' +
-                '<button onclick="quickCapture(\'form\')" class="btn" style="background: #6610f2; color: white; font-size: 10px; padding: 4px 6px; margin: 2px;">📋 Form</button>' +
-            '</div>' +
-            '<div style="margin-top: 8px;">' +
-                '<button onclick="saveReport()" class="btn btn-success" style="width: 48%; margin-right: 4%;">💾 Save Report</button>' +
-                '<button onclick="exportReports()" class="btn btn-danger" style="width: 48%;">📥 Export</button>' +
-            '</div>' +
-            '<div id="element-info">Manual testing mode - fill in details and save reports</div>' +
-        '</div>' +
-    '</div>' +
-    '<script>' +
-        'let toolVisible = true;' +
-        'let isFullscreen = false;' +
-        'let testReports = JSON.parse(localStorage.getItem("safeTestReports") || "[]");' +
-        'function toggleTool() { const tool = document.getElementById("floating-test-tool"); const panel = document.getElementById("test-panel"); if (toolVisible) { tool.style.display = "none"; panel.style.display = "none"; toolVisible = false; } else { tool.style.display = "flex"; toolVisible = true; } }' +
-        'function refreshApp() { document.getElementById("app-frame").src = document.getElementById("app-frame").src; }' +
-        'function toggleFullscreen() { const topBar = document.getElementById("top-bar"); const frame = document.getElementById("app-frame"); if (!isFullscreen) { topBar.style.display = "none"; frame.style.height = "100vh"; isFullscreen = true; } else { topBar.style.display = "flex"; frame.style.height = "calc(100vh - 40px)"; isFullscreen = false; } }' +
-        'function togglePanel() { const panel = document.getElementById("test-panel"); panel.style.display = panel.style.display === "none" ? "block" : "none"; }' +
-        'function closePanel() { document.getElementById("test-panel").style.display = "none"; }' +
-        'let captureMode = false;' +
-        'let capturedElements = [];' +
-        'let currentCapture = null;' +
-        'function captureElement() { if (!captureMode) { captureMode = true; updateElementInfo("🎯 CAPTURE MODE ACTIVE: Hover over elements, then click to capture!"); addCaptureListeners(); } else { captureMode = false; updateElementInfo("❌ Capture mode disabled"); removeCaptureListeners(); } }' +
-        'function addCaptureListeners() { const iframe = document.getElementById("app-frame"); if (!iframe) return; try { const iframeDoc = iframe.contentDocument || iframe.contentWindow.document; if (iframeDoc) { iframeDoc.addEventListener("click", handleElementCapture, true); iframeDoc.addEventListener("mouseover", highlightElement, true); iframeDoc.addEventListener("mouseout", removeHighlight, true); iframeDoc.body.style.cursor = "crosshair"; updateElementInfo("✅ LIVE CAPTURE READY! Click any element in the app."); } else { updateElementInfo("⚠️ Cannot access content. Using fallback mode."); captureMode = false; } } catch (e) { updateElementInfo("⚠️ Security restriction detected. Try Quick Capture buttons below!"); captureMode = false; } }' +
-        'function removeCaptureListeners() { try { const iframe = document.getElementById("app-frame"); const iframeDoc = iframe.contentDocument || iframe.contentWindow.document; iframeDoc.removeEventListener("click", handleElementCapture, true); iframeDoc.removeEventListener("mouseover", highlightElement, true); iframeDoc.removeEventListener("mouseout", removeHighlight, true); iframeDoc.body.style.cursor = "default"; removeHighlight(); } catch (e) {} }' +
-        'function highlightElement(e) { if (e && e.target) { e.target.style.outline = "3px solid #ff4444"; e.target.style.backgroundColor = "rgba(255, 68, 68, 0.1)"; } }' +
-        'function removeHighlight(e) { if (e && e.target) { e.target.style.outline = ""; e.target.style.backgroundColor = ""; } }' +
-        'function handleElementCapture(e) { e.preventDefault(); e.stopPropagation(); const element = e.target; try { currentCapture = { tagName: element.tagName || "UNKNOWN", id: element.id || "no-id-" + Date.now(), className: element.className || "no-class", textContent: (element.textContent || element.innerText || "No text").substring(0, 100), attributes: getElementAttributes(element), timestamp: new Date().toLocaleString(), position: element.getBoundingClientRect ? element.getBoundingClientRect() : {x:0,y:0,width:0,height:0}, isLive: true }; capturedElements.push(currentCapture); displayCapturedElement(); captureMode = false; removeCaptureListeners(); updateElementInfo("🎉 Element captured successfully! Tag: " + currentCapture.tagName + ", ID: " + currentCapture.id); } catch (error) { updateElementInfo("❌ Capture failed: " + error.message); } }' +
-        'function getElementAttributes(el) { const attrs = {}; for (let attr of el.attributes) { attrs[attr.name] = attr.value; } return attrs; }' +
-        'function displayCapturedElement() { if (!currentCapture) return; const info = "✅ CAPTURED ELEMENT #" + capturedElements.length + ":<br>" + "<strong>Tag:</strong> " + currentCapture.tagName + "<br>" + "<strong>ID:</strong> " + currentCapture.id + "<br>" + "<strong>Class:</strong> " + currentCapture.className + "<br>" + "<strong>Text:</strong> " + currentCapture.textContent + "<br>" + "<strong>Total Captures:</strong> " + capturedElements.length; updateElementInfo(info); if (!document.getElementById("feature-name").value.trim()) { document.getElementById("feature-name").value = currentCapture.tagName + " Element"; } if (!document.getElementById("issue-description").value.trim()) { document.getElementById("issue-description").value = "Testing " + currentCapture.tagName + " element with ID: " + currentCapture.id + " and class: " + currentCapture.className; } updateCaptureCounter(); }' +
-        'function updateCaptureCounter() { const historyBtn = document.querySelector("button[onclick=\\"showCaptureHistory()\\"]"); if (historyBtn) { historyBtn.innerHTML = "📋 History (" + capturedElements.length + ")"; } }' +
-        'function showCaptureHistory() { if (capturedElements.length === 0) { updateElementInfo("📋 No captures yet. Click \\"📍 Capture Element\\" and then click any element in the app."); return; } let historyHtml = "📋 CAPTURE HISTORY (" + capturedElements.length + " items):<br><div style=\\"max-height:200px;overflow-y:auto;font-size:10px;\\">"; capturedElements.forEach((capture, index) => { historyHtml += "<div style=\\"border:1px solid #ddd;margin:5px 0;padding:8px;border-radius:4px;\\">"; historyHtml += "<strong>#" + (index + 1) + " - " + capture.tagName + "</strong><br>"; historyHtml += "ID: " + capture.id + " | Class: " + capture.className + "<br>"; historyHtml += "Text: " + capture.textContent.substring(0, 50) + "...<br>"; historyHtml += "Time: " + capture.timestamp + "<br>"; historyHtml += "<button onclick=\\"useCaptureData(" + index + ")\\" style=\\"font-size:10px;padding:2px 6px;background:#28a745;color:white;border:none;border-radius:3px;cursor:pointer;\\">Use This</button>"; historyHtml += "</div>"; }); historyHtml += "</div>"; updateElementInfo(historyHtml); }' +
-        'function useCaptureData(index) { const capture = capturedElements[index]; document.getElementById("feature-name").value = capture.tagName + " Test"; document.getElementById("issue-description").value = "Testing " + capture.tagName + " element - ID: " + capture.id + ", Class: " + capture.className + ". Text content: " + capture.textContent.substring(0, 100); updateElementInfo("✅ Using capture #" + (index + 1) + " data in form fields!"); }' +
-        'function clearCaptures() { if (capturedElements.length === 0) { updateElementInfo("🗑️ No captures to clear."); return; } const confirmed = confirm("Clear all " + capturedElements.length + " captured elements?"); if (confirmed) { capturedElements = []; currentCapture = null; updateCaptureCounter(); updateElementInfo("🗑️ All captures cleared!"); } }' +
-        'function manualCapture() { const elementTag = prompt("Enter element tag (e.g., button, input, div):") || "element"; const elementId = prompt("Enter element ID (or leave blank):") || "manual-id-" + Date.now(); const elementClass = prompt("Enter element class (or leave blank):") || "manual-class"; const elementText = prompt("Enter element text or description:") || "Manual capture description"; const manualCapture = { tagName: elementTag.toUpperCase(), id: elementId, className: elementClass, textContent: elementText, attributes: { "data-manual": "true", "data-source": "manual-entry" }, timestamp: new Date().toLocaleString(), position: { x: 0, y: 0, width: 0, height: 0 }, isManual: true }; capturedElements.push(manualCapture); currentCapture = manualCapture; displayCapturedElement(); captureMode = false; }' +
-        'function quickCapture(type) { let elementData = {}; switch(type) { case "button": elementData = { tagName: "BUTTON", id: "btn-" + Date.now(), className: "btn-primary", textContent: "Button element for testing" }; break; case "input": elementData = { tagName: "INPUT", id: "input-" + Date.now(), className: "form-control", textContent: "Input field for testing" }; break; case "link": elementData = { tagName: "A", id: "link-" + Date.now(), className: "nav-link", textContent: "Link element for testing" }; break; case "form": elementData = { tagName: "FORM", id: "form-" + Date.now(), className: "form-container", textContent: "Form element for testing" }; break; default: elementData = { tagName: "DIV", id: "element-" + Date.now(), className: "container", textContent: "Generic element for testing" }; } const quickCapture = { ...elementData, attributes: { "data-quick": "true", "data-type": type }, timestamp: new Date().toLocaleString(), position: { x: 0, y: 0, width: 0, height: 0 }, isQuick: true }; capturedElements.push(quickCapture); currentCapture = quickCapture; displayCapturedElement(); }' +
-        'function saveReport() { const featureName = document.getElementById("feature-name").value.trim(); const issueType = document.getElementById("issue-type").value; const description = document.getElementById("issue-description").value.trim(); if (!featureName || !description) { alert("Please fill in feature name and description"); return; } const report = { id: Date.now(), timestamp: new Date().toLocaleString(), featureName: featureName, issueType: issueType, description: description, source: "' + title + '", capturedElements: capturedElements.length > 0 ? [...capturedElements] : [], totalCaptures: capturedElements.length }; testReports.push(report); localStorage.setItem("safeTestReports", JSON.stringify(testReports)); document.getElementById("feature-name").value = ""; document.getElementById("issue-description").value = ""; updateElementInfo("✅ Report saved with " + capturedElements.length + " captured elements! Total reports: " + testReports.length); alert("✅ Report saved successfully!\\nCaptured Elements: " + capturedElements.length + "\\nTotal Reports: " + testReports.length); }' +
-        'function exportReports() { if (testReports.length === 0) { alert("No reports to export!"); return; } const exportData = { application: "' + title + '", exportDate: new Date().toISOString(), totalReports: testReports.length, reports: testReports }; const dataStr = JSON.stringify(exportData, null, 2); const dataBlob = new Blob([dataStr], {type: "application/json"}); const url = URL.createObjectURL(dataBlob); const link = document.createElement("a"); link.href = url; link.download = "safe-test-reports.json"; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); alert("📥 Exported " + testReports.length + " reports!"); }' +
-        'const GEMINI_API_KEY = "AIzaSyDpxHI5RjDhacdWkTERXOoChVvM34kPQkk";' +
-        'const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent";' +
-        'async function callGeminiAPI(prompt) { try { const response = await fetch(GEMINI_API_URL + "?key=" + GEMINI_API_KEY, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }); const data = await response.json(); if (data.candidates && data.candidates[0] && data.candidates[0].content) { return data.candidates[0].content.parts[0].text; } else { return "AI analysis failed. Please try again."; } } catch (error) { console.error("AI API Error:", error); return "AI service temporarily unavailable."; } }' +
-        'function updateElementInfo(message) { document.getElementById("element-info").innerHTML = message; }' +
-        'async function aiAnalyzeFeature() { updateElementInfo("🤖 AI analyzing current feature..."); const featureName = document.getElementById("feature-name").value.trim() || "Current page feature"; const prompt = "As a QA expert, analyze this web feature: " + featureName + ". Provide: 1) Potential issues to look for 2) Testing scenarios 3) User experience concerns. Be concise and actionable."; const analysis = await callGeminiAPI(prompt); updateElementInfo("🧠 AI Analysis:<br><div style=\\"font-size:11px;margin-top:8px;max-height:150px;overflow-y:auto;\\">" + analysis.replace(/\\n/g, "<br>") + "</div>"); }' +
-        'async function aiSuggestTests() { updateElementInfo("💡 AI generating test ideas..."); const featureName = document.getElementById("feature-name").value.trim() || "This web application"; const prompt = "As a testing expert, suggest 5-7 specific test cases for: " + featureName + ". Include positive tests, negative tests, edge cases, and usability tests. Format as numbered list."; const suggestions = await callGeminiAPI(prompt); updateElementInfo("💡 Test Suggestions:<br><div style=\\"font-size:11px;margin-top:8px;max-height:150px;overflow-y:auto;\\">" + suggestions.replace(/\\n/g, "<br>") + "</div>"); }' +
-        'async function aiBugHunt() { updateElementInfo("🐛 AI hunting for potential bugs..."); const featureName = document.getElementById("feature-name").value.trim() || "This web interface"; const prompt = "As a bug hunter, identify common bug patterns and vulnerabilities in: " + featureName + ". Focus on: input validation, error handling, responsive design, accessibility, security. List specific things to test."; const bugHunts = await callGeminiAPI(prompt); updateElementInfo("🐛 Bug Hunt Guide:<br><div style=\\"font-size:11px;margin-top:8px;max-height:150px;overflow-y:auto;\\">" + bugHunts.replace(/\\n/g, "<br>") + "</div>"); }' +
-        'async function aiUXReview() { updateElementInfo("🎨 AI reviewing UX/UI..."); const featureName = document.getElementById("feature-name").value.trim() || "This user interface"; const prompt = "As a UX expert, review: " + featureName + ". Analyze: 1) User flow and navigation 2) Visual design and accessibility 3) Mobile responsiveness 4) User experience pain points. Provide actionable UX improvements."; const uxReview = await callGeminiAPI(prompt); updateElementInfo("🎨 UX Review:<br><div style=\\"font-size:11px;margin-top:8px;max-height:150px;overflow-y:auto;\\">" + uxReview.replace(/\\n/g, "<br>") + "</div>"); }' +
-        'async function aiFullAudit() { updateElementInfo("🚀 AI performing comprehensive audit..."); const featureName = document.getElementById("feature-name").value.trim() || "This web application"; const prompt = "Perform a comprehensive testing audit for: " + featureName + ". Cover: 1) Functionality testing 2) UI/UX issues 3) Performance concerns 4) Security considerations 5) Accessibility 6) Browser compatibility 7) Mobile responsiveness. Provide a prioritized action plan."; const fullAudit = await callGeminiAPI(prompt); updateElementInfo("🚀 Full AI Audit:<br><div style=\\"font-size:11px;margin-top:8px;max-height:150px;overflow-y:auto;\\">" + fullAudit.replace(/\\n/g, "<br>") + "</div>"); }' +
-        'async function aiAutoFill() { updateElementInfo("🤖 AI analyzing page for auto-fill..."); const prompt = "Generate a web testing report. Provide: 1) A concise feature name (2-4 words) 2) A specific testing issue or improvement suggestion. Keep response under 100 words total."; const analysis = await callGeminiAPI(prompt); if (analysis.length > 10) { const lines = analysis.split("\\n").filter(line => line.trim()); if (lines.length >= 2) { document.getElementById("feature-name").value = lines[0].substring(0, 50); document.getElementById("issue-description").value = lines.slice(1).join(" ").substring(0, 200); } else { document.getElementById("feature-name").value = "AI Generated Test"; document.getElementById("issue-description").value = analysis.substring(0, 200); } updateElementInfo("✅ AI auto-filled form fields!"); } else { updateElementInfo("❌ AI response too short. Try again."); } }' +
-        'setTimeout(function() { document.getElementById("test-panel").style.display = "block"; }, 1000);' +
-        'document.addEventListener("keydown", function(e) { if (e.key === "Escape") { showDetailedCaptureModal(); } });' +
-        'function showDetailedCaptureModal() { if (capturedElements.length === 0) { alert("❌ No captures available!\\n\\n📍 How to capture:\\n1. Click \\"📍 Live Capture\\" for interactive mode\\n2. Use Quick Capture buttons for common elements\\n3. Use Manual Capture for external URLs\\n\\nPress ESC anytime to see capture details!"); return; } createCaptureModal(); }' +
-        'function createCaptureModal() { const existingModal = document.getElementById("capture-modal"); if (existingModal) existingModal.remove(); const modal = document.createElement("div"); modal.id = "capture-modal"; modal.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10010; display: flex; align-items: center; justify-content: center;"; const modalContent = document.createElement("div"); modalContent.style.cssText = "background: white; padding: 20px; border-radius: 10px; max-width: 600px; max-height: 80%; overflow-y: auto; position: relative;"; let contentHtml = "<h3 style=\\"color: #333; margin-bottom: 15px;\\">🔍 CAPTURE DETAILS</h3>"; contentHtml += "<div style=\\"background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;\\">"; contentHtml += "<strong>📊 Session Stats:</strong><br>"; contentHtml += "• Total Captures: " + capturedElements.length + "<br>"; contentHtml += "• Session Duration: " + getSessionDuration() + "<br>"; contentHtml += "• Current Feature: " + (document.getElementById("feature-name").value || "Not specified") + "<br>"; contentHtml += "</div>"; contentHtml += "<div style=\\"max-height: 400px; overflow-y: auto;\\">"; capturedElements.forEach((capture, index) => { contentHtml += "<div style=\\"border: 1px solid #ddd; margin: 8px 0; padding: 12px; border-radius: 6px; background: " + (capture.isManual ? "#fff3cd" : capture.isQuick ? "#d1ecf1" : "#d4edda") + ";\\">"; contentHtml += "<h4 style=\\"margin: 0 0 8px 0; color: #495057;\\">#" + (index + 1) + " - " + capture.tagName + "</h4>"; contentHtml += "<div style=\\"font-size: 12px; color: #6c757d;\\">"; contentHtml += "<strong>ID:</strong> " + capture.id + "<br>"; contentHtml += "<strong>Class:</strong> " + capture.className + "<br>"; contentHtml += "<strong>Text:</strong> " + capture.textContent + "<br>"; contentHtml += "<strong>Time:</strong> " + capture.timestamp + "<br>"; if (capture.isManual) contentHtml += "<span style=\\"color: #856404;\\">📝 Manual Entry</span><br>"; if (capture.isQuick) contentHtml += "<span style=\\"color: #0c5460;\\">⚡ Quick Capture</span><br>"; contentHtml += "</div>"; contentHtml += "<button onclick=\\"useCaptureData(" + index + "); closeCaptureModal();\\" style=\\"background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 11px; cursor: pointer; margin-top: 5px;\\">Use This Data</button>"; contentHtml += "</div>"; }); contentHtml += "</div>"; contentHtml += "<div style=\\"margin-top: 15px; text-align: center;\\">"; contentHtml += "<button onclick=\\"closeCaptureModal()\\" style=\\"background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;\\">❌ Close (ENTER)</button>"; contentHtml += "</div>"; modalContent.innerHTML = contentHtml; modal.appendChild(modalContent); document.body.appendChild(modal); document.addEventListener("keydown", handleModalKeyPress); }' +
-        'function handleModalKeyPress(e) { if (e.key === "Enter" || e.key === "Escape") { closeCaptureModal(); } }' +
-        'function closeCaptureModal() { const modal = document.getElementById("capture-modal"); if (modal) { modal.remove(); document.removeEventListener("keydown", handleModalKeyPress); } }' +
-        'let sessionStartTime = new Date();' +
-        'function getSessionDuration() { const now = new Date(); const duration = Math.floor((now - sessionStartTime) / 1000); const minutes = Math.floor(duration / 60); const seconds = duration % 60; return minutes + "m " + seconds + "s"; }' +
-        'console.log("🧪 Safe Testing Environment JavaScript Loaded!");' +
-        'window.testCapture = function() { quickCapture("button"); alert("Test capture completed! Check the history."); };' +
-        'console.log("🧪 Safe Testing Environment Loaded - Original app is unmodified!");' +
-    '<\/script>' +
-'</body>' +
-'</html>';
-
-            const newWindow = window.open('', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
-            if (newWindow) {
-                newWindow.document.open();
-                newWindow.document.write(launcherHtml);
-                newWindow.document.close();
-                showStatus('Safe testing environment launched! Original app is unmodified.', 'success');
-            } else {
-                showStatus('Failed to open new window - check popup blocker!', 'error');
-            }
-        }
+            // Check if main system files exist
+            const requiredFiles = [
+                'index.html',
+                'styles.css', 
+                'app.js',
+                'database.js',
+                'warehouse-management.js',
+                'config.js'
+            ];
+            
+            console.log('📋 System Files Check:');
+            requiredFiles.forEach(file => {
+                fetch(file)
+                    .then(response => {
+                        if (response.ok) {
+                            console.log(`✅ ${file} - OK`);
+                        } else {
+                            console.log(`❌ ${file} - Missing`);
+                        }
+                    })
+                    .catch(error => {
+                        console.log(`❌ ${file} - Error: ${error.message}`);
+                    });
+            });
+        });
     </script>
 </body>
 </html>
