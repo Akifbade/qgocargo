@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -317,10 +318,11 @@
                 <div class="text-sm text-center sm:text-left">
                     Logged in as: <span id="user-display-name" class="font-bold"></span> (<span id="user-role" class="capitalize"></span>)
                 </div>
-                 <div class="flex-grow text-center">
+                 <div class="flex-grow text-center flex items-center justify-center gap-2" id="dynamic-links-container">
                     <button onclick="openAnalyticsDashboard()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-5 rounded-md text-base">Analytics</button>
                 </div>
                 <div>
+                    <button id="link-manager-btn" class="admin-only bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Manage Links</button>
                     <button id="activity-log-btn" class="admin-only bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-sm mr-2">Activity Log</button>
                     <button id="app-settings-btn" class="bg-slate-700 hover:bg-slate-800 text-white font-bold py-1 px-3 rounded text-sm mr-2">App Settings</button>
                     <button id="profile-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-3 rounded text-sm mr-2">Profile</button>
@@ -727,7 +729,32 @@
         </div>
     </div>
     
-    
+    <!-- Link Manager Modal (New) -->
+    <div id="link-manager-modal" class="overlay">
+        <div class="modal-content max-w-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">Manage Custom Links</h3>
+                <button onclick="closeModal('link-manager-modal')" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div class="space-y-6">
+                <div>
+                    <h4 class="text-lg font-semibold mb-2">Add New Link</h4>
+                    <form id="link-form" class="space-y-3">
+                        <input type="text" id="new-link-name" class="input-field" placeholder="Link Name (e.g., Reports)" required>
+                        <input type="url" id="new-link-url" class="input-field" placeholder="Full URL (e.g., https://...)" required>
+                        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Add Link</button>
+                    </form>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-2">Existing Links</h4>
+                    <div id="custom-links-list" class="space-y-2 max-h-[40vh] overflow-y-auto">
+                        <!-- JS will populate this list -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- App Settings Modal -->
     <div id="app-settings-modal" class="overlay">
         <div class="modal-content max-w-xl">
@@ -918,6 +945,7 @@
         let jobFilesCache = [];
         let clientsCache = [];
         let chargeDescriptions = [];
+        let customLinks = [];
         let analyticsDataCache = null;
         let currentFilteredJobs = [];
         let fileIdToReject = null; 
@@ -1183,6 +1211,7 @@
                         showApp();
                         loadJobFiles();
                         loadClients();
+                        loadAndRenderCustomLinks();
                     } else {
                         currentUser = null;
                         console.log("User logged out");
@@ -1783,7 +1812,7 @@
 
             modal.querySelector('#confirm-message').innerHTML = message;
             modal.querySelector('#confirm-ok').className = 'bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded';
-            openModal('confirm-modal', true);
+            openModal('confirm-modal');
 
             const okButton = modal.querySelector('#confirm-ok');
             const cancelButton = modal.querySelector('#confirm-cancel');
@@ -2261,6 +2290,7 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
 
         // --- Admin Panel & Backup/Restore Logic ---
@@ -2781,7 +2811,6 @@
             document.getElementById('checked-stamp').style.display = 'none';
             document.getElementById('approved-stamp').style.display = 'none';
             document.getElementById('rejected-stamp').style.display = 'none';
-            document.getElementById('rejection-banner').style.display = 'none';
             document.getElementById('check-btn').style.display = 'none';
             document.getElementById('approval-buttons').style.display = 'none';
 
@@ -3149,7 +3178,7 @@
             try {
                 const response = await fetch(apiUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'json' },
                     body: JSON.stringify(payload)
                 });
 
@@ -3816,7 +3845,84 @@
                 setTimeout(() => suggestionsPanel.classList.add('hidden'), 150);
             });
         }
+        
+        // --- Custom Link Manager ---
+        function openLinkManager() {
+            displayCustomLinksInModal();
+            openModal('link-manager-modal');
+        }
 
+        function loadAndRenderCustomLinks() {
+            try {
+                const storedLinks = localStorage.getItem('customLinks');
+                customLinks = storedLinks ? JSON.parse(storedLinks) : [];
+            } catch (e) {
+                console.error("Error parsing custom links from localStorage", e);
+                customLinks = [];
+            }
+            renderCustomLinksOnPage();
+        }
+
+        function renderCustomLinksOnPage() {
+            const container = document.getElementById('dynamic-links-container');
+            // Clear only custom links, not the original Analytics button
+            container.querySelectorAll('.custom-link-btn').forEach(btn => btn.remove());
+            
+            customLinks.forEach(link => {
+                const linkEl = document.createElement('a');
+                linkEl.href = link.url;
+                linkEl.textContent = link.name;
+                linkEl.target = "_blank"; // Open in new tab
+                linkEl.rel = "noopener noreferrer";
+                linkEl.className = "custom-link-btn bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-5 rounded-md text-base";
+                container.appendChild(linkEl);
+            });
+        }
+
+        function displayCustomLinksInModal() {
+            const list = document.getElementById('custom-links-list');
+            if (customLinks.length === 0) {
+                list.innerHTML = `<p class="text-gray-500 text-center p-4">No custom links added yet.</p>`;
+                return;
+            }
+            list.innerHTML = customLinks.map((link, index) => `
+                <div class="flex justify-between items-center p-2 bg-gray-100 rounded">
+                    <div>
+                        <p class="font-semibold">${link.name}</p>
+                        <p class="text-xs text-gray-500">${link.url}</p>
+                    </div>
+                    <button onclick="deleteCustomLink(${index})" class="text-red-500 hover:text-red-700 font-bold text-xl">&times;</button>
+                </div>
+            `).join('');
+        }
+
+        function saveCustomLink(event) {
+            event.preventDefault();
+            const nameInput = document.getElementById('new-link-name');
+            const urlInput = document.getElementById('new-link-url');
+            const name = nameInput.value.trim();
+            const url = urlInput.value.trim();
+
+            if (name && url) {
+                customLinks.push({ name, url });
+                localStorage.setItem('customLinks', JSON.stringify(customLinks));
+                
+                loadAndRenderCustomLinks();
+                displayCustomLinksInModal();
+                
+                nameInput.value = '';
+                urlInput.value = '';
+            } else {
+                showNotification("Please provide both name and URL.", true);
+            }
+        }
+
+        function deleteCustomLink(index) {
+            customLinks.splice(index, 1);
+            localStorage.setItem('customLinks', JSON.stringify(customLinks));
+            loadAndRenderCustomLinks();
+            displayCustomLinksInModal();
+        }
 
         // --- App Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -3871,6 +3977,9 @@
             document.getElementById('confirm-reject-btn').addEventListener('click', rejectJobFile);
             document.getElementById('check-btn').addEventListener('click', () => checkJobFile());
             document.getElementById('admin-panel-btn').addEventListener('click', openAdminPanel);
+            document.getElementById('link-manager-btn').addEventListener('click', openLinkManager);
+            document.getElementById('link-form').addEventListener('submit', saveCustomLink);
+
             document.getElementById('forgot-password-link').addEventListener('click', (e) => {
                 e.preventDefault();
                 openModal('forgot-password-modal');
@@ -3949,6 +4058,7 @@
             window.exportAllToExcel = exportAllToExcel;
             window.syncDataForBackup = syncDataForBackup;
             window.openBackupModal = openBackupModal;
+            window.deleteCustomLink = deleteCustomLink;
 
             populateTable();
             calculate();
@@ -3958,5 +4068,4 @@
 </body>
 </html>
 
-
-
+    
