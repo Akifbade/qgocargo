@@ -1,0 +1,2190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QGO Cargo - Reports Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --theme-color: #4f46e5; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #eef2f7;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 2.5rem;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+        }
+        .input-field {
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            width: 100%;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: var(--theme-color);
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3);
+        }
+        .report-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        .report-card:hover {
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .table-container {
+            max-height: 70vh;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+        }
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .report-table th,
+        .report-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .report-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .report-table tbody tr:hover {
+            background: #f8fafc;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--theme-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .filter-section {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+        #logo-container img {
+            max-height: 44px;
+            width: auto;
+            display: block;
+        }
+        .profit-positive { color: #059669; font-weight: 600; }
+        .profit-negative { color: #dc2626; font-weight: 600; }
+        .btn-primary {
+            background-color: var(--theme-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #3730a3;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background-color: #6b7280;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .login-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 2rem 0;
+        }
+        .nav-tabs {
+            display: flex;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 2rem;
+        }
+        .nav-tab {
+            padding: 1rem 2rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .nav-tab.active {
+            border-bottom-color: var(--theme-color);
+            color: var(--theme-color);
+            font-weight: 600;
+        }
+        .nav-tab:hover {
+            background: #f8fafc;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+        .overlay.visible .modal-content {
+            transform: scale(1);
+        }
+        #notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #2d3748;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: transform 0.5s, opacity 0.5s;
+            z-index: 2000;
+        }
+        #notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-container">
+        <div class="login-card">
+            <div class="text-center mb-6">
+                <img src="http://qgocargo.com/logo.png" alt="QGO Cargo Logo" class="mx-auto h-16 w-auto mb-4">
+                <h2 class="text-2xl font-bold text-gray-900">Reports Dashboard</h2>
+                <p class="text-gray-600 mt-2">Sign in to access reports</p>
+            </div>
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <input type="email" id="login-email" placeholder="Email" class="input-field" required>
+                </div>
+                <div>
+                    <input type="password" id="login-password" placeholder="Password" class="input-field" required>
+                </div>
+                <button type="submit" class="btn-primary w-full">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app-container" class="hidden">
+        <div class="container">
+            <!-- Header -->
+            <header class="flex justify-between items-center mb-8">
+                <div class="flex items-center space-x-4">
+                    <div id="logo-container">
+                        <img src="http://qgocargo.com/logo.png" alt="QGO Cargo Logo">
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">Reports Dashboard</h1>
+                        <p class="text-gray-600">Generate and download detailed reports</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="user-info" class="text-gray-700"></span>
+                    <button onclick="logout()" class="btn-secondary">Logout</button>
+                </div>
+            </header>
+
+            <!-- Navigation Tabs -->
+            <div class="nav-tabs">
+                <div class="nav-tab active" onclick="switchTab('summary')">Summary</div>
+                <div class="nav-tab" onclick="switchTab('customer')">By Customer</div>
+                <div class="nav-tab" onclick="switchTab('salesman')">By Salesman</div>
+                <div class="nav-tab" onclick="switchTab('creator')">By Creator</div>
+                <div class="nav-tab" onclick="switchTab('detailed')">Detailed Report</div>
+            </div>
+
+            <!-- Summary Tab -->
+            <div id="summary-tab" class="tab-content">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3 class="text-lg font-semibold">Total Jobs</h3>
+                        <p id="total-jobs" class="text-3xl font-bold mt-2">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="text-lg font-semibold">Total Revenue</h3>
+                        <p id="total-revenue" class="text-3xl font-bold mt-2">KD 0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="text-lg font-semibold">Total Cost</h3>
+                        <p id="total-cost" class="text-3xl font-bold mt-2">KD 0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="text-lg font-semibold">Total Profit</h3>
+                        <p id="total-profit" class="text-3xl font-bold mt-2">KD 0</p>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="summary-chart"></canvas>
+                </div>
+
+                <div class="action-section">
+                    <button onclick="downloadSummaryReport()" class="btn-primary">
+                        📊 Download Professional Summary Excel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Customer Report Tab -->
+            <div id="customer-tab" class="tab-content hidden">
+                <div class="filter-section">
+                    <h3 class="text-lg font-semibold mb-4">Customer Report Filters</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Customer</label>
+                            <select id="customer-filter" class="input-field">
+                                <option value="">All Customers</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">From Date</label>
+                            <input type="date" id="customer-from-date" class="input-field">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">To Date</label>
+                            <input type="date" id="customer-to-date" class="input-field">
+                        </div>
+                        <div class="flex items-end space-x-2">
+                            <button onclick="generateCustomerReport()" class="btn-primary">Generate</button>
+                            <button onclick="downloadCustomerReport()" class="btn-secondary">Download Excel</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="customer-report-container" class="table-container hidden">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Invoice No</th>
+                                <th>Customer Name</th>
+                                <th>Job File No</th>
+                                <th>Invoice Amount</th>
+                                <th>Cost</th>
+                                <th>Profit</th>
+                                <th>Profit %</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customer-report-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Salesman Report Tab -->
+            <div id="salesman-tab" class="tab-content hidden">
+                <div class="filter-section">
+                    <h3 class="text-lg font-semibold mb-4">Salesman Report Filters</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Salesman</label>
+                            <select id="salesman-filter" class="input-field">
+                                <option value="">All Salesmen</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">From Date</label>
+                            <input type="date" id="salesman-from-date" class="input-field">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">To Date</label>
+                            <input type="date" id="salesman-to-date" class="input-field">
+                        </div>
+                        <div class="flex items-end space-x-2">
+                            <button onclick="generateSalesmanReport()" class="btn-primary">Generate</button>
+                            <button onclick="downloadSalesmanReport()" class="btn-secondary">Download Excel</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="salesman-report-container" class="table-container hidden">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Invoice No</th>
+                                <th>Customer Name</th>
+                                <th>Job File No</th>
+                                <th>Salesman</th>
+                                <th>Invoice Amount</th>
+                                <th>Cost</th>
+                                <th>Profit</th>
+                                <th>Profit %</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salesman-report-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Creator Report Tab -->
+            <div id="creator-tab" class="tab-content hidden">
+                <div class="filter-section">
+                    <h3 class="text-lg font-semibold mb-4">Creator Report Filters</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Creator</label>
+                            <select id="creator-filter" class="input-field">
+                                <option value="">All Creators</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">From Date</label>
+                            <input type="date" id="creator-from-date" class="input-field">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">To Date</label>
+                            <input type="date" id="creator-to-date" class="input-field">
+                        </div>
+                        <div class="flex items-end space-x-2">
+                            <button onclick="generateCreatorReport()" class="btn-primary">Generate</button>
+                            <button onclick="downloadCreatorReport()" class="btn-secondary">Download Excel</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="creator-report-container" class="table-container hidden">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Invoice No</th>
+                                <th>Customer Name</th>
+                                <th>Job File No</th>
+                                <th>Created By</th>
+                                <th>Invoice Amount</th>
+                                <th>Cost</th>
+                                <th>Profit</th>
+                                <th>Profit %</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="creator-report-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Detailed Report Tab -->
+            <div id="detailed-tab" class="tab-content hidden">
+                <div class="filter-section">
+                    <h3 class="text-lg font-semibold mb-4">Detailed Report Filters</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">From Date</label>
+                            <input type="date" id="detailed-from-date" class="input-field">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">To Date</label>
+                            <input type="date" id="detailed-to-date" class="input-field">
+                        </div>
+                        <div class="flex items-end space-x-2">
+                            <button onclick="generateDetailedReport()" class="btn-primary">Generate</button>
+                            <button onclick="downloadDetailedReport()" class="btn-secondary">Download Excel</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="detailed-report-container" class="table-container hidden">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Invoice No</th>
+                                <th>Customer Name</th>
+                                <th>Job File No</th>
+                                <th>Salesman</th>
+                                <th>Created By</th>
+                                <th>Invoice Amount</th>
+                                <th>Cost</th>
+                                <th>Profit</th>
+                                <th>Profit %</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailed-report-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loader-overlay" class="overlay">
+        <div class="loader"></div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification"></div>
+
+    <!-- Firebase SDK and App Logic -->
+    <script type="module">
+        // Import Firebase SDKs - using same config as main app
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, getDocs, where, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables
+        let db, auth;
+        let currentUser = null;
+        let allJobFiles = [];
+        let currentReportData = [];
+        let summaryChart = null;
+
+        // Firebase Configuration (same as main app)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAulR2nJQm-4QtNyEqKTnnDPw-iKW92Mc",
+            authDomain: "my-job-file-system.firebaseapp.com",
+            projectId: "my-job-file-system",
+            storageBucket: "my-job-file-system.appspot.com",
+            messagingSenderId: "145307873304",
+            appId: "1:145307873304:web:d661ea6ec118801b4a136d",
+            measurementId: "G-8EHX5K7YHL"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        // Utility Functions
+        function safeToDate(timestamp) {
+            if (!timestamp) return null;
+            if (typeof timestamp.toDate === 'function') return timestamp.toDate();
+            if (timestamp instanceof Date) return timestamp;
+            if (typeof timestamp === 'string' || typeof timestamp === 'number') {
+                const date = new Date(timestamp);
+                return isNaN(date.getTime()) ? null : date;
+            }
+            if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
+            return null;
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-KW', {
+                style: 'currency',
+                currency: 'KWD',
+                minimumFractionDigits: 3,
+                maximumFractionDigits: 3
+            }).format(amount || 0);
+        }
+
+        function formatPercentage(value) {
+            return `${(value || 0).toFixed(2)}%`;
+        }
+
+        function showLoader() {
+            document.getElementById('loader-overlay').classList.add('visible');
+        }
+
+        function hideLoader() {
+            document.getElementById('loader-overlay').classList.remove('visible');
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `show ${type}`;
+            setTimeout(() => {
+                notification.className = '';
+            }, 3000);
+        }
+
+        // Authentication
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                showLoader();
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                hideLoader();
+                showNotification('Login failed: ' + error.message, 'error');
+            }
+        });
+
+        // Auth state observer
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                document.getElementById('user-info').textContent = user.displayName || user.email;
+                
+                await loadAllJobFiles();
+                generateSummaryReport();
+                await loadFilterOptions();
+            } else {
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('app-container').classList.add('hidden');
+                currentUser = null;
+            }
+            hideLoader();
+        });
+
+        // Enhanced Excel styling with professional themes
+        function applyExcelStyling(ws, headerCols, dataRows, title) {
+            // Professional color palette
+            const colors = {
+                primary: "1F4E79",      // Deep blue
+                secondary: "4472C4",     // Medium blue  
+                accent: "E7E6E6",       // Light gray
+                success: "70AD47",      // Green
+                warning: "FFC000",      // Orange
+                danger: "C5504B",       // Red
+                white: "FFFFFF",
+                lightBlue: "D5E3F0",
+                darkBlue: "0F2952"
+            };
+
+            // Company header with gradient-like effect
+            if (ws['A1']) {
+                ws['A1'].s = {
+                    font: { 
+                        bold: true, 
+                        sz: 20, 
+                        color: { rgb: colors.white }, 
+                        name: "Calibri Light" 
+                    },
+                    fill: { fgColor: { rgb: colors.primary } },
+                    alignment: { horizontal: "center", vertical: "center" },
+                    border: {
+                        top: { style: "thick", color: { rgb: colors.darkBlue } },
+                        bottom: { style: "thick", color: { rgb: colors.darkBlue } },
+                        left: { style: "thick", color: { rgb: colors.darkBlue } },
+                        right: { style: "thick", color: { rgb: colors.darkBlue } }
+                    }
+                };
+            }
+
+            // Enhanced metadata styling (rows 2-6)
+            for (let row = 1; row < 6; row++) {
+                for (let col = 0; col < Math.min(headerCols, 6); col++) {
+                    const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+                    if (ws[cellAddress]) {
+                        ws[cellAddress].s = {
+                            font: { 
+                                sz: 11, 
+                                color: { rgb: colors.primary },
+                                name: "Calibri"
+                            },
+                            fill: { fgColor: { rgb: colors.lightBlue } },
+                            alignment: { horizontal: "left", vertical: "center" },
+                            border: {
+                                top: { style: "thin", color: { rgb: colors.accent } },
+                                bottom: { style: "thin", color: { rgb: colors.accent } }
+                            }
+                        };
+                    }
+                }
+            }
+
+            // Professional table headers with gradient effect
+            for (let col = 0; col < headerCols; col++) {
+                const cellAddress = XLSX.utils.encode_cell({ r: 6, c: col });
+                if (ws[cellAddress]) {
+                    ws[cellAddress].s = {
+                        font: { 
+                            bold: true, 
+                            color: { rgb: colors.white }, 
+                            sz: 12,
+                            name: "Calibri"
+                        },
+                        fill: { fgColor: { rgb: colors.secondary } },
+                        alignment: { horizontal: "center", vertical: "center" },
+                        border: {
+                            top: { style: "medium", color: { rgb: colors.primary } },
+                            bottom: { style: "medium", color: { rgb: colors.primary } },
+                            left: { style: "thin", color: { rgb: colors.primary } },
+                            right: { style: "thin", color: { rgb: colors.primary } }
+                        }
+                    };
+                }
+            }
+
+            // Enhanced data rows with professional styling
+            for (let row = 7; row < 7 + dataRows; row++) {
+                const isEvenRow = (row - 7) % 2 === 0;
+                const rowColor = isEvenRow ? colors.white : "F8F9FA";
+                
+                for (let col = 0; col < headerCols; col++) {
+                    const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+                    if (ws[cellAddress]) {
+                        ws[cellAddress].s = {
+                            font: { 
+                                sz: 10, 
+                                name: "Calibri",
+                                color: { rgb: "333333" }
+                            },
+                            fill: { fgColor: { rgb: rowColor } },
+                            alignment: { horizontal: "left", vertical: "center" },
+                            border: {
+                                top: { style: "thin", color: { rgb: colors.accent } },
+                                bottom: { style: "thin", color: { rgb: colors.accent } },
+                                left: { style: "thin", color: { rgb: colors.accent } },
+                                right: { style: "thin", color: { rgb: colors.accent } }
+                            }
+                        };
+
+                        // Currency columns styling
+                        const colLetter = XLSX.utils.encode_col(col);
+                        if (['D', 'E', 'F', 'G'].includes(colLetter) && ws[cellAddress].v !== undefined) {
+                            if (typeof ws[cellAddress].v === 'number') {
+                                ws[cellAddress].z = '"KWD " #,##0.000';
+                                ws[cellAddress].s.alignment.horizontal = "right";
+                                ws[cellAddress].s.font.color = { rgb: colors.success };
+                                ws[cellAddress].s.font.bold = true;
+                            }
+                        }
+                        
+                        // Percentage columns styling
+                        if (['H', 'I'].includes(colLetter) && ws[cellAddress].v !== undefined) {
+                            if (typeof ws[cellAddress].v === 'number') {
+                                ws[cellAddress].z = '0.00%';
+                                ws[cellAddress].s.alignment.horizontal = "right";
+                                const value = ws[cellAddress].v;
+                                ws[cellAddress].s.font.color = { 
+                                    rgb: value > 0.1 ? colors.success : (value < 0 ? colors.danger : colors.warning) 
+                                };
+                                ws[cellAddress].s.font.bold = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Summary sections with enhanced styling
+            const range = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : { e: { r: 50, c: headerCols } };
+            for (let row = 7 + dataRows; row <= range.e.r; row++) {
+                const cellA = ws[XLSX.utils.encode_cell({ r: row, c: 0 })];
+                if (cellA && cellA.v && typeof cellA.v === 'string') {
+                    const value = cellA.v.toString().toUpperCase();
+                    if (value.includes('SUMMARY') || value.includes('ANALYSIS') || value.includes('TOTAL') || 
+                        value.includes('PERFORMANCE') || value.includes('KPI')) {
+                        
+                        // Style summary headers
+                        cellA.s = {
+                            font: { 
+                                bold: true, 
+                                sz: 14, 
+                                color: { rgb: colors.white },
+                                name: "Calibri"
+                            },
+                            fill: { fgColor: { rgb: colors.primary } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            border: {
+                                top: { style: "thick", color: { rgb: colors.darkBlue } },
+                                bottom: { style: "thick", color: { rgb: colors.darkBlue } }
+                            }
+                        };
+
+                        // Merge summary headers
+                        if (!ws['!merges']) ws['!merges'] = [];
+                        ws['!merges'].push({ 
+                            s: { r: row, c: 0 }, 
+                            e: { r: row, c: Math.min(headerCols - 1, 6) } 
+                        });
+                    }
+                }
+
+                // Style summary data rows
+                for (let col = 0; col < headerCols; col++) {
+                    const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+                    if (ws[cellAddress] && col > 0) {
+                        ws[cellAddress].s = ws[cellAddress].s || {};
+                        ws[cellAddress].s.font = { 
+                            sz: 11, 
+                            name: "Calibri",
+                            color: { rgb: colors.primary }
+                        };
+                        ws[cellAddress].s.fill = { fgColor: { rgb: colors.lightBlue } };
+                        ws[cellAddress].s.alignment = { horizontal: "center", vertical: "center" };
+                        
+                        // Currency formatting for summary totals
+                        if (typeof ws[cellAddress].v === 'number' && ws[cellAddress].v > 100) {
+                            ws[cellAddress].z = '"KWD " #,##0.000';
+                            ws[cellAddress].s.font.bold = true;
+                            ws[cellAddress].s.font.color = { rgb: colors.success };
+                        }
+                    }
+                }
+            }
+
+            // Company header merge with enhanced coverage
+            const mergeRange = { s: { r: 0, c: 0 }, e: { r: 0, c: Math.max(headerCols - 1, 6) } };
+            if (!ws['!merges']) ws['!merges'] = [];
+            ws['!merges'].push(mergeRange);
+
+            // Set professional column widths
+            ws['!cols'] = [];
+            for (let i = 0; i < headerCols; i++) {
+                ws['!cols'][i] = { 
+                    wch: i === 0 ? 16 : i === 1 ? 28 : i === 2 ? 16 : i <= 4 ? 20 : 15 
+                };
+            }
+
+            // Set print options for professional output
+            ws['!printHeader'] = ['A1:' + XLSX.utils.encode_col(headerCols - 1) + '1'];
+            ws['!margins'] = { 
+                left: 0.7, right: 0.7, top: 0.75, bottom: 0.75, 
+                header: 0.3, footer: 0.3 
+            };
+        }
+
+        // Create professional chart data worksheets
+        function createChartWorksheet(chartData, chartTitle, chartType) {
+            const ws_data = [];
+            
+            // Chart title
+            ws_data.push([chartTitle]);
+            ws_data.push(['']);
+            ws_data.push(['Chart Type:', chartType.toUpperCase()]);
+            ws_data.push(['Generated:', new Date().toLocaleDateString('en-KW')]);
+            ws_data.push(['']);
+
+            // Add chart data
+            ws_data.push(...chartData);
+
+            // Instructions for creating charts
+            ws_data.push(['']);
+            ws_data.push(['INSTRUCTIONS FOR CREATING CHARTS IN EXCEL:']);
+            ws_data.push(['1. Select the data range above (excluding title rows)']);
+            ws_data.push(['2. Go to Insert > Charts']);
+            ws_data.push(['3. Choose appropriate chart type:']);
+            
+            switch(chartType) {
+                case 'revenue':
+                    ws_data.push(['   - Column Chart for Revenue comparison']);
+                    ws_data.push(['   - Line Chart for trends over time']);
+                    break;
+                case 'performance':
+                    ws_data.push(['   - Bar Chart for performance comparison']);
+                    ws_data.push(['   - Pie Chart for distribution']);
+                    break;
+                case 'trends':
+                    ws_data.push(['   - Line Chart for monthly trends']);
+                    ws_data.push(['   - Area Chart for cumulative view']);
+                    break;
+                default:
+                    ws_data.push(['   - Column/Bar Chart for comparisons']);
+                    ws_data.push(['   - Line Chart for trends']);
+            }
+            
+            ws_data.push(['4. Format chart with QGO Cargo colors']);
+            ws_data.push(['5. Add chart title and axis labels']);
+
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            
+            // Style the chart worksheet
+            const colors = {
+                primary: "1F4E79",
+                secondary: "4472C4",
+                accent: "E7E6E6",
+                white: "FFFFFF"
+            };
+
+            // Title styling
+            if (ws['A1']) {
+                ws['A1'].s = {
+                    font: { bold: true, sz: 16, color: { rgb: colors.primary }, name: "Calibri" },
+                    fill: { fgColor: { rgb: colors.accent } },
+                    alignment: { horizontal: "center", vertical: "center" }
+                };
+            }
+
+            // Header styling for chart data
+            const dataStartRow = 6; // Adjust based on your data structure
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let col = 0; col <= range.e.c; col++) {
+                const cellAddress = XLSX.utils.encode_cell({ r: dataStartRow - 1, c: col });
+                if (ws[cellAddress]) {
+                    ws[cellAddress].s = {
+                        font: { bold: true, color: { rgb: colors.white }, name: "Calibri" },
+                        fill: { fgColor: { rgb: colors.primary } },
+                        alignment: { horizontal: "center", vertical: "center" }
+                    };
+                }
+            }
+
+            // Set column widths
+            ws['!cols'] = [
+                {wch: 20}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}
+            ];
+
+            return ws;
+        }
+
+        function logout() {
+            signOut(auth);
+        }
+
+        // Data Loading
+        async function loadAllJobFiles() {
+            try {
+                showLoader();
+                const q = query(collection(db, 'jobfiles'), orderBy('createdAt', 'desc'));
+                const querySnapshot = await getDocs(q);
+                
+                allJobFiles = [];
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    allJobFiles.push({
+                        id: doc.id,
+                        ...data,
+                        createdAt: safeToDate(data.createdAt),
+                        billingDate: safeToDate(data.billingDate)
+                    });
+                });
+                
+                console.log(`Loaded ${allJobFiles.length} job files`);
+            } catch (error) {
+                console.error('Error loading job files:', error);
+                showNotification('Error loading data: ' + error.message, 'error');
+            } finally {
+                hideLoader();
+            }
+        }
+
+        async function loadFilterOptions() {
+            // Get unique customers (consignees)
+            const customers = [...new Set(allJobFiles.map(job => job.co).filter(Boolean))];
+            const customerSelect = document.getElementById('customer-filter');
+            customerSelect.innerHTML = '<option value="">All Customers</option>';
+            customers.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer;
+                option.textContent = customer;
+                customerSelect.appendChild(option);
+            });
+
+            // Get unique salesmen
+            const salesmen = [...new Set(allJobFiles.map(job => job.sm).filter(Boolean))];
+            const salesmanSelect = document.getElementById('salesman-filter');
+            salesmanSelect.innerHTML = '<option value="">All Salesmen</option>';
+            salesmen.forEach(salesman => {
+                const option = document.createElement('option');
+                option.value = salesman;
+                option.textContent = salesman;
+                salesmanSelect.appendChild(option);
+            });
+
+            // Get unique creators
+            const creators = [...new Set(allJobFiles.map(job => job.createdBy).filter(Boolean))];
+            const creatorSelect = document.getElementById('creator-filter');
+            creatorSelect.innerHTML = '<option value="">All Creators</option>';
+            creators.forEach(creator => {
+                const option = document.createElement('option');
+                option.value = creator;
+                option.textContent = creator;
+                creatorSelect.appendChild(option);
+            });
+        }
+
+        // Tab Management
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Remove active class from all nav tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+            event.target.classList.add('active');
+        }
+        window.switchTab = switchTab;
+
+        // Summary Report
+        function generateSummaryReport() {
+            const totalJobs = allJobFiles.length;
+            const totalRevenue = allJobFiles.reduce((sum, job) => sum + (parseFloat(job.totalSelling) || 0), 0);
+            const totalCost = allJobFiles.reduce((sum, job) => sum + (parseFloat(job.totalCost) || 0), 0);
+            const totalProfit = totalRevenue - totalCost;
+
+            document.getElementById('total-jobs').textContent = totalJobs;
+            document.getElementById('total-revenue').textContent = formatCurrency(totalRevenue);
+            document.getElementById('total-cost').textContent = formatCurrency(totalCost);
+            document.getElementById('total-profit').textContent = formatCurrency(totalProfit);
+
+            // Generate chart
+            generateSummaryChart();
+        }
+
+        function generateSummaryChart() {
+            const ctx = document.getElementById('summary-chart').getContext('2d');
+            
+            if (summaryChart) {
+                summaryChart.destroy();
+            }
+
+            // Group data by month
+            const monthlyData = {};
+            allJobFiles.forEach(job => {
+                const date = job.billingDate || job.createdAt;
+                if (date) {
+                    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    if (!monthlyData[monthKey]) {
+                        monthlyData[monthKey] = { revenue: 0, cost: 0, jobs: 0 };
+                    }
+                    monthlyData[monthKey].revenue += parseFloat(job.totalSelling) || 0;
+                    monthlyData[monthKey].cost += parseFloat(job.totalCost) || 0;
+                    monthlyData[monthKey].jobs += 1;
+                }
+            });
+
+            const sortedMonths = Object.keys(monthlyData).sort();
+            const labels = sortedMonths.map(month => {
+                const [year, monthNum] = month.split('-');
+                return new Date(year, monthNum - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+            });
+            
+            const revenueData = sortedMonths.map(month => monthlyData[month].revenue);
+            const costData = sortedMonths.map(month => monthlyData[month].cost);
+            const profitData = sortedMonths.map(month => monthlyData[month].revenue - monthlyData[month].cost);
+
+            summaryChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Revenue',
+                            data: revenueData,
+                            borderColor: '#4f46e5',
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Cost',
+                            data: costData,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Profit',
+                            data: profitData,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Download Summary Report with Professional Theme
+        function downloadSummaryReport() {
+            if (allJobFiles.length === 0) {
+                showNotification('No data available to export', 'warning');
+                return;
+            }
+
+            try {
+                const currentDate = new Date();
+                const userName = currentUser ? (currentUser.displayName || currentUser.email) : 'Unknown User';
+                
+                const wb = XLSX.utils.book_new();
+                wb.Props = {
+                    Title: "QGO Cargo Executive Summary Report",
+                    Subject: "Business Performance Dashboard",
+                    Author: "QGO Cargo Job File Management System",
+                    CreatedDate: currentDate
+                };
+
+                // Calculate summary statistics
+                let totalRevenue = 0, totalCost = 0, totalProfit = 0;
+                const monthlyStats = {}, customerStats = {}, salesmanStats = {};
+
+                allJobFiles.forEach(job => {
+                    const revenue = parseFloat(job.totalSelling) || 0;
+                    const cost = parseFloat(job.totalCost) || 0;
+                    const profit = revenue - cost;
+                    const jobDate = safeToDate(job.bd) || safeToDate(job.createdAt);
+                    const monthKey = jobDate ? `${jobDate.getFullYear()}-${String(jobDate.getMonth()+1).padStart(2,'0')}` : 'Unknown';
+                    const customer = job.co || 'Unknown Customer';
+                    const salesman = job.sm || 'Unknown Salesman';
+
+                    totalRevenue += revenue;
+                    totalCost += cost;
+                    totalProfit += profit;
+
+                    // Monthly stats
+                    if (!monthlyStats[monthKey]) monthlyStats[monthKey] = { revenue: 0, cost: 0, profit: 0, jobs: 0 };
+                    monthlyStats[monthKey].revenue += revenue;
+                    monthlyStats[monthKey].cost += cost;
+                    monthlyStats[monthKey].profit += profit;
+                    monthlyStats[monthKey].jobs += 1;
+
+                    // Top customers
+                    if (!customerStats[customer]) customerStats[customer] = { revenue: 0, profit: 0, jobs: 0 };
+                    customerStats[customer].revenue += revenue;
+                    customerStats[customer].profit += profit;
+                    customerStats[customer].jobs += 1;
+
+                    // Top salesmen
+                    if (!salesmanStats[salesman]) salesmanStats[salesman] = { revenue: 0, profit: 0, jobs: 0 };
+                    salesmanStats[salesman].revenue += revenue;
+                    salesmanStats[salesman].profit += profit;
+                    salesmanStats[salesman].jobs += 1;
+                });
+
+                // Main summary sheet
+                const ws_data = [];
+                ws_data.push(['QGO CARGO - EXECUTIVE BUSINESS SUMMARY']);
+                ws_data.push(['']);
+                ws_data.push(['Generated by:', 'Job File Management System']);
+                ws_data.push(['User:', userName]);
+                ws_data.push(['Generated on:', currentDate.toLocaleDateString('en-KW')]);
+                ws_data.push(['Generated at:', currentDate.toLocaleTimeString('en-KW')]);
+                ws_data.push(['']);
+
+                // Key Performance Indicators
+                ws_data.push(['KEY PERFORMANCE INDICATORS']);
+                ws_data.push(['']);
+                ws_data.push(['Metric', 'Value', 'Unit']);
+                ws_data.push(['Total Jobs Processed', allJobFiles.length, 'Jobs']);
+                ws_data.push(['Total Revenue Generated', totalRevenue, 'KWD']);
+                ws_data.push(['Total Operating Costs', totalCost, 'KWD']);
+                ws_data.push(['Net Profit Achieved', totalProfit, 'KWD']);
+                ws_data.push(['Profit Margin', totalRevenue > 0 ? (totalProfit / totalRevenue) : 0, '%']);
+                ws_data.push(['Average Revenue per Job', allJobFiles.length > 0 ? totalRevenue / allJobFiles.length : 0, 'KWD']);
+                ws_data.push(['Active Customers', Object.keys(customerStats).length, 'Count']);
+                ws_data.push(['Sales Team Size', Object.keys(salesmanStats).length, 'Count']);
+                ws_data.push(['']);
+
+                // Top 5 Customers by Revenue
+                ws_data.push(['TOP 5 CUSTOMERS BY REVENUE']);
+                ws_data.push(['Rank', 'Customer Name', 'Jobs', 'Revenue (KWD)', 'Profit (KWD)', 'Margin %']);
+                Object.entries(customerStats)
+                    .sort((a, b) => b[1].revenue - a[1].revenue)
+                    .slice(0, 5)
+                    .forEach(([customer, data], index) => {
+                        const margin = data.revenue > 0 ? (data.profit / data.revenue) : 0;
+                        ws_data.push([index + 1, customer, data.jobs, data.revenue, data.profit, margin]);
+                    });
+
+                ws_data.push(['']);
+
+                // Top 5 Salesmen by Performance  
+                ws_data.push(['TOP 5 SALESMEN BY PERFORMANCE']);
+                ws_data.push(['Rank', 'Salesman Name', 'Jobs Sold', 'Revenue (KWD)', 'Profit (KWD)', 'Efficiency %']);
+                Object.entries(salesmanStats)
+                    .sort((a, b) => b[1].profit - a[1].profit)
+                    .slice(0, 5)
+                    .forEach(([salesman, data], index) => {
+                        const efficiency = data.revenue > 0 ? (data.profit / data.revenue) * 100 : 0;
+                        ws_data.push([index + 1, salesman, data.jobs, data.revenue, data.profit, efficiency]);
+                    });
+
+                const ws = XLSX.utils.aoa_to_sheet(ws_data);
+                
+                // Apply enhanced styling
+                applyExcelStyling(ws, 6, 25, 'Executive Summary');
+                
+                ws['!cols'] = [
+                    {wch: 25}, {wch: 20}, {wch: 15}, {wch: 18}, {wch: 15}, {wch: 12}
+                ];
+
+                XLSX.utils.book_append_sheet(wb, ws, 'Executive Summary');
+
+                // Monthly trends chart data
+                const monthlyTrendsData = [
+                    ['Month', 'Jobs Count', 'Revenue (KWD)', 'Profit (KWD)', 'Margin %'],
+                    ...Object.entries(monthlyStats)
+                        .sort((a, b) => a[0].localeCompare(b[0]))
+                        .map(([month, data]) => [
+                            month,
+                            data.jobs,
+                            data.revenue,
+                            data.profit,
+                            data.revenue > 0 ? (data.profit / data.revenue) : 0
+                        ])
+                ];
+                const trendsWs = createChartWorksheet(monthlyTrendsData, 'Monthly Business Trends', 'trends');
+                XLSX.utils.book_append_sheet(wb, trendsWs, 'Monthly Trends Chart');
+
+                // Revenue distribution chart data
+                const revenueDistData = [
+                    ['Category', 'Amount (KWD)', 'Percentage'],
+                    ['Revenue', totalRevenue, 1],
+                    ['Costs', totalCost, totalRevenue > 0 ? totalCost / totalRevenue : 0],
+                    ['Profit', totalProfit, totalRevenue > 0 ? totalProfit / totalRevenue : 0]
+                ];
+                const distributionWs = createChartWorksheet(revenueDistData, 'Revenue Distribution Analysis', 'revenue');
+                XLSX.utils.book_append_sheet(wb, distributionWs, 'Revenue Analysis Chart');
+
+                const filename = `QGO_Executive_Summary_${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2,'0')}-${String(currentDate.getDate()).padStart(2,'0')}_${String(currentDate.getHours()).padStart(2,'0')}${String(currentDate.getMinutes()).padStart(2,'0')}.xlsx`;
+                
+                XLSX.writeFile(wb, filename);
+                showNotification('✅ Executive Summary with Professional Charts Downloaded Successfully! 📊', 'success');
+                
+            } catch (error) {
+                console.error('Excel download error:', error);
+                showNotification('❌ Error downloading Excel file: ' + error.message, 'error');
+            }
+        }
+
+        // Customer Report
+        function generateCustomerReport() {
+            const customer = document.getElementById('customer-filter').value;
+            const fromDate = new Date(document.getElementById('customer-from-date').value);
+            const toDate = new Date(document.getElementById('customer-to-date').value);
+
+            let filteredJobs = allJobFiles;
+
+            if (customer) {
+                filteredJobs = filteredJobs.filter(job => job.co === customer);
+            }
+
+            if (document.getElementById('customer-from-date').value) {
+                filteredJobs = filteredJobs.filter(job => {
+                    const jobDate = job.bd || job.createdAt;
+                    return jobDate >= fromDate;
+                });
+            }
+
+            if (document.getElementById('customer-to-date').value) {
+                filteredJobs = filteredJobs.filter(job => {
+                    const jobDate = job.bd || job.createdAt;
+                    return jobDate <= toDate;
+                });
+            }
+
+            currentReportData = filteredJobs;
+            displayCustomerReport(filteredJobs);
+        }
+        window.generateCustomerReport = generateCustomerReport;
+
+        function displayCustomerReport(jobs) {
+            const tbody = document.getElementById('customer-report-body');
+            tbody.innerHTML = '';
+
+            jobs.forEach(job => {
+                const invoiceAmount = parseFloat(job.totalSelling) || 0;
+                const cost = parseFloat(job.totalCost) || 0;
+                const profit = invoiceAmount - cost;
+                const profitPercentage = invoiceAmount > 0 ? (profit / invoiceAmount) * 100 : 0;
+                const jobDate = safeToDate(job.bd) || safeToDate(job.createdAt);
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${job.in || '-'}</td>
+                    <td>${job.co || '-'}</td>
+                    <td>${job.jfn || '-'}</td>
+                    <td>${formatCurrency(invoiceAmount)}</td>
+                    <td>${formatCurrency(cost)}</td>
+                    <td class="${profit >= 0 ? 'profit-positive' : 'profit-negative'}">${formatCurrency(profit)}</td>
+                    <td class="${profit >= 0 ? 'profit-positive' : 'profit-negative'}">${formatPercentage(profitPercentage)}</td>
+                    <td>${jobDate ? jobDate.toLocaleDateString('en-KW') : '-'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('customer-report-container').classList.remove('hidden');
+        }
+
+        function downloadCustomerReport() {
+            if (currentReportData.length === 0) {
+                showNotification('Please generate a report first', 'warning');
+                return;
+            }
+
+            try {
+                const currentDate = new Date();
+                const userName = currentUser ? (currentUser.displayName || currentUser.email) : 'Unknown User';
+                
+                // Create workbook
+                const wb = XLSX.utils.book_new();
+                wb.Props = {
+                    Title: "QGO Cargo Customer Report",
+                    Subject: "Customer Performance Analysis",
+                    Author: "QGO Cargo Job File Management System",
+                    CreatedDate: currentDate
+                };
+
+                // Create main data sheet
+                const ws_data = [];
+                
+                // Header section with system info
+                ws_data.push(['QGO CARGO - CUSTOMER PERFORMANCE REPORT']);
+                ws_data.push(['']);
+                ws_data.push(['Generated by:', 'Job File Management System']);
+                ws_data.push(['User:', userName]);
+                ws_data.push(['Generated on:', currentDate.toLocaleDateString('en-KW')]);
+                ws_data.push(['Generated at:', currentDate.toLocaleTimeString('en-KW')]);
+                ws_data.push(['Total Records:', currentReportData.length]);
+                ws_data.push(['Currency:', 'Kuwait Dinar (KWD)']);
+                ws_data.push(['']);
+                
+                // Data table headers
+                ws_data.push(['Invoice No', 'Customer Name', 'Job File No', 'Invoice Amount (KWD)', 'Cost (KWD)', 'Profit (KWD)', 'Profit %', 'Date']);
+
+                // Process data and calculate totals
+                let totalRevenue = 0, totalCost = 0, totalProfit = 0;
+                const customerTotals = {};
+                
+                currentReportData.forEach(job => {
+                    const invoiceAmount = parseFloat(job.totalSelling) || 0;
+                    const cost = parseFloat(job.totalCost) || 0;
+                    const profit = invoiceAmount - cost;
+                    const profitPercentage = invoiceAmount > 0 ? (profit / invoiceAmount) * 100 : 0;
+                    const jobDate = safeToDate(job.bd) || safeToDate(job.createdAt);
+                    const customer = job.co || 'Unknown Customer';
+
+                    totalRevenue += invoiceAmount;
+                    totalCost += cost;
+                    totalProfit += profit;
+
+                    if (!customerTotals[customer]) {
+                        customerTotals[customer] = { revenue: 0, cost: 0, profit: 0, jobs: 0 };
+                    }
+                    customerTotals[customer].revenue += invoiceAmount;
+                    customerTotals[customer].cost += cost;
+                    customerTotals[customer].profit += profit;
+                    customerTotals[customer].jobs += 1;
+
+                    ws_data.push([
+                        job.in || '',
+                        customer,
+                        job.jfn || '',
+                        invoiceAmount,
+                        cost,
+                        profit,
+                        profitPercentage / 100, // Convert to decimal for Excel percentage format
+                        jobDate ? jobDate.toLocaleDateString('en-KW') : ''
+                    ]);
+                });
+
+                // Add totals section
+                ws_data.push(['']);
+                ws_data.push(['FINANCIAL SUMMARY']);
+                ws_data.push(['Total Revenue (KWD):', '', '', totalRevenue]);
+                ws_data.push(['Total Cost (KWD):', '', '', totalCost]);
+                ws_data.push(['Net Profit (KWD):', '', '', totalProfit]);
+                ws_data.push(['Profit Margin (%):', '', '', totalRevenue > 0 ? (totalProfit / totalRevenue) : 0]);
+                ws_data.push(['Average Revenue per Job:', '', '', currentReportData.length > 0 ? totalRevenue / currentReportData.length : 0]);
+
+                // Add customer analysis
+                ws_data.push(['']);
+                ws_data.push(['TOP CUSTOMERS ANALYSIS']);
+                ws_data.push(['Customer Name', 'Jobs Count', 'Revenue (KWD)', 'Cost (KWD)', 'Profit (KWD)', 'Profit Margin %']);
+                
+                Object.entries(customerTotals)
+                    .sort((a, b) => b[1].profit - a[1].profit)
+                    .slice(0, 10)
+                    .forEach(([customer, data]) => {
+                        const margin = data.revenue > 0 ? (data.profit / data.revenue) : 0;
+                        ws_data.push([customer, data.jobs, data.revenue, data.cost, data.profit, margin]);
+                    });
+
+                // Create worksheet
+                const ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+                // Set column widths
+                ws['!cols'] = [
+                    {wch: 15}, {wch: 30}, {wch: 15}, {wch: 20}, 
+                    {wch: 15}, {wch: 15}, {wch: 12}, {wch: 12}
+                ];
+
+                // Apply formatting
+                const range = XLSX.utils.decode_range(ws['!ref']);
+                
+                // Format header
+                if (ws['A1']) {
+                    ws['A1'].s = {
+                        font: { bold: true, sz: 16 },
+                        alignment: { horizontal: "center" }
+                    };
+                }
+
+                // Format currency columns (D, E, F) and percentage column (G)
+                for (let row = 10; row <= 10 + currentReportData.length; row++) {
+                    ['D', 'E', 'F'].forEach(col => {
+                        const cellRef = col + row;
+                        if (ws[cellRef]) {
+                            ws[cellRef].z = '"KWD" #,##0.000';
+                        }
+                    });
+                    if (ws['G' + row]) {
+                        ws['G' + row].z = '0.00%';
+                    }
+                }
+
+                // Create chart data sheet
+                const chartData = [
+                    ['Customer', 'Revenue', 'Profit'],
+                    ...Object.entries(customerTotals)
+                        .sort((a, b) => b[1].revenue - a[1].revenue)
+                        .slice(0, 10)
+                        .map(([customer, data]) => [customer, data.revenue, data.profit])
+                ];
+                const chartWs = createChartWorksheet(chartData, 'Customer Revenue Analysis', 'revenue');
+                
+                // Create additional performance chart data
+                const performanceData = [
+                    ['Customer', 'Jobs Count', 'Avg Revenue/Job', 'Efficiency %'],
+                    ...Object.entries(customerTotals)
+                        .sort((a, b) => b[1].jobs - a[1].jobs)
+                        .slice(0, 15)
+                        .map(([customer, data]) => [
+                            customer,
+                            data.jobs,
+                            data.jobs > 0 ? data.revenue / data.jobs : 0,
+                            data.revenue > 0 ? (data.profit / data.revenue) * 100 : 0
+                        ])
+                ];
+                const performanceWs = createChartWorksheet(performanceData, 'Customer Performance Metrics', 'performance');
+                
+                XLSX.utils.book_append_sheet(wb, ws, 'Customer Report');
+                XLSX.utils.book_append_sheet(wb, chartWs, 'Revenue Charts');
+                XLSX.utils.book_append_sheet(wb, performanceWs, 'Performance Charts');
+
+                // Generate filename with timestamp
+                const filename = `QGO_Customer_Report_${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2,'0')}-${String(currentDate.getDate()).padStart(2,'0')}_${String(currentDate.getHours()).padStart(2,'0')}${String(currentDate.getMinutes()).padStart(2,'0')}.xlsx`;
+                
+                XLSX.writeFile(wb, filename);
+                showNotification('✅ Professional Themed Customer Report with Interactive Charts Downloaded!', 'success');
+                
+            } catch (error) {
+                console.error('Excel download error:', error);
+                showNotification('❌ Error downloading Excel file: ' + error.message, 'error');
+            }
+        }
+        window.downloadCustomerReport = downloadCustomerReport;
+        window.downloadSummaryReport = downloadSummaryReport;
+
+        // Salesman Report
+        function generateSalesmanReport() {
+            const salesman = document.getElementById('salesman-filter').value;
+            const fromDate = new Date(document.getElementById('salesman-from-date').value);
+            const toDate = new Date(document.getElementById('salesman-to-date').value);
+
+            let filteredJobs = allJobFiles;
+
+            if (salesman) {
+                filteredJobs = filteredJobs.filter(job => job.sm === salesman);
+            }
+
+            if (document.getElementById('salesman-from-date').value) {
+                filteredJobs = filteredJobs.filter(job => {
+                    const jobDate = safeToDate(job.bd) || safeToDate(job.createdAt);
+                    return jobDate >= fromDate;
+                });
+            }
+
+            if (document.getElementById('salesman-to-date').value) {
+                filteredJobs = filteredJobs.filter(job => {
+                    const jobDate = safeToDate(job.bd) || safeToDate(job.createdAt);
+                    return jobDate <= toDate;
+                });
+            }
+
+            currentReportData = filteredJobs;
+            displaySalesmanReport(filteredJobs);
+        }
+        window.generateSalesmanReport = generateSalesmanReport;
+
+        function displaySalesmanReport(jobs) {
+            const tbody = document.getElementById('salesman-report-body');
+            tbody.innerHTML = '';
+
+            jobs.forEach(job => {
+                const invoiceAmount = parseFloat(job.totalSelling) || 0;
+                const cost = parseFloat(job.totalCost) || 0;
+                const profit = invoiceAmount - cost;
+                const profitPercentage = invoiceAmount > 0 ? (profit / invoiceAmount) * 100 : 0;
+                const jobDate = safeToDate(job.bd) || safeToDate(job.createdAt);
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${job.in || '-'}</td>
+                    <td>${job.co || '-'}</td>
+                    <td>${job.jfn || '-'}</td>
+                    <td>${job.sm || '-'}</td>
+                    <td>${formatCurrency(invoiceAmount)}</td>
+                    <td>${formatCurrency(cost)}</td>
+                    <td class="${profit >= 0 ? 'profit-positive' : 'profit-negative'}">${formatCurrency(profit)}</td>
+                    <td class="${profit >= 0 ? 'profit-positive' : 'profit-negative'}">${formatPercentage(profitPercentage)}</td>
+                    <td>${jobDate ? jobDate.toLocaleDateString('en-KW') : '-'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('salesman-report-container').classList.remove('hidden');
+        }
+
+        function downloadSalesmanReport() {
+            if (currentReportData.length === 0) {
+                showNotification('Please generate a report first', 'warning');
+                return;
+            }
+
+            try {
+                const currentDate = new Date();
+                const userName = currentUser ? (currentUser.displayName || currentUser.email) : 'Unknown User';
+                
+                // Create workbook
+                const wb = XLSX.utils.book_new();
+                wb.Props = {
+                    Title: "QGO Cargo Salesman Performance Report",
+                    Subject: "Sales Team Analysis",
+                    Author: "QGO Cargo Job File Management System",
+                    CreatedDate: currentDate
+                };
+
+                const ws_data = [];
+                
+                // Header section
+                ws_data.push(['QGO CARGO - SALESMAN PERFORMANCE REPORT']);
+                ws_data.push(['']);
+                ws_data.push(['Generated by:', 'Job File Management System']);
+                ws_data.push(['User:', userName]);
+                ws_data.push(['Generated on:', currentDate.toLocaleDateString('en-KW')]);
+                ws_data.push(['Generated at:', currentDate.toLocaleTimeString('en-KW')]);
+                ws_data.push(['Total Records:', currentReportData.length]);
+                ws_data.push(['Currency:', 'Kuwait Dinar (KWD)']);
+                ws_data.push(['']);
+
+                // Data table headers
+                ws_data.push(['Invoice No', 'Customer Name', 'Job File No', 'Salesman', 'Invoice Amount (KWD)', 'Cost (KWD)', 'Profit (KWD)', 'Profit %', 'Date']);
+
+                // Process data
+                let totalRevenue = 0, totalCost = 0, totalProfit = 0;
+                const salesmanTotals = {};
+                const monthlyData = {};
+
+                currentReportData.forEach(job => {
+                    const invoiceAmount = parseFloat(job.totalSelling) || 0;
+                    const cost = parseFloat(job.totalCost) || 0;
+                    const profit = invoiceAmount - cost;
+                    const profitPercentage = invoiceAmount > 0 ? (profit / invoiceAmount) * 100 : 0;
+                    const jobDate = safeToDate(job.bd) || safeToDate(job.createdAt);
+                    const salesman = job.sm || 'Unassigned';
+
+                    totalRevenue += invoiceAmount;
+                    totalCost += cost;
+                    totalProfit += profit;
+
+                    // Salesman totals
+                    if (!salesmanTotals[salesman]) {
+                        salesmanTotals[salesman] = { revenue: 0, cost: 0, profit: 0, jobs: 0 };
+                    }
+                    salesmanTotals[salesman].revenue += invoiceAmount;
+                    salesmanTotals[salesman].cost += cost;
+                    salesmanTotals[salesman].profit += profit;
+                    salesmanTotals[salesman].jobs += 1;
+
+                    // Monthly data for charts
+                    if (jobDate) {
+                        const monthKey = `${jobDate.getFullYear()}-${String(jobDate.getMonth() + 1).padStart(2, '0')}`;
+                        if (!monthlyData[monthKey]) monthlyData[monthKey] = { revenue: 0, profit: 0 };
+                        monthlyData[monthKey].revenue += invoiceAmount;
+                        monthlyData[monthKey].profit += profit;
+                    }
+
+                    ws_data.push([
+                        job.in || '',
+                        job.co || '',
+                        job.jfn || '',
+                        salesman,
+                        invoiceAmount,
+                        cost,
+                        profit,
+                        profitPercentage / 100,
+                        jobDate ? jobDate.toLocaleDateString('en-KW') : ''
+                    ]);
+                });
+
+                // Financial Summary
+                ws_data.push(['']);
+                ws_data.push(['FINANCIAL SUMMARY']);
+                ws_data.push(['Total Revenue (KWD):', '', '', '', totalRevenue]);
+                ws_data.push(['Total Cost (KWD):', '', '', '', totalCost]);
+                ws_data.push(['Net Profit (KWD):', '', '', '', totalProfit]);
+                ws_data.push(['Overall Profit Margin (%):', '', '', '', totalRevenue > 0 ? (totalProfit / totalRevenue) : 0]);
+
+                // Salesman Performance Ranking
+                ws_data.push(['']);
+                ws_data.push(['SALESMAN PERFORMANCE RANKING']);
+                ws_data.push(['Rank', 'Salesman', 'Jobs', 'Revenue (KWD)', 'Cost (KWD)', 'Profit (KWD)', 'Efficiency %', 'Avg Profit/Job']);
+                
+                Object.entries(salesmanTotals)
+                    .sort((a, b) => b[1].profit - a[1].profit)
+                    .forEach(([salesman, data], index) => {
+                        const efficiency = data.revenue > 0 ? (data.profit / data.revenue) : 0;
+                        const avgProfit = data.jobs > 0 ? data.profit / data.jobs : 0;
+                        ws_data.push([
+                            index + 1,
+                            salesman,
+                            data.jobs,
+                            data.revenue,
+                            data.cost,
+                            data.profit,
+                            efficiency,
+                            avgProfit
+                        ]);
+                    });
+
+                // Create main worksheet
+                const ws = XLSX.utils.aoa_to_sheet(ws_data);
+                ws['!cols'] = [
+                    {wch: 15}, {wch: 25}, {wch: 15}, {wch: 20}, {wch: 18}, 
+                    {wch: 15}, {wch: 15}, {wch: 12}, {wch: 12}
+                ];
+
+                // Format currency and percentage columns
+                const range = XLSX.utils.decode_range(ws['!ref']);
+                for (let row = 10; row <= 10 + currentReportData.length; row++) {
+                    ['E', 'F', 'G'].forEach(col => {
+                        const cellRef = col + row;
+                        if (ws[cellRef] && col !== 'G') {
+                            ws[cellRef].z = '"KWD" #,##0.000';
+                        }
+                    });
+                    if (ws['H' + row]) {
+                        ws['H' + row].z = '0.00%';
+                    }
+                }
+
+                // Create chart data sheets
+                const salesmanChartData = [
+                    ['Salesman', 'Revenue', 'Profit', 'Jobs'],
+                    ...Object.entries(salesmanTotals)
+                        .sort((a, b) => b[1].profit - a[1].profit)
+                        .slice(0, 10)
+                        .map(([salesman, data]) => [salesman, data.revenue, data.profit, data.jobs])
+                ];
+                
+                const monthlyChartData = [
+                    ['Month', 'Revenue', 'Profit'],
+                    ...Object.entries(monthlyData)
+                        .sort((a, b) => a[0].localeCompare(b[0]))
+                        .map(([month, data]) => [month, data.revenue, data.profit])
+                ];
+
+                const salesmanWs = XLSX.utils.aoa_to_sheet(salesmanChartData);
+                const monthlyWs = XLSX.utils.aoa_to_sheet(monthlyChartData);
+
+                XLSX.utils.book_append_sheet(wb, ws, 'Salesman Report');
+                XLSX.utils.book_append_sheet(wb, salesmanWs, 'Salesman Chart Data');
+                XLSX.utils.book_append_sheet(wb, monthlyWs, 'Monthly Chart Data');
+
+                const filename = `QGO_Salesman_Report_${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2,'0')}-${String(currentDate.getDate()).padStart(2,'0')}_${String(currentDate.getHours()).padStart(2,'0')}${String(currentDate.getMinutes()).padStart(2,'0')}.xlsx`;
+                
+                XLSX.writeFile(wb, filename);
+                showNotification('✅ Professional Salesman Report Downloaded Successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Excel download error:', error);
+                showNotification('❌ Error downloading Excel file: ' + error.message, 'error');
+            }
+        }
+        window.downloadSalesmanReport = downloadSalesmanReport;
+
+        // Creator Report
+        function generateCreatorReport() {
+            const creator = document.getElementById('creator-filter').value;
+            const fromDate = new Date(document.getElementById('creator-from-date').value);
+            const toDate = new Date(document.getElementById('creator-to-date').value);
+
+            let filteredJobs = allJobFiles;
+
+            if (creator) {
+                filteredJobs = filteredJobs.filter(job => job.createdBy === creator);
+            }
+
+            if (document.getElementById('creator-from-date').value) {
+                filteredJobs = filteredJobs.filter(job => {
+                    const jobDate = safeToDate(job.bd) || safeToDate(job.createdAt);
+                    return jobDate >= fromDate;
+                });
+            }
+
+            if (document.getElementById('creator-to-date').value) {
+                filteredJobs = filteredJobs.filter(job => {
+                    const jobDate = safeToDate(job.bd) || safeToDate(job.createdAt);
+                    return jobDate <= toDate;
+                });
+            }
+
+            currentReportData = filteredJobs;
+            displayCreatorReport(filteredJobs);
+        }
+        window.generateCreatorReport = generateCreatorReport;
+
+        function displayCreatorReport(jobs) {
+            const tbody = document.getElementById('creator-report-body');
+            tbody.innerHTML = '';
+
+            jobs.forEach(job => {
+                const invoiceAmount = parseFloat(job.totalSelling) || 0;
+                const cost = parseFloat(job.totalCost) || 0;
+                const profit = invoiceAmount - cost;
+                const profitPercentage = invoiceAmount > 0 ? (profit / invoiceAmount) * 100 : 0;
+                const jobDate = safeToDate(job.bd) || safeToDate(job.createdAt);
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${job.in || '-'}</td>
+                    <td>${job.co || '-'}</td>
+                    <td>${job.jfn || '-'}</td>
+                    <td>${job.createdBy || '-'}</td>
+                    <td>${formatCurrency(invoiceAmount)}</td>
+                    <td>${formatCurrency(cost)}</td>
+                    <td class="${profit >= 0 ? 'profit-positive' : 'profit-negative'}">${formatCurrency(profit)}</td>
+                    <td class="${profit >= 0 ? 'profit-positive' : 'profit-negative'}">${formatPercentage(profitPercentage)}</td>
+                    <td>${jobDate ? jobDate.toLocaleDateString('en-KW') : '-'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('creator-report-container').classList.remove('hidden');
+        }
+
+        function downloadCreatorReport() {
+            if (currentReportData.length === 0) {
+                showNotification('Please generate a report first', 'warning');
+                return;
+            }
+
+            try {
+                const currentDate = new Date();
+                const userName = currentUser ? (currentUser.displayName || currentUser.email) : 'Unknown User';
+                
+                const wb = XLSX.utils.book_new();
+                wb.Props = {
+                    Title: "QGO Cargo Creator Performance Report",
+                    Subject: "Job Creation Analysis",
+                    Author: "QGO Cargo Job File Management System",
+                    CreatedDate: currentDate
+                };
+
+                const ws_data = [];
+                
+                ws_data.push(['QGO CARGO - CREATOR PERFORMANCE REPORT']);
+                ws_data.push(['']);
+                ws_data.push(['Generated by:', 'Job File Management System']);
+                ws_data.push(['User:', userName]);
+                ws_data.push(['Generated on:', currentDate.toLocaleDateString('en-KW')]);
+                ws_data.push(['Generated at:', currentDate.toLocaleTimeString('en-KW')]);
+                ws_data.push(['Total Records:', currentReportData.length]);
+                ws_data.push(['Currency:', 'Kuwait Dinar (KWD)']);
+                ws_data.push(['']);
+
+                ws_data.push(['Invoice No', 'Customer Name', 'Job File No', 'Created By', 'Invoice Amount (KWD)', 'Cost (KWD)', 'Profit (KWD)', 'Profit %', 'Date']);
+
+                let totalRevenue = 0, totalCost = 0, totalProfit = 0;
+                const creatorTotals = {};
+
+                currentReportData.forEach(job => {
+                    const invoiceAmount = parseFloat(job.totalSelling) || 0;
+                    const cost = parseFloat(job.totalCost) || 0;
+                    const profit = invoiceAmount - cost;
+                    const profitPercentage = invoiceAmount > 0 ? (profit / invoiceAmount) * 100 : 0;
+                    const jobDate = safeToDate(job.bd) || safeToDate(job.createdAt);
+                    const creator = job.createdBy || 'Unknown Creator';
+
+                    totalRevenue += invoiceAmount;
+                    totalCost += cost;
+                    totalProfit += profit;
+
+                    if (!creatorTotals[creator]) {
+                        creatorTotals[creator] = { revenue: 0, cost: 0, profit: 0, jobs: 0 };
+                    }
+                    creatorTotals[creator].revenue += invoiceAmount;
+                    creatorTotals[creator].cost += cost;
+                    creatorTotals[creator].profit += profit;
+                    creatorTotals[creator].jobs += 1;
+
+                    ws_data.push([
+                        job.in || '',
+                        job.co || '',
+                        job.jfn || '',
+                        creator,
+                        invoiceAmount,
+                        cost,
+                        profit,
+                        profitPercentage / 100,
+                        jobDate ? jobDate.toLocaleDateString('en-KW') : ''
+                    ]);
+                });
+
+                // Financial Summary
+                ws_data.push(['']);
+                ws_data.push(['FINANCIAL SUMMARY']);
+                ws_data.push(['Total Revenue (KWD):', '', '', '', totalRevenue]);
+                ws_data.push(['Total Cost (KWD):', '', '', '', totalCost]);
+                ws_data.push(['Net Profit (KWD):', '', '', '', totalProfit]);
+                ws_data.push(['Overall Success Rate (%):', '', '', '', totalRevenue > 0 ? (totalProfit / totalRevenue) : 0]);
+
+                // Creator Performance Analysis
+                ws_data.push(['']);
+                ws_data.push(['CREATOR PERFORMANCE ANALYSIS']);
+                ws_data.push(['Rank', 'Creator', 'Jobs Created', 'Total Revenue (KWD)', 'Total Cost (KWD)', 'Total Profit (KWD)', 'Success Rate %', 'Avg Revenue/Job']);
+                
+                Object.entries(creatorTotals)
+                    .sort((a, b) => b[1].profit - a[1].profit)
+                    .forEach(([creator, data], index) => {
+                        const successRate = data.revenue > 0 ? (data.profit / data.revenue) : 0;
+                        const avgRevenue = data.jobs > 0 ? data.revenue / data.jobs : 0;
+                        ws_data.push([
+                            index + 1,
+                            creator,
+                            data.jobs,
+                            data.revenue,
+                            data.cost,
+                            data.profit,
+                            successRate,
+                            avgRevenue
+                        ]);
+                    });
+
+                const ws = XLSX.utils.aoa_to_sheet(ws_data);
+                ws['!cols'] = [
+                    {wch: 15}, {wch: 25}, {wch: 15}, {wch: 20}, {wch: 18}, 
+                    {wch: 15}, {wch: 15}, {wch: 12}, {wch: 12}
+                ];
+
+                // Format currency and percentage columns
+                for (let row = 10; row <= 10 + currentReportData.length; row++) {
+                    ['E', 'F', 'G'].forEach(col => {
+                        const cellRef = col + row;
+                        if (ws[cellRef] && col !== 'G') {
+                            ws[cellRef].z = '"KWD" #,##0.000';
+                        }
+                    });
+                    if (ws['H' + row]) {
+                        ws['H' + row].z = '0.00%';
+                    }
+                }
+
+                // Chart data for creators
+                const creatorChartData = [
+                    ['Creator', 'Jobs Created', 'Revenue', 'Profit'],
+                    ...Object.entries(creatorTotals)
+                        .sort((a, b) => b[1].jobs - a[1].jobs)
+                        .map(([creator, data]) => [creator, data.jobs, data.revenue, data.profit])
+                ];
+                
+                const chartWs = XLSX.utils.aoa_to_sheet(creatorChartData);
+
+                XLSX.utils.book_append_sheet(wb, ws, 'Creator Report');
+                XLSX.utils.book_append_sheet(wb, chartWs, 'Creator Chart Data');
+
+                const filename = `QGO_Creator_Report_${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2,'0')}-${String(currentDate.getDate()).padStart(2,'0')}_${String(currentDate.getHours()).padStart(2,'0')}${String(currentDate.getMinutes()).padStart(2,'0')}.xlsx`;
+                
+                XLSX.writeFile(wb, filename);
+                showNotification('✅ Professional Creator Report Downloaded Successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Excel download error:', error);
+                showNotification('❌ Error downloading Excel file: ' + error.message, 'error');
+            }
+        }
+        window.downloadCreatorReport = downloadCreatorReport;
+
+        // Detailed Report
+        function generateDetailedReport() {
+            const fromDate = new Date(document.getElementById('detailed-from-date').value);
+            const toDate = new Date(document.getElementById('detailed-to-date').value);
+
+            let filteredJobs = allJobFiles;
+
+            if (document.getElementById('detailed-from-date').value) {
+                filteredJobs = filteredJobs.filter(job => {
+                    const jobDate = safeToDate(job.bd) || safeToDate(job.createdAt);
+                    return jobDate >= fromDate;
+                });
+            }
+
+            if (document.getElementById('detailed-to-date').value) {
+                filteredJobs = filteredJobs.filter(job => {
+                    const jobDate = safeToDate(job.bd) || safeToDate(job.createdAt);
+                    return jobDate <= toDate;
+                });
+            }
+
+            currentReportData = filteredJobs;
+            displayDetailedReport(filteredJobs);
+        }
+        window.generateDetailedReport = generateDetailedReport;
+
+        function displayDetailedReport(jobs) {
+            const tbody = document.getElementById('detailed-report-body');
+            tbody.innerHTML = '';
+
+            jobs.forEach(job => {
+                const invoiceAmount = parseFloat(job.totalSelling) || 0;
+                const cost = parseFloat(job.totalCost) || 0;
+                const profit = invoiceAmount - cost;
+                const profitPercentage = invoiceAmount > 0 ? (profit / invoiceAmount) * 100 : 0;
+                const jobDate = safeToDate(job.bd) || safeToDate(job.createdAt);
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${job.in || '-'}</td>
+                    <td>${job.co || '-'}</td>
+                    <td>${job.jfn || '-'}</td>
+                    <td>${job.sm || '-'}</td>
+                    <td>${job.createdBy || '-'}</td>
+                    <td>${formatCurrency(invoiceAmount)}</td>
+                    <td>${formatCurrency(cost)}</td>
+                    <td class="${profit >= 0 ? 'profit-positive' : 'profit-negative'}">${formatCurrency(profit)}</td>
+                    <td class="${profit >= 0 ? 'profit-positive' : 'profit-negative'}">${formatPercentage(profitPercentage)}</td>
+                    <td>${job.status || 'Draft'}</td>
+                    <td>${jobDate ? jobDate.toLocaleDateString('en-KW') : '-'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('detailed-report-container').classList.remove('hidden');
+        }
+
+        function downloadDetailedReport() {
+            if (currentReportData.length === 0) {
+                showNotification('Please generate a report first', 'warning');
+                return;
+            }
+
+            try {
+                const currentDate = new Date();
+                const userName = currentUser ? (currentUser.displayName || currentUser.email) : 'Unknown User';
+                
+                const wb = XLSX.utils.book_new();
+                wb.Props = {
+                    Title: "QGO Cargo Complete Business Intelligence Report",
+                    Subject: "Comprehensive Job File Analysis",
+                    Author: "QGO Cargo Job File Management System",
+                    CreatedDate: currentDate
+                };
+
+                const ws_data = [];
+                
+                ws_data.push(['QGO CARGO - COMPLETE BUSINESS INTELLIGENCE REPORT']);
+                ws_data.push(['']);
+                ws_data.push(['Generated by:', 'Job File Management System']);
+                ws_data.push(['User:', userName]);
+                ws_data.push(['Generated on:', currentDate.toLocaleDateString('en-KW')]);
+                ws_data.push(['Generated at:', currentDate.toLocaleTimeString('en-KW')]);
+                ws_data.push(['Total Records:', currentReportData.length]);
+                ws_data.push(['Currency:', 'Kuwait Dinar (KWD)']);
+                ws_data.push(['Report Scope:', 'Complete Business Analysis']);
+                ws_data.push(['']);
+
+                ws_data.push(['Invoice No', 'Customer Name', 'Job File No', 'Salesman', 'Created By', 'Invoice Amount (KWD)', 'Cost (KWD)', 'Profit (KWD)', 'Profit %', 'Date', 'Status']);
+
+                let totalRevenue = 0, totalCost = 0, totalProfit = 0;
+                const customerTotals = {}, salesmanTotals = {}, creatorTotals = {}, monthlyData = {};
+                const statusCount = {};
+
+                currentReportData.forEach(job => {
+                    const invoiceAmount = parseFloat(job.totalSelling) || 0;
+                    const cost = parseFloat(job.totalCost) || 0;
+                    const profit = invoiceAmount - cost;
+                    const profitPercentage = invoiceAmount > 0 ? (profit / invoiceAmount) * 100 : 0;
+                    const jobDate = safeToDate(job.bd) || safeToDate(job.createdAt);
+                    const customer = job.co || 'Unknown Customer';
+                    const salesman = job.sm || 'Unknown Salesman';
+                    const creator = job.createdBy || 'Unknown Creator';
+                    const status = job.status || 'Active';
+                    const monthKey = jobDate ? `${jobDate.getFullYear()}-${String(jobDate.getMonth()+1).padStart(2,'0')}` : 'Unknown';
+
+                    totalRevenue += invoiceAmount;
+                    totalCost += cost;
+                    totalProfit += profit;
+
+                    // Track all dimensions
+                    [customerTotals, customer], [salesmanTotals, salesman], [creatorTotals, creator]
+                        .forEach(([totals, key]) => {
+                            if (!totals[key]) totals[key] = { revenue: 0, cost: 0, profit: 0, jobs: 0 };
+                            totals[key].revenue += invoiceAmount;
+                            totals[key].cost += cost;
+                            totals[key].profit += profit;
+                            totals[key].jobs += 1;
+                        });
+
+                    // Monthly tracking
+                    if (!monthlyData[monthKey]) monthlyData[monthKey] = { revenue: 0, cost: 0, profit: 0, jobs: 0 };
+                    monthlyData[monthKey].revenue += invoiceAmount;
+                    monthlyData[monthKey].cost += cost;
+                    monthlyData[monthKey].profit += profit;
+                    monthlyData[monthKey].jobs += 1;
+
+                    // Status tracking
+                    statusCount[status] = (statusCount[status] || 0) + 1;
+
+                    ws_data.push([
+                        job.in || '',
+                        customer,
+                        job.jfn || '',
+                        salesman,
+                        creator,
+                        invoiceAmount,
+                        cost,
+                        profit,
+                        profitPercentage / 100,
+                        jobDate ? jobDate.toLocaleDateString('en-KW') : '',
+                        status
+                    ]);
+                });
+
+                // Executive Summary
+                ws_data.push(['']);
+                ws_data.push(['EXECUTIVE SUMMARY']);
+                ws_data.push(['KPI', 'Value', 'Unit']);
+                ws_data.push(['Total Jobs Processed', currentReportData.length, 'Jobs']);
+                ws_data.push(['Total Revenue', totalRevenue, 'KWD']);
+                ws_data.push(['Total Cost', totalCost, 'KWD']);
+                ws_data.push(['Net Profit', totalProfit, 'KWD']);
+                ws_data.push(['Profit Margin', totalRevenue > 0 ? (totalProfit / totalRevenue) : 0, '%']);
+                ws_data.push(['Average Revenue per Job', currentReportData.length > 0 ? totalRevenue / currentReportData.length : 0, 'KWD']);
+                ws_data.push(['Unique Customers', Object.keys(customerTotals).length, 'Count']);
+                ws_data.push(['Active Salesmen', Object.keys(salesmanTotals).length, 'Count']);
+                ws_data.push(['Job Creators', Object.keys(creatorTotals).length, 'Count']);
+
+                const ws = XLSX.utils.aoa_to_sheet(ws_data);
+                ws['!cols'] = [
+                    {wch: 15}, {wch: 25}, {wch: 15}, {wch: 20}, {wch: 20}, 
+                    {wch: 18}, {wch: 15}, {wch: 15}, {wch: 12}, {wch: 12}, {wch: 10}
+                ];
+
+                // Format currency and percentage columns
+                for (let row = 11; row <= 11 + currentReportData.length; row++) {
+                    ['F', 'G', 'H'].forEach(col => {
+                        const cellRef = col + row;
+                        if (ws[cellRef] && col !== 'H') {
+                            ws[cellRef].z = '"KWD" #,##0.000';
+                        }
+                    });
+                    if (ws['I' + row]) {
+                        ws['I' + row].z = '0.00%';
+                    }
+                }
+
+                XLSX.utils.book_append_sheet(wb, ws, 'Complete Report');
+
+                // Add separate analysis sheets
+                // Customer Analysis Sheet
+                const customerData = [
+                    ['Customer Analysis'],
+                    [''],
+                    ['Rank', 'Customer', 'Jobs', 'Revenue (KWD)', 'Cost (KWD)', 'Profit (KWD)', 'Margin %'],
+                    ...Object.entries(customerTotals)
+                        .sort((a, b) => b[1].revenue - a[1].revenue)
+                        .map(([customer, data], index) => [
+                            index + 1, customer, data.jobs, data.revenue, data.cost, 
+                            data.profit, data.revenue > 0 ? (data.profit / data.revenue) : 0
+                        ])
+                ];
+                const customerWs = XLSX.utils.aoa_to_sheet(customerData);
+                XLSX.utils.book_append_sheet(wb, customerWs, 'Customer Analysis');
+
+                // Salesman Performance Sheet
+                const salesmanData = [
+                    ['Salesman Performance Analysis'],
+                    [''],
+                    ['Rank', 'Salesman', 'Jobs Sold', 'Revenue (KWD)', 'Cost (KWD)', 'Profit (KWD)', 'Efficiency %'],
+                    ...Object.entries(salesmanTotals)
+                        .sort((a, b) => b[1].profit - a[1].profit)
+                        .map(([salesman, data], index) => [
+                            index + 1, salesman, data.jobs, data.revenue, data.cost, 
+                            data.profit, data.revenue > 0 ? (data.profit / data.revenue) : 0
+                        ])
+                ];
+                const salesmanWs = XLSX.utils.aoa_to_sheet(salesmanData);
+                XLSX.utils.book_append_sheet(wb, salesmanWs, 'Salesman Performance');
+
+                // Monthly Trends Sheet
+                const monthlyTrendsData = [
+                    ['Monthly Business Trends'],
+                    [''],
+                    ['Month', 'Jobs', 'Revenue (KWD)', 'Cost (KWD)', 'Profit (KWD)', 'Margin %'],
+                    ...Object.entries(monthlyData)
+                        .sort((a, b) => a[0].localeCompare(b[0]))
+                        .map(([month, data]) => [
+                            month, data.jobs, data.revenue, data.cost, 
+                            data.profit, data.revenue > 0 ? (data.profit / data.revenue) : 0
+                        ])
+                ];
+                const monthlyWs = XLSX.utils.aoa_to_sheet(monthlyTrendsData);
+                XLSX.utils.book_append_sheet(wb, monthlyWs, 'Monthly Trends');
+
+                // Status Distribution Sheet
+                const statusData = [
+                    ['Job Status Distribution'],
+                    [''],
+                    ['Status', 'Count', 'Percentage'],
+                    ...Object.entries(statusCount)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([status, count]) => [
+                            status, count, currentReportData.length > 0 ? count / currentReportData.length : 0
+                        ])
+                ];
+                const statusWs = XLSX.utils.aoa_to_sheet(statusData);
+                XLSX.utils.book_append_sheet(wb, statusWs, 'Status Distribution');
+
+                // Add Chart Data Worksheets for Business Intelligence
+                // Revenue Trends Chart Data
+                const revenueTrendsData = Object.entries(monthlyData)
+                    .sort((a, b) => a[0].localeCompare(b[0]))
+                    .map(([month, data]) => [month, data.revenue, data.profit, data.jobs]);
+                const revenueTrendsWs = createChartWorksheet(
+                    [['Month', 'Revenue (KWD)', 'Profit (KWD)', 'Jobs Count'], ...revenueTrendsData],
+                    'Monthly Revenue Trends Analysis',
+                    'trends'
+                );
+                XLSX.utils.book_append_sheet(wb, revenueTrendsWs, 'Revenue Trends Chart');
+
+                // Customer Performance Chart Data
+                const customerChartData = Object.entries(customerTotals)
+                    .sort((a, b) => b[1].revenue - a[1].revenue)
+                    .slice(0, 10)
+                    .map(([customer, data]) => [customer, data.revenue, data.profit, data.jobs]);
+                const customerChartWs = createChartWorksheet(
+                    [['Customer', 'Revenue (KWD)', 'Profit (KWD)', 'Jobs Count'], ...customerChartData],
+                    'Top 10 Customers Performance',
+                    'performance'
+                );
+                XLSX.utils.book_append_sheet(wb, customerChartWs, 'Customer Performance Chart');
+
+                // Salesman Efficiency Chart Data  
+                const salesmanChartData = Object.entries(salesmanTotals)
+                    .sort((a, b) => b[1].profit - a[1].profit)
+                    .slice(0, 10)
+                    .map(([salesman, data]) => [
+                        salesman, 
+                        data.revenue, 
+                        data.profit, 
+                        data.revenue > 0 ? (data.profit / data.revenue) * 100 : 0
+                    ]);
+                const salesmanChartWs = createChartWorksheet(
+                    [['Salesman', 'Revenue (KWD)', 'Profit (KWD)', 'Efficiency %'], ...salesmanChartData],
+                    'Salesman Efficiency Analysis',
+                    'performance'
+                );
+                XLSX.utils.book_append_sheet(wb, salesmanChartWs, 'Salesman Efficiency Chart');
+
+                const filename = `QGO_Complete_Business_Report_${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2,'0')}-${String(currentDate.getDate()).padStart(2,'0')}_${String(currentDate.getHours()).padStart(2,'0')}${String(currentDate.getMinutes()).padStart(2,'0')}.xlsx`;
+                
+                XLSX.writeFile(wb, filename);
+                showNotification('✅ Complete Business Intelligence Report with Professional Charts & Themes Downloaded! 📈🎨', 'success');
+                
+            } catch (error) {
+                console.error('Excel download error:', error);
+                showNotification('❌ Error downloading Excel file: ' + error.message, 'error');
+            }
+        }
+        window.downloadDetailedReport = downloadDetailedReport;
+
+    </script>
+</body>
+</html>
