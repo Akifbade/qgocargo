@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse System Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: #f5f5f5;
+        }
+        .test-card {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            margin: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .success { border-left: 5px solid #10b981; }
+        .error { border-left: 5px solid #ef4444; }
+        .warning { border-left: 5px solid #f59e0b; }
+        button {
+            background: #2563eb;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0.5rem;
+        }
+        button:hover { background: #1d4ed8; }
+        .status { font-weight: bold; margin: 0.5rem 0; }
+    </style>
+</head>
+<body>
+    <h1>🏭 Enhanced Warehouse Management System</h1>
+    
+    <div class="test-card success">
+        <h2>✅ System Status</h2>
+        <p><strong>Version:</strong> Enhanced v2.0 with Advanced Features</p>
+        <p><strong>New Features Added:</strong></p>
+        <ul>
+            <li>📤 Released Shipments History & Analytics</li>
+            <li>🗺️ Interactive Warehouse Map with Rack Management</li>
+            <li>📊 Advanced Reporting & CSV Export</li>
+            <li>🔍 Enhanced Search & Filtering</li>
+            <li>📱 Mobile-Responsive Design</li>
+        </ul>
+    </div>
+
+    <div class="test-card">
+        <h2>🚀 Quick Start Guide</h2>
+        <p><strong>To access the full system:</strong></p>
+        <ol>
+            <li>Open <code>index.html</code> directly in your browser, or</li>
+            <li>Set up a local web server in this directory</li>
+            <li>Navigate through the new sections: "Released History" and "Warehouse Map"</li>
+        </ol>
+        <button onclick="window.location.href='index.html'">🏭 Open Warehouse System</button>
+    </div>
+
+    <div class="test-card">
+        <h2>🆕 New Features Overview</h2>
+        
+        <h3>📤 Released Shipments Section</h3>
+        <ul>
+            <li><strong>Complete History:</strong> Track all released shipments with full details</li>
+            <li><strong>Time-based Filters:</strong> Today, This Week, This Month, Custom dates</li>
+            <li><strong>Advanced Search:</strong> Search by barcode, shipper, consignee, or rack</li>
+            <li><strong>Analytics:</strong> Revenue tracking, average storage duration</li>
+            <li><strong>Export:</strong> CSV export for data analysis</li>
+        </ul>
+
+        <h3>🗺️ Warehouse Map Section</h3>
+        <ul>
+            <li><strong>Visual Layout:</strong> Interactive 200-rack warehouse grid (20x10)</li>
+            <li><strong>Real-time Status:</strong> See occupied, free, warning, and overdue racks</li>
+            <li><strong>Rack Details:</strong> Click any rack for detailed shipment information</li>
+            <li><strong>Quick Actions:</strong> Release shipments directly from the map</li>
+            <li><strong>Filtering:</strong> Filter by zone (A-T) and occupancy status</li>
+            <li><strong>Statistics:</strong> Warehouse utilization metrics</li>
+        </ul>
+    </div>
+
+    <div class="test-card warning">
+        <h2>⚠️ System Requirements</h2>
+        <p><strong>For full functionality, ensure:</strong></p>
+        <ul>
+            <li>✅ Supabase database is configured (config.js)</li>
+            <li>✅ All JavaScript files are loaded</li>
+            <li>✅ Internet connection for CDN resources</li>
+            <li>✅ Modern web browser with JavaScript enabled</li>
+        </ul>
+    </div>
+
+    <div class="test-card">
+        <h2>🎯 Testing the New Features</h2>
+        
+        <h3>Test Released Shipments:</h3>
+        <ol>
+            <li>Create and release a test shipment</li>
+            <li>Navigate to "Released History" tab</li>
+            <li>Try different filters and search functions</li>
+            <li>View invoice and export CSV</li>
+        </ol>
+
+        <h3>Test Warehouse Map:</h3>
+        <ol>
+            <li>Navigate to "Warehouse Map" tab</li>
+            <li>Click on different rack cells</li>
+            <li>Use zone and status filters</li>
+            <li>Try quick release from rack details</li>
+        </ol>
+    </div>
+
+    <script>
+        // Simple connectivity test
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🏭 Enhanced Warehouse Management System Test Page Loaded');
+            
+            // Check if main system files exist
+            const requiredFiles = [
+                'index.html',
+                'styles.css', 
+                'app.js',
+                'database.js',
+                'warehouse-management.js',
+                'config.js'
+            ];
+            
+            console.log('📋 System Files Check:');
+            requiredFiles.forEach(file => {
+                fetch(file)
+                    .then(response => {
+                        if (response.ok) {
+                            console.log(`✅ ${file} - OK`);
+                        } else {
+                            console.log(`❌ ${file} - Missing`);
+                        }
+                    })
+                    .catch(error => {
+                        console.log(`❌ ${file} - Error: ${error.message}`);
+                    });
+            });
+        });
+    </script>
+</body>
+</html>

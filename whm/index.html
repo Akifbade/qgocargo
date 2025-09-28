@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Warehouse Management System</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="nav-bar">
+            <div class="nav-brand">
+                <img src="http://qgocargo.com/logo.png" alt="QGO Cargo" class="company-logo" onerror="this.style.display='none';">
+            </div>
+            <div class="nav-links" id="navLinks">
+                <button onclick="showSection('dashboard')" class="nav-btn">Dashboard</button>
+                <button onclick="showSection('intake')" class="nav-btn">Shipment Intake</button>
+                <button onclick="showSection('release')" class="nav-btn">Release</button>
+                <button onclick="showSection('released')" class="nav-btn">Released History</button>
+                <button onclick="showSection('warehouse-map')" class="nav-btn">Warehouse Map</button>
+                <button onclick="showSection('pricing')" class="nav-btn">Pricing Settings</button>
+                <button onclick="showSection('search')" class="nav-btn">Search</button>
+                <button onclick="showSection('settings')" class="nav-btn">Settings</button>
+                <button onclick="showSection('admin')" class="nav-btn">Admin Panel</button>
+            </div>
+            <div class="auth-controls">
+                <span id="userEmail" class="user-email" style="display:none;"></span>
+                <button id="loginNavBtn" onclick="showSection('login')" class="nav-btn">Login</button>
+                <button id="logoutBtn" onclick="logout()" class="nav-btn" style="display:none;">Logout</button>
+            </div>
+        </nav>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section">
+            <div class="section-header">
+                <h2>📊 Dashboard Overview</h2>
+                <button onclick="refreshDashboard()" class="btn-secondary">🔄 Refresh</button>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📦</div>
+                    <div class="stat-content">
+                        <h3 id="totalShipments">0</h3>
+                        <p>Total Shipments</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🏪</div>
+                    <div class="stat-content">
+                        <h3 id="occupiedRacks">0</h3>
+                        <p>Occupied Racks</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-content">
+                        <h3 id="dailyRevenue">KD 0</h3>
+                        <p>Today's Revenue</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-content">
+                        <h3 id="monthlyRevenue">KD 0</h3>
+                        <p>Monthly Revenue</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-content">
+                <div class="dashboard-section">
+                    <h3>⚠️ Longest Staying Shipments</h3>
+                    <div id="longestStaying" class="alerts-container">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+                
+                <div class="dashboard-section">
+                    <h3>📋 Recent Activities</h3>
+                    <div id="recentActivities" class="activities-container">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Login Section -->
+        <section id="login" class="section active">
+            <div class="section-header">
+                <h2>🔐 Sign In</h2>
+            </div>
+            <div class="form-container" style="max-width: 480px;">
+                <form onsubmit="event.preventDefault(); login();">
+                    <div class="form-group">
+                        <label for="loginEmail">Email</label>
+                        <input type="email" id="loginEmail" placeholder="you@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" placeholder="••••••••" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Login</button>
+                        <button type="button" class="btn-secondary" onclick="signup()">Register</button>
+                    </div>
+                </form>
+                <p style="color:#6b7280; font-size: 0.9rem; margin-top: 0.75rem;">Registration creates a basic staff account. Admin can upgrade roles later.</p>
+            </div>
+        </section>
+
+        <!-- Settings Section -->
+        <section id="settings" class="section">
+            <div class="section-header">
+                <h2>⚙️ Website Settings</h2>
+                <button onclick="saveSiteSettings()" class="btn-primary">💾 Save Settings</button>
+            </div>
+
+            <div class="settings-grid">
+                <div class="settings-card">
+                    <h3>General</h3>
+                    <div class="form-group">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="editModeToggle">
+                            <span class="toggle-slider"></span>
+                            Enable Edit Mode (allow map editing: assign/move/empty)
+                        </label>
+                        <small style="color:#6b7280">Turn this on to edit rack assignments on the Warehouse Map.</small>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <h3>Branding</h3>
+                    <div class="form-group">
+                        <label for="companyName">Company Name</label>
+                        <input type="text" id="companyName" placeholder="Your company name">
+                    </div>
+                    <div class="form-group">
+                        <label for="companyAddress">Company Address</label>
+                        <input type="text" id="companyAddress" placeholder="Address shown on invoices">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="companyPhone">Phone</label>
+                            <input type="text" id="companyPhone" placeholder="Contact phone">
+                        </div>
+                        <div class="form-group">
+                            <label for="companyEmail">Email</label>
+                            <input type="email" id="companyEmail" placeholder="Billing email">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="logoUrl">Logo URL</label>
+                        <input type="text" id="logoUrl" placeholder="https://example.com/logo.png" oninput="previewLogo()">
+                    </div>
+                    <div class="brand-preview">
+                        <img id="logoPreview" src="" alt="Logo preview" style="max-height:60px; display:none; border:1px solid #e5e7eb; padding:6px; border-radius:6px; background:#fff;">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Shipment Intake Section -->
+        <section id="intake" class="section">
+            <div class="section-header">
+                <h2>📥 Shipment Intake</h2>
+                <button onclick="generateUniqueBarcode()" class="btn-secondary">� Generate Barcode</button>
+            </div>
+            
+            <div class="form-container">
+                <div id="barcode-scanner" class="scanner-container" style="display: none;">
+                    <div id="reader"></div>
+                    <button onclick="stopScanner()" class="btn-danger">Stop Scanner</button>
+                </div>
+                
+                <form id="intakeForm" class="intake-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="barcode">Barcode (Auto-Generated)</label>
+                            <input type="text" id="barcode" name="barcode" readonly placeholder="Will be auto-generated" style="background-color: #f3f4f6; cursor: not-allowed;">
+                            <small style="color: #6b7280; font-size: 0.8rem;">Barcode will be automatically generated when you save the shipment</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="shipper">Shipper *</label>
+                            <input type="text" id="shipper" name="shipper" required placeholder="Shipper name">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="consignee">Consignee *</label>
+                            <input type="text" id="consignee" name="consignee" required placeholder="Consignee name">
+                        </div>
+                        <div class="form-group">
+                            <label for="weight">Weight (kg) *</label>
+                            <input type="number" id="weight" name="weight" step="0.01" required placeholder="0.00">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pieces">Number of Pieces *</label>
+                            <input type="number" id="pieces" name="pieces" required placeholder="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="rack">Rack/Location *</label>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <input type="text" id="rack" name="rack" required placeholder="e.g., A-01-01" style="flex: 1 1 auto;">
+                                <button type="button" class="btn-secondary" onclick="openRackPicker()">🗺️ Pick from Map</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="notes">Notes</label>
+                            <textarea id="notes" name="notes" placeholder="Additional notes"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">📦 Register Shipment</button>
+                        <button type="reset" class="btn-secondary">🔄 Clear Form</button>
+                        <button type="button" onclick="printLabelsFromIntake()" class="btn-success" id="printLabelsBtn" style="display: none;">🏷️ Print Labels</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Release Section -->
+        <section id="release" class="section">
+            <div class="section-header">
+                <h2>📤 Shipment Release</h2>
+                <button onclick="toggleReleaseScanner()" class="btn-secondary">📷 Scan for Release</button>
+            </div>
+            
+            <div class="form-container">
+                <div id="release-scanner" class="scanner-container" style="display: none;">
+                    <div id="releaseReader"></div>
+                    <button onclick="stopReleaseScanner()" class="btn-danger">Stop Scanner</button>
+                </div>
+                
+                <div class="search-container">
+                    <input type="text" id="releaseSearch" placeholder="Search by barcode, shipper, or consignee">
+                <button onclick="searchForRelease()" class="btn-primary">🔍 Search</button>
+                <button onclick="bulkPrintSelected()" class="btn-secondary">🏷️ Bulk Print Labels</button>
+                <button onclick="bulkDeleteSelected()" class="btn-danger" id="bulkDeleteBtn" style="display:none;">🗑️ Bulk Delete</button>
+            </div>                <div id="releaseResults" class="release-results">
+                    <!-- Dynamic search results -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing Settings Section -->
+        <section id="pricing" class="section">
+            <div class="section-header">
+                <h2>💰 Pricing Settings</h2>
+                <button onclick="savePricingSettings()" class="btn-primary">💾 Save Settings</button>
+            </div>
+            
+            <div class="pricing-container">
+                <div class="pricing-section">
+                    <h3>Storage Charges</h3>
+                    <div class="form-group">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="enablePerKgDay">
+                            <span class="toggle-slider"></span>
+                            Enable Per Kg/Day Charges
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="perKgDay">Rate per Kg/Day (KD)</label>
+                        <input type="number" id="perKgDay" step="0.001" placeholder="0.150">
+                    </div>
+                </div>
+                
+                <div class="pricing-section">
+                    <h3>Handling Charges</h3>
+                    <div class="form-group">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="enableHandling">
+                            <span class="toggle-slider"></span>
+                            Enable Handling Fees
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="handlingFee">Handling Fee (KD)</label>
+                        <input type="number" id="handlingFee" step="0.001" placeholder="3.000">
+                    </div>
+                </div>
+                
+                <div class="pricing-section">
+                    <h3>Free Storage</h3>
+                    <div class="form-group">
+                        <label for="freeDays">Free Storage Days</label>
+                        <input type="number" id="freeDays" placeholder="7">
+                    </div>
+                </div>
+                
+                <div class="pricing-section">
+                    <h3>Flat Rate Options</h3>
+                    <div class="form-group">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="enableFlatRate">
+                            <span class="toggle-slider"></span>
+                            Use Flat Rate Instead
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="flatRate">Flat Rate (KD)</label>
+                        <input type="number" id="flatRate" step="0.001" placeholder="7.500">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search Section -->
+        <section id="search" class="section">
+            <div class="section-header">
+                <h2>🔍 Search Shipments</h2>
+                <div class="search-filters">
+                    <select id="searchFilter">
+                        <option value="all">All Shipments</option>
+                        <option value="in">Currently Stored</option>
+                        <option value="out">Released</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="search-container">
+                <input type="text" id="searchQuery" placeholder="Search by barcode, shipper, consignee, or rack">
+                <button onclick="performSearch()" class="btn-primary">🔍 Search</button>
+                <button onclick="bulkPrintFromSearch()" class="btn-secondary">🏷️ Bulk Print Labels</button>
+                <button onclick="bulkDeleteFromSearch()" class="btn-danger" id="bulkDeleteSearchBtn" style="display:none;">🗑️ Bulk Delete</button>
+            </div>
+            
+            <div id="searchResults" class="search-results">
+                <!-- Dynamic search results -->
+            </div>
+        </section>
+
+        <!-- Released Shipments Section -->
+        <section id="released" class="section">
+            <div class="section-header">
+                <h2>📤 Released Shipments History</h2>
+                <div class="header-actions">
+                    <input type="date" id="releasedStartDate" class="date-filter">
+                    <input type="date" id="releasedEndDate" class="date-filter">
+                    <button onclick="filterReleasedShipments()" class="btn-secondary">📅 Filter</button>
+                    <button onclick="exportReleasedData()" class="btn-success">📊 Export CSV</button>
+                </div>
+            </div>
+            
+            <div class="filter-tabs">
+                <button onclick="showReleasedTab('all')" class="filter-tab active" id="allReleasedTab">All Released</button>
+                <button onclick="showReleasedTab('today')" class="filter-tab" id="todayReleasedTab">Today</button>
+                <button onclick="showReleasedTab('thisWeek')" class="filter-tab" id="thisWeekReleasedTab">This Week</button>
+                <button onclick="showReleasedTab('thisMonth')" class="filter-tab" id="thisMonthReleasedTab">This Month</button>
+            </div>
+
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <h4>Total Released</h4>
+                    <span id="totalReleasedCount">0</span>
+                </div>
+                <div class="summary-card">
+                    <h4>Total Revenue</h4>
+                    <span id="totalReleasedRevenue">KD 0.000</span>
+                </div>
+                <div class="summary-card">
+                    <h4>Average Stay</h4>
+                    <span id="averageStayDuration">0 days</span>
+                </div>
+            </div>
+
+            <div class="released-controls">
+                <input type="text" id="releasedSearch" placeholder="Search by barcode, shipper, consignee..." onkeyup="searchReleasedShipments()">
+                <select id="releasedSort" onchange="sortReleasedShipments()">
+                    <option value="release_date_desc">Release Date (Newest)</option>
+                    <option value="release_date_asc">Release Date (Oldest)</option>
+                    <option value="total_charges_desc">Total Charges (High to Low)</option>
+                    <option value="total_charges_asc">Total Charges (Low to High)</option>
+                    <option value="storage_days_desc">Storage Days (Most)</option>
+                    <option value="storage_days_asc">Storage Days (Least)</option>
+                </select>
+            </div>
+
+            <div id="releasedShipmentsTable" class="table-container">
+                <table id="releasedTable" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Barcode</th>
+                            <th>Shipper</th>
+                            <th>Consignee</th>
+                            <th>Weight</th>
+                            <th>Pieces</th>
+                            <th>Intake Date</th>
+                            <th>Release Date</th>
+                            <th>Storage Days</th>
+                            <th>Total Charges</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dynamic content -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination">
+                <button onclick="previousReleasedPage()" id="prevReleasedBtn" class="btn-secondary">← Previous</button>
+                <span id="releasedPageInfo">Page 1 of 1</span>
+                <button onclick="nextReleasedPage()" id="nextReleasedBtn" class="btn-secondary">Next →</button>
+            </div>
+        </section>
+
+        <!-- Admin Panel Section -->
+        <section id="admin" class="section">
+            <div class="section-header">
+                <h2>👑 Admin Panel</h2>
+                <button onclick="refreshAdminData()" class="btn-secondary">🔄 Refresh</button>
+            </div>
+
+            <div class="admin-tabs">
+                <button onclick="showAdminTab('users')" class="admin-tab active" id="usersTab">👥 User Management</button>
+                <button onclick="showAdminTab('shipments')" class="admin-tab" id="shipmentsTab">📦 Shipment Management</button>
+                <button onclick="showAdminTab('system')" class="admin-tab" id="systemTab">⚙️ System Settings</button>
+                <button onclick="showAdminTab('reports')" class="admin-tab" id="reportsTab">📊 Reports</button>
+            </div>
+
+            <!-- User Management Tab -->
+            <div id="adminUsersTab" class="admin-tab-content active">
+                <div class="admin-section">
+                    <h3>👥 User Management</h3>
+                    <div class="user-actions">
+                        <button onclick="refreshUserList()" class="btn-secondary">🔄 Refresh Users</button>
+                        <button onclick="exportUserData()" class="btn-success">📊 Export User Data</button>
+                    </div>
+                    
+                    <div class="users-container">
+                        <table id="usersTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Created</th>
+                                    <th>Last Login</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Dynamic user data -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shipment Management Tab -->
+            <div id="adminShipmentsTab" class="admin-tab-content">
+                <div class="admin-section">
+                    <h3>📦 Shipment Management</h3>
+                    <div class="shipment-admin-controls">
+                        <input type="text" id="adminShipmentSearch" placeholder="Search shipments..." onkeyup="searchAdminShipments()">
+                        <select id="adminShipmentFilter" onchange="filterAdminShipments()">
+                            <option value="all">All Shipments</option>
+                            <option value="active">Active (In Storage)</option>
+                            <option value="released">Released</option>
+                            <option value="overdue">Overdue</option>
+                        </select>
+                        <button onclick="bulkDeleteShipments()" class="btn-danger">🗑️ Bulk Delete</button>
+                    </div>
+                    
+                    <div class="shipments-admin-container">
+                        <table id="adminShipmentsTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="selectAllShipments" onchange="toggleAllShipments()"></th>
+                                    <th>Barcode</th>
+                                    <th>Shipper</th>
+                                    <th>Consignee</th>
+                                    <th>Status</th>
+                                    <th>Days</th>
+                                    <th>Charges</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Dynamic shipment data -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Settings Tab -->
+            <div id="adminSystemTab" class="admin-tab-content">
+                <div class="admin-section">
+                    <h3>⚙️ System Settings</h3>
+                    
+                    <div class="system-settings-grid">
+                        <div class="settings-card">
+                            <h4>Database Management</h4>
+                            <div class="form-actions">
+                                <button onclick="backupDatabase()" class="btn-primary">💾 Backup Database</button>
+                                <button onclick="clearOldData()" class="btn-warning">🧹 Clear Old Data</button>
+                                <button onclick="resetDatabase()" class="btn-danger">⚠️ Reset Database</button>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-card">
+                            <h4>System Maintenance</h4>
+                            <div class="form-actions">
+                                <button onclick="checkSystemHealth()" class="btn-secondary">🔍 System Health</button>
+                                <button onclick="optimizeDatabase()" class="btn-primary">⚡ Optimize DB</button>
+                                <button onclick="generateSystemReport()" class="btn-success">📊 System Report</button>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-card">
+                            <h4>Security Settings</h4>
+                            <div class="form-group">
+                                <label class="toggle-label">
+                                    <input type="checkbox" id="requireEmailVerification">
+                                    <span class="toggle-slider"></span>
+                                    Require Email Verification
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label class="toggle-label">
+                                    <input type="checkbox" id="enableActivityLogging">
+                                    <span class="toggle-slider"></span>
+                                    Enable Activity Logging
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Tab -->
+            <div id="adminReportsTab" class="admin-tab-content">
+                <div class="admin-section">
+                    <h3>📊 System Reports</h3>
+                    
+                    <div class="reports-grid">
+                        <div class="report-card">
+                            <h4>📈 Revenue Report</h4>
+                            <p>Comprehensive revenue analysis</p>
+                            <button onclick="generateRevenueReport()" class="btn-primary">Generate Report</button>
+                        </div>
+                        
+                        <div class="report-card">
+                            <h4>📦 Inventory Report</h4>
+                            <p>Current inventory status</p>
+                            <button onclick="generateInventoryReport()" class="btn-primary">Generate Report</button>
+                        </div>
+                        
+                        <div class="report-card">
+                            <h4>👥 User Activity Report</h4>
+                            <p>User login and activity tracking</p>
+                            <button onclick="generateUserActivityReport()" class="btn-primary">Generate Report</button>
+                        </div>
+                        
+                        <div class="report-card">
+                            <h4>⚠️ System Alerts</h4>
+                            <p>Overdue and warning alerts</p>
+                            <button onclick="generateAlertsReport()" class="btn-primary">Generate Report</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Warehouse Map Section -->
+        <section id="warehouse-map" class="section">
+            <div class="section-header">
+                <h2>🗺️ Warehouse Layout & Rack Management</h2>
+                <div class="header-actions">
+                    <button onclick="toggleMapView()" class="btn-secondary" id="mapViewToggle">🔲 Grid View</button>
+                    <button onclick="refreshWarehouseMap()" class="btn-secondary">🔄 Refresh</button>
+                    <button onclick="exportRackData()" class="btn-success">📊 Export Rack Report</button>
+                </div>
+            </div>
+
+            <div class="warehouse-controls">
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color occupied"></div>
+                        <span>Occupied</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color free"></div>
+                        <span>Free</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color overdue"></div>
+                        <span>Overdue (>30 days)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color warning"></div>
+                        <span>Warning (>21 days)</span>
+                    </div>
+                </div>
+                
+                <div class="warehouse-filters">
+                    <input type="text" id="rackSearch" placeholder="Search rack (e.g., B-05)" onkeyup="window.warehouseManager && warehouseManager.filterRacksByText()">
+                    <select id="zoneFilter" onchange="filterByZone()">
+                        <option value="all">All Zones</option>
+                        <option value="A">Zone A</option>
+                        <option value="B">Zone B</option>
+                        <option value="C">Zone C</option>
+                        <option value="D">Zone D</option>
+                    </select>
+                    <select id="statusFilter" onchange="filterByStatus()">
+                        <option value="all">All Status</option>
+                        <option value="occupied">Occupied Only</option>
+                        <option value="free">Free Only</option>
+                        <option value="overdue">Overdue Only</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="warehouse-stats">
+                <div class="stat-item">
+                    <label>Total Racks:</label>
+                    <span id="totalRacksCount">200</span>
+                </div>
+                <div class="stat-item">
+                    <label>Occupied:</label>
+                    <span id="occupiedRacksCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <label>Free:</label>
+                    <span id="freeRacksCount">200</span>
+                </div>
+                <div class="stat-item">
+                    <label>Utilization:</label>
+                    <span id="utilizationRate">0%</span>
+                </div>
+            </div>
+
+            <div id="warehouseMapContainer" class="warehouse-map-container">
+                <div id="warehouseGrid" class="warehouse-grid">
+                    <!-- Dynamic rack grid will be generated here -->
+                </div>
+            </div>
+
+            <div id="rackDetailsPanel" class="rack-details-panel" style="display: none;">
+                <div class="panel-header">
+                    <h3 id="selectedRackTitle">Rack Details</h3>
+                    <button onclick="closeRackDetails()" class="btn-close">×</button>
+                </div>
+                <div id="rackDetailsContent" class="panel-content">
+                    <!-- Dynamic rack details -->
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Label Preview Modal -->
+    <div id="labelPreviewModal" class="modal">
+        <div class="modal-content label-modal">
+            <div class="modal-header">
+                <h3 id="labelModalTitle">📄 Label Preview</h3>
+                <span class="close" onclick="closeLabelPreview()">&times;</span>
+            </div>
+            <div id="labelPreviewContent" class="label-preview-content">
+                <!-- Dynamic label preview content -->
+            </div>
+            <div class="modal-actions">
+                <button onclick="printCurrentLabels()" class="btn-primary">🖨️ Print Labels</button>
+                <button onclick="closeLabelPreview()" class="btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Modal -->
+    <div id="invoiceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📄 Invoice Preview</h3>
+                <span class="close" onclick="closeInvoiceModal()">&times;</span>
+            </div>
+            <div id="invoiceContent" class="invoice-content">
+                <!-- Dynamic invoice content -->
+            </div>
+            <div class="modal-actions">
+                <button onclick="downloadInvoice()" class="btn-primary">📥 Download PDF</button>
+                <button onclick="closeInvoiceModal()" class="btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay - Initially Hidden -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="messageContainer" class="message-container"></div>
+
+    <!-- Intake Rack Picker Modal -->
+    <div id="rackPickerModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3>🗺️ Select Rack Location</h3>
+                <span class="close" onclick="closeRackPicker()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="warehouse-filters" style="margin-bottom: 0.75rem;">
+                    <input type="text" id="rackPickerSearch" placeholder="Search rack (e.g., B-03)" onkeyup="filterRackPickerText()">
+                    <select id="rackPickerZone" onchange="applyRackPickerFilters()">
+                        <option value="all">All Zones</option>
+                        <option value="A">Zone A</option>
+                        <option value="B">Zone B</option>
+                        <option value="C">Zone C</option>
+                        <option value="D">Zone D</option>
+                        <option value="E">Zone E</option>
+                        <option value="F">Zone F</option>
+                        <option value="G">Zone G</option>
+                        <option value="H">Zone H</option>
+                        <option value="I">Zone I</option>
+                        <option value="J">Zone J</option>
+                        <option value="K">Zone K</option>
+                        <option value="L">Zone L</option>
+                        <option value="M">Zone M</option>
+                        <option value="N">Zone N</option>
+                        <option value="O">Zone O</option>
+                        <option value="P">Zone P</option>
+                        <option value="Q">Zone Q</option>
+                        <option value="R">Zone R</option>
+                        <option value="S">Zone S</option>
+                        <option value="T">Zone T</option>
+                    </select>
+                    <select id="rackPickerStatus" onchange="applyRackPickerFilters()">
+                        <option value="free">Free Only</option>
+                        <option value="all">All</option>
+                    </select>
+                </div>
+                <div class="warehouse-map-container">
+                    <div id="rackPickerGrid" class="warehouse-grid"></div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeRackPicker()">Cancel</button>
+                <button class="btn-primary" onclick="confirmRackSelection()">Use Selected Rack</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="database.js"></script>
+    <script src="barcode.js"></script>
+    <script src="label-printing.js"></script>
+    <script src="invoice.js"></script>
+    <script src="warehouse-management.js"></script>
+    <script src="system-test.js"></script>
+    <script src="app.js"></script>
+    
+    <!-- Emergency loading timeout -->
+    <script>
+        // Emergency fallback to hide loading screen after 10 seconds
+        setTimeout(function() {
+            const loading = document.getElementById('loadingOverlay');
+            if (loading && loading.style.display !== 'none') {
+                console.warn('⚠️ Loading took too long, hiding loading screen');
+                loading.style.display = 'none';
+                
+                // Show an error message if the system hasn't loaded
+                if (!window.warehouseApp) {
+                    alert('System took too long to load. Please check the console for errors and refresh the page.');
+                }
+            }
+        }, 10000);
+        
+        // Also hide loading screen if all scripts are loaded but initialization hasn't started
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                const loading = document.getElementById('loadingOverlay');
+                if (loading && loading.style.display !== 'none') {
+                    console.log('🔧 Window loaded, attempting to hide loading screen');
+                    loading.style.display = 'none';
+                    
+                    // Try to initialize manually if not done already
+                    if (typeof initializeApp === 'function' && !window.warehouseApp) {
+                        try {
+                            initializeApp();
+                        } catch (error) {
+                            console.error('Manual initialization failed:', error);
+                        }
+                    }
+                }
+            }, 2000);
+        });
+    </script>
+
+    <style>
+        /* Visual selection for rack picker */
+        #rackPickerGrid .rack-cell { cursor: pointer; }
+        #rackPickerGrid .rack-cell.selected {
+            outline: 3px solid #2563eb;
+            box-shadow: 0 0 0 4px rgba(37,99,235,0.2);
+            background: #eff6ff;
+        }
+        #rackPickerGrid .rack-cell.free:hover {
+            outline: 2px dashed #2563eb;
+        }
+        #rackPickerGrid .rack-cell.occupied,
+        #rackPickerGrid .rack-cell.warning,
+        #rackPickerGrid .rack-cell.overdue {
+            opacity: 0.6;
+        }
+        /* Settings layout */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+        .settings-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        .auth-controls { display: flex; gap: 0.5rem; align-items: center; }
+        .user-email { color:#374151; font-size: 0.9rem; }
+        body.edit-mode-on .nav-brand::after {
+            content: 'Edit Mode';
+            display: inline-block;
+            margin-left: 8px;
+            font-size: 12px;
+            color: #b45309;
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 999px;
+            padding: 2px 8px;
+            vertical-align: middle;
+        }
+        
+        /* Admin Panel Styles */
+        .admin-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #e5e7eb;
+            flex-wrap: wrap;
+        }
+        
+        .admin-tab {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            min-width: 120px;
+            text-align: center;
+        }
+        
+        .admin-tab.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+        
+        .admin-tab:hover:not(.active) {
+            background: #e5e7eb;
+        }
+        
+        .admin-tab-content {
+            display: none;
+        }
+        
+        .admin-tab-content.active {
+            display: block;
+        }
+        
+        .admin-section {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .user-actions, .shipment-admin-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .system-settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .report-card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .report-card h4 {
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        
+        .report-card p {
+            color: #6b7280;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+        
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-warning:hover {
+            background: #d97706;
+        }
+        
+        /* Admin-only button styles */
+        .admin-only {
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.1);
+        }
+        
+        .admin-only:hover {
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            line-height: 1.25;
+            border-radius: 4px;
+            margin: 0.125rem;
+        }
+        
+        /* Edit modal styles */
+        #editShipmentModal .modal-content {
+            max-width: 600px;
+            width: 95%;
+        }
+        
+        #editShipmentModal .form-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        #editShipmentModal .form-row .form-group {
+            flex: 1;
+        }
+        
+        #editShipmentModal .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        #editShipmentModal .form-group input,
+        #editShipmentModal .form-group textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+        
+        #editShipmentModal textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        /* Mobile responsiveness for buttons */
+        @media (max-width: 768px) {
+            .result-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.25rem;
+            }
+            
+            .result-actions button {
+                flex: 1;
+                min-width: 100px;
+                font-size: 0.8rem;
+                padding: 0.4rem 0.6rem;
+            }
+            
+            .table-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+            
+            .table-actions button {
+                width: 100%;
+                font-size: 0.75rem;
+                padding: 0.3rem 0.5rem;
+            }
+            
+            #editShipmentModal .form-row {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+        
+        /* Mobile responsiveness for admin panel */
+        @media (max-width: 768px) {
+            .admin-tabs {
+                flex-direction: column;
+            }
+            
+            .admin-tab {
+                min-width: auto;
+            }
+            
+            .user-actions, .shipment-admin-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .system-settings-grid, .reports-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Status badges */
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-align: center;
+        }
+        
+        .status-badge.confirmed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-badge.unconfirmed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .status-badge.active {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        
+        .status-badge.released {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        /* Action buttons */
+        .action-buttons {
+            display: flex;
+            gap: 0.25rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            border-radius: 4px;
+        }
+        
+        .text-muted {
+            color: #6b7280;
+            font-style: italic;
+        }
+        
+        /* Improve mobile table scrolling */
+        @media (max-width: 768px) {
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .btn-sm {
+                font-size: 0.7rem;
+                padding: 0.2rem 0.4rem;
+            }
+        }
+    </style>
+</body>
+</html>

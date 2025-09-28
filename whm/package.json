@@ -1,0 +1,32 @@
+{
+  "name": "warehouse-management-system",
+  "version": "1.0.0",
+  "description": "Comprehensive warehouse management system with role-based access control",
+  "main": "index.html",
+  "scripts": {
+    "start": "node simple-server.js",
+    "dev": "node simple-server.js",
+    "build": "echo 'Static site - no build needed'",
+    "deploy": "netlify deploy --prod",
+    "deploy:vercel": "vercel --prod"
+  },
+  "keywords": [
+    "warehouse",
+    "management",
+    "logistics",
+    "inventory",
+    "shipment",
+    "barcode",
+    "admin",
+    "mobile"
+  ],
+  "author": "Warehouse Management System",
+  "license": "MIT",
+  "homepage": "https://github.com/yourusername/warehouse-management-system",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/warehouse-management-system.git"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
