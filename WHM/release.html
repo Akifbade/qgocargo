@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Release & Invoice - Warehouse Management</title>
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-truck-loading"></i> Release & Invoice</h1>
+            <p class="subtitle">Release shipments and generate invoices</p>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="nav">
+            <a href="index.html" class="nav-btn">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a href="intake.html" class="nav-btn">
+                <i class="fas fa-plus-circle"></i> Shipment Intake
+            </a>
+            <a href="release.html" class="nav-btn active">
+                <i class="fas fa-truck-loading"></i> Release & Invoice
+            </a>
+            <a href="settings.html" class="nav-btn">
+                <i class="fas fa-cog"></i> Pricing Settings
+            </a>
+        </nav>
+
+        <!-- Search/Scan Section -->
+        <div class="card">
+            <h2><i class="fas fa-search"></i> Find Shipment</h2>
+            <div class="flex justify-between align-center mb-20">
+                <p>Scan barcode or search by barcode number</p>
+                <div>
+                    <button class="btn" id="start-release-scanner" onclick="startReleaseScanner()">
+                        <i class="fas fa-camera"></i> Start Scanner
+                    </button>
+                    <button class="btn btn-danger" id="stop-release-scanner" onclick="stopReleaseScanner()" style="display: none;">
+                        <i class="fas fa-stop"></i> Stop Scanner
+                    </button>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="flex gap-10">
+                    <input type="text" id="search-barcode" placeholder="Enter or scan barcode" style="flex: 1;">
+                    <button class="btn btn-success" onclick="searchShipment()">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </div>
+
+            <div class="scanner-container" id="release-scanner-container" style="display: none;">
+                <div id="release-scanner">
+                    <div style="padding: 40px; text-align: center; color: #666;">
+                        <i class="fas fa-qrcode" style="font-size: 3em; margin-bottom: 15px; opacity: 0.5;"></i>
+                        <p>Initializing scanner...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shipment Details -->
+        <div class="card" id="shipment-details" style="display: none;">
+            <h2><i class="fas fa-box"></i> Shipment Details</h2>
+            <div id="shipment-info"></div>
+        </div>
+
+        <!-- Storage Charges -->
+        <div class="card" id="charges-card" style="display: none;">
+            <h2><i class="fas fa-calculator"></i> Storage Charges</h2>
+            <div id="charges-breakdown"></div>
+            
+            <div class="form-group">
+                <label for="release-date">
+                    <i class="fas fa-calendar"></i> Release Date/Time
+                </label>
+                <input type="datetime-local" id="release-date">
+            </div>
+
+            <div class="text-center mt-20">
+                <button class="btn btn-warning" onclick="recalculateCharges()">
+                    <i class="fas fa-sync"></i> Recalculate Charges
+                </button>
+                <button class="btn btn-success" onclick="processRelease()" style="padding: 15px 30px; font-size: 1.2em;">
+                    <i class="fas fa-check"></i> Process Release
+                </button>
+            </div>
+        </div>
+
+        <!-- Invoice Preview -->
+        <div class="card" id="invoice-preview" style="display: none;">
+            <div class="flex justify-between align-center mb-20">
+                <h2><i class="fas fa-file-invoice"></i> Invoice Preview</h2>
+                <div>
+                    <button class="btn" onclick="printInvoice()">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                    <button class="btn btn-success" onclick="downloadInvoice()">
+                        <i class="fas fa-download"></i> Download PDF
+                    </button>
+                </div>
+            </div>
+            <div id="invoice-content"></div>
+        </div>
+
+        <!-- Quick Release List -->
+        <div class="card">
+            <h2><i class="fas fa-list"></i> Active Shipments - Quick Release</h2>
+            <div class="table-container">
+                <table id="active-shipments-table">
+                    <thead>
+                        <tr>
+                            <th>Barcode</th>
+                            <th>Shipper</th>
+                            <th>Consignee</th>
+                            <th>Weight</th>
+                            <th>Days in Storage</th>
+                            <th>Estimated Charges</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="active-shipments-tbody">
+                        <tr>
+                            <td colspan="7" class="text-center">Loading active shipments...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Release Confirmation Modal -->
+    <div id="release-confirmation-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeReleaseModal()">&times;</span>
+            <div class="text-center">
+                <i class="fas fa-check-circle" style="font-size: 4em; color: #27ae60; margin-bottom: 20px;"></i>
+                <h3>Shipment Released Successfully!</h3>
+                <div id="release-confirmation-details"></div>
+                <div style="margin-top: 20px;">
+                    <button class="btn" onclick="releaseAnother()">
+                        <i class="fas fa-plus"></i> Release Another
+                    </button>
+                    <button class="btn btn-success" onclick="goToDashboard()">
+                        <i class="fas fa-tachometer-alt"></i> Go to Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/barcode.js"></script>
+    <script src="assets/js/invoice.js"></script>
+    <script src="assets/js/release.js"></script>
+
+    <style>
+        /* Additional styles for release page */
+        .charges-table {
+            width: 100%;
+            margin: 20px 0;
+            border-collapse: collapse;
+        }
+
+        .charges-table th,
+        .charges-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .charges-table th {
+            background: #3498db;
+            color: white;
+        }
+
+        .charges-table .amount {
+            text-align: right;
+            font-weight: bold;
+        }
+
+        .charges-table .total-row {
+            background: #f8f9fa;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .storage-summary {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .storage-summary h4 {
+            margin: 0 0 10px 0;
+            color: white;
+        }
+
+        .storage-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .storage-info-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .storage-info-item .value {
+            font-size: 1.5em;
+            font-weight: bold;
+            display: block;
+        }
+
+        .storage-info-item .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .estimated-charges {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            color: #856404;
+        }
+
+        .scanner-container {
+            margin: 20px 0;
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #f8f9fa;
+        }
+
+        .scanner-container.active {
+            border-color: #27ae60;
+            background: #000;
+        }
+
+        .quick-release-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .quick-release-btn:hover {
+            background: #229954;
+            transform: translateY(-1px);
+        }
+
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .close {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        @media (max-width: 768px) {
+            .storage-info {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</body>
+</html>
