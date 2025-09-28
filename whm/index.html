@@ -237,13 +237,38 @@
         <section id="release" class="section">
             <div class="section-header">
                 <h2>📤 Shipment Release</h2>
-                <button onclick="toggleReleaseScanner()" class="btn-secondary">📷 Scan for Release</button>
+                <div class="header-actions">
+                    <button onclick="startDirectReleaseScanner()" class="btn-success" style="font-size: 1.1rem; padding: 0.75rem 1.5rem;">
+                        � Scan to Release Immediately
+                    </button>
+                    <button onclick="toggleReleaseScanner()" class="btn-secondary">� Scan to Search</button>
+                </div>
             </div>
             
             <div class="form-container">
+                <!-- Direct Release Scanner -->
+                <div id="direct-release-scanner" class="scanner-container" style="display: none; border: 3px solid #10b981; border-radius: 8px; background: #f0fdf4;">
+                    <div class="scanner-header" style="background: #10b981; color: white; padding: 1rem; margin: -1rem -1rem 1rem -1rem; border-radius: 5px 5px 0 0;">
+                        <h3 style="margin: 0;">🚀 Direct Release Mode - Scan to Release Immediately</h3>
+                        <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem;">Scan barcode → Auto-generate invoice → Release shipment</p>
+                    </div>
+                    <div id="directReleaseReader"></div>
+                    <div style="text-align: center; margin-top: 1rem;">
+                        <button onclick="stopDirectReleaseScanner()" class="btn-danger">Stop Direct Release Scanner</button>
+                        <button onclick="switchToSearchMode()" class="btn-secondary">Switch to Search Mode</button>
+                    </div>
+                </div>
+
+                <!-- Search Mode Scanner -->
                 <div id="release-scanner" class="scanner-container" style="display: none;">
+                    <div class="scanner-header" style="background: #2563eb; color: white; padding: 0.75rem; margin: -1rem -1rem 1rem -1rem; border-radius: 5px 5px 0 0;">
+                        <h4 style="margin: 0;">🔍 Search Mode - Scan to Find Shipment</h4>
+                    </div>
                     <div id="releaseReader"></div>
-                    <button onclick="stopReleaseScanner()" class="btn-danger">Stop Scanner</button>
+                    <div style="text-align: center; margin-top: 1rem;">
+                        <button onclick="stopReleaseScanner()" class="btn-danger">Stop Scanner</button>
+                        <button onclick="switchToDirectMode()" class="btn-success">Switch to Direct Release</button>
+                    </div>
                 </div>
                 
                 <div class="search-container">

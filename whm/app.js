@@ -677,8 +677,10 @@ function showSection(sectionId) {
     // Update current section
     warehouseApp.currentSection = sectionId;
     
-    // Stop any active scanners when switching sections
-    barcodeScanner.stopAllScanners();
+    // Stop any active scanners when switching sections (if scanner is initialized)
+    if (typeof barcodeScanner !== 'undefined' && barcodeScanner.stopAllScanners) {
+        barcodeScanner.stopAllScanners();
+    }
     
     // Load section-specific data
     switch(sectionId) {
