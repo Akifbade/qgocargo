@@ -10,6 +10,75 @@ class LabelPrintingManager {
         this.labelHeight = 35; // mm
         this.thermalWidth = 100; // mm
         this.thermalHeight = 150; // mm
+        this._qrLibLoading = null; // promise guard for dynamic QR lib loading
+        this._jsBarcodeLoading = null; // promise guard for dynamic JsBarcode loading
+    }
+
+    // Ensure QRCode library is available; dynamically load if missing
+    async ensureQRCodeLib(targetWindow = window) {
+        try {
+            const QR = targetWindow.QRCode || targetWindow.qrcode;
+            if (QR && (typeof QR.toCanvas === 'function' || typeof QR === 'function')) {
+                return true;
+            }
+
+            // Avoid duplicate loads
+            if (!this._qrLibLoading) {
+                this._qrLibLoading = new Promise((resolve, reject) => {
+                    const doc = targetWindow.document;
+                    const existing = doc.querySelector('script[data-autoload="qrcode-lib"]');
+                    if (existing) {
+                        existing.addEventListener('load', () => resolve(true));
+                        existing.addEventListener('error', () => reject(new Error('Failed to load QRCode library')));
+                        return;
+                    }
+                    const script = doc.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+                    script.async = true;
+                    script.defer = true;
+                    script.setAttribute('data-autoload', 'qrcode-lib');
+                    script.onload = () => resolve(true);
+                    script.onerror = () => reject(new Error('Failed to load QRCode library'));
+                    doc.head.appendChild(script);
+                });
+            }
+            await this._qrLibLoading;
+            return true;
+        } catch (e) {
+            console.error('Failed to ensure QRCode library:', e);
+            return false;
+        }
+    }
+
+    // Ensure JsBarcode library is available; dynamically load if missing
+    async ensureJsBarcodeLib(targetWindow = window) {
+        try {
+            if (targetWindow.JsBarcode) return true;
+            if (!this._jsBarcodeLoading) {
+                this._jsBarcodeLoading = new Promise((resolve, reject) => {
+                    const doc = targetWindow.document;
+                    const existing = doc.querySelector('script[data-autoload="jsbarcode-lib"]');
+                    if (existing) {
+                        existing.addEventListener('load', () => resolve(true));
+                        existing.addEventListener('error', () => reject(new Error('Failed to load JsBarcode library')));
+                        return;
+                    }
+                    const script = doc.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js';
+                    script.async = true;
+                    script.defer = true;
+                    script.setAttribute('data-autoload', 'jsbarcode-lib');
+                    script.onload = () => resolve(true);
+                    script.onerror = () => reject(new Error('Failed to load JsBarcode library'));
+                    doc.head.appendChild(script);
+                });
+            }
+            await this._jsBarcodeLoading;
+            return true;
+        } catch (e) {
+            console.error('Failed to ensure JsBarcode library:', e);
+            return false;
+        }
     }
 
     // Generate labels for a shipment
@@ -134,7 +203,13 @@ class LabelPrintingManager {
 
     // Generate barcodes for preview
     generatePreviewBarcodes(labels) {
-        setTimeout(() => {
+        setTimeout(async () => {
+            // Ensure libs as needed
+            if (this.barcodeType === 'qr') {
+                await this.ensureQRCodeLib(window);
+            } else {
+                await this.ensureJsBarcodeLib(window);
+            }
             labels.forEach(label => {
                 const canvas = document.getElementById(`barcode-${label.id}`);
                 if (canvas) {
@@ -149,20 +224,41 @@ class LabelPrintingManager {
         try {
             if (this.barcodeType === 'qr') {
                 // Generate QR Code
-                if (window.QRCode) {
+                const QR = window.QRCode || window.qrcode;
+                if (QR) {
                     // Clear canvas
                     const ctx = canvas.getContext('2d');
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     
                     // Generate QR code
-                    QRCode.toCanvas(canvas, label.barcode, {
+                    // Support both function API and object API
+                    const opts = {
                         width: this.printFormat === 'thermal' ? 120 : 80,
                         margin: 1,
-                        color: {
-                            dark: '#000000',
-                            light: '#FFFFFF'
+                        color: { dark: '#000000', light: '#FFFFFF' }
+                    };
+                    if (typeof QR.toCanvas === 'function') {
+                        QR.toCanvas(canvas, label.barcode, opts);
+                    } else if (typeof QR === 'function') {
+                        // Some builds expose a function that returns a promise
+                        try {
+                            const result = QR(label.barcode, opts);
+                            if (result && result.then) {
+                                // If returns Promise, draw when ready using toCanvas again
+                                result.then(url => {
+                                    const img = new Image();
+                                    img.onload = () => {
+                                        canvas.width = img.width;
+                                        canvas.height = img.height;
+                                        ctx.drawImage(img, 0, 0);
+                                    };
+                                    img.src = url;
+                                });
+                            }
+                        } catch (e) {
+                            console.error('QR generation (function API) failed:', e);
                         }
-                    });
+                    }
                 } else {
                     console.error('QRCode library not loaded');
                 }
@@ -453,29 +549,48 @@ class LabelPrintingManager {
 
     // Generate barcodes in print window
     generatePrintBarcodes(printWindow, labels) {
-        labels.forEach(label => {
-            const canvas = printWindow.document.getElementById(`barcode-${label.id}`);
-            if (canvas) {
+        const attempt = async (tries = 0) => {
+            // Ensure libs exist in print window
+            if (this.barcodeType === 'qr') {
+                await this.ensureQRCodeLib(printWindow);
+            } else {
+                await this.ensureJsBarcodeLib(printWindow);
+            }
+
+            const QR = printWindow.QRCode || printWindow.qrcode;
+            const hasQR = !!(QR && (typeof QR.toCanvas === 'function' || typeof QR === 'function'));
+            const hasJs = !!printWindow.JsBarcode;
+
+            // If still missing, retry a few times (scripts might still be parsing)
+            if ((this.barcodeType === 'qr' && !hasQR) || (this.barcodeType !== 'qr' && !hasJs)) {
+                if (tries < 5) {
+                    return setTimeout(() => attempt(tries + 1), 150);
+                }
+                console.warn('Barcode libraries not ready in print window after retries');
+            }
+
+            labels.forEach(label => {
+                const canvas = printWindow.document.getElementById(`barcode-${label.id}`);
+                if (!canvas) return;
                 if (this.barcodeType === 'qr') {
-                    if (printWindow.QRCode) {
-                        printWindow.QRCode.toCanvas(canvas, label.barcode, {
+                    if (QR && typeof QR.toCanvas === 'function') {
+                        QR.toCanvas(canvas, label.barcode, {
                             width: this.printFormat === 'thermal' ? 120 : 80,
                             margin: 1
                         });
                     }
-                } else {
-                    if (printWindow.JsBarcode) {
-                        printWindow.JsBarcode(canvas, label.pieceId, {
-                            format: "CODE128",
-                            width: this.printFormat === 'thermal' ? 2 : 1.5,
-                            height: this.printFormat === 'thermal' ? 60 : 40,
-                            displayValue: false,
-                            margin: 0
-                        });
-                    }
+                } else if (printWindow.JsBarcode) {
+                    printWindow.JsBarcode(canvas, label.pieceId, {
+                        format: "CODE128",
+                        width: this.printFormat === 'thermal' ? 2 : 1.5,
+                        height: this.printFormat === 'thermal' ? 60 : 40,
+                        displayValue: false,
+                        margin: 0
+                    });
                 }
-            }
-        });
+            });
+        };
+        attempt(0);
     }
 
     // Bulk print for selected shipments

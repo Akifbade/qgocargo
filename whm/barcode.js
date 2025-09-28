@@ -78,7 +78,8 @@ class BarcodeScanner {
             const config = {
                 fps: APP_CONFIG.SCANNER.fps,
                 qrbox: APP_CONFIG.SCANNER.qrbox,
-                aspectRatio: APP_CONFIG.SCANNER.aspectRatio
+                aspectRatio: APP_CONFIG.SCANNER.aspectRatio,
+                facingMode: "environment"
             };
 
             this.scanner = new Html5QrcodeScanner(
@@ -170,7 +171,8 @@ class BarcodeScanner {
             const config = {
                 fps: APP_CONFIG.SCANNER.fps,
                 qrbox: APP_CONFIG.SCANNER.qrbox,
-                aspectRatio: APP_CONFIG.SCANNER.aspectRatio
+                aspectRatio: APP_CONFIG.SCANNER.aspectRatio,
+                facingMode: "environment"
             };
 
             this.releaseScanner = new Html5QrcodeScanner(
@@ -276,7 +278,8 @@ class BarcodeScanner {
             const config = {
                 fps: APP_CONFIG.SCANNER.fps,
                 qrbox: APP_CONFIG.SCANNER.qrbox,
-                aspectRatio: APP_CONFIG.SCANNER.aspectRatio
+                aspectRatio: APP_CONFIG.SCANNER.aspectRatio,
+                facingMode: "environment"
             };
 
             this.directReleaseScanner = new Html5QrcodeScanner(

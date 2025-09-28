@@ -194,7 +194,7 @@ class DatabaseManager {
                 .eq('barcode', barcode)
                 .single();
 
-            if (error && error.code !== 'PGRST116') throw error;
+            if (error && error.code !== 'PGRST116') throw error; // PGRST116 means no rows found, which is not an error here
             return data;
         } catch (error) {
             console.error('Error getting shipment by barcode:', error);
@@ -202,7 +202,7 @@ class DatabaseManager {
         }
     }
 
-    async searchShipments(query, status = 'all') {
+    async searchShipments(query, status = 'all', exactBarcode = false) {
         try {
             let queryBuilder = supabase
                 .from('shipments')
@@ -214,7 +214,14 @@ class DatabaseManager {
             }
 
             if (query && query.trim() !== '') {
-                queryBuilder = queryBuilder.or(`barcode.ilike.%${query}%,shipper.ilike.%${query}%,consignee.ilike.%${query}%,rack.ilike.%${query}%`);
+                const trimmedQuery = query.trim();
+                if (exactBarcode) {
+                    // Use eq for exact barcode match
+                    queryBuilder = queryBuilder.eq('barcode', trimmedQuery);
+                } else {
+                    // Use or with ilike for general search
+                    queryBuilder = queryBuilder.or(`barcode.ilike.%${trimmedQuery}%,shipper.ilike.%${trimmedQuery}%,consignee.ilike.%${trimmedQuery}%,rack.ilike.%${trimmedQuery}%`);
+                }
             }
 
             const { data, error } = await queryBuilder;
