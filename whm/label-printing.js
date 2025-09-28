@@ -12,40 +12,72 @@ class LabelPrintingManager {
         this.thermalHeight = 150; // mm
         this._qrLibLoading = null; // promise guard for dynamic QR lib loading
         this._jsBarcodeLoading = null; // promise guard for dynamic JsBarcode loading
+        this.renderedBarcodes = new Map(); // labelId -> dataURL
     }
 
     // Ensure QRCode library is available; dynamically load if missing
     async ensureQRCodeLib(targetWindow = window) {
         try {
             const QR = targetWindow.QRCode || targetWindow.qrcode;
-            if (QR && (typeof QR.toCanvas === 'function' || typeof QR === 'function')) {
+            if (QR && (typeof QR.toCanvas === 'function' || typeof QR === 'function' || (typeof QR === 'object' && 'CorrectLevel' in QR))) {
                 return true;
             }
 
-            // Avoid duplicate loads
+            // Avoid duplicate loads; create a loader that tries multiple CDNs sequentially
             if (!this._qrLibLoading) {
+                const sources = [
+                    'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js',
+                    'https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js'
+                ];
+
                 this._qrLibLoading = new Promise((resolve, reject) => {
                     const doc = targetWindow.document;
-                    const existing = doc.querySelector('script[data-autoload="qrcode-lib"]');
+
+                    // If a tag already exists for qrcode, wait on it first
+                    const existing = Array.from(doc.querySelectorAll('script[src]')).find(s => /qrcode(.*)\.min\.js/i.test(s.src));
                     if (existing) {
                         existing.addEventListener('load', () => resolve(true));
-                        existing.addEventListener('error', () => reject(new Error('Failed to load QRCode library')));
+                        existing.addEventListener('error', () => {
+                            // fall through to our own loader sequence
+                            loadNext(0);
+                        });
+                        // also start a timeout fallback in case neither fires (cached but no event)
+                        setTimeout(() => {
+                            const Q = targetWindow.QRCode || targetWindow.qrcode;
+                            if (Q) resolve(true); else loadNext(0);
+                        }, 300);
                         return;
                     }
-                    const script = doc.createElement('script');
-                    script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
-                    script.async = true;
-                    script.defer = true;
-                    script.setAttribute('data-autoload', 'qrcode-lib');
-                    script.onload = () => resolve(true);
-                    script.onerror = () => reject(new Error('Failed to load QRCode library'));
-                    doc.head.appendChild(script);
+
+                    function loadNext(idx) {
+                        if (idx >= sources.length) {
+                            reject(new Error('Failed to load QRCode library'));
+                            return;
+                        }
+                        const src = sources[idx];
+                        const script = doc.createElement('script');
+                        script.src = src;
+                        script.async = true;
+                        script.defer = true;
+                        script.setAttribute('data-autoload', 'qrcode-lib');
+                        script.onload = () => resolve(true);
+                        script.onerror = () => {
+                            // try next source
+                            loadNext(idx + 1);
+                        };
+                        doc.head.appendChild(script);
+                    }
+
+                    loadNext(0);
                 });
             }
             await this._qrLibLoading;
             return true;
         } catch (e) {
             console.error('Failed to ensure QRCode library:', e);
+            // reset so future attempts can retry
+            this._qrLibLoading = null;
             return false;
         }
     }
@@ -55,28 +87,46 @@ class LabelPrintingManager {
         try {
             if (targetWindow.JsBarcode) return true;
             if (!this._jsBarcodeLoading) {
+                const sources = [
+                    'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js',
+                    'https://unpkg.com/jsbarcode@3.11.5/dist/JsBarcode.all.min.js'
+                ];
+
                 this._jsBarcodeLoading = new Promise((resolve, reject) => {
                     const doc = targetWindow.document;
-                    const existing = doc.querySelector('script[data-autoload="jsbarcode-lib"]');
+                    const existing = Array.from(doc.querySelectorAll('script[src]')).find(s => /jsbarcode(.*)\.min\.js/i.test(s.src));
                     if (existing) {
                         existing.addEventListener('load', () => resolve(true));
-                        existing.addEventListener('error', () => reject(new Error('Failed to load JsBarcode library')));
+                        existing.addEventListener('error', () => loadNext(0));
+                        setTimeout(() => { if (targetWindow.JsBarcode) resolve(true); else loadNext(0); }, 300);
                         return;
                     }
-                    const script = doc.createElement('script');
-                    script.src = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js';
-                    script.async = true;
-                    script.defer = true;
-                    script.setAttribute('data-autoload', 'jsbarcode-lib');
-                    script.onload = () => resolve(true);
-                    script.onerror = () => reject(new Error('Failed to load JsBarcode library'));
-                    doc.head.appendChild(script);
+
+                    function loadNext(idx) {
+                        if (idx >= sources.length) {
+                            reject(new Error('Failed to load JsBarcode library'));
+                            return;
+                        }
+                        const src = sources[idx];
+                        const script = doc.createElement('script');
+                        script.src = src;
+                        script.async = true;
+                        script.defer = true;
+                        script.setAttribute('data-autoload', 'jsbarcode-lib');
+                        script.onload = () => resolve(true);
+                        script.onerror = () => loadNext(idx + 1);
+                        doc.head.appendChild(script);
+                    }
+
+                    loadNext(0);
                 });
             }
             await this._jsBarcodeLoading;
             return true;
         } catch (e) {
             console.error('Failed to ensure JsBarcode library:', e);
+            this._jsBarcodeLoading = null;
             return false;
         }
     }
@@ -202,25 +252,25 @@ class LabelPrintingManager {
     }
 
     // Generate barcodes for preview
-    generatePreviewBarcodes(labels) {
-        setTimeout(async () => {
-            // Ensure libs as needed
-            if (this.barcodeType === 'qr') {
-                await this.ensureQRCodeLib(window);
-            } else {
-                await this.ensureJsBarcodeLib(window);
-            }
-            labels.forEach(label => {
-                const canvas = document.getElementById(`barcode-${label.id}`);
-                if (canvas) {
-                    this.generateBarcode(canvas, label);
-                }
-            });
-        }, 100);
+    async generatePreviewBarcodes(labels) {
+        // Ensure libs as needed
+        if (this.barcodeType === 'qr') {
+            await this.ensureQRCodeLib(window);
+        } else {
+            await this.ensureJsBarcodeLib(window);
+        }
+        // Render all and cache data URLs
+        const tasks = labels.map(label => {
+            const canvas = document.getElementById(`barcode-${label.id}`);
+            if (!canvas) return Promise.resolve();
+            return this.generateBarcode(canvas, label);
+        });
+        await Promise.all(tasks);
     }
 
-    // Generate barcode on canvas
+    // Generate barcode on canvas; returns a Promise that resolves when drawn and cached
     generateBarcode(canvas, label) {
+        return new Promise((resolve) => {
         try {
             if (this.barcodeType === 'qr') {
                 // Generate QR Code
@@ -238,7 +288,19 @@ class LabelPrintingManager {
                         color: { dark: '#000000', light: '#FFFFFF' }
                     };
                     if (typeof QR.toCanvas === 'function') {
-                        QR.toCanvas(canvas, label.barcode, opts);
+                        // toCanvas can accept a callback
+                        try {
+                            QR.toCanvas(canvas, label.barcode, opts, (err) => {
+                                if (err) console.error('QR toCanvas callback error:', err);
+                                try { this.renderedBarcodes.set(label.id, canvas.toDataURL('image/png')); } catch {}
+                                resolve();
+                            });
+                        } catch (e) {
+                            // Some builds lack callback; do synchronous call and resolve
+                            QR.toCanvas(canvas, label.barcode, opts);
+                            try { this.renderedBarcodes.set(label.id, canvas.toDataURL('image/png')); } catch {}
+                            resolve();
+                        }
                     } else if (typeof QR === 'function') {
                         // Some builds expose a function that returns a promise
                         try {
@@ -251,16 +313,114 @@ class LabelPrintingManager {
                                         canvas.width = img.width;
                                         canvas.height = img.height;
                                         ctx.drawImage(img, 0, 0);
+                                        try { this.renderedBarcodes.set(label.id, canvas.toDataURL('image/png')); } catch {}
+                                        resolve();
                                     };
                                     img.src = url;
                                 });
+                            } else {
+                                // If result is immediate URL
+                                const img = new Image();
+                                img.onload = () => {
+                                    canvas.width = img.width;
+                                    canvas.height = img.height;
+                                    ctx.drawImage(img, 0, 0);
+                                    try { this.renderedBarcodes.set(label.id, canvas.toDataURL('image/png')); } catch {}
+                                    resolve();
+                                };
+                                img.src = result;
                             }
                         } catch (e) {
                             console.error('QR generation (function API) failed:', e);
+                            // fallback to text
+                            ctx.font = '10px Arial';
+                            ctx.fillText(label.barcode, 10, 20);
+                            try { this.renderedBarcodes.set(label.id, canvas.toDataURL('image/png')); } catch {}
+                            resolve();
+                        }
+                    } else if (typeof QR === 'object' && 'CorrectLevel' in QR && typeof window.QRCode === 'function') {
+                        // Compatibility: older qrcodejs library exposes a QRCode constructor that injects DOM
+                        try {
+                            const temp = document.createElement('div');
+                            temp.style.position = 'absolute';
+                            temp.style.left = '-9999px';
+                            document.body.appendChild(temp);
+                            const inst = new window.QRCode(temp, { width: opts.width, height: opts.width, correctLevel: window.QRCode.CorrectLevel.L });
+                            if (inst && typeof inst.makeCode === 'function') inst.makeCode(label.barcode);
+                            // Extract produced image/canvas and draw onto our canvas
+                            const outCanvas = temp.querySelector('canvas');
+                            const outImg = temp.querySelector('img');
+                            if (outCanvas) {
+                                canvas.width = outCanvas.width;
+                                canvas.height = outCanvas.height;
+                                ctx.drawImage(outCanvas, 0, 0);
+                                try { this.renderedBarcodes.set(label.id, canvas.toDataURL('image/png')); } catch {}
+                                document.body.removeChild(temp);
+                                resolve();
+                            } else if (outImg) {
+                                const img = new Image();
+                                img.onload = () => {
+                                    canvas.width = img.width;
+                                    canvas.height = img.height;
+                                    ctx.drawImage(img, 0, 0);
+                                    try { this.renderedBarcodes.set(label.id, canvas.toDataURL('image/png')); } catch {}
+                                    document.body.removeChild(temp);
+                                    resolve();
+                                };
+                                img.src = outImg.src;
+                            } else {
+                                document.body.removeChild(temp);
+                                ctx.font = '10px Arial';
+                                ctx.fillText(label.barcode, 10, 20);
+                                try { this.renderedBarcodes.set(label.id, canvas.toDataURL('image/png')); } catch {}
+                                resolve();
+                            }
+                        } catch (e) {
+                            console.error('QR generation (constructor API) failed:', e);
+                            const ctx2 = canvas.getContext('2d');
+                            ctx2.font = '10px Arial';
+                            ctx2.fillText(label.barcode, 10, 20);
+                            try { this.renderedBarcodes.set(label.id, canvas.toDataURL('image/png')); } catch {}
+                            resolve();
                         }
                     }
                 } else {
-                    console.error('QRCode library not loaded');
+                    console.warn('QRCode library not loaded; falling back to text');
+                    // Network fallback: use an online QR image if available
+                    try {
+                        const size = this.printFormat === 'thermal' ? 240 : 160;
+                        const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(label.barcode)}`;
+                        // Cache the URL for print embedding (even if canvas can't draw due to CORS)
+                        this.renderedBarcodes.set(label.id, url);
+                        // Try to draw it in preview canvas for UX
+                        const img = new Image();
+                        img.crossOrigin = 'anonymous';
+                        img.onload = () => {
+                            try {
+                                canvas.width = img.width;
+                                canvas.height = img.height;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0);
+                            } catch {}
+                            resolve();
+                        };
+                        img.onerror = () => {
+                            // Final fallback: draw text
+                            const ctx = canvas.getContext('2d');
+                            ctx.font = '10px Arial';
+                            ctx.fillText(label.barcode, 10, 20);
+                            try { this.renderedBarcodes.set(label.id, canvas.toDataURL('image/png')); } catch {}
+                            resolve();
+                        };
+                        img.src = url;
+                    } catch {
+                        // Final fallback: draw text
+                        const ctx = canvas.getContext('2d');
+                        ctx.font = '10px Arial';
+                        ctx.fillText(label.barcode, 10, 20);
+                        try { this.renderedBarcodes.set(label.id, canvas.toDataURL('image/png')); } catch {}
+                        resolve();
+                    }
                 }
             } else {
                 // Generate Code128
@@ -274,8 +434,15 @@ class LabelPrintingManager {
                         background: "#ffffff",
                         lineColor: "#000000"
                     });
+                    try { this.renderedBarcodes.set(label.id, canvas.toDataURL('image/png')); } catch {}
+                    resolve();
                 } else {
                     console.error('JsBarcode library not loaded');
+                    const ctx = canvas.getContext('2d');
+                    ctx.font = '10px Arial';
+                    ctx.fillText(label.pieceId, 10, 20);
+                    try { this.renderedBarcodes.set(label.id, canvas.toDataURL('image/png')); } catch {}
+                    resolve();
                 }
             }
         } catch (error) {
@@ -283,8 +450,11 @@ class LabelPrintingManager {
             // Fallback: draw text
             const ctx = canvas.getContext('2d');
             ctx.font = '10px Arial';
-            ctx.fillText(label.pieceId, 10, 20);
+            ctx.fillText(this.barcodeType === 'qr' ? label.barcode : label.pieceId, 10, 20);
+            try { this.renderedBarcodes.set(label.id, canvas.toDataURL('image/png')); } catch {}
+            resolve();
         }
+        });
     }
 
     // Update print format
@@ -314,6 +484,8 @@ class LabelPrintingManager {
     async printLabels() {
         try {
             showMessage('Preparing labels for printing...', 'info');
+            // Ensure barcodes are rendered and cached
+            await this.ensureBarcodesRendered(this.currentLabels);
             
             // Create print window
             const printWindow = window.open('', '_blank');
@@ -322,21 +494,14 @@ class LabelPrintingManager {
             printWindow.document.write(printContent);
             printWindow.document.close();
             
-            // Wait for content to load
+            // Wait a moment for images to load then print
             setTimeout(() => {
-                // Generate barcodes in print window
-                this.generatePrintBarcodes(printWindow, this.currentLabels);
-                
-                // Print after barcodes are generated
-                setTimeout(() => {
-                    printWindow.focus();
-                    printWindow.print();
-                    
-                    // Close modal after printing
-                    this.closeLabelPreview();
-                    showMessage(`${this.currentLabels.length} labels sent to printer`, 'success');
-                }, 500);
-            }, 200);
+                printWindow.focus();
+                printWindow.print();
+                // Close modal after printing
+                this.closeLabelPreview();
+                showMessage(`${this.currentLabels.length} labels sent to printer`, 'success');
+            }, 300);
             
         } catch (error) {
             console.error('Error printing labels:', error);
@@ -355,8 +520,6 @@ class LabelPrintingManager {
             <head>
                 <meta charset="UTF-8">
                 <title>Warehouse Labels</title>
-                <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-                <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
                 <style>${printCSS}</style>
             </head>
             <body>
@@ -364,7 +527,7 @@ class LabelPrintingManager {
         `;
 
         labels.forEach(label => {
-            html += this.generateLabelHTML(label);
+            html += this.generatePrintLabelHTML(label);
         });
 
         html += `
@@ -374,6 +537,59 @@ class LabelPrintingManager {
         `;
 
         return html;
+    }
+
+    // Generate label HTML for printing with embedded image
+    generatePrintLabelHTML(label) {
+        const labelClass = this.printFormat === 'thermal' ? 'thermal-label' : 'sticker-label';
+        const imgSrc = this.renderedBarcodes.get(label.id) || '';
+        const codeText = this.barcodeType === 'qr' ? label.barcode : label.pieceId;
+        return `
+            <div class="${labelClass}" id="label-${label.id}">
+                <div class="label-header">
+                    <div class="label-title">WAREHOUSE LABEL</div>
+                    <div class="piece-info">Piece ${label.pieceNumber} of ${label.totalPieces}</div>
+                </div>
+                <div class="barcode-container">
+                    <img src="${imgSrc}" alt="barcode" style="max-width:100%;height:auto;"/>
+                    <div class="barcode-text">${codeText}</div>
+                </div>
+                <div class="label-info">
+                    <div class="info-row">
+                        <strong>From:</strong> <span class="shipper">${this.truncateText(label.shipper, 20)}</span>
+                    </div>
+                    <div class="info-row">
+                        <strong>To:</strong> <span class="consignee">${this.truncateText(label.consignee, 20)}</span>
+                    </div>
+                    <div class="info-row">
+                        <strong>Rack:</strong> <span class="rack">${label.rack}</span>
+                        <strong>Weight:</strong> <span class="weight">${label.weight}kg</span>
+                    </div>
+                </div>
+                <div class="label-footer">
+                    <div class="piece-id">${label.pieceId}</div>
+                    <div class="print-date">${new Date().toLocaleDateString()}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Ensure all barcodes are rendered and cached as images
+    async ensureBarcodesRendered(labels) {
+        if (!labels || labels.length === 0) return;
+        // Ensure libs loaded for the selected type
+        if (this.barcodeType === 'qr') await this.ensureQRCodeLib(window); else await this.ensureJsBarcodeLib(window);
+        const tasks = [];
+        labels.forEach(label => {
+            if (!this.renderedBarcodes.has(label.id)) {
+                // Create offscreen canvas and render
+                const canvas = document.createElement('canvas');
+                canvas.width = this.printFormat === 'thermal' ? 240 : 160;
+                canvas.height = this.printFormat === 'thermal' ? 240 : 160;
+                tasks.push(this.generateBarcode(canvas, label));
+            }
+        });
+        if (tasks.length) await Promise.all(tasks);
     }
 
     // Generate print CSS
@@ -578,6 +794,34 @@ class LabelPrintingManager {
                             width: this.printFormat === 'thermal' ? 120 : 80,
                             margin: 1
                         });
+                    } else if (QR && typeof QR === 'object' && 'CorrectLevel' in QR && typeof printWindow.QRCode === 'function') {
+                        try {
+                            const temp = printWindow.document.createElement('div');
+                            temp.style.position = 'absolute';
+                            temp.style.left = '-9999px';
+                            printWindow.document.body.appendChild(temp);
+                            const inst = new printWindow.QRCode(temp, { width: this.printFormat === 'thermal' ? 120 : 80, height: this.printFormat === 'thermal' ? 120 : 80, correctLevel: printWindow.QRCode.CorrectLevel.L });
+                            if (inst && typeof inst.makeCode === 'function') inst.makeCode(label.barcode);
+                            const outCanvas = temp.querySelector('canvas');
+                            const outImg = temp.querySelector('img');
+                            const ctx = canvas.getContext('2d');
+                            if (outCanvas) {
+                                canvas.width = outCanvas.width;
+                                canvas.height = outCanvas.height;
+                                ctx.drawImage(outCanvas, 0, 0);
+                            } else if (outImg) {
+                                const img = new Image();
+                                img.onload = () => {
+                                    canvas.width = img.width;
+                                    canvas.height = img.height;
+                                    ctx.drawImage(img, 0, 0);
+                                };
+                                img.src = outImg.src;
+                            }
+                            printWindow.document.body.removeChild(temp);
+                        } catch (e) {
+                            console.error('Print QR (constructor API) failed:', e);
+                        }
                     }
                 } else if (printWindow.JsBarcode) {
                     printWindow.JsBarcode(canvas, label.pieceId, {

@@ -225,9 +225,24 @@ class BarcodeScanner {
         this.stopReleaseScanner();
         
         try {
-            // Search for shipment
-            if (typeof searchShipments === 'function') {
-                await searchShipments(decodedText.trim());
+            // Search for shipment (exact barcode match)
+            if (typeof dbManager?.searchShipments === 'function') {
+                const results = await dbManager.searchShipments(decodedText.trim(), 'in', true);
+                if (!results || results.length === 0) {
+                    // Fallback to strict single fetch
+                    const ship = await dbManager.getShipmentByBarcode(decodedText.trim());
+                    if (ship && ship.status === 'in') {
+                        // If a single shipment is found, show details modal similar to direct flow
+                        await showShipmentDetailsForRelease(decodedText.trim());
+                    } else {
+                        throw new Error('No active shipment found with this barcode');
+                    }
+                } else {
+                    // If results found, render via the existing search UI helper if available
+                    if (typeof displayReleaseResults === 'function') {
+                        displayReleaseResults(results);
+                    }
+                }
                 if (typeof showMessage === 'function') {
                     showMessage(`🔍 Searched for: ${decodedText}`, 'info');
                 }
@@ -443,7 +458,12 @@ async function showShipmentDetailsForRelease(barcode) {
         showMessage(`🔍 Loading shipment details for: ${barcode}`, 'info');
         
         // Search for the shipment in active shipments
-        const shipments = await dbManager.searchShipments(barcode, 'in');
+        // Use exact matching for scanned barcodes
+        let shipments = await dbManager.searchShipments(barcode, 'in', true);
+        if (!shipments || shipments.length === 0) {
+            const single = await dbManager.getShipmentByBarcode(barcode);
+            shipments = single ? [single] : [];
+        }
         
         if (!shipments || shipments.length === 0) {
             barcodeScanner.playErrorSound();
@@ -566,7 +586,12 @@ async function processDirectRelease(barcode) {
         showMessage(`🚀 Processing release for: ${barcode}`, 'info');
         
         // Search for the shipment again
-        const shipments = await dbManager.searchShipments(barcode, 'in');
+        // Use exact matching again
+        let shipments = await dbManager.searchShipments(barcode, 'in', true);
+        if (!shipments || shipments.length === 0) {
+            const single = await dbManager.getShipmentByBarcode(barcode);
+            shipments = single ? [single] : [];
+        }
         if (!shipments || shipments.length === 0) {
             throw new Error(`Shipment not found: ${barcode}`);
         }
