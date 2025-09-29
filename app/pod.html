@@ -1980,7 +1980,7 @@
                 const collectionsToBackup = ['deliveries', 'pods', 'feedback'];
                 
                 await Promise.all(collectionsToBackup.map(async (collectionName) => {
-                    const snapshot = await getDocs(collection(db, collectionName));
+                    const snapshot = await getDocs(collection(collectionName));
                     backupData[collectionName] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 }));
 
@@ -2127,6 +2127,105 @@
             } catch(e) {
                 console.error("Error fetching public POD:", e);
                 document.body.innerHTML = `<div class="p-4 text-center text-red-700 bg-red-100">Error loading POD.</div>`;
+            } finally {
+                hideLoader();
+                document.body.classList.remove('loading');
+            }
+        }
+
+        async function showPublicDeliveryView(deliveryId) {
+            showLoader();
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-container').style.display = 'none';
+            const publicView = document.getElementById('public-delivery-view');
+            const publicContent = document.getElementById('public-delivery-content');
+            publicView.style.display = 'flex';
+
+            try {
+                const deliveryDoc = await getDoc(doc(db, 'deliveries', deliveryId));
+                if (!deliveryDoc.exists()) {
+                    throw new Error("Delivery not found.");
+                }
+                const deliveryData = deliveryDoc.data();
+                if(deliveryData.status === 'Delivered') {
+                    publicContent.innerHTML = `
+                     <div class="bg-white p-8 rounded-xl shadow-lg text-center">
+                        <h2 class="text-2xl font-bold text-gray-800">This delivery has already been completed.</h2>
+                     </div>`;
+                     return;
+                }
+
+                publicContent.innerHTML = `
+                    <div class="bg-white p-8 rounded-xl shadow-lg">
+                        <div class="text-center mb-6">
+                            <img src="http://qgocargo.com/logo.png" alt="Q'go Cargo Logo" class="mx-auto h-16 w-auto">
+                            <h2 class="mt-4 text-2xl font-bold text-gray-800">Complete Delivery</h2>
+                        </div>
+                        <form id="public-completion-form" class="space-y-4" novalidate>
+                            <input type="hidden" id="public-delivery-id-input" value="${deliveryId}">
+                            <div class="p-4 bg-gray-50 rounded-md">
+                                <p><strong>Job File:</strong> <span>${deliveryData.jobFileData.jfn}</span></p>
+                                <p><strong>Location:</strong> <span>${deliveryData.deliveryLocation}</span></p>
+                                <p><strong>Driver:</strong> <span>${deliveryData.driverName}</span></p>
+                            </div>
+                            <div>
+                                <label for="public-receiver-name" class="block text-sm font-medium text-gray-700">Receiver's Name</label>
+                                <input type="text" id="public-receiver-name" class="input-field mt-1">
+                            </div>
+                            <div>
+                                <label for="public-receiver-mobile" class="block text-sm font-medium text-gray-700">Receiver's Mobile Number</label>
+                                <input type="tel" id="public-receiver-mobile" class="input-field mt-1">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Receiver's Signature</label>
+                                <div class="relative w-full h-48 mt-1">
+                                    <canvas id="public-signature-pad" class="signature-pad-canvas absolute top-0 left-0 w-full h-full"></canvas>
+                                </div>
+                                <div class="text-right mt-1">
+                                    <button type="button" id="clear-public-signature-btn" class="btn btn-secondary text-xs">Clear</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="public-delivery-photo" class="block text-sm font-medium text-gray-700">Upload Delivery Photo (Optional)</label>
+                                <input type="file" id="public-delivery-photo" class="input-field mt-1" accept="image/*">
+                                <div id="public-photo-preview-container" class="mt-2 hidden">
+                                    <img id="public-photo-preview" class="max-h-40 rounded-md border p-1">
+                                    <button type="button" id="remove-public-photo-btn" class="btn btn-secondary btn-xs mt-1">Remove Photo</button>
+                                </div>
+                            </div>
+                            <div>
+                                <button type="button" id="public-get-location-btn" class="btn btn-secondary text-sm w-full">Get Current Location</button>
+                                <p id="public-location-status" class="text-xs text-gray-500 mt-1 text-center"></p>
+                            </div>
+                            <div class="flex justify-end items-center gap-4 pt-4">
+                                <button type="submit" class="btn btn-success">Mark as Delivered</button>
+                            </div>
+                        </form>
+                    </div>`;
+
+                    const canvas = document.getElementById('public-signature-pad');
+                    window.publicSignaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
+                    const resizeCanvas = () => {
+                        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                        canvas.width = canvas.offsetWidth * ratio;
+                        canvas.height = canvas.offsetHeight * ratio;
+                        const context = canvas.getContext("2d");
+                        context.scale(ratio, ratio);
+                        context.fillStyle = "white";
+                        context.fillRect(0, 0, canvas.width, canvas.height);
+                        window.publicSignaturePad.clear();
+                    };
+                    setTimeout(resizeCanvas, 10);
+                    
+                    document.getElementById('public-completion-form').addEventListener('submit', (e) => handlePublicCompleteDelivery(e));
+                    document.getElementById('clear-public-signature-btn').addEventListener('click', () => window.publicSignaturePad.clear());
+                    document.getElementById('public-get-location-btn').addEventListener('click', handlePublicGetLocation);
+                    document.getElementById('public-delivery-photo').addEventListener('change', (e) => handlePublicPhotoSelect(e));
+                    document.getElementById('remove-public-photo-btn').addEventListener('click', removePublicPhoto);
+
+            } catch (e) {
+                console.error("Error fetching public delivery:", e);
+                publicContent.innerHTML = `<div class="p-4 text-center text-red-700 bg-red-100">Error loading delivery details. The link may be invalid or expired.</div>`;
             } finally {
                 hideLoader();
                 document.body.classList.remove('loading');
@@ -2758,4 +2857,3 @@
     </script>
 </body>
 </html>
-
