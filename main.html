@@ -23,36 +23,50 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
 
-        /* Animation styles */
+        /* General Animation styles */
         @keyframes fade-in-up {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        .animate-card, .animate-header {
+            opacity: 0;
+            animation: fade-in-up 0.6s ease-out forwards;
+        }
         
+        /* Modal Styles */
         @keyframes modal-in {
             from { opacity: 0; transform: scale(0.95) translateY(10px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
         }
-
-        .animate-card, .animate-header {
-            opacity: 0;
-            animation-fill-mode: forwards;
-            animation-name: fade-in-up;
-            animation-duration: 0.6s;
-            animation-timing-function: ease-out;
-        }
-        .animate-header {
-            animation-duration: 0.8s;
-        }
-        
-        /* Modal Styles */
         #details-modal.open .modal-content {
             animation: modal-in 0.3s ease-out forwards;
         }
-        
         .modal-body-section {
             opacity: 0;
             animation: fade-in-up 0.5s ease-out forwards;
+        }
+        
+        /* Roadmap Animation */
+        .roadmap-line {
+            width: 0%;
+            animation: draw-line 2s ease-out forwards;
+            animation-delay: 0.5s;
+        }
+        @keyframes draw-line {
+            to { width: 100%; }
+        }
+
+        .roadmap-phase {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fade-in-up 0.8s ease-out forwards;
+        }
+        .phase-icon {
+             animation: pulse-glow 2.5s infinite ease-in-out;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px 3px rgba(255, 255, 255, 0); }
+            50% { box-shadow: 0 0 20px 8px var(--glow-color, rgba(96, 165, 250, 0.5)); }
         }
     </style>
 </head>
@@ -65,6 +79,53 @@
             <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">QGO Cargo Tools</h1>
             <p class="mt-2 text-base text-gray-600 dark:text-gray-400">Your central hub for management systems.</p>
         </header>
+
+        <!-- Development Roadmap -->
+        <section class="w-full max-w-6xl mx-auto my-10 px-4">
+            <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12 animate-header" style="animation-delay: 200ms;">Development Roadmap</h2>
+            <div class="relative">
+                <!-- Connecting Line for larger screens -->
+                <div class="hidden md:block absolute top-8 left-0 w-full h-1 bg-gray-300 dark:bg-gray-700 -translate-y-1/2">
+                    <div class="roadmap-line h-full bg-teal-500"></div>
+                </div>
+
+                <div class="relative flex flex-col md:flex-row justify-between items-center md:items-start text-center">
+                    <!-- Phase 1: Core Systems -->
+                    <div class="roadmap-phase mb-10 md:mb-0 w-full md:w-1/3 z-10" style="animation-delay: 500ms;">
+                        <div class="flex flex-col items-center">
+                            <div class="phase-icon flex items-center justify-center w-16 h-16 bg-green-500 text-white rounded-full border-4 border-white dark:border-gray-800 shadow-lg mb-3" style="--glow-color: rgba(34, 197, 94, 0.5);">
+                                <i data-lucide="check-circle" class="w-8 h-8"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Phase 1: Core Systems</h3>
+                            <p class="text-green-600 dark:text-green-400 font-medium">Live & Operational</p>
+                        </div>
+                    </div>
+
+                    <!-- Phase 2: Automation -->
+                    <div class="roadmap-phase mb-10 md:mb-0 w-full md:w-1/3 z-10" style="animation-delay: 1000ms;">
+                        <div class="flex flex-col items-center">
+                             <div class="phase-icon flex items-center justify-center w-16 h-16 bg-blue-500 text-white rounded-full border-4 border-white dark:border-gray-800 shadow-lg mb-3" style="--glow-color: rgba(59, 130, 246, 0.5);">
+                                <i data-lucide="bot" class="w-8 h-8"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Phase 2: Automation</h3>
+                            <p class="text-blue-600 dark:text-blue-400 font-medium">In Progress</p>
+                        </div>
+                    </div>
+
+                    <!-- Phase 3: Future Vision -->
+                    <div class="roadmap-phase w-full md:w-1/3 z-10" style="animation-delay: 1500ms;">
+                         <div class="flex flex-col items-center">
+                             <div class="phase-icon flex items-center justify-center w-16 h-16 bg-purple-500 text-white rounded-full border-4 border-white dark:border-gray-800 shadow-lg mb-3" style="--glow-color: rgba(168, 85, 247, 0.5);">
+                                <i data-lucide="telescope" class="w-8 h-8"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Phase 3: Future Vision</h3>
+                            <p class="text-purple-600 dark:text-purple-400 font-medium">Planning Stage</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
 
         <!-- Main Grid for Tool Links -->
         <main class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 w-full max-w-6xl">
@@ -158,6 +219,44 @@
                     <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
                     <button data-modal-target="backup-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300">
                         Explore Features
+                        <i data-lucide="arrow-right" class="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Card 6: Advanced Reports -->
+            <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full">Beta Testing</div>
+                <div class="flex-grow flex flex-col items-center">
+                    <div class="flex items-center justify-center bg-indigo-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                        <i data-lucide="bar-chart-3" class="w-8 h-8 text-indigo-500 dark:text-indigo-400"></i>
+                    </div>
+                    <a href="https://akifbade.github.io/qgocargo/reports" target="_blank" data-id="reports" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline">Advanced Reports</a>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow">Download detailed reports for accounting.</p>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
+                    <button data-modal-target="reports-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300">
+                        Explore Features
+                        <i data-lucide="arrow-right" class="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Card 7: Upcoming Features -->
+            <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full">Beta Testing</div>
+                <div class="flex-grow flex flex-col items-center">
+                    <div class="flex items-center justify-center bg-teal-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                        <i data-lucide="rocket" class="w-8 h-8 text-teal-500 dark:text-teal-400"></i>
+                    </div>
+                    <a href="#" data-id="upcoming" class="text-xl font-semibold text-gray-900 dark:text-white cursor-pointer">Upcoming Features</a>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow">A look into the future of QGO Tools.</p>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
+                    <button data-modal-target="upcoming-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-teal-500 hover:text-teal-600 dark:text-teal-400 dark:hover:text-teal-300">
+                        Explore Roadmap
                         <i data-lucide="arrow-right" class="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1"></i>
                     </button>
                 </div>
@@ -349,6 +448,52 @@
                 </div>
             </div>
         </div>
+        <div id="reports-details">
+             <div class="modal-body-section flex items-start space-x-4">
+                <i data-lucide="target" class="w-6 h-6 text-indigo-500 dark:text-indigo-400 mt-1 flex-shrink-0"></i>
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">Purpose</h4>
+                    <p>Designed for accountants to generate and download comprehensive reports for financial analysis and auditing.</p>
+                </div>
+            </div>
+            <div class="modal-body-section flex items-start space-x-4">
+                <i data-lucide="list-checks" class="w-6 h-6 text-indigo-500 dark:text-indigo-400 mt-1 flex-shrink-0"></i>
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">Key Features</h4>
+                     <p>Allows one-click download of all job files into a single Excel file. The data can be easily filtered by salesman, the user who created the file, or by consignee, making it highly flexible for accounting needs.</p>
+                </div>
+            </div>
+        </div>
+        <div id="upcoming-details">
+            <div class="modal-body-section flex items-start space-x-4">
+               <i data-lucide="zap" class="w-6 h-6 text-teal-500 dark:text-teal-400 mt-1 flex-shrink-0"></i>
+               <div>
+                   <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">n8n Sales & Ops Workflow</h4>
+                   <p>Automate sales call reminders, follow-up messages, and operational alerts to streamline communication and improve response times.</p>
+               </div>
+           </div>
+           <div class="modal-body-section flex items-start space-x-4">
+               <i data-lucide="user-check" class="w-6 h-6 text-teal-500 dark:text-teal-400 mt-1 flex-shrink-0"></i>
+               <div>
+                   <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">Employee Leave Tracker</h4>
+                   <p>A simple, integrated system for employees to request leave and for management to approve and track team availability.</p>
+               </div>
+           </div>
+           <div class="modal-body-section flex items-start space-x-4">
+               <i data-lucide="truck" class="w-6 h-6 text-teal-500 dark:text-teal-400 mt-1 flex-shrink-0"></i>
+               <div>
+                   <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">Vehicle Maintenance & Tracker</h4>
+                   <p>Monitor vehicle health, schedule maintenance, track service history, and manage your fleet efficiently to reduce downtime.</p>
+               </div>
+           </div>
+            <div class="modal-body-section flex items-start space-x-4">
+               <i data-lucide="bot" class="w-6 h-6 text-teal-500 dark:text-teal-400 mt-1 flex-shrink-0"></i>
+               <div>
+                   <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">General Automation Workflows</h4>
+                   <p>Introducing powerful automation to handle repetitive tasks, from invoicing to reporting, freeing up your team to focus on high-value work.</p>
+               </div>
+           </div>
+       </div>
     </div>
 
     <script>
@@ -366,7 +511,7 @@
             // --- Card Animations ---
             const cards = document.querySelectorAll('.tool-card');
             cards.forEach((card, index) => {
-                card.style.animationDelay = `${index * 100}ms`;
+                card.style.animationDelay = `${(index * 100) + 1500}ms`; // Delay card animation until roadmap finishes
                 card.classList.add('animate-card');
             });
             
@@ -398,8 +543,8 @@
                 }
 
                 link.addEventListener('click', (e) => {
-                     // Only set timestamp if not opening a modal
-                    if (!e.target.closest('.view-details-btn')) {
+                     // Only set timestamp if not opening a modal or a non-navigating link
+                    if (!e.target.closest('.view-details-btn') && link.getAttribute('href') !== '#') {
                        localStorage.setItem(`lastVisited_${cardId}`, Date.now().toString());
                     }
                 });
@@ -411,11 +556,14 @@
             const modalBody = document.getElementById('modal-body');
             const closeBtn = document.getElementById('modal-close-btn');
 
-            document.querySelectorAll('.view-details-btn').forEach(button => {
-                button.addEventListener('click', () => {
-                    const targetId = button.getAttribute('data-modal-target');
-                    const contentEl = document.getElementById(targetId);
+            document.querySelectorAll('.view-details-btn, a[data-id="upcoming"]').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    // Prevent navigation for the upcoming features link
+                    if(button.dataset.id === 'upcoming') e.preventDefault();
+
                     const card = button.closest('.tool-card');
+                    const targetId = card.querySelector('.view-details-btn, a[data-id="upcoming"]').getAttribute('data-modal-target');
+                    const contentEl = document.getElementById(targetId);
                     const title = card.querySelector('a').textContent;
                     
                     if (contentEl) {
@@ -436,6 +584,9 @@
                     }
                 });
             });
+            // Update modal trigger for upcoming features card link as well
+             document.querySelector('a[data-id="upcoming"]').setAttribute('data-modal-target', 'upcoming-details');
+
 
             const closeModal = () => {
                 modal.classList.remove('open', 'opacity-100');
