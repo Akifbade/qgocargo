@@ -28,10 +28,6 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes fade-in {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
         
         @keyframes modal-in {
             from { opacity: 0; transform: scale(0.95) translateY(10px); }
@@ -53,13 +49,16 @@
         #details-modal.open .modal-content {
             animation: modal-in 0.3s ease-out forwards;
         }
+        
+        .modal-body-section {
+            opacity: 0;
+            animation: fade-in-up 0.5s ease-out forwards;
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
     <div class="relative min-h-screen flex flex-col items-center p-4">
-        <!-- Beta Version Label -->
-        <div class="absolute top-4 right-4 px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full shadow-md z-10">Beta Version Testing</div>
-
+        
         <!-- Header Section -->
         <header class="text-center my-10 animate-header">
             <img src="http://qgocargo.com/logo.png" alt="QGO Cargo Logo" class="mx-auto mb-4 h-20 w-auto">
@@ -70,7 +69,8 @@
         <!-- Main Grid for Tool Links -->
         <main class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 w-full max-w-6xl">
             <!-- Card 1: Jobfile Management -->
-            <div class="tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+            <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full">Beta Testing</div>
                 <div class="flex-grow flex flex-col items-center">
                     <div class="flex items-center justify-center bg-blue-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
                         <i data-lucide="file-stack" class="w-8 h-8 text-blue-500 dark:text-blue-400"></i>
@@ -78,14 +78,18 @@
                     <a href="https://akifbade.github.io/qgocargo" target="_blank" data-id="jobfile" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline">Jobfile Management</a>
                     <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow">Main system for core operations.</p>
                 </div>
-                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <button data-modal-target="jobfile-details" class="view-details-btn text-blue-500 dark:text-blue-400 font-semibold hover:underline">View Details</button>
-                    <span class="block text-xs text-gray-500 dark:text-gray-500 last-visited-text mt-2"></span>
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
+                    <button data-modal-target="jobfile-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300">
+                        Explore Features
+                        <i data-lucide="arrow-right" class="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1"></i>
+                    </button>
                 </div>
             </div>
 
             <!-- Card 2: POD System -->
-             <div class="tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+             <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full">Beta Testing</div>
                 <div class="flex-grow flex flex-col items-center">
                     <div class="flex items-center justify-center bg-green-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
                         <i data-lucide="package-check" class="w-8 h-8 text-green-500 dark:text-green-400"></i>
@@ -93,14 +97,18 @@
                     <a href="https://akifbade.github.io/qgocargo/app/pod" target="_blank" data-id="pod" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline">POD System</a>
                     <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow">Proof of Delivery tracking portal.</p>
                 </div>
-                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <button data-modal-target="pod-details" class="view-details-btn text-green-500 dark:text-green-400 font-semibold hover:underline">View Details</button>
-                    <span class="block text-xs text-gray-500 dark:text-gray-500 last-visited-text mt-2"></span>
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
+                     <button data-modal-target="pod-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300">
+                        Explore Features
+                        <i data-lucide="arrow-right" class="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1"></i>
+                    </button>
                 </div>
             </div>
 
             <!-- Card 3: Warehouse Storage System -->
-            <div class="tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+            <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full">Beta Testing</div>
                 <div class="flex-grow flex flex-col items-center">
                     <div class="flex items-center justify-center bg-yellow-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
                         <i data-lucide="warehouse" class="w-8 h-8 text-yellow-500 dark:text-yellow-400"></i>
@@ -108,14 +116,18 @@
                     <a href="https://akifbade.github.io/qgocargo/whm" target="_blank" data-id="whm" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline">Warehouse Storage</a>
                     <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow">Manage storage and release operations.</p>
                 </div>
-                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <button data-modal-target="whm-details" class="view-details-btn text-yellow-500 dark:text-yellow-400 font-semibold hover:underline">View Details</button>
-                    <span class="block text-xs text-gray-500 dark:text-gray-500 last-visited-text mt-2"></span>
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
+                    <button data-modal-target="whm-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300">
+                        Explore Features
+                        <i data-lucide="arrow-right" class="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1"></i>
+                    </button>
                 </div>
             </div>
 
             <!-- Card 4: Inventory & Staff Schedule -->
-            <div class="tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+            <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full">Beta Testing</div>
                 <div class="flex-grow flex flex-col items-center">
                     <div class="flex items-center justify-center bg-purple-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
                         <i data-lucide="calendar-days" class="w-8 h-8 text-purple-500 dark:text-purple-400"></i>
@@ -123,14 +135,18 @@
                     <a href="https://akifbade.github.io/qgocargo/app/wh" target="_blank" data-id="inventory" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline">Inventory & Staff Schedule</a>
                     <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow">Schedule staff and manage inventory.</p>
                 </div>
-                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <button data-modal-target="inventory-details" class="view-details-btn text-purple-500 dark:text-purple-400 font-semibold hover:underline">View Details</button>
-                    <span class="block text-xs text-gray-500 dark:text-gray-500 last-visited-text mt-2"></span>
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
+                    <button data-modal-target="inventory-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-purple-500 hover:text-purple-600 dark:text-purple-400 dark:hover:text-purple-300">
+                        Explore Features
+                        <i data-lucide="arrow-right" class="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1"></i>
+                    </button>
                 </div>
             </div>
             
             <!-- Card 5: Jobfiles Backup -->
-             <div class="tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+             <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full">Beta Testing</div>
                 <div class="flex-grow flex flex-col items-center">
                     <div class="flex items-center justify-center bg-red-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
                         <i data-lucide="database-backup" class="w-8 h-8 text-red-500 dark:text-red-400"></i>
@@ -138,9 +154,12 @@
                     <a href="https://akifbade.github.io/qgocargo/backup.html" target="_blank" data-id="backup" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline">Jobfiles Backup</a>
                     <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow">Download job backups in Excel format.</p>
                 </div>
-                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <button data-modal-target="backup-details" class="view-details-btn text-red-500 dark:text-red-400 font-semibold hover:underline">View Details</button>
-                    <span class="block text-xs text-gray-500 dark:text-gray-500 last-visited-text mt-2"></span>
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
+                    <button data-modal-target="backup-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300">
+                        Explore Features
+                        <i data-lucide="arrow-right" class="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1"></i>
+                    </button>
                 </div>
             </div>
         </main>
@@ -162,91 +181,173 @@
                 </button>
             </div>
             <!-- Modal Body -->
-            <div id="modal-body" class="p-6 text-sm space-y-3 text-left text-gray-700 dark:text-gray-300"></div>
+            <div id="modal-body" class="p-6 text-sm space-y-6 text-left text-gray-700 dark:text-gray-300"></div>
         </div>
     </div>
 
     <!-- Hidden Details Content -->
     <div class="hidden">
         <div id="jobfile-details">
-            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Purpose:</strong> To digitize and manage all shipment/job files in one place.</p>
-            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Key Features:</strong></p>
-            <ul class="list-disc list-inside space-y-1 pl-4">
-                <li>Secure login with roles (Admin, Checker, Staff).</li>
-                <li>Create job files with shipper, consignee, invoice, and freight details.</li>
-                <li>Built-in charges table for billing (freight, handling, clearance, storage).</li>
-                <li>Approval workflow from checker to admin.</li>
-                <li>Analytics dashboard: monthly/yearly profit, salesman performance.</li>
-                <li>Print/Export A4 receipts and PDF outputs.</li>
-            </ul>
-            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Value:</strong></p>
-            <ul class="list-disc list-inside space-y-1 pl-4">
-                <li>Eliminates paper files, leading to fewer errors and faster clearance.</li>
-                <li>Saves cost by reducing the need for carbon copies and printing.</li>
-                <li>Data is secure, backed up, and easy to retrieve.</li>
-            </ul>
+            <div class="modal-body-section flex items-start space-x-4">
+                <i data-lucide="target" class="w-6 h-6 text-blue-500 dark:text-blue-400 mt-1 flex-shrink-0"></i>
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">Purpose</h4>
+                    <p>To digitize and manage all shipment/job files in one place.</p>
+                </div>
+            </div>
+            <div class="modal-body-section flex items-start space-x-4">
+                <i data-lucide="list-checks" class="w-6 h-6 text-blue-500 dark:text-blue-400 mt-1 flex-shrink-0"></i>
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">Key Features</h4>
+                    <ul class="list-disc list-inside space-y-1 mt-1">
+                        <li>Secure login with roles (Admin, Checker, Staff).</li>
+                        <li>Create job files with shipper, consignee, invoice, and freight details.</li>
+                        <li>Built-in charges table for billing (freight, handling, clearance, storage).</li>
+                        <li>Approval workflow from checker to admin.</li>
+                        <li>Analytics dashboard: monthly/yearly profit, salesman performance.</li>
+                        <li>Print/Export A4 receipts and PDF outputs.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-body-section flex items-start space-x-4">
+                 <i data-lucide="gem" class="w-6 h-6 text-blue-500 dark:text-blue-400 mt-1 flex-shrink-0"></i>
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">Value & Benefits</h4>
+                    <ul class="list-disc list-inside space-y-1 mt-1">
+                        <li>Eliminates paper files, leading to fewer errors and faster clearance.</li>
+                        <li>Saves cost by reducing the need for carbon copies and printing.</li>
+                        <li>Data is secure, backed up, and easy to retrieve.</li>
+                    </ul>
+                </div>
+            </div>
         </div>
         <div id="pod-details">
-            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Purpose:</strong> To track deliveries and collect customer proof in real-time.</p>
-            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Key Features:</strong></p>
-            <ul class="list-disc list-inside space-y-1 pl-4">
-                <li>Drivers can log in, get assignments, and update delivery status.</li>
-                <li>Capture digital signatures from customers as proof.</li>
-                <li>Auto-generate QR code receipts for deliveries.</li>
-                <li>Public links for customers to track and confirm deliveries without a login.</li>
-                <li>Feedback system for customer ratings and comments after delivery.</li>
-                <li>Dashboard with Pending, Completed, and Total deliveries statistics.</li>
-            </ul>
-            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Value:</strong></p>
-            <ul class="list-disc list-inside space-y-1 pl-4">
-                <li>Provides real-time tracking of every delivery.</li>
-                <li>Allows for faster dispute resolution with digital proof.</li>
-                <li>Builds customer trust through transparency and a feedback mechanism.</li>
-            </ul>
+            <div class="modal-body-section flex items-start space-x-4">
+                <i data-lucide="target" class="w-6 h-6 text-green-500 dark:text-green-400 mt-1 flex-shrink-0"></i>
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">Purpose</h4>
+                    <p>To track deliveries and collect customer proof in real-time.</p>
+                </div>
+            </div>
+            <div class="modal-body-section flex items-start space-x-4">
+                <i data-lucide="list-checks" class="w-6 h-6 text-green-500 dark:text-green-400 mt-1 flex-shrink-0"></i>
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">Key Features</h4>
+                    <ul class="list-disc list-inside space-y-1 mt-1">
+                        <li>Drivers can log in, get assignments, and update delivery status.</li>
+                        <li>Capture digital signatures from customers as proof.</li>
+                        <li>Auto-generate QR code receipts for deliveries.</li>
+                        <li>Public links for customers to track and confirm deliveries without a login.</li>
+                        <li>Feedback system for customer ratings and comments after delivery.</li>
+                        <li>Dashboard with Pending, Completed, and Total deliveries statistics.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-body-section flex items-start space-x-4">
+                 <i data-lucide="gem" class="w-6 h-6 text-green-500 dark:text-green-400 mt-1 flex-shrink-0"></i>
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">Value & Benefits</h4>
+                    <ul class="list-disc list-inside space-y-1 mt-1">
+                        <li>Provides real-time tracking of every delivery.</li>
+                        <li>Allows for faster dispute resolution with digital proof.</li>
+                        <li>Builds customer trust through transparency and a feedback mechanism.</li>
+                    </ul>
+                </div>
+            </div>
         </div>
         <div id="whm-details">
-             <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Purpose:</strong> To manage and monetize warehouse storage for third-party client cargo.</p>
-            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Key Features:</strong></p>
-            <ul class="list-disc list-inside space-y-1 pl-4">
-                <li>Client management portal to add and track customer details.</li>
-                <li>Cargo intake form to log shipment details (client, weight, dimensions).</li>
-                <li>Automated billing system with configurable daily/weekly rates.</li>
-                <li>Set custom free storage days per client or shipment.</li>
-                <li>Cargo release function that stops billing and generates a final invoice.</li>
-                <li>Dashboard for analytics on storage utilization and revenue.</li>
-            </ul>
-            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Value:</strong></p>
-            <ul class="list-disc list-inside space-y-1 pl-4">
-                <li>Turns warehouse space into a reliable revenue stream.</li>
-                <li>Eliminates manual billing errors, preventing revenue loss.</li>
-                <li>Provides clients with transparent and accurate invoices, building trust.</li>
-                <li>Streamlines the entire process from cargo intake to release.</li>
-            </ul>
+            <div class="modal-body-section flex items-start space-x-4">
+                <i data-lucide="target" class="w-6 h-6 text-yellow-500 dark:text-yellow-400 mt-1 flex-shrink-0"></i>
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">Purpose</h4>
+                    <p>To manage and monetize warehouse storage for third-party client cargo.</p>
+                </div>
+            </div>
+            <div class="modal-body-section flex items-start space-x-4">
+                <i data-lucide="list-checks" class="w-6 h-6 text-yellow-500 dark:text-yellow-400 mt-1 flex-shrink-0"></i>
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">Key Features</h4>
+                    <ul class="list-disc list-inside space-y-1 mt-1">
+                        <li>Client management portal to add and track customer details.</li>
+                        <li>Cargo intake form to log shipment details (client, weight, dimensions).</li>
+                        <li>Automated billing system with configurable daily/weekly rates.</li>
+                        <li>Set custom free storage days per client or shipment.</li>
+                        <li>Cargo release function that stops billing and generates a final invoice.</li>
+                        <li>Dashboard for analytics on storage utilization and revenue.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-body-section flex items-start space-x-4">
+                 <i data-lucide="gem" class="w-6 h-6 text-yellow-500 dark:text-yellow-400 mt-1 flex-shrink-0"></i>
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">Value & Benefits</h4>
+                    <ul class="list-disc list-inside space-y-1 mt-1">
+                        <li>Turns warehouse space into a reliable revenue stream.</li>
+                        <li>Eliminates manual billing errors, preventing revenue loss.</li>
+                        <li>Provides clients with transparent and accurate invoices, building trust.</li>
+                        <li>Streamlines the entire process from cargo intake to release.</li>
+                    </ul>
+                </div>
+            </div>
         </div>
         <div id="inventory-details">
-            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Purpose:</strong> To manage cargo storage and inventory in a private company warehouse.</p>
-            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Key Features:</strong></p>
-            <ul class="list-disc list-inside space-y-1 pl-4">
-                <li>Shipment intake form with barcode scanning capability.</li>
-                <li>Detailed fields: barcode, shipper, consignee, weight, pieces, rack location.</li>
-                <li>Auto-calculates internal storage costs and handling fees.</li>
-                <li>Settings page to configure rates and charges.</li>
-                <li>Release option that generates internal records and invoices (PDF).</li>
-                <li>Full Admin Panel with activity logs for auditing.</li>
-                <li>Analytics: storage usage and billing trends via charts.</li>
-            </ul>
-            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Value:</strong></p>
-            <ul class="list-disc list-inside space-y-1 pl-4">
-                <li>Ensures accurate and transparent billing, preventing revenue loss.</li>
-                <li>Enables quick search and retrieval with barcode scanning.</li>
-                <li>Invoices and records are generated instantly.</li>
-                <li>Provides complete warehouse visibility for management.</li>
-            </ul>
+            <div class="modal-body-section flex items-start space-x-4">
+                <i data-lucide="target" class="w-6 h-6 text-purple-500 dark:text-purple-400 mt-1 flex-shrink-0"></i>
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">Purpose</h4>
+                    <p>To manage cargo storage and inventory in a private company warehouse.</p>
+                </div>
+            </div>
+            <div class="modal-body-section flex items-start space-x-4">
+                <i data-lucide="list-checks" class="w-6 h-6 text-purple-500 dark:text-purple-400 mt-1 flex-shrink-0"></i>
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">Key Features</h4>
+                    <ul class="list-disc list-inside space-y-1 mt-1">
+                        <li>Shipment intake form with barcode scanning capability.</li>
+                        <li>Detailed fields: barcode, shipper, consignee, weight, pieces, rack location.</li>
+                        <li>Auto-calculates internal storage costs and handling fees.</li>
+                        <li>Settings page to configure rates and charges.</li>
+                        <li>Release option that generates internal records and invoices (PDF).</li>
+                        <li>Full Admin Panel with activity logs for auditing.</li>
+                        <li>Analytics: storage usage and billing trends via charts.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-body-section flex items-start space-x-4">
+                 <i data-lucide="gem" class="w-6 h-6 text-purple-500 dark:text-purple-400 mt-1 flex-shrink-0"></i>
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">Value & Benefits</h4>
+                    <ul class="list-disc list-inside space-y-1 mt-1">
+                        <li>Ensures accurate and transparent billing, preventing revenue loss.</li>
+                        <li>Enables quick search and retrieval with barcode scanning.</li>
+                        <li>Invoices and records are generated instantly.</li>
+                        <li>Provides complete warehouse visibility for management.</li>
+                    </ul>
+                </div>
+            </div>
         </div>
         <div id="backup-details">
-            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">How it Works:</strong> A one-click solution that downloads all important job file data into an Excel format for local backup.</p>
-            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Benefits & Savings:</strong> Reduces risk of data loss and eliminates manual data entry for reports. Critical data backup is available in <strong class="text-green-500">seconds</strong>, saving time and money in disaster recovery.</p>
-            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Future & Security:</strong> Plans include automated cloud backups (Google Drive) and date-range selection. As a client-side tool, your data remains <strong class="text-yellow-500">securely on your system</strong>.</p>
+             <div class="modal-body-section flex items-start space-x-4">
+                <i data-lucide="settings-2" class="w-6 h-6 text-red-500 dark:text-red-400 mt-1 flex-shrink-0"></i>
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">How it Works</h4>
+                    <p>A one-click solution that downloads all important job file data into an Excel format for local backup.</p>
+                </div>
+            </div>
+            <div class="modal-body-section flex items-start space-x-4">
+                <i data-lucide="shield-check" class="w-6 h-6 text-red-500 dark:text-red-400 mt-1 flex-shrink-0"></i>
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">Benefits & Security</h4>
+                    <p>Reduces risk of data loss and eliminates manual data entry for reports. Critical data backup is available in <strong class="text-green-500">seconds</strong>. As a client-side tool, your data remains <strong class="text-yellow-500">securely on your system</strong>.</p>
+                </div>
+            </div>
+             <div class="modal-body-section flex items-start space-x-4">
+                <i data-lucide="rocket" class="w-6 h-6 text-red-500 dark:text-red-400 mt-1 flex-shrink-0"></i>
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">Future Plans</h4>
+                     <p>Plans include automated cloud backups (Google Drive) and date-range selection for targeted downloads.</p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -273,16 +374,16 @@
             function timeAgo(date) {
                 const seconds = Math.floor((new Date() - date) / 1000);
                 let interval = seconds / 31536000;
-                if (interval > 1) return `Last visited: ${Math.floor(interval)} years ago`;
+                if (interval > 1) return `Visited: ${Math.floor(interval)} y ago`;
                 interval = seconds / 2592000;
-                if (interval > 1) return `Last visited: ${Math.floor(interval)} months ago`;
+                if (interval > 1) return `Visited: ${Math.floor(interval)} mo ago`;
                 interval = seconds / 86400;
-                if (interval > 1) return `Last visited: ${Math.floor(interval)} days ago`;
+                if (interval > 1) return `Visited: ${Math.floor(interval)} d ago`;
                 interval = seconds / 3600;
-                if (interval > 1) return `Last visited: ${Math.floor(interval)} hours ago`;
+                if (interval > 1) return `Visited: ${Math.floor(interval)} h ago`;
                 interval = seconds / 60;
-                if (interval > 1) return `Last visited: ${Math.floor(interval)} minutes ago`;
-                return "Last visited: just now";
+                if (interval > 1) return `Visited: ${Math.floor(interval)} m ago`;
+                return "Visited: just now";
             }
             
             const links = document.querySelectorAll('a[data-id]');
@@ -320,6 +421,16 @@
                     if (contentEl) {
                         modalTitle.textContent = title;
                         modalBody.innerHTML = contentEl.innerHTML;
+                        
+                        // IMPORTANT: Create icons after content is added
+                        lucide.createIcons();
+
+                        // Animate modal sections
+                        const sections = modalBody.querySelectorAll('.modal-body-section');
+                        sections.forEach((section, index) => {
+                            section.style.animationDelay = `${index * 100}ms`;
+                        });
+                        
                         modal.classList.remove('hidden');
                         setTimeout(() => modal.classList.add('open', 'opacity-100'), 10);
                     }
