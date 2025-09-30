@@ -1,21 +1,21 @@
 {
-  "name": "Qgo Cargo - Warehouse Management",
-  "short_name": "Qgo Cargo",
-  "description": "Crew & Inventory Management System",
-  "start_url": "/qgocargo/wh.html",
+  "name": "QGO Cargo Tools",
+  "short_name": "QGO Tools",
+  "start_url": ".",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#3182ce",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "description": "QGO Cargo Tools Dashboard",
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%233182ce' rx='24'/%3E%3Cpath d='M48 64h96v8H48v-8zm0 24h96v8H48v-8zm0 24h64v8H48v-8z' fill='white'/%3E%3Ccircle cx='80' cy='120' r='16' fill='white'/%3E%3Ccircle cx='112' cy='120' r='16' fill='white'/%3E%3Crect x='72' y='136' width='48' height='8' fill='white' rx='4'/%3E%3C/svg%3E",
+      "src": "http://qgocargo.com/logo.png",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/png"
     },
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%233182ce' rx='64'/%3E%3Cpath d='M128 170h256v22H128v-22zm0 64h256v22H128v-22zm0 64h170v22H128v-22z' fill='white'/%3E%3Ccircle cx='213' cy='320' r='43' fill='white'/%3E%3Ccircle cx='299' cy='320' r='43' fill='white'/%3E%3Crect x='192' y='363' width='128' height='22' fill='white' rx='11'/%3E%3C/svg%3E",
+      "src": "http://qgocargo.com/logo.png",
       "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/png"
     }
   ]
 }
