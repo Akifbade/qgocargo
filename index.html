@@ -13,6 +13,7 @@
     <!-- PWA Manifest and Theme Color -->
     <meta name="theme-color" content="#111827">
     <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="http://qgocargo.com/logo.png">
 
     <style>
         html {
@@ -174,7 +175,7 @@
                     <div class="flex items-center justify-center bg-blue-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
                         <i data-lucide="file-stack" class="w-8 h-8 text-blue-500 dark:text-blue-400"></i>
                     </div>
-                    <a href="https://akifbade.github.io/qgocargo" target="_blank" data-id="jobfile" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card1_title">Jobfile Management</a>
+                    <a href="https://akifbade.github.io/qgocargo/app/jobfile" target="_blank" data-id="jobfile" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card1_title">Jobfile Management</a>
                     <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card1_desc">Main system for core operations.</p>
                 </div>
                 <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
@@ -599,6 +600,16 @@
         // --- GENERAL SCRIPT ---
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
+
+            // Force external links to open in a new browser tab when in PWA mode
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                document.querySelectorAll('a[target="_blank"]').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        window.open(link.href, '_blank');
+                    });
+                });
+            }
 
             // Set initial language from storage or default to English
             const savedLang = localStorage.getItem('language') || 'en';
