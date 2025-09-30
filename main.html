@@ -21,7 +21,11 @@
         }
         body {
             font-family: 'Inter', sans-serif;
-            transition: background-color 0.3s ease, color 0.3s ease;
+            background-color: #111827; /* Dark background */
+            color: #e5e7eb; /* Light text */
+            /* Added subtle gradient for glass effect */
+            background-image: radial-gradient(circle at 10% 20%, rgba(96, 165, 250, 0.1), transparent 50%), radial-gradient(circle at 80% 90%, rgba(167, 139, 250, 0.1), transparent 50%);
+            background-attachment: fixed;
         }
         html[lang="ar"] body {
             font-family: 'Cairo', sans-serif;
@@ -31,7 +35,15 @@
         }
         .card-hover-effect:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Frosted Glass Effect for Cards */
+        .tool-card, .notes-card {
+            background: rgba(31, 41, 55, 0.5); /* Semi-transparent dark bg */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         /* Custom Splash Screen Styles */
@@ -141,18 +153,32 @@
         /* New Header/Footer Styles */
         .header-container {
             width: 100%;
-            background-color: #1a202c; /* A darker shade for header */
             padding-top: 4rem;
             padding-bottom: 6rem;
             clip-path: ellipse(100% 100% at 50% 0%);
         }
         .footer-container {
-            color: white;
             width: 100%;
+        }
+
+        /* Footer Wave Animation */
+        .wave-path {
+            animation: wave 10s linear infinite;
+        }
+        @keyframes wave {
+            0% {
+                d: path("M1440,21.2101911 L1440,120 L0,120 L0,21.2101911 C120,35.0700637 240,42 360,42 C480,42 600,35.0700637 720,21.2101911 C840,7.35031847 960,0 1080,0 C1200,0 1320,7.35031847 1440,21.2101911 Z");
+            }
+            50% {
+                d: path("M1440,42 L1440,120 L0,120 L0,42 C120,28.1398 240,21.21 360,21.21 C480,21.21 600,28.1398 720,42 C840,55.8602 960,63.0701 1080,63.0701 C1200,63.0701 1320,55.8602 1440,42 Z");
+            }
+            100% {
+                d: path("M1440,21.2101911 L1440,120 L0,120 L0,21.2101911 C120,35.0700637 240,42 360,42 C480,42 600,35.0700637 720,21.2101911 C840,7.35031847 960,0 1080,0 C1200,0 1320,7.35031847 1440,21.2101911 Z");
+            }
         }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+<body class="bg-gray-900 text-gray-200">
     <!-- Custom Animated Splash Screen -->
     <div id="splash-screen">
         <img src="http://qgocargo.com/logo.png" alt="QGO Cargo Logo" class="splash-logo">
@@ -163,14 +189,14 @@
 
         <!-- Language Switcher -->
         <div class="absolute top-4 right-4 z-20">
-            <div class="flex items-center space-x-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-1 rounded-full shadow-md">
+            <div class="flex items-center space-x-2 bg-gray-800/80 backdrop-blur-sm p-1 rounded-full shadow-md">
                 <button id="lang-en" class="lang-btn px-3 py-1 text-sm rounded-full" data-lang="en">EN</button>
                 <button id="lang-ar" class="lang-btn px-3 py-1 text-sm rounded-full" data-lang="ar">AR</button>
             </div>
         </div>
         
         <!-- Header Section -->
-        <div class="header-container">
+        <div class="header-container bg-gray-800">
              <header class="text-center animate-header">
                 <img src="http://qgocargo.com/logo.png" alt="QGO Cargo Logo" class="mx-auto mb-4 h-20 w-auto">
                 <h1 class="text-3xl md:text-4xl font-bold text-white" data-key="title">QGO Cargo Tools</h1>
@@ -181,48 +207,48 @@
        <div class="w-full px-4 -mt-16">
             <!-- Development Roadmap -->
             <section class="w-full max-w-6xl mx-auto my-10 px-4">
-                <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12 animate-header" style="animation-delay: 200ms;" data-key="roadmap_title">Development Roadmap</h2>
+                <h2 class="text-3xl font-bold text-center text-white mb-12 animate-header" style="animation-delay: 200ms;" data-key="roadmap_title">Development Roadmap</h2>
                 <div class="relative">
                     <!-- Connecting Line for larger screens (Horizontal) -->
-                    <div class="hidden md:block absolute top-8 left-0 w-full h-1 bg-gray-300 dark:bg-gray-700 -translate-y-1/2">
+                    <div class="hidden md:block absolute top-8 left-0 w-full h-1 bg-gray-700 -translate-y-1/2">
                         <div class="roadmap-line-horizontal h-full bg-teal-500"></div>
                     </div>
                      <!-- Connecting Line for smaller screens (Vertical) -->
-                    <div class="block md:hidden absolute top-0 left-8 md:left-1/2 w-1 h-full bg-gray-300 dark:bg-gray-700 -translate-x-1/2">
+                    <div class="block md:hidden absolute top-0 left-8 md:left-1/2 w-1 h-full bg-gray-700 -translate-x-1/2">
                         <div class="roadmap-line-vertical h-full bg-teal-500"></div>
                     </div>
 
                     <div class="relative flex flex-col md:flex-row md:justify-between items-start md:items-center text-left md:text-center">
                         <!-- Phase 1: Core Systems -->
                         <div class="roadmap-phase mb-16 md:mb-0 w-full md:w-1/3 z-10 flex items-center md:flex-col" style="animation-delay: 500ms;">
-                            <div class="phase-icon flex-shrink-0 flex items-center justify-center w-16 h-16 bg-green-500 text-white rounded-full border-4 border-white dark:border-gray-800 shadow-lg md:mb-3" style="--glow-color: rgba(34, 197, 94, 0.5);">
+                            <div class="phase-icon flex-shrink-0 flex items-center justify-center w-16 h-16 bg-green-500 text-white rounded-full border-4 border-gray-800 shadow-lg md:mb-3" style="--glow-color: rgba(34, 197, 94, 0.5);">
                                 <i data-lucide="check-circle" class="w-8 h-8"></i>
                             </div>
                             <div class="ml-6 md:ml-0">
-                                <h3 class="text-xl font-semibold text-gray-900 dark:text-white" data-key="phase1_title">Phase 1: Core Systems</h3>
-                                <p class="text-green-600 dark:text-green-400 font-medium" data-key="phase1_status">Live & Operational</p>
+                                <h3 class="text-xl font-semibold text-white" data-key="phase1_title">Phase 1: Core Systems</h3>
+                                <p class="text-green-400 font-medium" data-key="phase1_status">Live & Operational</p>
                             </div>
                         </div>
 
                         <!-- Phase 2: Automation -->
                         <div class="roadmap-phase mb-16 md:mb-0 w-full md:w-1/3 z-10 flex items-center md:flex-col" style="animation-delay: 1000ms;">
-                             <div class="phase-icon flex-shrink-0 flex items-center justify-center w-16 h-16 bg-blue-500 text-white rounded-full border-4 border-white dark:border-gray-800 shadow-lg md:mb-3" style="--glow-color: rgba(59, 130, 246, 0.5);">
+                             <div class="phase-icon flex-shrink-0 flex items-center justify-center w-16 h-16 bg-blue-500 text-white rounded-full border-4 border-gray-800 shadow-lg md:mb-3" style="--glow-color: rgba(59, 130, 246, 0.5);">
                                 <i data-lucide="bot" class="w-8 h-8"></i>
                             </div>
                             <div class="ml-6 md:ml-0">
-                                <h3 class="text-xl font-semibold text-gray-900 dark:text-white" data-key="phase2_title">Phase 2: Automation</h3>
-                                <p class="text-blue-600 dark:text-blue-400 font-medium" data-key="phase2_status">In Progress</p>
+                                <h3 class="text-xl font-semibold text-white" data-key="phase2_title">Phase 2: Automation</h3>
+                                <p class="text-blue-400 font-medium" data-key="phase2_status">In Progress</p>
                             </div>
                         </div>
 
                         <!-- Phase 3: Future Vision -->
                         <div class="roadmap-phase w-full md:w-1/3 z-10 flex items-center md:flex-col" style="animation-delay: 1500ms;">
-                             <div class="phase-icon flex-shrink-0 flex items-center justify-center w-16 h-16 bg-purple-500 text-white rounded-full border-4 border-white dark:border-gray-800 shadow-lg md:mb-3" style="--glow-color: rgba(168, 85, 247, 0.5);">
+                             <div class="phase-icon flex-shrink-0 flex items-center justify-center w-16 h-16 bg-purple-500 text-white rounded-full border-4 border-gray-800 shadow-lg md:mb-3" style="--glow-color: rgba(168, 85, 247, 0.5);">
                                 <i data-lucide="telescope" class="w-8 h-8"></i>
                             </div>
                             <div class="ml-6 md:ml-0">
-                                <h3 class="text-xl font-semibold text-gray-900 dark:text-white" data-key="phase3_title">Phase 3: Future Vision</h3>
-                                <p class="text-purple-600 dark:text-purple-400 font-medium" data-key="phase3_status">Planning Stage</p>
+                                <h3 class="text-xl font-semibold text-white" data-key="phase3_title">Phase 3: Future Vision</h3>
+                                <p class="text-purple-400 font-medium" data-key="phase3_status">Planning Stage</p>
                             </div>
                         </div>
                     </div>
@@ -232,18 +258,18 @@
             <!-- Main Grid for Tool Links -->
             <main class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 w-full max-w-6xl mx-auto">
                 <!-- Card 1: Jobfile Management -->
-                <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                <div class="relative tool-card card-hover-effect p-6 rounded-xl shadow-md flex flex-col text-center">
                     
                     <div class="flex-grow flex flex-col items-center">
-                        <div class="flex items-center justify-center bg-blue-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
-                            <i data-lucide="file-stack" class="w-8 h-8 text-blue-500 dark:text-blue-400"></i>
+                        <div class="flex items-center justify-center bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                            <i data-lucide="file-stack" class="w-8 h-8 text-blue-400"></i>
                         </div>
-                        <a href="https://akifbade.github.io/qgocargo/app/jobfile" target="_blank" data-id="jobfile" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card1_title">Jobfile Management</a>
-                        <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card1_desc">Main system for core operations.</p>
+                        <a href="https://akifbade.github.io/qgocargo/app/jobfile" target="_blank" data-id="jobfile" class="text-xl font-semibold text-white hover:underline p-2 rounded-lg" data-key="card1_title">Jobfile Management</a>
+                        <p class="text-gray-400 mt-1 flex-grow" data-key="card1_desc">Main system for core operations.</p>
                     </div>
-                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                        <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
-                        <button data-modal-target="jobfile-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300">
+                    <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-between items-center">
+                        <span class="text-xs text-gray-500 last-visited-text"></span>
+                        <button data-modal-target="jobfile-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-blue-400 hover:text-blue-300">
                             <span data-key="explore_features">Explore Features</span>
                             <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
                         </button>
@@ -251,18 +277,18 @@
                 </div>
 
                 <!-- Card 2: POD System -->
-                 <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                 <div class="relative tool-card card-hover-effect p-6 rounded-xl shadow-md flex flex-col text-center">
                     
                     <div class="flex-grow flex flex-col items-center">
-                        <div class="flex items-center justify-center bg-green-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
-                            <i data-lucide="package-check" class="w-8 h-8 text-green-500 dark:text-green-400"></i>
+                        <div class="flex items-center justify-center bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                            <i data-lucide="package-check" class="w-8 h-8 text-green-400"></i>
                         </div>
-                        <a href="https://akifbade.github.io/qgocargo/app/pod" target="_blank" data-id="pod" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card2_title">POD System</a>
-                        <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card2_desc">Proof of Delivery tracking portal.</p>
+                        <a href="https://akifbade.github.io/qgocargo/app/pod" target="_blank" data-id="pod" class="text-xl font-semibold text-white hover:underline p-2 rounded-lg" data-key="card2_title">POD System</a>
+                        <p class="text-gray-400 mt-1 flex-grow" data-key="card2_desc">Proof of Delivery tracking portal.</p>
                     </div>
-                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                        <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
-                         <button data-modal-target="pod-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300">
+                    <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-between items-center">
+                        <span class="text-xs text-gray-500 last-visited-text"></span>
+                         <button data-modal-target="pod-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-green-400 hover:text-green-300">
                             <span data-key="explore_features">Explore Features</span>
                             <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
                         </button>
@@ -270,18 +296,18 @@
                 </div>
 
                 <!-- Card 3: Warehouse Storage System -->
-                <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                <div class="relative tool-card card-hover-effect p-6 rounded-xl shadow-md flex flex-col text-center">
                     <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full" data-key="beta_testing">Beta Testing</div>
                     <div class="flex-grow flex flex-col items-center">
-                        <div class="flex items-center justify-center bg-yellow-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
-                            <i data-lucide="warehouse" class="w-8 h-8 text-yellow-500 dark:text-yellow-400"></i>
+                        <div class="flex items-center justify-center bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                            <i data-lucide="warehouse" class="w-8 h-8 text-yellow-400"></i>
                         </div>
-                        <a href="https://akifbade.github.io/qgocargo/whm" target="_blank" data-id="whm" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card3_title">Warehouse Storage</a>
-                        <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card3_desc">Manage storage and release operations.</p>
+                        <a href="https://akifbade.github.io/qgocargo/whm" target="_blank" data-id="whm" class="text-xl font-semibold text-white hover:underline p-2 rounded-lg" data-key="card3_title">Warehouse Storage</a>
+                        <p class="text-gray-400 mt-1 flex-grow" data-key="card3_desc">Manage storage and release operations.</p>
                     </div>
-                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                        <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
-                        <button data-modal-target="whm-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300">
+                    <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-between items-center">
+                        <span class="text-xs text-gray-500 last-visited-text"></span>
+                        <button data-modal-target="whm-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-yellow-400 hover:text-yellow-300">
                             <span data-key="explore_features">Explore Features</span>
                             <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
                         </button>
@@ -289,18 +315,18 @@
                 </div>
 
                 <!-- Card 4: Inventory & Staff Schedule -->
-                <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                <div class="relative tool-card card-hover-effect p-6 rounded-xl shadow-md flex flex-col text-center">
                     <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full" data-key="beta_testing">Beta Testing</div>
                     <div class="flex-grow flex flex-col items-center">
-                        <div class="flex items-center justify-center bg-purple-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
-                            <i data-lucide="calendar-days" class="w-8 h-8 text-purple-500 dark:text-purple-400"></i>
+                        <div class="flex items-center justify-center bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                            <i data-lucide="calendar-days" class="w-8 h-8 text-purple-400"></i>
                         </div>
-                        <a href="https://akifbade.github.io/qgocargo/app/wh" target="_blank" data-id="inventory" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card4_title">Inventory & Staff Schedule</a>
-                        <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card4_desc">Schedule staff and manage inventory.</p>
+                        <a href="https://akifbade.github.io/qgocargo/app/wh" target="_blank" data-id="inventory" class="text-xl font-semibold text-white hover:underline p-2 rounded-lg" data-key="card4_title">Inventory & Staff Schedule</a>
+                        <p class="text-gray-400 mt-1 flex-grow" data-key="card4_desc">Schedule staff and manage inventory.</p>
                     </div>
-                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                        <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
-                        <button data-modal-target="inventory-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-purple-500 hover:text-purple-600 dark:text-purple-400 dark:hover:text-purple-300">
+                    <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-between items-center">
+                        <span class="text-xs text-gray-500 last-visited-text"></span>
+                        <button data-modal-target="inventory-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-purple-400 hover:text-purple-300">
                             <span data-key="explore_features">Explore Features</span>
                             <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
                         </button>
@@ -308,18 +334,18 @@
                 </div>
                 
                 <!-- Card 5: Jobfiles Backup -->
-                 <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                 <div class="relative tool-card card-hover-effect p-6 rounded-xl shadow-md flex flex-col text-center">
                     <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full" data-key="beta_testing">Beta Testing</div>
                     <div class="flex-grow flex flex-col items-center">
-                        <div class="flex items-center justify-center bg-red-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
-                            <i data-lucide="database-backup" class="w-8 h-8 text-red-500 dark:text-red-400"></i>
+                        <div class="flex items-center justify-center bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                            <i data-lucide="database-backup" class="w-8 h-8 text-red-400"></i>
                         </div>
-                        <a href="https://akifbade.github.io/qgocargo/backup.html" target="_blank" data-id="backup" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card5_title">Jobfiles Backup</a>
-                        <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card5_desc">Download job backups in Excel format.</p>
+                        <a href="https://akifbade.github.io/qgocargo/backup.html" target="_blank" data-id="backup" class="text-xl font-semibold text-white hover:underline p-2 rounded-lg" data-key="card5_title">Jobfiles Backup</a>
+                        <p class="text-gray-400 mt-1 flex-grow" data-key="card5_desc">Download job backups in Excel format.</p>
                     </div>
-                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                        <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
-                        <button data-modal-target="backup-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300">
+                    <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-between items-center">
+                        <span class="text-xs text-gray-500 last-visited-text"></span>
+                        <button data-modal-target="backup-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-red-400 hover:text-red-300">
                             <span data-key="explore_features">Explore Features</span>
                             <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
                         </button>
@@ -327,18 +353,18 @@
                 </div>
 
                 <!-- Card 6: Advanced Reports -->
-                <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                <div class="relative tool-card card-hover-effect p-6 rounded-xl shadow-md flex flex-col text-center">
                     <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full" data-key="beta_testing">Beta Testing</div>
                     <div class="flex-grow flex flex-col items-center">
-                        <div class="flex items-center justify-center bg-indigo-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
-                            <i data-lucide="bar-chart-3" class="w-8 h-8 text-indigo-500 dark:text-indigo-400"></i>
+                        <div class="flex items-center justify-center bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                            <i data-lucide="bar-chart-3" class="w-8 h-8 text-indigo-400"></i>
                         </div>
-                        <a href="https://akifbade.github.io/qgocargo/reports" target="_blank" data-id="reports" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card6_title">Advanced Reports</a>
-                        <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card6_desc">Download detailed reports for accounting.</p>
+                        <a href="https://akifbade.github.io/qgocargo/reports" target="_blank" data-id="reports" class="text-xl font-semibold text-white hover:underline p-2 rounded-lg" data-key="card6_title">Advanced Reports</a>
+                        <p class="text-gray-400 mt-1 flex-grow" data-key="card6_desc">Download detailed reports for accounting.</p>
                     </div>
-                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                        <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
-                        <button data-modal-target="reports-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300">
+                    <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-between items-center">
+                        <span class="text-xs text-gray-500 last-visited-text"></span>
+                        <button data-modal-target="reports-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-indigo-400 hover:text-indigo-300">
                             <span data-key="explore_features">Explore Features</span>
                             <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
                         </button>
@@ -346,18 +372,18 @@
                 </div>
                 
                 <!-- Card 7: Upcoming Features -->
-                <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                <div class="relative tool-card card-hover-effect p-6 rounded-xl shadow-md flex flex-col text-center">
                     <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full" data-key="beta_testing">Beta Testing</div>
                     <div class="flex-grow flex flex-col items-center">
-                        <div class="flex items-center justify-center bg-teal-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
-                            <i data-lucide="rocket" class="w-8 h-8 text-teal-500 dark:text-teal-400"></i>
+                        <div class="flex items-center justify-center bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                            <i data-lucide="rocket" class="w-8 h-8 text-teal-400"></i>
                         </div>
-                        <a href="#" data-id="upcoming" class="text-xl font-semibold text-gray-900 dark:text-white cursor-pointer p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card7_title">Upcoming Features</a>
-                        <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card7_desc">A look into the future of QGO Tools.</p>
+                        <a href="#" data-id="upcoming" class="text-xl font-semibold text-white cursor-pointer p-2 rounded-lg" data-key="card7_title">Upcoming Features</a>
+                        <p class="text-gray-400 mt-1 flex-grow" data-key="card7_desc">A look into the future of QGO Tools.</p>
                     </div>
-                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                        <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
-                        <button data-modal-target="upcoming-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-teal-500 hover:text-teal-600 dark:text-teal-400 dark:hover:text-teal-300">
+                    <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-between items-center">
+                        <span class="text-xs text-gray-500 last-visited-text"></span>
+                        <button data-modal-target="upcoming-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-teal-400 hover:text-teal-300">
                             <span data-key="explore_roadmap">Explore Roadmap</span>
                             <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
                         </button>
@@ -367,9 +393,9 @@
 
             <!-- Important Notes Section -->
             <section class="w-full max-w-6xl mx-auto my-10 px-4 animate-header" style="animation-delay: 2500ms;">
-                <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-8" data-key="notes_title">Important Notes & Current Status</h2>
-                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                    <ul class="space-y-4 text-gray-700 dark:text-gray-300">
+                <h2 class="text-3xl font-bold text-center text-white mb-8" data-key="notes_title">Important Notes & Current Status</h2>
+                <div class="notes-card p-6 rounded-xl shadow-md">
+                    <ul class="space-y-4 text-gray-300">
                         <li class="flex items-start space-x-3">
                             <i data-lucide="flask-conical" class="w-5 h-5 text-yellow-500 flex-shrink-0 mt-1"></i>
                             <span data-key="note_testing">
@@ -408,16 +434,16 @@
         <!-- Footer -->
         <div class="footer-container">
             <div class="bg-gray-800">
-                <svg viewBox="0 0 1440 120" class="block text-gray-100 dark:text-gray-900 fill-current">
-                    <path d="M1440,21.2101911 L1440,120 L0,120 L0,21.2101911 C120,35.0700637 240,42 360,42 C480,42 600,35.0700637 720,21.2101911 C840,7.35031847 960,0 1080,0 C1200,0 1320,7.35031847 1440,21.2101911 Z"></path>
+                <svg viewBox="0 0 1440 120" class="block text-gray-900 fill-current">
+                    <path class="wave-path" d="M1440,21.2101911 L1440,120 L0,120 L0,21.2101911 C120,35.0700637 240,42 360,42 C480,42 600,35.0700637 720,21.2101911 C840,7.35031847 960,0 1080,0 C1200,0 1320,7.35031847 1440,21.2101911 Z"></path>
                 </svg>
             </div>
             <footer class="w-full text-center p-10 bg-gray-800">
-                 <p class="text-base text-gray-300 flex items-center justify-center" data-key="footer_thanks1">
+                 <p class="text-base text-gray-300 flex items-center justify-center animate-section" style="animation-delay: 200ms;" data-key="footer_thanks1">
                     <i data-lucide="heart" class="w-5 h-5 text-red-500 mx-2 fill-current"></i>
                     This project is a collaborative effort, made possible by the invaluable support from the QGO Cargo team.
                 </p>
-                <p class="text-sm text-gray-400 mt-2" data-key="footer_thanks2">
+                <p class="text-sm text-gray-400 mt-2 animate-section" style="animation-delay: 400ms;" data-key="footer_thanks2">
                     Special thanks to our Manager, Mr. Yehia, and the dedicated testing team: Mr. Ajmal, Abdul Hadi, and Anand.
                 </p>
             </footer>
@@ -425,36 +451,36 @@
 
 
         <!-- Install App Popup -->
-        <div id="install-popup" class="hidden fixed bottom-4 right-4 sm:bottom-5 sm:right-5 w-[calc(100%-2rem)] max-w-sm bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-2xl z-50 animate-fade-in-up">
+        <div id="install-popup" class="hidden fixed bottom-4 right-4 sm:bottom-5 sm:right-5 w-[calc(100%-2rem)] max-w-sm bg-gray-800 p-4 rounded-2xl shadow-2xl z-50 animate-fade-in-up">
             <div class="flex items-center space-x-4">
                 <div class="flex-shrink-0 h-12 w-12 bg-white rounded-full flex items-center justify-center shadow-md">
                     <img src="http://qgocargo.com/logo.png" alt="Logo" class="w-10 h-10 object-contain">
                 </div>
                 <div class="flex-1">
-                    <p class="font-semibold text-gray-800 dark:text-white" data-key="install_prompt">Install QGO Tools App</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-300" data-key="install_desc">For a seamless, fast experience.</p>
+                    <p class="font-semibold text-white" data-key="install_prompt">Install QGO Tools App</p>
+                    <p class="text-sm text-gray-300" data-key="install_desc">For a seamless, fast experience.</p>
                 </div>
                 <div class="flex flex-col space-y-2">
                      <button id="install-btn" class="px-4 py-2 bg-green-500 text-white text-sm font-semibold rounded-lg hover:bg-green-600 transition-colors" data-key="install_btn">Install</button>
-                     <button id="close-install-popup" class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" data-key="install_close">Later</button>
+                     <button id="close-install-popup" class="text-xs text-gray-400 hover:text-gray-200" data-key="install_close">Later</button>
                 </div>
             </div>
         </div>
 
     </div>
 
-    <!-- Modal Structure (Remains in English as it's populated dynamically) -->
+    <!-- Modal Structure -->
     <div id="details-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50 transition-opacity duration-300 ease-in-out opacity-0">
-        <div class="modal-content bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full transform transition-transform duration-300 ease-in-out">
+        <div class="modal-content bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full transform transition-transform duration-300 ease-in-out">
             <!-- Modal Header -->
-            <div class="flex justify-between items-center p-5 border-b border-gray-200 dark:border-gray-700">
-                <h3 id="modal-title" class="text-2xl font-bold text-gray-900 dark:text-white"></h3>
-                <button id="modal-close-btn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+            <div class="flex justify-between items-center p-5 border-b border-gray-700">
+                <h3 id="modal-title" class="text-2xl font-bold text-white"></h3>
+                <button id="modal-close-btn" class="text-gray-400 hover:text-gray-200">
                     <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
             </div>
             <!-- Modal Body -->
-            <div id="modal-body" class="p-6 text-sm space-y-6 text-left text-gray-700 dark:text-gray-300"></div>
+            <div id="modal-body" class="p-6 text-sm space-y-6 text-left text-gray-300"></div>
         </div>
     </div>
 
@@ -529,7 +555,7 @@
             deferredPrompt = null;
             console.log('PWA was installed');
         });
-
+        
         // --- LANGUAGE SWITCHER ---
         const translations = {
             en: {
@@ -651,10 +677,10 @@
             document.querySelectorAll('.lang-btn').forEach(btn => {
                 if (btn.dataset.lang === lang) {
                     btn.classList.add('bg-blue-500', 'text-white');
-                    btn.classList.remove('text-gray-600', 'dark:text-gray-300');
+                    btn.classList.remove('text-gray-300');
                 } else {
                     btn.classList.remove('bg-blue-500', 'text-white');
-                    btn.classList.add('text-gray-600', 'dark:text-gray-300');
+                    btn.classList.add('text-gray-300');
                 }
             });
 
@@ -669,6 +695,7 @@
 
         // --- GENERAL SCRIPT ---
         document.addEventListener('DOMContentLoaded', () => {
+            
             lucide.createIcons();
 
             // Hide splash screen after animation
@@ -728,9 +755,9 @@
 
             const createModalSection = (lang, icon, titleKey, contentKey) => `
                 <div class="modal-body-section flex items-start space-x-4">
-                    <i data-lucide="${icon}" class="w-6 h-6 text-blue-500 dark:text-blue-400 mt-1 flex-shrink-0"></i>
+                    <i data-lucide="${icon}" class="w-6 h-6 text-blue-400 mt-1 flex-shrink-0"></i>
                     <div>
-                        <h4 class="font-bold text-lg text-gray-800 dark:text-gray-100">${translations[lang][titleKey]}</h4>
+                        <h4 class="font-bold text-lg text-gray-100">${translations[lang][titleKey]}</h4>
                         <ul class="list-disc list-inside space-y-1 mt-1">${translations[lang][contentKey]}</ul>
                     </div>
                 </div>`;
