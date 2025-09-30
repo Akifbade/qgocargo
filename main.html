@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark"> <!-- Default to dark mode -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,10 +9,11 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         html {
-            scroll-behavior: smooth; /* Added for smooth scrolling */
+            scroll-behavior: smooth;
         }
         body {
             font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         .card-hover-effect {
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
@@ -22,30 +23,45 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
 
-        /* Added animation styles */
+        /* Animation styles */
         @keyframes fade-in-up {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .animate-card {
-            opacity: 0; /* Start hidden */
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes modal-in {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .animate-card, .animate-header {
+            opacity: 0;
             animation-fill-mode: forwards;
             animation-name: fade-in-up;
             animation-duration: 0.6s;
             animation-timing-function: ease-out;
         }
+        .animate-header {
+            animation-duration: 0.8s;
+        }
+        
+        /* Modal Styles */
+        #details-modal.open .modal-content {
+            animation: modal-in 0.3s ease-out forwards;
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-    <div class="min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="relative min-h-screen flex flex-col items-center p-4">
+        <!-- Beta Version Label -->
+        <div class="absolute top-4 right-4 px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full shadow-md z-10">Beta Version Testing</div>
+
         <!-- Header Section -->
-        <header class="text-center mb-8">
+        <header class="text-center my-10 animate-header">
             <img src="http://qgocargo.com/logo.png" alt="QGO Cargo Logo" class="mx-auto mb-4 h-20 w-auto">
             <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">QGO Cargo Tools</h1>
             <p class="mt-2 text-base text-gray-600 dark:text-gray-400">Your central hub for management systems.</p>
@@ -54,62 +70,277 @@
         <!-- Main Grid for Tool Links -->
         <main class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 w-full max-w-6xl">
             <!-- Card 1: Jobfile Management -->
-            <a href="https://akifbade.github.io/qgocargo" target="_blank" class="tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col items-start space-y-4 no-underline">
-                <div class="flex items-center justify-center bg-blue-100 dark:bg-blue-900 rounded-lg p-3">
-                    <i data-lucide="file-stack" class="w-8 h-8 text-blue-500 dark:text-blue-400"></i>
+            <div class="tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                <div class="flex-grow flex flex-col items-center">
+                    <div class="flex items-center justify-center bg-blue-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                        <i data-lucide="file-stack" class="w-8 h-8 text-blue-500 dark:text-blue-400"></i>
+                    </div>
+                    <a href="https://akifbade.github.io/qgocargo" target="_blank" data-id="jobfile" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline">Jobfile Management</a>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow">Main system for core operations.</p>
                 </div>
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Jobfile Management</h2>
-                <p class="text-gray-600 dark:text-gray-400">Main system for managing all job files and core operations.</p>
-            </a>
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button data-modal-target="jobfile-details" class="view-details-btn text-blue-500 dark:text-blue-400 font-semibold hover:underline">View Details</button>
+                    <span class="block text-xs text-gray-500 dark:text-gray-500 last-visited-text mt-2"></span>
+                </div>
+            </div>
 
             <!-- Card 2: POD System -->
-            <a href="https://akifbade.github.io/qgocargo/app/pod" target="_blank" class="tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col items-start space-y-4 no-underline">
-                <div class="flex items-center justify-center bg-green-100 dark:bg-green-900 rounded-lg p-3">
-                    <i data-lucide="package-check" class="w-8 h-8 text-green-500 dark:text-green-400"></i>
+             <div class="tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                <div class="flex-grow flex flex-col items-center">
+                    <div class="flex items-center justify-center bg-green-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                        <i data-lucide="package-check" class="w-8 h-8 text-green-500 dark:text-green-400"></i>
+                    </div>
+                    <a href="https://akifbade.github.io/qgocargo/app/pod" target="_blank" data-id="pod" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline">POD System</a>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow">Proof of Delivery tracking portal.</p>
                 </div>
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">POD System</h2>
-                <p class="text-gray-600 dark:text-gray-400">Proof of Delivery tracking and management portal.</p>
-            </a>
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button data-modal-target="pod-details" class="view-details-btn text-green-500 dark:text-green-400 font-semibold hover:underline">View Details</button>
+                    <span class="block text-xs text-gray-500 dark:text-gray-500 last-visited-text mt-2"></span>
+                </div>
+            </div>
 
             <!-- Card 3: Warehouse Storage System -->
-            <a href="https://akifbade.github.io/qgocargo/whm" target="_blank" class="tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col items-start space-y-4 no-underline">
-                <div class="flex items-center justify-center bg-yellow-100 dark:bg-yellow-900 rounded-lg p-3">
-                    <i data-lucide="warehouse" class="w-8 h-8 text-yellow-500 dark:text-yellow-400"></i>
+            <div class="tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                <div class="flex-grow flex flex-col items-center">
+                    <div class="flex items-center justify-center bg-yellow-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                        <i data-lucide="warehouse" class="w-8 h-8 text-yellow-500 dark:text-yellow-400"></i>
+                    </div>
+                    <a href="https://akifbade.github.io/qgocargo/whm" target="_blank" data-id="whm" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline">Warehouse Storage</a>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow">Manage storage and release operations.</p>
                 </div>
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Warehouse Storage</h2>
-                <p class="text-gray-600 dark:text-gray-400">System for managing storage, release, and warehouse operations.</p>
-            </a>
-
-            <!-- Card 4: Warehouse Inventory & Schedule -->
-            <a href="https://akifbade.github.io/qgocargo/app/wh" target="_blank" class="tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col items-start space-y-4 no-underline">
-                <div class="flex items-center justify-center bg-purple-100 dark:bg-purple-900 rounded-lg p-3">
-                    <i data-lucide="calendar-days" class="w-8 h-8 text-purple-500 dark:text-purple-400"></i>
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button data-modal-target="whm-details" class="view-details-btn text-yellow-500 dark:text-yellow-400 font-semibold hover:underline">View Details</button>
+                    <span class="block text-xs text-gray-500 dark:text-gray-500 last-visited-text mt-2"></span>
                 </div>
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Inventory & Staff Schedule</h2>
-                <p class="text-gray-600 dark:text-gray-400">Manage warehouse inventory and schedule staff for jobs.</p>
-            </a>
+            </div>
 
+            <!-- Card 4: Inventory & Staff Schedule -->
+            <div class="tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                <div class="flex-grow flex flex-col items-center">
+                    <div class="flex items-center justify-center bg-purple-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                        <i data-lucide="calendar-days" class="w-8 h-8 text-purple-500 dark:text-purple-400"></i>
+                    </div>
+                    <a href="https://akifbade.github.io/qgocargo/app/wh" target="_blank" data-id="inventory" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline">Inventory & Staff Schedule</a>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow">Schedule staff and manage inventory.</p>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button data-modal-target="inventory-details" class="view-details-btn text-purple-500 dark:text-purple-400 font-semibold hover:underline">View Details</button>
+                    <span class="block text-xs text-gray-500 dark:text-gray-500 last-visited-text mt-2"></span>
+                </div>
+            </div>
+            
             <!-- Card 5: Jobfiles Backup -->
-            <a href="https://akifbade.github.io/qgocargo/backup.html" target="_blank" class="tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col items-start space-y-4 no-underline sm:col-span-2 lg:col-span-1 lg:row-start-2">
-                <div class="flex items-center justify-center bg-red-100 dark:bg-red-900 rounded-lg p-3">
-                    <i data-lucide="database-backup" class="w-8 h-8 text-red-500 dark:text-red-400"></i>
+             <div class="tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                <div class="flex-grow flex flex-col items-center">
+                    <div class="flex items-center justify-center bg-red-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                        <i data-lucide="database-backup" class="w-8 h-8 text-red-500 dark:text-red-400"></i>
+                    </div>
+                    <a href="https://akifbade.github.io/qgocargo/backup.html" target="_blank" data-id="backup" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline">Jobfiles Backup</a>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow">Download job backups in Excel format.</p>
                 </div>
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Jobfiles Backup</h2>
-                <p class="text-gray-600 dark:text-gray-400">Access and download job file backups in Excel format.</p>
-            </a>
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button data-modal-target="backup-details" class="view-details-btn text-red-500 dark:text-red-400 font-semibold hover:underline">View Details</button>
+                    <span class="block text-xs text-gray-500 dark:text-gray-500 last-visited-text mt-2"></span>
+                </div>
+            </div>
         </main>
+
+        <!-- Footer -->
+        <footer class="w-full max-w-6xl text-center p-4 mt-10">
+            <p class="text-sm text-gray-500 dark:text-gray-400">&copy; 2024 QGO Cargo. All Rights Reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Modal Structure -->
+    <div id="details-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50 transition-opacity duration-300 ease-in-out opacity-0">
+        <div class="modal-content bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full transform transition-transform duration-300 ease-in-out">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-5 border-b border-gray-200 dark:border-gray-700">
+                <h3 id="modal-title" class="text-2xl font-bold text-gray-900 dark:text-white"></h3>
+                <button id="modal-close-btn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <!-- Modal Body -->
+            <div id="modal-body" class="p-6 text-sm space-y-3 text-left text-gray-700 dark:text-gray-300"></div>
+        </div>
+    </div>
+
+    <!-- Hidden Details Content -->
+    <div class="hidden">
+        <div id="jobfile-details">
+            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Purpose:</strong> To digitize and manage all shipment/job files in one place.</p>
+            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Key Features:</strong></p>
+            <ul class="list-disc list-inside space-y-1 pl-4">
+                <li>Secure login with roles (Admin, Checker, Staff).</li>
+                <li>Create job files with shipper, consignee, invoice, and freight details.</li>
+                <li>Built-in charges table for billing (freight, handling, clearance, storage).</li>
+                <li>Approval workflow from checker to admin.</li>
+                <li>Analytics dashboard: monthly/yearly profit, salesman performance.</li>
+                <li>Print/Export A4 receipts and PDF outputs.</li>
+            </ul>
+            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Value:</strong></p>
+            <ul class="list-disc list-inside space-y-1 pl-4">
+                <li>Eliminates paper files, leading to fewer errors and faster clearance.</li>
+                <li>Saves cost by reducing the need for carbon copies and printing.</li>
+                <li>Data is secure, backed up, and easy to retrieve.</li>
+            </ul>
+        </div>
+        <div id="pod-details">
+            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Purpose:</strong> To track deliveries and collect customer proof in real-time.</p>
+            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Key Features:</strong></p>
+            <ul class="list-disc list-inside space-y-1 pl-4">
+                <li>Drivers can log in, get assignments, and update delivery status.</li>
+                <li>Capture digital signatures from customers as proof.</li>
+                <li>Auto-generate QR code receipts for deliveries.</li>
+                <li>Public links for customers to track and confirm deliveries without a login.</li>
+                <li>Feedback system for customer ratings and comments after delivery.</li>
+                <li>Dashboard with Pending, Completed, and Total deliveries statistics.</li>
+            </ul>
+            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Value:</strong></p>
+            <ul class="list-disc list-inside space-y-1 pl-4">
+                <li>Provides real-time tracking of every delivery.</li>
+                <li>Allows for faster dispute resolution with digital proof.</li>
+                <li>Builds customer trust through transparency and a feedback mechanism.</li>
+            </ul>
+        </div>
+        <div id="whm-details">
+             <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Purpose:</strong> To manage and monetize warehouse storage for third-party client cargo.</p>
+            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Key Features:</strong></p>
+            <ul class="list-disc list-inside space-y-1 pl-4">
+                <li>Client management portal to add and track customer details.</li>
+                <li>Cargo intake form to log shipment details (client, weight, dimensions).</li>
+                <li>Automated billing system with configurable daily/weekly rates.</li>
+                <li>Set custom free storage days per client or shipment.</li>
+                <li>Cargo release function that stops billing and generates a final invoice.</li>
+                <li>Dashboard for analytics on storage utilization and revenue.</li>
+            </ul>
+            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Value:</strong></p>
+            <ul class="list-disc list-inside space-y-1 pl-4">
+                <li>Turns warehouse space into a reliable revenue stream.</li>
+                <li>Eliminates manual billing errors, preventing revenue loss.</li>
+                <li>Provides clients with transparent and accurate invoices, building trust.</li>
+                <li>Streamlines the entire process from cargo intake to release.</li>
+            </ul>
+        </div>
+        <div id="inventory-details">
+            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Purpose:</strong> To manage cargo storage and inventory in a private company warehouse.</p>
+            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Key Features:</strong></p>
+            <ul class="list-disc list-inside space-y-1 pl-4">
+                <li>Shipment intake form with barcode scanning capability.</li>
+                <li>Detailed fields: barcode, shipper, consignee, weight, pieces, rack location.</li>
+                <li>Auto-calculates internal storage costs and handling fees.</li>
+                <li>Settings page to configure rates and charges.</li>
+                <li>Release option that generates internal records and invoices (PDF).</li>
+                <li>Full Admin Panel with activity logs for auditing.</li>
+                <li>Analytics: storage usage and billing trends via charts.</li>
+            </ul>
+            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Value:</strong></p>
+            <ul class="list-disc list-inside space-y-1 pl-4">
+                <li>Ensures accurate and transparent billing, preventing revenue loss.</li>
+                <li>Enables quick search and retrieval with barcode scanning.</li>
+                <li>Invoices and records are generated instantly.</li>
+                <li>Provides complete warehouse visibility for management.</li>
+            </ul>
+        </div>
+        <div id="backup-details">
+            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">How it Works:</strong> A one-click solution that downloads all important job file data into an Excel format for local backup.</p>
+            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Benefits & Savings:</strong> Reduces risk of data loss and eliminates manual data entry for reports. Critical data backup is available in <strong class="text-green-500">seconds</strong>, saving time and money in disaster recovery.</p>
+            <p><strong class="font-semibold text-gray-800 dark:text-gray-100">Future & Security:</strong> Plans include automated cloud backups (Google Drive) and date-range selection. As a client-side tool, your data remains <strong class="text-yellow-500">securely on your system</strong>.</p>
+        </div>
     </div>
 
     <script>
         lucide.createIcons();
 
-        // Script to animate cards on load
         document.addEventListener('DOMContentLoaded', () => {
+            // Set default theme
+            const htmlEl = document.documentElement;
+            if (localStorage.getItem('theme') === 'light') {
+                htmlEl.classList.remove('dark');
+            } else {
+                htmlEl.classList.add('dark');
+            }
+
+            // --- Card Animations ---
             const cards = document.querySelectorAll('.tool-card');
             cards.forEach((card, index) => {
-                setTimeout(() => {
-                    card.classList.add('animate-card');
-                }, index * 100); // Staggered delay
+                card.style.animationDelay = `${index * 100}ms`;
+                card.classList.add('animate-card');
+            });
+            
+            // --- Last Visited Logic ---
+            function timeAgo(date) {
+                const seconds = Math.floor((new Date() - date) / 1000);
+                let interval = seconds / 31536000;
+                if (interval > 1) return `Last visited: ${Math.floor(interval)} years ago`;
+                interval = seconds / 2592000;
+                if (interval > 1) return `Last visited: ${Math.floor(interval)} months ago`;
+                interval = seconds / 86400;
+                if (interval > 1) return `Last visited: ${Math.floor(interval)} days ago`;
+                interval = seconds / 3600;
+                if (interval > 1) return `Last visited: ${Math.floor(interval)} hours ago`;
+                interval = seconds / 60;
+                if (interval > 1) return `Last visited: ${Math.floor(interval)} minutes ago`;
+                return "Last visited: just now";
+            }
+            
+            const links = document.querySelectorAll('a[data-id]');
+            links.forEach(link => {
+                const cardId = link.dataset.id;
+                const card = link.closest('.tool-card');
+                const textElement = card.querySelector('.last-visited-text');
+
+                const lastVisitedTimestamp = localStorage.getItem(`lastVisited_${cardId}`);
+                if (lastVisitedTimestamp) {
+                    textElement.textContent = timeAgo(new Date(parseInt(lastVisitedTimestamp)));
+                }
+
+                link.addEventListener('click', (e) => {
+                     // Only set timestamp if not opening a modal
+                    if (!e.target.closest('.view-details-btn')) {
+                       localStorage.setItem(`lastVisited_${cardId}`, Date.now().toString());
+                    }
+                });
+            });
+
+            // --- Modal Logic ---
+            const modal = document.getElementById('details-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+            const closeBtn = document.getElementById('modal-close-btn');
+
+            document.querySelectorAll('.view-details-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.getAttribute('data-modal-target');
+                    const contentEl = document.getElementById(targetId);
+                    const card = button.closest('.tool-card');
+                    const title = card.querySelector('a').textContent;
+                    
+                    if (contentEl) {
+                        modalTitle.textContent = title;
+                        modalBody.innerHTML = contentEl.innerHTML;
+                        modal.classList.remove('hidden');
+                        setTimeout(() => modal.classList.add('open', 'opacity-100'), 10);
+                    }
+                });
+            });
+
+            const closeModal = () => {
+                modal.classList.remove('open', 'opacity-100');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            };
+
+            closeBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === "Escape" && modal.classList.contains('open')) {
+                    closeModal();
+                }
             });
         });
     </script>
