@@ -85,7 +85,7 @@
             from { opacity: 1; transform: translateY(0); }
             to { opacity: 0; transform: translateY(20px); }
         }
-        .animate-card, .animate-header {
+        .animate-card, .animate-header, .animate-section {
             opacity: 0;
             animation: fade-in-up 0.6s ease-out forwards;
         }
@@ -137,6 +137,19 @@
             0%, 100% { box-shadow: 0 0 15px 3px rgba(255, 255, 255, 0); }
             50% { box-shadow: 0 0 20px 8px var(--glow-color, rgba(96, 165, 250, 0.5)); }
         }
+        
+        /* New Header/Footer Styles */
+        .header-container {
+            width: 100%;
+            background-color: #1a202c; /* A darker shade for header */
+            padding-top: 4rem;
+            padding-bottom: 6rem;
+            clip-path: ellipse(100% 100% at 50% 0%);
+        }
+        .footer-container {
+            color: white;
+            width: 100%;
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
@@ -146,7 +159,7 @@
         <p class="splash-text">QGO Cargo Tools for Staff</p>
     </div>
 
-    <div class="relative min-h-screen flex flex-col items-center p-4">
+    <div class="relative min-h-screen flex flex-col items-center">
 
         <!-- Language Switcher -->
         <div class="absolute top-4 right-4 z-20">
@@ -157,250 +170,259 @@
         </div>
         
         <!-- Header Section -->
-        <header class="text-center my-10 animate-header">
-            <img src="http://qgocargo.com/logo.png" alt="QGO Cargo Logo" class="mx-auto mb-4 h-20 w-auto">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white" data-key="title">QGO Cargo Tools</h1>
-            <p class="mt-2 text-base text-gray-600 dark:text-gray-400" data-key="subtitle">Your central hub for management systems.</p>
-        </header>
+        <div class="header-container">
+             <header class="text-center animate-header">
+                <img src="http://qgocargo.com/logo.png" alt="QGO Cargo Logo" class="mx-auto mb-4 h-20 w-auto">
+                <h1 class="text-3xl md:text-4xl font-bold text-white" data-key="title">QGO Cargo Tools</h1>
+                <p class="mt-2 text-base text-gray-300" data-key="subtitle">Your central hub for management systems.</p>
+            </header>
+        </div>
+       
+       <div class="w-full px-4 -mt-16">
+            <!-- Development Roadmap -->
+            <section class="w-full max-w-6xl mx-auto my-10 px-4">
+                <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12 animate-header" style="animation-delay: 200ms;" data-key="roadmap_title">Development Roadmap</h2>
+                <div class="relative">
+                    <!-- Connecting Line for larger screens (Horizontal) -->
+                    <div class="hidden md:block absolute top-8 left-0 w-full h-1 bg-gray-300 dark:bg-gray-700 -translate-y-1/2">
+                        <div class="roadmap-line-horizontal h-full bg-teal-500"></div>
+                    </div>
+                     <!-- Connecting Line for smaller screens (Vertical) -->
+                    <div class="block md:hidden absolute top-0 left-8 md:left-1/2 w-1 h-full bg-gray-300 dark:bg-gray-700 -translate-x-1/2">
+                        <div class="roadmap-line-vertical h-full bg-teal-500"></div>
+                    </div>
 
-        <!-- Development Roadmap -->
-        <section class="w-full max-w-6xl mx-auto my-10 px-4">
-            <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12 animate-header" style="animation-delay: 200ms;" data-key="roadmap_title">Development Roadmap</h2>
-            <div class="relative">
-                <!-- Connecting Line for larger screens (Horizontal) -->
-                <div class="hidden md:block absolute top-8 left-0 w-full h-1 bg-gray-300 dark:bg-gray-700 -translate-y-1/2">
-                    <div class="roadmap-line-horizontal h-full bg-teal-500"></div>
-                </div>
-                 <!-- Connecting Line for smaller screens (Vertical) -->
-                <div class="block md:hidden absolute top-0 left-8 md:left-1/2 w-1 h-full bg-gray-300 dark:bg-gray-700 -translate-x-1/2">
-                    <div class="roadmap-line-vertical h-full bg-teal-500"></div>
-                </div>
-
-                <div class="relative flex flex-col md:flex-row md:justify-between items-start md:items-center text-left md:text-center">
-                    <!-- Phase 1: Core Systems -->
-                    <div class="roadmap-phase mb-16 md:mb-0 w-full md:w-1/3 z-10 flex items-center md:flex-col" style="animation-delay: 500ms;">
-                        <div class="phase-icon flex-shrink-0 flex items-center justify-center w-16 h-16 bg-green-500 text-white rounded-full border-4 border-white dark:border-gray-800 shadow-lg md:mb-3" style="--glow-color: rgba(34, 197, 94, 0.5);">
-                            <i data-lucide="check-circle" class="w-8 h-8"></i>
+                    <div class="relative flex flex-col md:flex-row md:justify-between items-start md:items-center text-left md:text-center">
+                        <!-- Phase 1: Core Systems -->
+                        <div class="roadmap-phase mb-16 md:mb-0 w-full md:w-1/3 z-10 flex items-center md:flex-col" style="animation-delay: 500ms;">
+                            <div class="phase-icon flex-shrink-0 flex items-center justify-center w-16 h-16 bg-green-500 text-white rounded-full border-4 border-white dark:border-gray-800 shadow-lg md:mb-3" style="--glow-color: rgba(34, 197, 94, 0.5);">
+                                <i data-lucide="check-circle" class="w-8 h-8"></i>
+                            </div>
+                            <div class="ml-6 md:ml-0">
+                                <h3 class="text-xl font-semibold text-gray-900 dark:text-white" data-key="phase1_title">Phase 1: Core Systems</h3>
+                                <p class="text-green-600 dark:text-green-400 font-medium" data-key="phase1_status">Live & Operational</p>
+                            </div>
                         </div>
-                        <div class="ml-6 md:ml-0">
-                            <h3 class="text-xl font-semibold text-gray-900 dark:text-white" data-key="phase1_title">Phase 1: Core Systems</h3>
-                            <p class="text-green-600 dark:text-green-400 font-medium" data-key="phase1_status">Live & Operational</p>
-                        </div>
-                    </div>
 
-                    <!-- Phase 2: Automation -->
-                    <div class="roadmap-phase mb-16 md:mb-0 w-full md:w-1/3 z-10 flex items-center md:flex-col" style="animation-delay: 1000ms;">
-                         <div class="phase-icon flex-shrink-0 flex items-center justify-center w-16 h-16 bg-blue-500 text-white rounded-full border-4 border-white dark:border-gray-800 shadow-lg md:mb-3" style="--glow-color: rgba(59, 130, 246, 0.5);">
-                            <i data-lucide="bot" class="w-8 h-8"></i>
+                        <!-- Phase 2: Automation -->
+                        <div class="roadmap-phase mb-16 md:mb-0 w-full md:w-1/3 z-10 flex items-center md:flex-col" style="animation-delay: 1000ms;">
+                             <div class="phase-icon flex-shrink-0 flex items-center justify-center w-16 h-16 bg-blue-500 text-white rounded-full border-4 border-white dark:border-gray-800 shadow-lg md:mb-3" style="--glow-color: rgba(59, 130, 246, 0.5);">
+                                <i data-lucide="bot" class="w-8 h-8"></i>
+                            </div>
+                            <div class="ml-6 md:ml-0">
+                                <h3 class="text-xl font-semibold text-gray-900 dark:text-white" data-key="phase2_title">Phase 2: Automation</h3>
+                                <p class="text-blue-600 dark:text-blue-400 font-medium" data-key="phase2_status">In Progress</p>
+                            </div>
                         </div>
-                        <div class="ml-6 md:ml-0">
-                            <h3 class="text-xl font-semibold text-gray-900 dark:text-white" data-key="phase2_title">Phase 2: Automation</h3>
-                            <p class="text-blue-600 dark:text-blue-400 font-medium" data-key="phase2_status">In Progress</p>
-                        </div>
-                    </div>
 
-                    <!-- Phase 3: Future Vision -->
-                    <div class="roadmap-phase w-full md:w-1/3 z-10 flex items-center md:flex-col" style="animation-delay: 1500ms;">
-                         <div class="phase-icon flex-shrink-0 flex items-center justify-center w-16 h-16 bg-purple-500 text-white rounded-full border-4 border-white dark:border-gray-800 shadow-lg md:mb-3" style="--glow-color: rgba(168, 85, 247, 0.5);">
-                            <i data-lucide="telescope" class="w-8 h-8"></i>
-                        </div>
-                        <div class="ml-6 md:ml-0">
-                            <h3 class="text-xl font-semibold text-gray-900 dark:text-white" data-key="phase3_title">Phase 3: Future Vision</h3>
-                            <p class="text-purple-600 dark:text-purple-400 font-medium" data-key="phase3_status">Planning Stage</p>
+                        <!-- Phase 3: Future Vision -->
+                        <div class="roadmap-phase w-full md:w-1/3 z-10 flex items-center md:flex-col" style="animation-delay: 1500ms;">
+                             <div class="phase-icon flex-shrink-0 flex items-center justify-center w-16 h-16 bg-purple-500 text-white rounded-full border-4 border-white dark:border-gray-800 shadow-lg md:mb-3" style="--glow-color: rgba(168, 85, 247, 0.5);">
+                                <i data-lucide="telescope" class="w-8 h-8"></i>
+                            </div>
+                            <div class="ml-6 md:ml-0">
+                                <h3 class="text-xl font-semibold text-gray-900 dark:text-white" data-key="phase3_title">Phase 3: Future Vision</h3>
+                                <p class="text-purple-600 dark:text-purple-400 font-medium" data-key="phase3_status">Planning Stage</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
-
-
-        <!-- Main Grid for Tool Links -->
-        <main class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 w-full max-w-6xl">
-            <!-- Card 1: Jobfile Management -->
-            <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
-                
-                <div class="flex-grow flex flex-col items-center">
-                    <div class="flex items-center justify-center bg-blue-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
-                        <i data-lucide="file-stack" class="w-8 h-8 text-blue-500 dark:text-blue-400"></i>
-                    </div>
-                    <a href="https://akifbade.github.io/qgocargo/app/jobfile" target="_blank" data-id="jobfile" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card1_title">Jobfile Management</a>
-                    <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card1_desc">Main system for core operations.</p>
-                </div>
-                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
-                    <button data-modal-target="jobfile-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300">
-                        <span data-key="explore_features">Explore Features</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Card 2: POD System -->
-             <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
-                
-                <div class="flex-grow flex flex-col items-center">
-                    <div class="flex items-center justify-center bg-green-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
-                        <i data-lucide="package-check" class="w-8 h-8 text-green-500 dark:text-green-400"></i>
-                    </div>
-                    <a href="https://akifbade.github.io/qgocargo/app/pod" target="_blank" data-id="pod" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card2_title">POD System</a>
-                    <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card2_desc">Proof of Delivery tracking portal.</p>
-                </div>
-                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
-                     <button data-modal-target="pod-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300">
-                        <span data-key="explore_features">Explore Features</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Card 3: Warehouse Storage System -->
-            <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
-                <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full" data-key="beta_testing">Beta Testing</div>
-                <div class="flex-grow flex flex-col items-center">
-                    <div class="flex items-center justify-center bg-yellow-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
-                        <i data-lucide="warehouse" class="w-8 h-8 text-yellow-500 dark:text-yellow-400"></i>
-                    </div>
-                    <a href="https://akifbade.github.io/qgocargo/whm" target="_blank" data-id="whm" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card3_title">Warehouse Storage</a>
-                    <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card3_desc">Manage storage and release operations.</p>
-                </div>
-                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
-                    <button data-modal-target="whm-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300">
-                        <span data-key="explore_features">Explore Features</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Card 4: Inventory & Staff Schedule -->
-            <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
-                <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full" data-key="beta_testing">Beta Testing</div>
-                <div class="flex-grow flex flex-col items-center">
-                    <div class="flex items-center justify-center bg-purple-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
-                        <i data-lucide="calendar-days" class="w-8 h-8 text-purple-500 dark:text-purple-400"></i>
-                    </div>
-                    <a href="https://akifbade.github.io/qgocargo/app/wh" target="_blank" data-id="inventory" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card4_title">Inventory & Staff Schedule</a>
-                    <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card4_desc">Schedule staff and manage inventory.</p>
-                </div>
-                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
-                    <button data-modal-target="inventory-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-purple-500 hover:text-purple-600 dark:text-purple-400 dark:hover:text-purple-300">
-                        <span data-key="explore_features">Explore Features</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
-                    </button>
-                </div>
-            </div>
+            </section>
             
-            <!-- Card 5: Jobfiles Backup -->
-             <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
-                <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full" data-key="beta_testing">Beta Testing</div>
-                <div class="flex-grow flex flex-col items-center">
-                    <div class="flex items-center justify-center bg-red-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
-                        <i data-lucide="database-backup" class="w-8 h-8 text-red-500 dark:text-red-400"></i>
+            <!-- Main Grid for Tool Links -->
+            <main class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 w-full max-w-6xl mx-auto">
+                <!-- Card 1: Jobfile Management -->
+                <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                    
+                    <div class="flex-grow flex flex-col items-center">
+                        <div class="flex items-center justify-center bg-blue-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                            <i data-lucide="file-stack" class="w-8 h-8 text-blue-500 dark:text-blue-400"></i>
+                        </div>
+                        <a href="https://akifbade.github.io/qgocargo/app/jobfile" target="_blank" data-id="jobfile" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card1_title">Jobfile Management</a>
+                        <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card1_desc">Main system for core operations.</p>
                     </div>
-                    <a href="https://akifbade.github.io/qgocargo/backup.html" target="_blank" data-id="backup" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card5_title">Jobfiles Backup</a>
-                    <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card5_desc">Download job backups in Excel format.</p>
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                        <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
+                        <button data-modal-target="jobfile-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300">
+                            <span data-key="explore_features">Explore Features</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
-                    <button data-modal-target="backup-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300">
-                        <span data-key="explore_features">Explore Features</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
-                    </button>
-                </div>
-            </div>
 
-            <!-- Card 6: Advanced Reports -->
-            <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
-                <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full" data-key="beta_testing">Beta Testing</div>
-                <div class="flex-grow flex flex-col items-center">
-                    <div class="flex items-center justify-center bg-indigo-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
-                        <i data-lucide="bar-chart-3" class="w-8 h-8 text-indigo-500 dark:text-indigo-400"></i>
+                <!-- Card 2: POD System -->
+                 <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                    
+                    <div class="flex-grow flex flex-col items-center">
+                        <div class="flex items-center justify-center bg-green-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                            <i data-lucide="package-check" class="w-8 h-8 text-green-500 dark:text-green-400"></i>
+                        </div>
+                        <a href="https://akifbade.github.io/qgocargo/app/pod" target="_blank" data-id="pod" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card2_title">POD System</a>
+                        <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card2_desc">Proof of Delivery tracking portal.</p>
                     </div>
-                    <a href="https://akifbade.github.io/qgocargo/reports" target="_blank" data-id="reports" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card6_title">Advanced Reports</a>
-                    <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card6_desc">Download detailed reports for accounting.</p>
-                </div>
-                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
-                    <button data-modal-target="reports-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300">
-                        <span data-key="explore_features">Explore Features</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Card 7: Upcoming Features -->
-            <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
-                <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full" data-key="beta_testing">Beta Testing</div>
-                <div class="flex-grow flex flex-col items-center">
-                    <div class="flex items-center justify-center bg-teal-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
-                        <i data-lucide="rocket" class="w-8 h-8 text-teal-500 dark:text-teal-400"></i>
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                        <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
+                         <button data-modal-target="pod-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300">
+                            <span data-key="explore_features">Explore Features</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
+                        </button>
                     </div>
-                    <a href="#" data-id="upcoming" class="text-xl font-semibold text-gray-900 dark:text-white cursor-pointer p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card7_title">Upcoming Features</a>
-                    <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card7_desc">A look into the future of QGO Tools.</p>
                 </div>
-                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
-                    <button data-modal-target="upcoming-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-teal-500 hover:text-teal-600 dark:text-teal-400 dark:hover:text-teal-300">
-                        <span data-key="explore_roadmap">Explore Roadmap</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
-                    </button>
-                </div>
-            </div>
-        </main>
 
-        <!-- Important Notes Section -->
-        <section class="w-full max-w-6xl mx-auto my-10 px-4 animate-header" style="animation-delay: 2500ms;">
-            <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-8" data-key="notes_title">Important Notes & Current Status</h2>
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                <ul class="space-y-4 text-gray-700 dark:text-gray-300">
-                    <li class="flex items-start space-x-3">
-                        <i data-lucide="flask-conical" class="w-5 h-5 text-yellow-500 flex-shrink-0 mt-1"></i>
-                        <span data-key="note_testing">
-                            <strong>Testing Phase:</strong> All tools are currently in an active development and testing phase. We are continuously working to improve performance and add new features based on user feedback.
-                        </span>
-                    </li>
-                    <li class="flex items-start space-x-3">
-                        <i data-lucide="database" class="w-5 h-5 text-green-500 flex-shrink-0 mt-1"></i>
-                        <span data-key="note_backend">
-                            <strong>Backend Infrastructure:</strong> For the initial development, we are leveraging the free tiers of Firebase and Supabase. This provides us with powerful, scalable, and cost-effective backend infrastructure.
-                        </span>
-                    </li>
-                    <li class="flex items-start space-x-3">
-                        <i data-lucide="shield-check" class="w-5 h-5 text-blue-500 flex-shrink-0 mt-1"></i>
-                        <span data-key="note_security">
-                            <strong>Data Security:</strong> Data security is a top priority. Despite using free tiers, all data connections are encrypted, and robust access control systems are in place to ensure data integrity and confidentiality.
-                        </span>
-                    </li>
-                    <li class="flex items-start space-x-3">
-                        <i data-lucide="message-square-plus" class="w-5 h-5 text-purple-500 flex-shrink-0 mt-1"></i>
-                        <span data-key="note_feedback">
-                            <strong>Feedback Welcome:</strong> Continuous feedback is crucial for our development process. We encourage all users to report any bugs or suggest improvements to help us enhance these tools.
-                        </span>
-                    </li>
-                     <li class="flex items-start space-x-3">
-                        <i data-lucide="goal" class="w-5 h-5 text-red-500 flex-shrink-0 mt-1"></i>
-                        <span data-key="note_goal">
-                            <strong>Long-term Goal:</strong> Our long-term goal is to develop a comprehensive, in-house ERP system that digitizes and streamlines all of QGO Cargo's operational needs, significantly boosting efficiency and reducing manual workload.
-                        </span>
-                    </li>
-                </ul>
-            </div>
-        </section>
+                <!-- Card 3: Warehouse Storage System -->
+                <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                    <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full" data-key="beta_testing">Beta Testing</div>
+                    <div class="flex-grow flex flex-col items-center">
+                        <div class="flex items-center justify-center bg-yellow-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                            <i data-lucide="warehouse" class="w-8 h-8 text-yellow-500 dark:text-yellow-400"></i>
+                        </div>
+                        <a href="https://akifbade.github.io/qgocargo/whm" target="_blank" data-id="whm" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card3_title">Warehouse Storage</a>
+                        <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card3_desc">Manage storage and release operations.</p>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                        <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
+                        <button data-modal-target="whm-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300">
+                            <span data-key="explore_features">Explore Features</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Card 4: Inventory & Staff Schedule -->
+                <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                    <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full" data-key="beta_testing">Beta Testing</div>
+                    <div class="flex-grow flex flex-col items-center">
+                        <div class="flex items-center justify-center bg-purple-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                            <i data-lucide="calendar-days" class="w-8 h-8 text-purple-500 dark:text-purple-400"></i>
+                        </div>
+                        <a href="https://akifbade.github.io/qgocargo/app/wh" target="_blank" data-id="inventory" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card4_title">Inventory & Staff Schedule</a>
+                        <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card4_desc">Schedule staff and manage inventory.</p>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                        <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
+                        <button data-modal-target="inventory-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-purple-500 hover:text-purple-600 dark:text-purple-400 dark:hover:text-purple-300">
+                            <span data-key="explore_features">Explore Features</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Card 5: Jobfiles Backup -->
+                 <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                    <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full" data-key="beta_testing">Beta Testing</div>
+                    <div class="flex-grow flex flex-col items-center">
+                        <div class="flex items-center justify-center bg-red-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                            <i data-lucide="database-backup" class="w-8 h-8 text-red-500 dark:text-red-400"></i>
+                        </div>
+                        <a href="https://akifbade.github.io/qgocargo/backup.html" target="_blank" data-id="backup" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card5_title">Jobfiles Backup</a>
+                        <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card5_desc">Download job backups in Excel format.</p>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                        <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
+                        <button data-modal-target="backup-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300">
+                            <span data-key="explore_features">Explore Features</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Card 6: Advanced Reports -->
+                <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                    <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full" data-key="beta_testing">Beta Testing</div>
+                    <div class="flex-grow flex flex-col items-center">
+                        <div class="flex items-center justify-center bg-indigo-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                            <i data-lucide="bar-chart-3" class="w-8 h-8 text-indigo-500 dark:text-indigo-400"></i>
+                        </div>
+                        <a href="https://akifbade.github.io/qgocargo/reports" target="_blank" data-id="reports" class="text-xl font-semibold text-gray-900 dark:text-white hover:underline p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card6_title">Advanced Reports</a>
+                        <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card6_desc">Download detailed reports for accounting.</p>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                        <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
+                        <button data-modal-target="reports-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300">
+                            <span data-key="explore_features">Explore Features</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Card 7: Upcoming Features -->
+                <div class="relative tool-card card-hover-effect bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col text-center">
+                    <div class="absolute top-3 right-3 px-2 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-full" data-key="beta_testing">Beta Testing</div>
+                    <div class="flex-grow flex flex-col items-center">
+                        <div class="flex items-center justify-center bg-teal-100 dark:bg-gray-700 h-16 w-16 rounded-full shadow-inner mb-4">
+                            <i data-lucide="rocket" class="w-8 h-8 text-teal-500 dark:text-teal-400"></i>
+                        </div>
+                        <a href="#" data-id="upcoming" class="text-xl font-semibold text-gray-900 dark:text-white cursor-pointer p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" data-key="card7_title">Upcoming Features</a>
+                        <p class="text-gray-600 dark:text-gray-400 mt-1 flex-grow" data-key="card7_desc">A look into the future of QGO Tools.</p>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                        <span class="text-xs text-gray-500 dark:text-gray-500 last-visited-text"></span>
+                        <button data-modal-target="upcoming-details" class="group view-details-btn inline-flex items-center text-sm font-semibold text-teal-500 hover:text-teal-600 dark:text-teal-400 dark:hover:text-teal-300">
+                            <span data-key="explore_roadmap">Explore Roadmap</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Important Notes Section -->
+            <section class="w-full max-w-6xl mx-auto my-10 px-4 animate-header" style="animation-delay: 2500ms;">
+                <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-8" data-key="notes_title">Important Notes & Current Status</h2>
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                    <ul class="space-y-4 text-gray-700 dark:text-gray-300">
+                        <li class="flex items-start space-x-3">
+                            <i data-lucide="flask-conical" class="w-5 h-5 text-yellow-500 flex-shrink-0 mt-1"></i>
+                            <span data-key="note_testing">
+                                <strong>Testing Phase:</strong> All tools are currently in an active development and testing phase. We are continuously working to improve performance and add new features based on user feedback.
+                            </span>
+                        </li>
+                        <li class="flex items-start space-x-3">
+                            <i data-lucide="database" class="w-5 h-5 text-green-500 flex-shrink-0 mt-1"></i>
+                            <span data-key="note_backend">
+                                <strong>Backend Infrastructure:</strong> For the initial development, we are leveraging the free tiers of Firebase and Supabase. This provides us with powerful, scalable, and cost-effective backend infrastructure.
+                            </span>
+                        </li>
+                        <li class="flex items-start space-x-3">
+                            <i data-lucide="shield-check" class="w-5 h-5 text-blue-500 flex-shrink-0 mt-1"></i>
+                            <span data-key="note_security">
+                                <strong>Data Security:</strong> Data security is a top priority. Despite using free tiers, all data connections are encrypted, and robust access control systems are in place to ensure data integrity and confidentiality.
+                            </span>
+                        </li>
+                        <li class="flex items-start space-x-3">
+                            <i data-lucide="message-square-plus" class="w-5 h-5 text-purple-500 flex-shrink-0 mt-1"></i>
+                            <span data-key="note_feedback">
+                                <strong>Feedback Welcome:</strong> Continuous feedback is crucial for our development process. We encourage all users to report any bugs or suggest improvements to help us enhance these tools.
+                            </span>
+                        </li>
+                         <li class="flex items-start space-x-3">
+                            <i data-lucide="goal" class="w-5 h-5 text-red-500 flex-shrink-0 mt-1"></i>
+                            <span data-key="note_goal">
+                                <strong>Long-term Goal:</strong> Our long-term goal is to develop a comprehensive, in-house ERP system that digitizes and streamlines all of QGO Cargo's operational needs, significantly boosting efficiency and reducing manual workload.
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+        </div>
 
         <!-- Footer -->
-        <footer class="w-full max-w-6xl text-center p-4 mt-10">
-            <div class="inline-block bg-gray-200 dark:bg-gray-800/50 rounded-xl px-6 py-4">
-                <p class="text-sm text-gray-600 dark:text-gray-300 flex items-center justify-center" data-key="footer_thanks1">
+        <div class="footer-container">
+            <div class="bg-gray-800">
+                <svg viewBox="0 0 1440 120" class="block text-gray-100 dark:text-gray-900 fill-current">
+                    <path d="M1440,21.2101911 L1440,120 L0,120 L0,21.2101911 C120,35.0700637 240,42 360,42 C480,42 600,35.0700637 720,21.2101911 C840,7.35031847 960,0 1080,0 C1200,0 1320,7.35031847 1440,21.2101911 Z"></path>
+                </svg>
+            </div>
+            <footer class="w-full text-center p-10 bg-gray-800">
+                 <p class="text-base text-gray-300 flex items-center justify-center" data-key="footer_thanks1">
                     <i data-lucide="heart" class="w-5 h-5 text-red-500 mx-2 fill-current"></i>
                     This project is a collaborative effort, made possible by the invaluable support from the QGO Cargo team.
                 </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2" data-key="footer_thanks2">
+                <p class="text-sm text-gray-400 mt-2" data-key="footer_thanks2">
                     Special thanks to our Manager, Mr. Yehia, and the dedicated testing team: Mr. Ajmal, Abdul Hadi, and Anand.
                 </p>
-            </div>
-        </footer>
+            </footer>
+        </div>
+
 
         <!-- Install App Popup -->
         <div id="install-popup" class="hidden fixed bottom-4 right-4 sm:bottom-5 sm:right-5 w-[calc(100%-2rem)] max-w-sm bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-2xl z-50 animate-fade-in-up">
@@ -460,7 +482,7 @@
             <!-- Content is injected via JS -->
        </div>
     </div>
-
+    
     <script>
         // --- SERVICE WORKER REGISTRATION ---
         if ('serviceWorker' in navigator) {
