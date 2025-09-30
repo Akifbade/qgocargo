@@ -38,9 +38,16 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes fade-out-down {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(20px); }
+        }
         .animate-card, .animate-header {
             opacity: 0;
             animation: fade-in-up 0.6s ease-out forwards;
+        }
+        #install-popup.hidden {
+            animation: fade-out-down 0.3s ease-out forwards;
         }
         
         /* Modal Styles */
@@ -347,14 +354,20 @@
         </footer>
 
         <!-- Install App Popup -->
-        <div id="install-popup" class="hidden fixed bottom-5 right-5 bg-white dark:bg-gray-700 p-4 rounded-lg shadow-lg flex items-center space-x-4 animate-fade-in-up">
-            <img src="http://qgocargo.com/logo.png" alt="Logo" class="w-10 h-10">
-            <div>
-                <p class="font-semibold text-gray-800 dark:text-white" data-key="install_prompt">Install QGO Tools App?</p>
-                <p class="text-sm text-gray-600 dark:text-gray-300" data-key="install_desc">For a better experience.</p>
+        <div id="install-popup" class="hidden fixed bottom-4 right-4 sm:bottom-5 sm:right-5 w-[calc(100%-2rem)] max-w-sm bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-2xl z-50 animate-fade-in-up">
+            <div class="flex items-center space-x-4">
+                <div class="flex-shrink-0 h-12 w-12 bg-white rounded-full flex items-center justify-center shadow-md">
+                    <img src="http://qgocargo.com/logo.png" alt="Logo" class="w-10 h-10 object-contain">
+                </div>
+                <div class="flex-1">
+                    <p class="font-semibold text-gray-800 dark:text-white" data-key="install_prompt">Install QGO Tools App</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-300" data-key="install_desc">For a seamless, fast experience.</p>
+                </div>
+                <div class="flex flex-col space-y-2">
+                     <button id="install-btn" class="px-4 py-2 bg-green-500 text-white text-sm font-semibold rounded-lg hover:bg-green-600 transition-colors" data-key="install_btn">Install</button>
+                     <button id="close-install-popup" class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" data-key="install_close">Later</button>
+                </div>
             </div>
-            <button id="install-btn" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600" data-key="install_btn">Install</button>
-            <button id="close-install-popup" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">&times;</button>
         </div>
 
     </div>
@@ -415,6 +428,10 @@
         const installBtn = document.getElementById('install-btn');
         const closeInstallPopup = document.getElementById('close-install-popup');
 
+        const hideInstallPopup = () => {
+             installPopup.classList.add('hidden');
+        };
+
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
@@ -422,7 +439,7 @@
         });
 
         installBtn.addEventListener('click', () => {
-            installPopup.classList.add('hidden');
+            hideInstallPopup();
             if(deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
@@ -434,12 +451,10 @@
             }
         });
         
-        closeInstallPopup.addEventListener('click', () => {
-            installPopup.classList.add('hidden');
-        });
+        closeInstallPopup.addEventListener('click', hideInstallPopup);
 
         window.addEventListener('appinstalled', () => {
-            installPopup.classList.add('hidden');
+            hideInstallPopup();
             deferredPrompt = null;
             console.log('PWA was installed');
         });
@@ -481,9 +496,10 @@
                 note_goal: '<strong>Long-term Goal:</strong> Our long-term goal is to develop a comprehensive, in-house ERP system that digitizes and streamlines all of QGO Cargo\'s operational needs, significantly boosting efficiency and reducing manual workload.',
                 footer_thanks1: '<i data-lucide="heart" class="w-5 h-5 text-red-500 mx-2 fill-current"></i> This project is a collaborative effort, made possible by the invaluable support from the QGO Cargo team.',
                 footer_thanks2: 'Special thanks to our Manager, Mr. Yehia, and the dedicated testing team: Mr. Ajmal, Abdul Hadi, and Anand.',
-                install_prompt: 'Install QGO Tools App?',
-                install_desc: 'For a better experience.',
+                install_prompt: 'Install QGO Tools App',
+                install_desc: 'For a seamless, fast experience.',
                 install_btn: 'Install',
+                install_close: 'Later',
                 modal_purpose: 'Purpose',
                 modal_features: 'Key Features',
                 modal_value: 'Value & Benefits',
@@ -529,9 +545,10 @@
                 note_goal: '<strong>الهدف طويل الأجل:</strong> هدفنا طويل الأجل هو تطوير نظام تخطيط موارد مؤسسات (ERP) داخلي شامل يقوم برقمنة وتبسيط جميع الاحتياجات التشغيلية لشركة QGO Cargo، مما يعزز الكفاءة بشكل كبير ويقلل من عبء العمل اليدوي.',
                 footer_thanks1: '<i data-lucide="heart" class="w-5 h-5 text-red-500 mx-2 fill-current"></i> هذا المشروع هو جهد تعاوني، أصبح ممكنًا بفضل الدعم القيم من فريق QGO Cargo.',
                 footer_thanks2: 'شكر خاص لمديرنا السيد يحيى، وفريق الاختبار المتفاني: السيد أجمل، وعبد الهادي، وأناند.',
-                install_prompt: 'هل تريد تثبيت تطبيق أدوات QGO؟',
-                install_desc: 'لتجربة أفضل.',
+                install_prompt: 'تثبيت تطبيق أدوات QGO',
+                install_desc: 'لتجربة سلسة وسريعة.',
                 install_btn: 'تثبيت',
+                install_close: 'لاحقًا',
                 modal_purpose: 'الغرض',
                 modal_features: 'الميزات الرئيسية',
                 modal_value: 'القيمة والفوائد',
@@ -678,5 +695,4 @@
     </script>
 </body>
 </html>
-", give me some suggestions as well for what more to add
 
