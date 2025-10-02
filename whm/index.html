@@ -11,6 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+    <script src="enhanced-rack-manager.js"></script>
 </head>
 <body>
     <div class="container">
@@ -25,7 +26,8 @@
                 <button onclick="showSection('release')" class="nav-btn">Release</button>
                 <button onclick="showSection('released')" class="nav-btn">Released History</button>
                 <button onclick="showSection('warehouse-map')" class="nav-btn">Warehouse Map</button>
-                <button onclick="showSection('rack-management')" class="nav-btn">🏷️ Rack QR Codes</button>
+                <button onclick="showSection('enhanced-rack-management')" class="nav-btn">🏷️ Enhanced Rack System</button>
+                <button onclick="showSection('rack-management')" class="nav-btn">🏷️ Simple Rack QR</button>
                 <button onclick="showSection('pricing')" class="nav-btn">Pricing Settings</button>
                 <button onclick="showSection('search')" class="nav-btn">Search</button>
                 <button onclick="showSection('settings')" class="nav-btn">Settings</button>
@@ -619,29 +621,59 @@
         <!-- Warehouse Map Section -->
         <section id="warehouse-map" class="section">
             <div class="section-header">
-                <h2>🗺️ Warehouse Layout & QR Location System</h2>
+                <h2>🗺️ Real-time Warehouse Storage Map</h2>
                 <div class="header-actions">
-                    <button onclick="warehouseManager.testQRLibrary()" class="btn-info" style="background-color: #6366f1;">🧪 Test QR Library</button>
-                    <button onclick="warehouseManager.startLocationAssignmentMode()" class="btn-primary">📱 Start QR Location Assignment</button>
-                    <button onclick="warehouseManager.printRackQRCodes()" class="btn-secondary">🖨️ Print Rack QR Codes</button>
-                    <button onclick="toggleMapView()" class="btn-secondary" id="mapViewToggle">🔲 Grid View</button>
-                    <button onclick="refreshWarehouseMap()" class="btn-secondary">🔄 Refresh</button>
-                    <button onclick="exportRackData()" class="btn-success">📊 Export Rack Report</button>
+                    <button onclick="openFullScreenMap()" class="btn-primary">🖥️ Full Screen Map</button>
+                    <button onclick="refreshWarehouseMap()" class="btn-secondary">� Refresh</button>
+                    <button onclick="exportStorageReport()" class="btn-success">� Export Storage Report</button>
+                    <a href="mobile-scanner.html" target="_blank" class="btn-info">📱 Mobile Scanner</a>
                 </div>
+            </div>
+
+            <div class="storage-overview">
+                <div class="overview-stats">
+                    <div class="stat-box">
+                        <div class="stat-number" id="dashTotalRacks">1000</div>
+                        <div class="stat-label">Total Racks</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" id="dashOccupiedRacks">0</div>
+                        <div class="stat-label">Occupied</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" id="dashEmptyRacks">1000</div>
+                        <div class="stat-label">Available</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" id="dashTotalShipments">0</div>
+                        <div class="stat-label">Stored Shipments</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="map-embed-container">
+                <iframe 
+                    id="warehouseMapFrame" 
+                    src="warehouse-map.html" 
+                    width="100%" 
+                    height="600px" 
+                    frameborder="0"
+                    style="border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                </iframe>
             </div>
 
             <div class="qr-system-info">
                 <div class="info-card">
-                    <h4>📱 Dual QR System</h4>
-                    <p><strong>1. Permanent Rack QR:</strong> Each rack has a permanent QR code for identification</p>
-                    <p><strong>2. Shipment Piece QR:</strong> Each piece/pallet gets a QR code during intake</p>
-                    <p><strong>Workflow:</strong> Scan piece QR → Scan rack QR → Location automatically assigned</p>
+                    <h4>📱 How the Storage System Works</h4>
+                    <p><strong>1. COPY:</strong> Worker scans shipment barcode → All pieces copied to memory</p>
+                    <p><strong>2. PASTE:</strong> Worker scans rack QR code → All pieces assigned to that location</p>
+                    <p><strong>3. REAL-TIME:</strong> Map updates automatically when assignments are made</p>
                     <div style="margin-top: 1rem;">
                         <a href="mobile-scanner.html" target="_blank" style="background: #10b981; color: white; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block; margin-right: 0.5rem;">
                             📱 Open Mobile Scanner for Workers
                         </a>
-                        <a href="mobile-qr.html" target="_blank" style="background: #3b82f6; color: white; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
-                            📱 Get QR Code for Workers
+                        <a href="warehouse-map.html" target="_blank" style="background: #3b82f6; color: white; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
+                            �️ Full Screen Map
                         </a>
                     </div>
                 </div>
@@ -721,10 +753,142 @@
             </div>
         </section>
 
+        <!-- Enhanced Rack Management Section -->
+        <section id="enhanced-rack-management" class="section">
+            <div class="section-header">
+                <h2>�️ Enhanced Rack Management System</h2>
+                <div class="header-actions">
+                    <button onclick="showRackSettingsModal()" class="btn-info">⚙️ Settings</button>
+                    <button onclick="exportEnhancedRackData()" class="btn-success">📊 Export Data</button>
+                    <button onclick="refreshEnhancedRackDisplay()" class="btn-secondary">🔄 Refresh</button>
+                </div>
+            </div>
+
+            <!-- Rack Statistics -->
+            <div class="enhanced-rack-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">🏢</div>
+                    <div class="stat-info">
+                        <div class="stat-number" id="enhancedTotalRacks">0</div>
+                        <div class="stat-label">Total Racks</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📁</div>
+                    <div class="stat-info">
+                        <div class="stat-number" id="enhancedTotalSections">0</div>
+                        <div class="stat-label">Sections</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📦</div>
+                    <div class="stat-info">
+                        <div class="stat-number" id="enhancedTotalCapacity">0</div>
+                        <div class="stat-label">Total Capacity</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-info">
+                        <div class="stat-number" id="enhancedUtilization">0%</div>
+                        <div class="stat-label">Utilization</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create New Section -->
+            <div class="create-section-card">
+                <h3>➕ Create New Rack Section</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Section Name:</label>
+                        <input type="text" id="newSectionName" placeholder="e.g., R1, A, B, FLOOR1" maxlength="10">
+                    </div>
+                    <div class="form-group">
+                        <label>Prefix (Optional):</label>
+                        <input type="text" id="newSectionPrefix" placeholder="e.g., A, B (for R1-A-001)" maxlength="5">
+                    </div>
+                    <div class="form-group">
+                        <label>Start Number:</label>
+                        <input type="number" id="newSectionStart" placeholder="1" min="1" max="999" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label>End Number:</label>
+                        <input type="number" id="newSectionEnd" placeholder="10" min="1" max="999" value="10">
+                    </div>
+                    <div class="form-group">
+                        <label>Capacity per Rack:</label>
+                        <input type="number" id="newSectionCapacity" placeholder="4" min="1" max="20" value="4" onchange="updateSectionPreview()">
+                    </div>
+                    <div class="form-group">
+                        <button onclick="createEnhancedRackSection()" class="btn-primary full-width">🏗️ Create Section</button>
+                    </div>
+                </div>
+                
+                <div class="section-preview" id="sectionPreview" style="display: none;">
+                    <h4>📋 Preview:</h4>
+                    <p id="previewText"></p>
+                </div>
+
+                <script>
+                    // Auto-update preview when form changes
+                    document.getElementById('newSectionName').addEventListener('input', updateSectionPreview);
+                    document.getElementById('newSectionPrefix').addEventListener('input', updateSectionPreview);
+                    document.getElementById('newSectionStart').addEventListener('input', updateSectionPreview);
+                    document.getElementById('newSectionEnd').addEventListener('input', updateSectionPreview);
+                    document.getElementById('newSectionCapacity').addEventListener('input', updateSectionPreview);
+
+                    function updateSectionPreview() {
+                        const sectionName = document.getElementById('newSectionName').value.trim().toUpperCase();
+                        const prefix = document.getElementById('newSectionPrefix').value.trim().toUpperCase();
+                        const startNumber = parseInt(document.getElementById('newSectionStart').value) || 1;
+                        const endNumber = parseInt(document.getElementById('newSectionEnd').value) || 10;
+                        const capacity = parseInt(document.getElementById('newSectionCapacity').value) || 4;
+
+                        const preview = document.getElementById('sectionPreview');
+                        const previewText = document.getElementById('previewText');
+
+                        if (!sectionName || startNumber > endNumber) {
+                            preview.style.display = 'none';
+                            return;
+                        }
+
+                        const count = endNumber - startNumber + 1;
+                        const totalCapacity = count * capacity;
+                        
+                        let examples = [];
+                        for (let i = startNumber; i <= Math.min(startNumber + 2, endNumber); i++) {
+                            const rackNumber = String(i).padStart(3, '0');
+                            const rackId = prefix ? `${sectionName}-${prefix}-${rackNumber}` : `${sectionName}-${rackNumber}`;
+                            examples.push(rackId);
+                        }
+                        if (count > 3) examples.push('...');
+
+                        previewText.innerHTML = `
+                            <strong>Will create ${count} racks:</strong><br>
+                            Examples: ${examples.join(', ')}<br>
+                            Total capacity: ${totalCapacity} shipments<br>
+                            Individual capacity: ${capacity} shipments per rack
+                        `;
+
+                        preview.style.display = 'block';
+                    }
+                </script>
+            </div>
+
+            <!-- Existing Sections -->
+            <div class="sections-container">
+                <h3>📂 Existing Sections</h3>
+                <div id="sectionsDisplay" class="sections-grid">
+                    <p style="text-align: center; color: #6b7280; padding: 2rem;">No sections created yet</p>
+                </div>
+            </div>
+        </section>
+
         <!-- Rack Management Section -->
         <section id="rack-management" class="section">
             <div class="section-header">
-                <h2>🏷️ Warehouse Rack QR Code Management</h2>
+                <h2>🏷️ Simple Rack QR Code Management</h2>
                 <div class="header-actions">
                     <button onclick="testQRLibraries()" class="btn-info">🧪 Test QR Libraries</button>
                     <button onclick="editRackConfiguration()" class="btn-primary">⚙️ Edit Rack Configuration</button>

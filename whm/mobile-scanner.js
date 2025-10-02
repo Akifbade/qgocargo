@@ -629,6 +629,28 @@ class MobileWarehouseScanner {
                 console.log('✅ Full approach: Updated with piece locations');
             }
 
+            // Notify any parent window that assignments were made (for map refresh)
+            try {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'warehouse-assignment-update',
+                        rackId: rackId,
+                        shipmentId: shipment.id,
+                        pieces: totalPieces
+                    }, '*');
+                }
+                
+                // Also broadcast to any listening systems
+                window.postMessage({
+                    type: 'warehouse-assignment-update',
+                    rackId: rackId,
+                    shipmentId: shipment.id,
+                    pieces: totalPieces
+                }, '*');
+            } catch (e) {
+                console.log('Could not broadcast assignment update:', e);
+            }
+
             // Success! (ALL PIECES PASTED) - STOP SCANNING
             this.stopScanning();
             this.updateSteps(2, 'completed');

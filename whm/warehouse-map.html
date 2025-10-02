@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse Map - Real-time Storage Locations</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .map-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .map-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .map-header h1 {
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .refresh-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-left: 15px;
+        }
+
+        .refresh-btn:hover {
+            background: #059669;
+        }
+
+        .map-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 15px 20px;
+            background: #f3f4f6;
+            border-radius: 10px;
+            min-width: 120px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #059669;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .warehouse-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .zone {
+            border: 2px solid #e5e7eb;
+            border-radius: 15px;
+            padding: 20px;
+            background: #fafafa;
+        }
+
+        .zone-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .racks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 8px;
+        }
+
+        .enhanced-racks-grid {
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .rack {
+            aspect-ratio: 1;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            min-height: 50px;
+            padding: 5px;
+        }
+
+        .enhanced-rack {
+            min-height: 70px;
+            font-size: 0.65rem;
+        }
+
+        .rack-capacity {
+            font-size: 0.6rem;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
+        .rack.empty {
+            background: #f9fafb;
+            color: #9ca3af;
+            border-color: #d1d5db;
+        }
+
+        .rack.occupied {
+            background: #fef3c7;
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+
+        .rack.full {
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+
+        .rack:hover {
+            transform: scale(1.1);
+            z-index: 10;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .rack-id {
+            font-size: 0.6rem;
+            margin-bottom: 2px;
+        }
+
+        .rack-count {
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .shipment-info {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 20;
+        }
+
+        .rack:hover .shipment-info {
+            opacity: 1;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid #d1d5db;
+        }
+
+        .legend-color.empty {
+            background: #f9fafb;
+        }
+
+        .legend-color.occupied {
+            background: #fef3c7;
+            border-color: #f59e0b;
+        }
+
+        .legend-color.full {
+            background: #fee2e2;
+            border-color: #ef4444;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #6b7280;
+        }
+
+        .error {
+            text-align: center;
+            padding: 50px;
+            color: #ef4444;
+            background: #fee2e2;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .map-stats {
+                gap: 15px;
+            }
+            
+            .stat {
+                min-width: 100px;
+                padding: 10px 15px;
+            }
+            
+            .warehouse-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .racks-grid {
+                grid-template-columns: repeat(8, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="map-container">
+        <div class="map-header">
+            <h1>
+                🗺️ Enhanced Warehouse Map
+                <button class="refresh-btn" onclick="refreshMap()">🔄 Refresh</button>
+                <button class="refresh-btn" onclick="openRackManager()" style="background: #6366f1;">⚙️ Manage Racks</button>
+            </h1>
+            <div class="map-stats">
+                <div class="stat">
+                    <div class="stat-number" id="totalRacks">0</div>
+                    <div class="stat-label">Total Racks</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="occupiedRacks">0</div>
+                    <div class="stat-label">Occupied</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="emptyRacks">0</div>
+                    <div class="stat-label">Available</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="totalCapacity">0</div>
+                    <div class="stat-label">Total Capacity</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="mapContent" class="loading">
+            <h3>🔄 Loading enhanced warehouse map...</h3>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color empty"></div>
+                <span>Empty Rack</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color occupied"></div>
+                <span>Has Shipments</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color full"></div>
+                <span>At Capacity</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="warehouse-map.js"></script>
+</body>
+</html>

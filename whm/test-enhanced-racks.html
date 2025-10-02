@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Enhanced Racks</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Enhanced Rack System Test</h1>
+    
+    <div class="test-section">
+        <h3>1. Create Sample Enhanced Rack</h3>
+        <button onclick="createSampleRack()">Create R1-A-001 Rack</button>
+        <div id="createResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. Check localStorage Data</h3>
+        <button onclick="checkLocalStorage()">Check Enhanced Racks in localStorage</button>
+        <div id="localStorageResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. Check Supabase Connection</h3>
+        <button onclick="testSupabase()">Test Supabase Connection</button>
+        <div id="supabaseResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. Load All Enhanced Racks</h3>
+        <button onclick="loadEnhancedRacks()">Load All Enhanced Racks</button>
+        <div id="loadResult" class="result"></div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        let supabase;
+        
+        // Initialize Supabase
+        if (typeof createClient !== 'undefined' && SUPABASE_URL && SUPABASE_ANON_KEY) {
+            supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('✅ Supabase initialized');
+        } else {
+            console.warn('⚠️ Supabase not available');
+        }
+
+        function createSampleRack() {
+            const result = document.getElementById('createResult');
+            
+            const sampleRack = {
+                rackId: 'R1-A-001',
+                section: 'R1',
+                subsection: 'A',
+                position: '001',
+                capacity: 4,
+                currentOccupancy: 0,
+                shipments: [],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            // Save to localStorage
+            let enhancedRacks = JSON.parse(localStorage.getItem('enhancedRacks') || '[]');
+            const existingIndex = enhancedRacks.findIndex(r => r.rackId === sampleRack.rackId);
+            
+            if (existingIndex >= 0) {
+                enhancedRacks[existingIndex] = sampleRack;
+                result.textContent = '✅ Updated existing rack R1-A-001 in localStorage';
+            } else {
+                enhancedRacks.push(sampleRack);
+                result.textContent = '✅ Created new rack R1-A-001 in localStorage';
+            }
+            
+            localStorage.setItem('enhancedRacks', JSON.stringify(enhancedRacks));
+            result.textContent += '\n📁 Saved to localStorage: enhancedRacks';
+        }
+
+        function checkLocalStorage() {
+            const result = document.getElementById('localStorageResult');
+            
+            const enhancedRacks = localStorage.getItem('enhancedRacks');
+            const rackSettings = localStorage.getItem('rackSettings');
+            
+            let output = '📊 localStorage Check:\n\n';
+            
+            if (enhancedRacks) {
+                try {
+                    const parsed = JSON.parse(enhancedRacks);
+                    output += `✅ enhancedRacks: ${parsed.length} racks found\n`;
+                    parsed.forEach((rack, index) => {
+                        output += `   ${index + 1}. ${rack.rackId} (${rack.section}) - ${rack.currentOccupancy}/${rack.capacity}\n`;
+                    });
+                } catch (e) {
+                    output += `❌ enhancedRacks: Invalid JSON - ${e.message}\n`;
+                }
+            } else {
+                output += `❌ enhancedRacks: Not found\n`;
+            }
+            
+            if (rackSettings) {
+                try {
+                    const parsed = JSON.parse(rackSettings);
+                    output += `\n✅ rackSettings: Found\n`;
+                    output += `   - Default Capacity: ${parsed.defaultCapacity}\n`;
+                    output += `   - Sections: ${JSON.stringify(parsed.sections)}\n`;
+                } catch (e) {
+                    output += `\n❌ rackSettings: Invalid JSON - ${e.message}\n`;
+                }
+            } else {
+                output += `\n❌ rackSettings: Not found\n`;
+            }
+            
+            result.textContent = output;
+        }
+
+        async function testSupabase() {
+            const result = document.getElementById('supabaseResult');
+            
+            if (!supabase) {
+                result.textContent = '❌ Supabase not initialized';
+                return;
+            }
+            
+            try {
+                // Test connection
+                const { data, error } = await supabase
+                    .from('warehouse_racks')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) {
+                    result.textContent = `❌ Supabase Error: ${error.message}`;
+                } else {
+                    result.textContent = '✅ Supabase connection successful!\n📊 warehouse_racks table accessible';
+                }
+            } catch (err) {
+                result.textContent = `❌ Supabase Connection Failed: ${err.message}`;
+            }
+        }
+
+        async function loadEnhancedRacks() {
+            const result = document.getElementById('loadResult');
+            let output = '📦 Loading Enhanced Racks:\n\n';
+            
+            // Check localStorage
+            const localRacks = localStorage.getItem('enhancedRacks');
+            if (localRacks) {
+                try {
+                    const parsed = JSON.parse(localRacks);
+                    output += `💾 localStorage: ${parsed.length} racks\n`;
+                } catch (e) {
+                    output += `❌ localStorage: Invalid data\n`;
+                }
+            } else {
+                output += `❌ localStorage: No racks found\n`;
+            }
+            
+            // Check Supabase
+            if (supabase) {
+                try {
+                    const { data, error } = await supabase
+                        .from('warehouse_racks')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        output += `❌ Supabase: ${error.message}\n`;
+                    } else {
+                        output += `☁️ Supabase: ${data.length} racks\n`;
+                        data.forEach((rack, index) => {
+                            output += `   ${index + 1}. ${rack.rack_id} - ${rack.current_occupancy}/${rack.capacity}\n`;
+                        });
+                    }
+                } catch (err) {
+                    output += `❌ Supabase: ${err.message}\n`;
+                }
+            } else {
+                output += `⚠️ Supabase: Not available\n`;
+            }
+            
+            result.textContent = output;
+        }
+    </script>
+</body>
+</html>

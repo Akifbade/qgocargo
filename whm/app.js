@@ -729,6 +729,15 @@ function showSection(sectionId) {
         case 'dashboard':
             warehouseApp.refreshDashboard();
             break;
+        case 'enhanced-rack-management':
+            // Wait for enhanced rack manager to initialize
+            setTimeout(() => {
+                if (typeof refreshEnhancedRackDisplay === 'function') {
+                    refreshEnhancedRackDisplay();
+                }
+            }, 500);
+            break;
+            break;
         case 'pricing':
             warehouseApp.loadPricingSettings();
             break;
@@ -2398,5 +2407,378 @@ async function generateTestQR() {
         
     } catch (error) {
         showMessage('❌ QR generation failed: ' + error.message, 'error');
+    }
+}
+
+// Warehouse Map Functions
+async function refreshWarehouseMap() {
+    try {
+        console.log('🔄 Refreshing warehouse map...');
+        
+        // Refresh the embedded map
+        const mapFrame = document.getElementById('warehouseMapFrame');
+        if (mapFrame) {
+            mapFrame.src = mapFrame.src; // Force refresh
+        }
+        
+        // Update dashboard stats
+        await updateWarehouseMapStats();
+        
+        showMessage('✅ Warehouse map refreshed', 'success');
+        
+    } catch (error) {
+        console.error('❌ Error refreshing warehouse map:', error);
+        showMessage('Error refreshing warehouse map: ' + error.message, 'error');
+    }
+}
+
+async function updateWarehouseMapStats() {
+    try {
+        // Load shipment data to calculate stats
+        const { data: shipments, error } = await supabase
+            .from('shipments')
+            .select('rack, pieces')
+            .neq('rack', 'UNASSIGNED')
+            .neq('rack', '')
+            .not('rack', 'is', null);
+
+        if (error) {
+            console.warn('Warning loading shipment stats:', error);
+            return;
+        }
+
+        // Calculate statistics
+        const occupiedRacks = new Set(shipments?.map(s => s.rack) || []).size;
+        const totalRacks = 1000; // 10 zones × 10 rows × 10 columns
+        const emptyRacks = totalRacks - occupiedRacks;
+        const totalShipments = shipments?.length || 0;
+
+        // Update dashboard stats
+        document.getElementById('dashTotalRacks').textContent = totalRacks;
+        document.getElementById('dashOccupiedRacks').textContent = occupiedRacks;
+        document.getElementById('dashEmptyRacks').textContent = emptyRacks;
+        document.getElementById('dashTotalShipments').textContent = totalShipments;
+
+    } catch (error) {
+        console.error('❌ Error updating warehouse stats:', error);
+    }
+}
+
+function openFullScreenMap() {
+    window.open('warehouse-map.html', '_blank', 'width=1200,height=800');
+}
+
+async function exportStorageReport() {
+    try {
+        console.log('📊 Generating storage report...');
+        
+        // Load current storage data
+        const { data: shipments, error } = await supabase
+            .from('shipments')
+            .select('*')
+            .neq('rack', 'UNASSIGNED')
+            .neq('rack', '')
+            .not('rack', 'is', null);
+
+        if (error) throw error;
+
+        // Process data by rack
+        const rackData = new Map();
+        shipments.forEach(shipment => {
+            const rackId = shipment.rack;
+            if (!rackData.has(rackId)) {
+                rackData.set(rackId, {
+                    rackId: rackId,
+                    shipments: [],
+                    totalPieces: 0
+                });
+            }
+            
+            const rack = rackData.get(rackId);
+            rack.shipments.push(shipment);
+            rack.totalPieces += parseInt(shipment.pieces) || 1;
+        });
+
+        // Generate CSV content
+        let csvContent = 'Rack ID,Shipment Count,Total Pieces,Shipment Barcodes,Shippers\n';
+        
+        for (const [rackId, rackInfo] of rackData) {
+            const barcodes = rackInfo.shipments.map(s => s.barcode).join(';');
+            const shippers = rackInfo.shipments.map(s => s.shipper || s.sender_name).join(';');
+            
+            csvContent += `"${rackId}",${rackInfo.shipments.length},${rackInfo.totalPieces},"${barcodes}","${shippers}"\n`;
+        }
+
+        // Download CSV
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `warehouse-storage-report-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+
+        showMessage('✅ Storage report exported successfully', 'success');
+
+    } catch (error) {
+        console.error('❌ Error exporting storage report:', error);
+        showMessage('Error exporting storage report: ' + error.message, 'error');
+    }
+}
+
+// Enhanced Rack Management Functions
+async function createEnhancedRackSection() {
+    try {
+        const sectionName = document.getElementById('newSectionName').value.trim().toUpperCase();
+        const prefix = document.getElementById('newSectionPrefix').value.trim().toUpperCase();
+        const startNumber = parseInt(document.getElementById('newSectionStart').value);
+        const endNumber = parseInt(document.getElementById('newSectionEnd').value);
+        const capacity = parseInt(document.getElementById('newSectionCapacity').value);
+
+        if (!sectionName) {
+            showMessage('❌ Section name is required', 'error');
+            return;
+        }
+
+        if (!startNumber || !endNumber || startNumber > endNumber) {
+            showMessage('❌ Invalid start/end numbers', 'error');
+            return;
+        }
+
+        if (endNumber - startNumber > 100) {
+            if (!confirm(`You are about to create ${endNumber - startNumber + 1} racks. Continue?`)) {
+                return;
+            }
+        }
+
+        showMessage('🏗️ Creating rack section...', 'info');
+
+        const result = await enhancedRackManager.createRackSection(
+            sectionName, startNumber, endNumber, prefix, capacity
+        );
+
+        if (result.success) {
+            let message = `✅ Created ${result.created} racks in section ${sectionName}`;
+            if (result.duplicates > 0) {
+                message += `\n⚠️ Skipped ${result.duplicates} duplicate racks`;
+            }
+            showMessage(message, 'success');
+
+            // Clear form
+            document.getElementById('newSectionName').value = '';
+            document.getElementById('newSectionPrefix').value = '';
+            document.getElementById('newSectionStart').value = '1';
+            document.getElementById('newSectionEnd').value = '10';
+            document.getElementById('newSectionCapacity').value = '4';
+
+            // Refresh display
+            refreshEnhancedRackDisplay();
+        }
+
+    } catch (error) {
+        console.error('❌ Error creating rack section:', error);
+        showMessage('Error creating rack section: ' + error.message, 'error');
+    }
+}
+
+function refreshEnhancedRackDisplay() {
+    try {
+        if (!enhancedRackManager) {
+            setTimeout(refreshEnhancedRackDisplay, 1000);
+            return;
+        }
+
+        // Update statistics
+        const stats = enhancedRackManager.getStatistics();
+        document.getElementById('enhancedTotalRacks').textContent = stats.totalRacks;
+        document.getElementById('enhancedTotalSections').textContent = stats.sections;
+        document.getElementById('enhancedTotalCapacity').textContent = stats.totalCapacity;
+        document.getElementById('enhancedUtilization').textContent = stats.utilizationRate + '%';
+
+        // Display sections
+        const sections = enhancedRackManager.getSections();
+        const sectionsDisplay = document.getElementById('sectionsDisplay');
+
+        if (sections.length === 0) {
+            sectionsDisplay.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">No sections created yet</p>';
+            return;
+        }
+
+        let sectionsHTML = '';
+        sections.forEach(sectionName => {
+            const racks = enhancedRackManager.getRacksInSection(sectionName);
+            sectionsHTML += generateSectionCard(sectionName, racks);
+        });
+
+        sectionsDisplay.innerHTML = sectionsHTML;
+
+    } catch (error) {
+        console.error('❌ Error refreshing rack display:', error);
+    }
+}
+
+function generateSectionCard(sectionName, racks) {
+    const totalCapacity = racks.reduce((sum, rack) => sum + rack.capacity, 0);
+    const avgCapacity = racks.length > 0 ? (totalCapacity / racks.length).toFixed(1) : 0;
+
+    let racksHTML = '';
+    racks.forEach(rack => {
+        racksHTML += `
+            <div class="rack-item">
+                <span class="rack-id">${rack.id}</span>
+                <span class="rack-capacity">${rack.capacity} capacity</span>
+            </div>
+        `;
+    });
+
+    return `
+        <div class="section-card">
+            <div class="section-header">
+                <span class="section-title">📁 ${sectionName}</span>
+                <button onclick="deleteRackSection('${sectionName}')" class="btn btn-danger btn-small">🗑️</button>
+            </div>
+            <div class="section-info">
+                <span>Racks: ${racks.length}</span>
+                <span>Total Capacity: ${totalCapacity}</span>
+                <span>Avg Capacity: ${avgCapacity}</span>
+                <span>Range: ${racks.length > 0 ? racks[0].rackNumber + '-' + racks[racks.length-1].rackNumber : 'None'}</span>
+            </div>
+            <div class="rack-list">
+                ${racksHTML}
+            </div>
+            <div class="section-actions">
+                <button onclick="generateSectionQRPDF('${sectionName}')" class="btn btn-primary btn-small">📄 Generate QR PDF</button>
+                <button onclick="viewSectionDetails('${sectionName}')" class="btn btn-info btn-small">👁️ View Details</button>
+            </div>
+        </div>
+    `;
+}
+
+async function generateSectionQRPDF(sectionName) {
+    try {
+        showMessage(`🖨️ Generating QR codes for section ${sectionName}...`, 'info');
+        
+        await enhancedRackManager.generateSectionQRCodes(sectionName);
+        
+        showMessage(`✅ QR codes PDF generated for section ${sectionName}`, 'success');
+        
+    } catch (error) {
+        console.error('❌ Error generating QR PDF:', error);
+        showMessage('Error generating QR codes: ' + error.message, 'error');
+    }
+}
+
+async function deleteRackSection(sectionName) {
+    try {
+        const racks = enhancedRackManager.getRacksInSection(sectionName);
+        
+        if (!confirm(`Delete section ${sectionName} with ${racks.length} racks?\n\nThis action cannot be undone.`)) {
+            return;
+        }
+
+        showMessage(`🗑️ Deleting section ${sectionName}...`, 'info');
+
+        // Delete all racks in the section
+        for (const rack of racks) {
+            await enhancedRackManager.deleteRack(rack.id);
+        }
+
+        showMessage(`✅ Deleted section ${sectionName} with ${racks.length} racks`, 'success');
+        refreshEnhancedRackDisplay();
+
+    } catch (error) {
+        console.error('❌ Error deleting section:', error);
+        showMessage('Error deleting section: ' + error.message, 'error');
+    }
+}
+
+function viewSectionDetails(sectionName) {
+    const racks = enhancedRackManager.getRacksInSection(sectionName);
+    
+    let details = `Section: ${sectionName}\n`;
+    details += `Total Racks: ${racks.length}\n\n`;
+    details += `Rack Details:\n`;
+    
+    racks.forEach(rack => {
+        details += `${rack.id} - Capacity: ${rack.capacity}, QR: ${rack.qrCode}\n`;
+    });
+    
+    alert(details);
+}
+
+function showRackSettingsModal() {
+    const modal = document.createElement('div');
+    modal.className = 'settings-modal';
+    modal.innerHTML = `
+        <div class="settings-modal-content">
+            <h3>⚙️ Rack System Settings</h3>
+            
+            <div class="settings-group">
+                <label>
+                    <input type="number" id="defaultCapacity" value="${enhancedRackManager?.rackSettings.defaultCapacity || 4}" min="1" max="20">
+                    Default Rack Capacity
+                </label>
+            </div>
+            
+            <div class="settings-group">
+                <label>
+                    <input type="checkbox" id="allowDuplicates" ${enhancedRackManager?.rackSettings.allowDuplicates ? 'checked' : ''}>
+                    Allow Duplicate Rack IDs
+                </label>
+            </div>
+            
+            <div class="settings-group">
+                <label>
+                    <input type="checkbox" id="autoNumbering" ${enhancedRackManager?.rackSettings.autoNumbering ? 'checked' : ''}>
+                    Auto Number with Leading Zeros
+                </label>
+            </div>
+            
+            <div class="modal-actions">
+                <button onclick="closeRackSettingsModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="saveRackSettings()" class="btn btn-primary">Save Settings</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    window.currentSettingsModal = modal;
+}
+
+function closeRackSettingsModal() {
+    if (window.currentSettingsModal) {
+        document.body.removeChild(window.currentSettingsModal);
+        window.currentSettingsModal = null;
+    }
+}
+
+function saveRackSettings() {
+    try {
+        const defaultCapacity = parseInt(document.getElementById('defaultCapacity').value);
+        const allowDuplicates = document.getElementById('allowDuplicates').checked;
+        const autoNumbering = document.getElementById('autoNumbering').checked;
+
+        enhancedRackManager.updateSettings({
+            defaultCapacity,
+            allowDuplicates,
+            autoNumbering
+        });
+
+        showMessage('✅ Settings saved successfully', 'success');
+        closeRackSettingsModal();
+
+    } catch (error) {
+        console.error('❌ Error saving settings:', error);
+        showMessage('Error saving settings: ' + error.message, 'error');
+    }
+}
+
+function exportEnhancedRackData() {
+    try {
+        enhancedRackManager.exportRackData();
+        showMessage('✅ Rack data exported successfully', 'success');
+    } catch (error) {
+        console.error('❌ Error exporting rack data:', error);
+        showMessage('Error exporting rack data: ' + error.message, 'error');
     }
 }
