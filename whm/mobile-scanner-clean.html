@@ -219,16 +219,98 @@
     </div>
 
     <script>
-        // Simple, working scanner implementation
+        // Enhanced mobile scanner with real Supabase integration
         let currentUser = null;
         let scanner = null;
         let isScanning = false;
         let scanStep = 1; // 1 = package, 2 = rack
         let pendingShipment = null;
+        let audioContext = null;
+        let supabase = null;
 
-        // Login functions
-        function regularLogin() {
-            const email = document.getElementById('workerEmail').value;
+        // Initialize Supabase
+        function initializeSupabase() {
+            try {
+                if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                    supabase = window.supabase.createClient(
+                        'https://exovuqedyedhqzorajca.supabase.co',
+                        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3Z1cWVkeWVkaHF6b3JhamNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkwNzQyMTYsImV4cCI6MjA3NDY1MDIxNn0.zWyoLDRid9BmR9Ouw-zGGiQZevvXJ_P7ZTIo-VbrAso'
+                    );
+                    console.log('✅ Supabase initialized successfully');
+                    
+                    // Check for existing session
+                    supabase.auth.getSession().then(({ data: { session } }) => {
+                        if (session) {
+                            console.log('User already logged in');
+                            handleLoginSuccess(session.user);
+                        }
+                    });
+                    
+                    // Listen for auth changes
+                    supabase.auth.onAuthStateChange((event, session) => {
+                        console.log('Auth state changed:', event);
+                        if (event === 'SIGNED_IN') {
+                            handleLoginSuccess(session.user);
+                        } else if (event === 'SIGNED_OUT') {
+                            handleLogout();
+                        }
+                    });
+                    
+                    return true;
+                } else {
+                    console.warn('Supabase library not available');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error initializing Supabase:', error);
+                return false;
+            }
+        }
+
+        // Initialize audio for beeping
+        function initializeAudio() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                console.log('Audio context initialized for beeping');
+            } catch (error) {
+                console.warn('Audio context not supported:', error);
+            }
+        }
+
+        // Play beep sound
+        function playBeep(count = 1, frequency = 800, duration = 200) {
+            if (!audioContext) {
+                console.warn('Audio not available');
+                return;
+            }
+
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    oscillator.frequency.value = frequency;
+                    oscillator.type = 'square';
+
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + duration / 1000);
+                }, i * (duration + 100));
+            }
+        }
+
+        // Enhanced login functions with real Supabase auth
+        async function regularLogin() {
+            const email = document.getElementById('workerEmail').value.trim();
             const password = document.getElementById('workerPassword').value;
             
             if (!email || !password) {
@@ -236,37 +318,95 @@
                 return;
             }
             
-            // Simple credential check
-            if ((email === 'worker@test.com' && password === 'password') ||
-                (email === 'demo@warehouse.com' && password === 'test123')) {
-                loginSuccess(email);
-            } else {
-                showStatus('Invalid credentials. Try: worker@test.com / password', 'error');
+            if (!supabase) {
+                showStatus('❌ Database not connected. Please refresh and try again.', 'error');
+                return;
+            }
+            
+            initializeAudio();
+            showStatus('🔄 Logging in...', 'info');
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                console.log('✅ Supabase login successful:', data);
+                showStatus('✅ Login successful!', 'success');
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                let errorMessage = '❌ Login failed: ';
+                
+                if (error.message.includes('Invalid login credentials')) {
+                    errorMessage += 'Invalid email or password';
+                } else if (error.message.includes('Email not confirmed')) {
+                    errorMessage += 'Please confirm your email address';
+                } else {
+                    errorMessage += error.message;
+                }
+                
+                showStatus(errorMessage, 'error');
             }
         }
 
         function demoLogin() {
-            loginSuccess('demo@warehouse.com');
+            initializeAudio();
+            // Create demo user object for fallback
+            const demoUser = {
+                id: 'demo-user-123',
+                email: 'demo@warehouse.com',
+                user_metadata: { role: 'worker', name: 'Demo Worker' }
+            };
+            handleLoginSuccess(demoUser);
         }
 
         function instantLogin() {
-            loginSuccess('instant@demo.com');
+            initializeAudio();
+            const instantUser = {
+                id: 'instant-user-123',
+                email: 'instant@demo.com',
+                user_metadata: { role: 'worker', name: 'Instant User' }
+            };
+            handleLoginSuccess(instantUser);
         }
 
-        function loginSuccess(email) {
-            currentUser = { email: email };
-            document.getElementById('userInfo').textContent = `Welcome, ${email}`;
+        function handleLoginSuccess(user) {
+            currentUser = user;
+            document.getElementById('userInfo').textContent = `Welcome, ${user.email}`;
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('scannerInterface').style.display = 'block';
-            showStatus('Login successful! Ready to scan packages.', 'success');
+            showStatus('✅ Login successful! Ready to scan packages.', 'success');
+            
+            // Play success beep
+            setTimeout(() => playBeep(1, 600, 300), 100);
         }
 
-        function logout() {
+        function handleLogout() {
             currentUser = null;
             stopScanning();
             document.getElementById('loginScreen').classList.remove('hidden');
             document.getElementById('scannerInterface').style.display = 'none';
             document.getElementById('userInfo').textContent = '';
+            resetScan();
+            showStatus('Logged out successfully', 'info');
+        }
+
+        async function logout() {
+            if (supabase && currentUser && currentUser.id !== 'demo-user-123' && currentUser.id !== 'instant-user-123') {
+                try {
+                    await supabase.auth.signOut();
+                } catch (error) {
+                    console.error('Logout error:', error);
+                }
+            } else {
+                handleLogout();
+            }
         }
 
         // Scanner functions
@@ -305,15 +445,15 @@
 
             } catch (error) {
                 console.error('Error starting scanner:', error);
-                showStatus('Camera access denied or not available. Please check permissions.', 'error');
+                showStatus('❌ Camera access denied or not available. Trying manual input...', 'error');
                 
                 // Fallback to manual input
                 setTimeout(() => {
-                    const manualQR = prompt('Camera not available. Enter QR code manually:');
-                    if (manualQR) {
-                        handleScanSuccess(manualQR);
+                    const manualQR = prompt('📱 Camera not available. Enter QR code manually:\n\nExamples:\n• PIECE_WH2510029740_001\n• WH2510029740\n• RACK_R1-A-001');
+                    if (manualQR && manualQR.trim()) {
+                        handleScanSuccess(manualQR.trim());
                     }
-                }, 1000);
+                }, 500);
             }
         }
 
@@ -333,9 +473,9 @@
         }
 
         function handleScanSuccess(qrCode) {
-            console.log('QR Code scanned:', qrCode);
+            console.log('✅ QR Code scanned:', qrCode);
             
-            // Stop scanning immediately
+            // Stop scanning immediately to prevent continuous scanning
             stopScanning();
             
             // Vibrate if available
@@ -352,53 +492,164 @@
             }
         }
 
-        function handlePackageScan(qrCode) {
+        async function handlePackageScan(qrCode) {
+            console.log('📦 Processing package scan:', qrCode);
+            
             if (qrCode.startsWith('PIECE_') || qrCode.match(/^WH\d+/)) {
-                // Valid package QR
+                let shipmentBarcode = qrCode;
+                let pieceInfo = '';
+                
+                if (qrCode.startsWith('PIECE_')) {
+                    const match = qrCode.match(/^PIECE_([A-Z0-9]+)_(\d{3})$/);
+                    if (match) {
+                        shipmentBarcode = match[1];
+                        pieceInfo = ` (Piece ${parseInt(match[2])})`;
+                    }
+                } else {
+                    pieceInfo = ' (All pieces)';
+                }
+                
+                // Try to get shipment details from database if available
+                let shipmentDetails = null;
+                if (supabase) {
+                    try {
+                        const { data, error } = await supabase
+                            .from('shipments')
+                            .select('*')
+                            .eq('barcode', shipmentBarcode)
+                            .single();
+                        
+                        if (!error && data) {
+                            shipmentDetails = data;
+                            console.log('✅ Found shipment in database:', data);
+                        }
+                    } catch (error) {
+                        console.warn('Could not fetch shipment details:', error);
+                    }
+                }
+                
                 pendingShipment = {
-                    qr: qrCode,
-                    timestamp: new Date()
+                    originalQR: qrCode,
+                    barcode: shipmentBarcode,
+                    pieceInfo: pieceInfo,
+                    pieces: shipmentDetails ? shipmentDetails.pieces : 5,
+                    timestamp: new Date(),
+                    sender: shipmentDetails ? shipmentDetails.sender_name : 'Demo Sender Ltd.',
+                    receiver: shipmentDetails ? shipmentDetails.receiver_name : 'Demo Receiver Co.',
+                    shipmentData: shipmentDetails
                 };
                 
+                // Update UI
                 updateStep(1, 'completed');
                 updateStep(2, 'active');
                 scanStep = 2;
                 
-                showShipmentInfo(qrCode);
-                showStatus(`📦 Package scanned: ${qrCode}\n🎯 Now scan RACK QR code`, 'success');
+                showShipmentInfo();
+                showStatus(`📋 PACKAGE COPIED! ${shipmentBarcode}${pieceInfo}\n🎯 Now scan RACK QR code to PASTE`, 'success');
                 
-                // Auto-start scanning for rack
-                setTimeout(startScanning, 1000);
+                // 🔊 COPY SUCCESS: 1 BEEP
+                playBeep(1, 800, 300);
+                
+                // Show success popup
+                setTimeout(() => {
+                    alert(`📋 PACKAGE COPIED TO MEMORY!\n\n📦 Barcode: ${shipmentBarcode}\n🔢 Pieces: ${pendingShipment.pieces}${pieceInfo}\n👤 Sender: ${pendingShipment.sender}\n\n🎯 Next: Scan RACK QR to paste`);
+                }, 100);
+                
+                // Auto-start scanning for rack after a moment
+                setTimeout(() => {
+                    if (scanStep === 2) {
+                        startScanning();
+                    }
+                }, 2000);
                 
             } else if (qrCode.startsWith('RACK_')) {
                 showStatus('❌ Please scan a PACKAGE QR code first, not a rack QR code', 'error');
+                playBeep(2, 400, 200); // Error beep
             } else {
-                showStatus('❌ Invalid package QR code format', 'error');
+                showStatus('❌ Invalid package QR code format. Expected: PIECE_WH... or WH...', 'error');
+                playBeep(2, 400, 200); // Error beep
             }
         }
 
-        function handleRackScan(qrCode) {
+        async function handleRackScan(qrCode) {
+            console.log('📍 Processing rack scan:', qrCode);
+            
             if (!pendingShipment) {
                 showStatus('❌ Please scan a package first', 'error');
+                playBeep(2, 400, 200);
                 return;
             }
 
             if (qrCode.startsWith('RACK_')) {
                 const rackId = qrCode.replace('RACK_', '').replace(/_/g, '-');
                 
-                // Success!
+                // Save to database if Supabase is available
+                const assignmentResult = await saveAssignmentToDatabase(rackId);
+                
+                // Success! Assignment complete
                 updateStep(2, 'completed');
                 updateStep(3, 'active');
                 
-                showStatus(`🎉 SUCCESS!\n📦 Package: ${pendingShipment.qr}\n📍 Assigned to: ${rackId}\n\n✅ Ready for next package`, 'success');
+                const statusMessage = assignmentResult ? 
+                    `🎉 SAVED TO DATABASE!\n📦 ${pendingShipment.barcode}${pendingShipment.pieceInfo}\n📍 Location: ${rackId}\n💾 Database: Updated\n\n✅ Ready for next package` :
+                    `🎉 ASSIGNMENT COMPLETE!\n📦 ${pendingShipment.barcode}${pendingShipment.pieceInfo}\n📍 Location: ${rackId}\n⚠️ Database: Offline mode\n\n✅ Ready for next package`;
+                    
+                showStatus(statusMessage, 'success');
                 
-                // Reset for next scan
+                // 🔊 PASTE SUCCESS: 3 BEEPS (copy-paste workflow complete)
+                playBeep(3, 600, 200);
+                
+                // Enhanced vibrate for success
+                if (navigator.vibrate) {
+                    navigator.vibrate([200, 100, 200, 100, 200]);
+                }
+                
+                // Show success popup
+                setTimeout(() => {
+                    const dbStatus = assignmentResult ? '💾 Saved to database' : '⚠️ Offline mode (not saved)';
+                    alert(`🎉 ASSIGNMENT COMPLETE!\n\n📦 Package: ${pendingShipment.barcode}\n🔢 Pieces: ${pendingShipment.pieces}${pendingShipment.pieceInfo}\n📍 Location: ${rackId}\n👤 Sender: ${pendingShipment.sender}\n⏰ Time: ${pendingShipment.timestamp.toLocaleTimeString()}\n${dbStatus}\n\n✅ Ready for next package!`);
+                }, 100);
+                
+                // Reset for next scan after showing success
                 setTimeout(() => {
                     resetScan();
-                }, 3000);
+                }, 4000);
                 
             } else {
                 showStatus('❌ Please scan a RACK QR code (should start with RACK_)', 'error');
+                playBeep(2, 400, 200); // Error beep
+            }
+        }
+
+        async function saveAssignmentToDatabase(rackId) {
+            if (!supabase || !pendingShipment.shipmentData) {
+                console.warn('Database not available or no shipment data');
+                return false;
+            }
+
+            try {
+                console.log('💾 Saving assignment to database...');
+                
+                // Update the shipment with rack assignment
+                const { data, error } = await supabase
+                    .from('shipments')
+                    .update({
+                        rack: rackId,
+                        status: 'stored',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', pendingShipment.shipmentData.id);
+
+                if (error) {
+                    throw error;
+                }
+
+                console.log('✅ Assignment saved to database:', data);
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Error saving to database:', error);
+                return false;
             }
         }
 
@@ -409,7 +660,7 @@
             updateStep(2, '');
             updateStep(3, '');
             hideShipmentInfo();
-            showStatus('Ready for next package scan', 'info');
+            showStatus('🔄 Ready for next package scan', 'info');
         }
 
         // UI Helper functions
@@ -428,15 +679,23 @@
             }
         }
 
-        function showShipmentInfo(qrCode) {
+        function showShipmentInfo() {
+            if (!pendingShipment) return;
+            
             const infoEl = document.getElementById('shipmentInfo');
             const detailsEl = document.getElementById('shipmentDetails');
             
             if (infoEl && detailsEl) {
+                const dbStatus = pendingShipment.shipmentData ? '✅ Found in database' : '⚠️ Demo data only';
                 detailsEl.innerHTML = `
-                    <p><strong>QR Code:</strong> ${qrCode}</p>
-                    <p><strong>Scanned:</strong> ${new Date().toLocaleTimeString()}</p>
-                    <p><strong>Status:</strong> Ready for rack assignment</p>
+                    <p><strong>📦 Original QR:</strong> ${pendingShipment.originalQR}</p>
+                    <p><strong>📋 Barcode:</strong> ${pendingShipment.barcode}</p>
+                    <p><strong>🔢 Pieces:</strong> ${pendingShipment.pieces}${pendingShipment.pieceInfo}</p>
+                    <p><strong>👤 Sender:</strong> ${pendingShipment.sender}</p>
+                    <p><strong>📍 Receiver:</strong> ${pendingShipment.receiver}</p>
+                    <p><strong>⏰ Scanned:</strong> ${pendingShipment.timestamp.toLocaleTimeString()}</p>
+                    <p><strong>💾 Database:</strong> ${dbStatus}</p>
+                    <p><strong>📊 Status:</strong> <span style="color: #059669; font-weight: bold;">COPIED - Ready for rack assignment</span></p>
                 `;
                 infoEl.style.display = 'block';
             }
@@ -449,10 +708,53 @@
             }
         }
 
+        // Test functions
+        function testPackageQR() {
+            handleScanSuccess('PIECE_WH2510029740_001');
+        }
+
+        function testRackQR() {
+            if (pendingShipment) {
+                handleScanSuccess('RACK_R1_A_001');
+            } else {
+                alert('❌ Please scan a package first!');
+            }
+        }
+
+        function testBeeps() {
+            alert('🔊 Testing beep sounds...');
+            setTimeout(() => playBeep(1, 800, 300), 500); // Copy beep
+            setTimeout(() => playBeep(3, 600, 200), 2000); // Paste beep
+        }
+
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Clean mobile scanner loaded successfully');
-            showStatus('System ready. Please login to continue.', 'info');
+            console.log('🚀 Enhanced mobile scanner loading...');
+            
+            // Initialize Supabase
+            const supabaseReady = initializeSupabase();
+            if (supabaseReady) {
+                showStatus('✅ System ready with database connection. Please login.', 'success');
+            } else {
+                showStatus('⚠️ System ready (offline mode). Demo login available.', 'info');
+            }
+            
+            // Add test buttons in demo mode
+            setTimeout(() => {
+                const scannerControls = document.querySelector('.scanner-controls');
+                if (scannerControls && !document.getElementById('testButtons')) {
+                    const testDiv = document.createElement('div');
+                    testDiv.id = 'testButtons';
+                    testDiv.style.cssText = 'margin-top: 20px; padding: 15px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;';
+                    testDiv.innerHTML = `
+                        <h4 style="margin: 0 0 10px 0; color: #374151;">🧪 Test Functions</h4>
+                        <button onclick="testPackageQR()" style="margin: 5px; padding: 8px 12px; background: #6366f1; color: white; border: none; border-radius: 4px; cursor: pointer;">📦 Test Package QR</button>
+                        <button onclick="testRackQR()" style="margin: 5px; padding: 8px 12px; background: #059669; color: white; border: none; border-radius: 4px; cursor: pointer;">📍 Test Rack QR</button>
+                        <button onclick="testBeeps()" style="margin: 5px; padding: 8px 12px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer;">🔊 Test Beeps</button>
+                    `;
+                    scannerControls.appendChild(testDiv);
+                }
+            }, 1000);
         });
     </script>
 </body>

@@ -688,6 +688,11 @@ class WarehouseApp {
 let warehouseApp;
 
 // Navigation functions
+function openMobileScanner() {
+    // Open the working mobile scanner in a new tab
+    window.open('mobile-scanner-clean.html', '_blank');
+}
+
 function showSection(sectionId) {
     // Hide all sections
     document.querySelectorAll('.section').forEach(section => {

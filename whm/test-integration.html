@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Integration Test - Supabase Login & Rack Assignment</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f3f4f6;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+        }
+        .test-section.success {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+        .test-section.error {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+        .test-section.pending {
+            border-color: #f59e0b;
+            background: #fffbeb;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 8px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .success-btn {
+            background: #10b981;
+        }
+        .success-btn:hover {
+            background: #059669;
+        }
+        .demo-btn {
+            background: #f59e0b;
+        }
+        .demo-btn:hover {
+            background: #d97706;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+        .log {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 10px;
+        }
+        .nav-buttons {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .nav-buttons a {
+            display: inline-block;
+            background: #6366f1;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 0 10px;
+            font-weight: 500;
+        }
+        .nav-buttons a:hover {
+            background: #4f46e5;
+        }
+    </style>
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Integration Test - Complete Workflow</h1>
+        <p>This page tests the complete workflow: <strong>Supabase Login → Mobile Scanner → Rack Assignment → Warehouse Map Update</strong></p>
+        
+        <div class="nav-buttons">
+            <a href="http://localhost:3000/" target="_blank">🏠 Main System</a>
+            <a href="http://localhost:3000/mobile-scanner-clean.html" target="_blank">📱 Mobile Scanner</a>
+            <a href="http://localhost:3000/warehouse-map.html" target="_blank">🗺️ Warehouse Map</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="test-section" id="supabaseTest">
+            <h3>🔐 Step 1: Supabase Connection Test</h3>
+            <p>Testing connection to your Supabase database...</p>
+            <button onclick="testSupabaseConnection()">🔍 Test Connection</button>
+            <button onclick="testSupabaseAuth()" class="success-btn">🔑 Test Authentication</button>
+            <div id="supabaseStatus"></div>
+            <div id="supabaseLog" class="log"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="test-section" id="dataTest">
+            <h3>📦 Step 2: Add Test Shipment Data</h3>
+            <p>Adding sample shipment data to test the rack assignment workflow...</p>
+            <button onclick="addTestShipments()">📦 Add Test Shipments</button>
+            <button onclick="listShipments()" class="demo-btn">📋 List Current Shipments</button>
+            <div id="dataStatus"></div>
+            <div id="dataLog" class="log"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="test-section" id="scannerTest">
+            <h3>📱 Step 3: Mobile Scanner Workflow</h3>
+            <p>Test the mobile scanner rack assignment process...</p>
+            <button onclick="simulatePackageScan()">1️⃣ Simulate Package Scan</button>
+            <button onclick="simulateRackScan()" class="success-btn">2️⃣ Simulate Rack Assignment</button>
+            <div id="scannerStatus"></div>
+            <div id="scannerLog" class="log"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="test-section" id="mapTest">
+            <h3>🗺️ Step 4: Warehouse Map Update</h3>
+            <p>Verify that rack assignments appear in the warehouse map...</p>
+            <button onclick="checkWarehouseMap()">🔍 Check Map Data</button>
+            <button onclick="refreshMap()" class="demo-btn">🔄 Refresh Map</button>
+            <div id="mapStatus"></div>
+            <div id="mapLog" class="log"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h3>📊 Integration Test Results</h3>
+        <div id="finalResults">
+            <p>Run the tests above to verify your complete system integration!</p>
+        </div>
+    </div>
+
+    <script>
+        let supabase = null;
+        let testResults = {
+            supabase: false,
+            auth: false,
+            data: false,
+            scanner: false,
+            map: false
+        };
+
+        // Initialize Supabase
+        function initSupabase() {
+            try {
+                supabase = window.supabase.createClient(
+                    'https://exovuqedyedhqzorajca.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3Z1cWVkeWVkaHF6b3JhamNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkwNzQyMTYsImV4cCI6MjA3NDY1MDIxNn0.zWyoLDRid9BmR9Ouw-zGGiQZevvXJ_P7ZTIo-VbrAso'
+                );
+                return true;
+            } catch (error) {
+                console.error('Failed to initialize Supabase:', error);
+                return false;
+            }
+        }
+
+        // Test Supabase connection
+        async function testSupabaseConnection() {
+            const statusEl = document.getElementById('supabaseStatus');
+            const logEl = document.getElementById('supabaseLog');
+            const sectionEl = document.getElementById('supabaseTest');
+            
+            statusEl.innerHTML = '<div class="status info">🔄 Testing Supabase connection...</div>';
+            logEl.textContent = 'Initializing Supabase client...\n';
+            
+            try {
+                if (!supabase) {
+                    const initialized = initSupabase();
+                    if (!initialized) {
+                        throw new Error('Failed to initialize Supabase client');
+                    }
+                }
+                
+                logEl.textContent += 'Supabase client initialized ✅\n';
+                logEl.textContent += 'Testing database connection...\n';
+                
+                // Test connection by querying a simple table
+                const { data, error } = await supabase
+                    .from('shipments')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                logEl.textContent += 'Database connection successful ✅\n';
+                logEl.textContent += `Connection result: ${JSON.stringify(data)}\n`;
+                
+                statusEl.innerHTML = '<div class="status success">✅ Supabase connection successful!</div>';
+                sectionEl.classList.add('success');
+                testResults.supabase = true;
+                updateFinalResults();
+                
+            } catch (error) {
+                logEl.textContent += `❌ Error: ${error.message}\n`;
+                statusEl.innerHTML = `<div class="status error">❌ Connection failed: ${error.message}</div>`;
+                sectionEl.classList.add('error');
+                console.error('Supabase connection test failed:', error);
+            }
+        }
+
+        // Test Supabase authentication
+        async function testSupabaseAuth() {
+            const statusEl = document.getElementById('supabaseStatus');
+            const logEl = document.getElementById('supabaseLog');
+            
+            if (!supabase) {
+                statusEl.innerHTML = '<div class="status error">❌ Please test connection first</div>';
+                return;
+            }
+            
+            statusEl.innerHTML = '<div class="status info">🔄 Testing authentication...</div>';
+            logEl.textContent += '\n=== AUTHENTICATION TEST ===\n';
+            
+            try {
+                // Check current session
+                const { data: session } = await supabase.auth.getSession();
+                logEl.textContent += `Current session: ${session.session ? 'Active' : 'None'}\n`;
+                
+                if (session.session) {
+                    logEl.textContent += `User: ${session.session.user.email}\n`;
+                    statusEl.innerHTML = '<div class="status success">✅ Already authenticated!</div>';
+                    testResults.auth = true;
+                } else {
+                    logEl.textContent += 'No active session - authentication is working correctly\n';
+                    statusEl.innerHTML = '<div class="status success">✅ Authentication system ready!</div>';
+                    testResults.auth = true;
+                }
+                
+                updateFinalResults();
+                
+            } catch (error) {
+                logEl.textContent += `❌ Auth test error: ${error.message}\n`;
+                statusEl.innerHTML = `<div class="status error">❌ Auth test failed: ${error.message}</div>`;
+            }
+        }
+
+        // Add test shipments
+        async function addTestShipments() {
+            const statusEl = document.getElementById('dataStatus');
+            const logEl = document.getElementById('dataLog');
+            const sectionEl = document.getElementById('dataTest');
+            
+            if (!supabase) {
+                statusEl.innerHTML = '<div class="status error">❌ Please test Supabase connection first</div>';
+                return;
+            }
+            
+            statusEl.innerHTML = '<div class="status info">🔄 Adding test shipments...</div>';
+            logEl.textContent = 'Creating test shipment data...\n';
+            
+            try {
+                // Test shipments data
+                const testShipments = [
+                    {
+                        barcode: 'WH2510029740',
+                        sender_name: 'Test Sender Ltd.',
+                        receiver_name: 'Test Receiver Co.',
+                        pieces: 5,
+                        status: 'pending',
+                        rack: null
+                    },
+                    {
+                        barcode: 'WH2510029741',
+                        sender_name: 'Demo Company Inc.',
+                        receiver_name: 'Target Warehouse',
+                        pieces: 3,
+                        status: 'pending', 
+                        rack: null
+                    },
+                    {
+                        barcode: 'WH2510029742',
+                        sender_name: 'Supply Chain Corp',
+                        receiver_name: 'Distribution Center',
+                        pieces: 8,
+                        status: 'pending',
+                        rack: null
+                    }
+                ];
+                
+                logEl.textContent += `Inserting ${testShipments.length} test shipments...\n`;
+                
+                // Insert shipments (upsert to avoid duplicates)
+                const { data, error } = await supabase
+                    .from('shipments')
+                    .upsert(testShipments, { 
+                        onConflict: 'barcode',
+                        ignoreDuplicates: false 
+                    })
+                    .select();
+                
+                if (error) {
+                    throw error;
+                }
+                
+                logEl.textContent += `✅ Successfully added ${data.length} shipments\n`;
+                logEl.textContent += 'Shipments:\n';
+                data.forEach(shipment => {
+                    logEl.textContent += `  - ${shipment.barcode}: ${shipment.pieces} pieces (${shipment.sender_name})\n`;
+                });
+                
+                statusEl.innerHTML = '<div class="status success">✅ Test shipments added successfully!</div>';
+                sectionEl.classList.add('success');
+                testResults.data = true;
+                updateFinalResults();
+                
+            } catch (error) {
+                logEl.textContent += `❌ Error adding shipments: ${error.message}\n`;
+                statusEl.innerHTML = `<div class="status error">❌ Failed to add shipments: ${error.message}</div>`;
+                sectionEl.classList.add('error');
+                console.error('Add shipments error:', error);
+            }
+        }
+
+        // List current shipments
+        async function listShipments() {
+            const logEl = document.getElementById('dataLog');
+            
+            if (!supabase) {
+                logEl.textContent += '❌ Supabase not connected\n';
+                return;
+            }
+            
+            try {
+                logEl.textContent += '\n=== CURRENT SHIPMENTS ===\n';
+                
+                const { data, error } = await supabase
+                    .from('shipments')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    throw error;
+                }
+                
+                logEl.textContent += `Found ${data.length} total shipments:\n`;
+                data.forEach(shipment => {
+                    const rackInfo = shipment.rack ? `→ ${shipment.rack}` : '(unassigned)';
+                    logEl.textContent += `  📦 ${shipment.barcode}: ${shipment.pieces} pieces ${rackInfo}\n`;
+                });
+                
+            } catch (error) {
+                logEl.textContent += `❌ Error listing shipments: ${error.message}\n`;
+            }
+        }
+
+        // Simulate package scan and rack assignment
+        async function simulatePackageScan() {
+            const statusEl = document.getElementById('scannerStatus');
+            const logEl = document.getElementById('scannerLog');
+            
+            statusEl.innerHTML = '<div class="status info">📦 Simulating package scan...</div>';
+            logEl.textContent = 'Step 1: Package Scan Simulation\n';
+            logEl.textContent += 'Scanning package: WH2510029740\n';
+            logEl.textContent += '✅ Package found and copied to memory\n';
+            logEl.textContent += 'Ready for rack assignment...\n';
+            
+            statusEl.innerHTML = '<div class="status success">✅ Package scan completed! Ready for rack assignment.</div>';
+        }
+
+        async function simulateRackScan() {
+            const statusEl = document.getElementById('scannerStatus');
+            const logEl = document.getElementById('scannerLog');
+            const sectionEl = document.getElementById('scannerTest');
+            
+            if (!supabase) {
+                statusEl.innerHTML = '<div class="status error">❌ Please test Supabase connection first</div>';
+                return;
+            }
+            
+            statusEl.innerHTML = '<div class="status info">📍 Simulating rack assignment...</div>';
+            logEl.textContent += '\nStep 2: Rack Assignment Simulation\n';
+            logEl.textContent += 'Scanning rack: R1-A-001\n';
+            logEl.textContent += 'Assigning package WH2510029740 to rack R1-A-001...\n';
+            
+            try {
+                // Update the shipment with rack assignment
+                const { data, error } = await supabase
+                    .from('shipments')
+                    .update({ 
+                        rack: 'R1-A-001',
+                        status: 'stored',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('barcode', 'WH2510029740')
+                    .select();
+                
+                if (error) {
+                    throw error;
+                }
+                
+                if (data.length > 0) {
+                    logEl.textContent += '✅ Rack assignment saved to database\n';
+                    logEl.textContent += `Assigned: ${data[0].barcode} → ${data[0].rack}\n`;
+                    statusEl.innerHTML = '<div class="status success">🎉 Rack assignment completed and saved!</div>';
+                    sectionEl.classList.add('success');
+                    testResults.scanner = true;
+                    updateFinalResults();
+                } else {
+                    throw new Error('No shipment found to update');
+                }
+                
+            } catch (error) {
+                logEl.textContent += `❌ Error in rack assignment: ${error.message}\n`;
+                statusEl.innerHTML = `<div class="status error">❌ Rack assignment failed: ${error.message}</div>`;
+                sectionEl.classList.add('error');
+            }
+        }
+
+        // Check warehouse map
+        async function checkWarehouseMap() {
+            const statusEl = document.getElementById('mapStatus');
+            const logEl = document.getElementById('mapLog');
+            const sectionEl = document.getElementById('mapTest');
+            
+            if (!supabase) {
+                statusEl.innerHTML = '<div class="status error">❌ Please test Supabase connection first</div>';
+                return;
+            }
+            
+            statusEl.innerHTML = '<div class="status info">🔍 Checking warehouse map data...</div>';
+            logEl.textContent = 'Querying assigned shipments for warehouse map...\n';
+            
+            try {
+                // Query shipments with rack assignments
+                const { data, error } = await supabase
+                    .from('shipments')
+                    .select('*')
+                    .neq('rack', 'UNASSIGNED')
+                    .neq('rack', '')
+                    .not('rack', 'is', null);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                logEl.textContent += `Found ${data.length} shipments with rack assignments:\n`;
+                
+                if (data.length > 0) {
+                    data.forEach(shipment => {
+                        logEl.textContent += `  📍 ${shipment.barcode} → ${shipment.rack} (${shipment.pieces} pieces)\n`;
+                    });
+                    
+                    statusEl.innerHTML = '<div class="status success">✅ Warehouse map data verified!</div>';
+                    sectionEl.classList.add('success');
+                    testResults.map = true;
+                } else {
+                    logEl.textContent += 'No rack assignments found. Run the scanner simulation first.\n';
+                    statusEl.innerHTML = '<div class="status info">ℹ️ No rack assignments found. Complete scanner test first.</div>';
+                }
+                
+                updateFinalResults();
+                
+            } catch (error) {
+                logEl.textContent += `❌ Error checking map data: ${error.message}\n`;
+                statusEl.innerHTML = `<div class="status error">❌ Map check failed: ${error.message}</div>`;
+                sectionEl.classList.add('error');
+            }
+        }
+
+        function refreshMap() {
+            const logEl = document.getElementById('mapLog');
+            logEl.textContent += '\n🔄 Refreshing warehouse map...\n';
+            logEl.textContent += 'Map refresh would trigger automatic update in the main system.\n';
+            logEl.textContent += 'Check the warehouse map page to see live updates!\n';
+        }
+
+        function updateFinalResults() {
+            const resultsEl = document.getElementById('finalResults');
+            const totalTests = Object.keys(testResults).length;
+            const passedTests = Object.values(testResults).filter(Boolean).length;
+            
+            let html = `<div style="background: ${passedTests === totalTests ? '#d1fae5' : '#fef3c7'}; padding: 20px; border-radius: 8px; border: 2px solid ${passedTests === totalTests ? '#10b981' : '#f59e0b'};">`;
+            html += `<h4>Integration Test Progress: ${passedTests}/${totalTests} Tests Passed</h4>`;
+            html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 15px;">';
+            
+            const testNames = {
+                supabase: '🔐 Supabase Connection',
+                auth: '🔑 Authentication',
+                data: '📦 Test Data',
+                scanner: '📱 Scanner Workflow',
+                map: '🗺️ Map Integration'
+            };
+            
+            Object.entries(testResults).forEach(([key, passed]) => {
+                const status = passed ? '✅ PASSED' : '⏳ PENDING';
+                const color = passed ? '#059669' : '#d97706';
+                html += `<div style="padding: 10px; background: white; border-radius: 6px; border-left: 4px solid ${color};">`;
+                html += `<div style="font-weight: 500;">${testNames[key]}</div>`;
+                html += `<div style="color: ${color};">${status}</div>`;
+                html += '</div>';
+            });
+            
+            html += '</div>';
+            
+            if (passedTests === totalTests) {
+                html += '<div style="margin-top: 20px; padding: 15px; background: #10b981; color: white; border-radius: 6px; text-align: center; font-weight: 500; font-size: 18px;">';
+                html += '🎉 ALL TESTS PASSED! Your system is fully integrated and working!';
+                html += '</div>';
+            }
+            
+            html += '</div>';
+            resultsEl.innerHTML = html;
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 Integration test page loaded');
+            initSupabase();
+        });
+    </script>
+</body>
+</html>

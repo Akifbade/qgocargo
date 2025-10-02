@@ -5,6 +5,8 @@ class WarehouseMap {
         this.rackData = new Map();
         this.shipmentData = new Map();
         this.refreshInterval = null;
+        this.lastUpdated = null;
+        this.autoRefreshEnabled = true;
         
         this.initializeSystem();
     }
@@ -48,23 +50,134 @@ class WarehouseMap {
 
             if (!supabaseInitialized) {
                 console.warn('⚠️ Supabase not available, using offline mode');
+            } else {
+                // Set up real-time subscriptions for live updates
+                this.setupRealtimeSubscriptions();
             }
 
-            // Load initial map data
+            // Initial load
             await this.loadWarehouseData();
             
-            // Start auto-refresh every 30 seconds
-            this.startAutoRefresh();
-            
-            // Set up real-time subscriptions if Supabase is available
-            if (this.supabase) {
-                this.setupRealtimeSubscriptions();
+            // Set up auto-refresh every 30 seconds
+            if (this.autoRefreshEnabled) {
+                this.refreshInterval = setInterval(() => {
+                    this.loadWarehouseData();
+                }, 30000);
+                console.log('✅ Auto-refresh enabled (30s interval)');
             }
             
         } catch (error) {
             console.error('❌ Error initializing warehouse map:', error);
             this.showError('Failed to initialize warehouse map: ' + error.message);
         }
+    }
+
+    setupRealtimeSubscriptions() {
+        if (!this.supabase) return;
+        
+        try {
+            // Subscribe to shipment changes (rack assignments)
+            this.supabase
+                .channel('warehouse_updates')
+                .on('postgres_changes', 
+                    { 
+                        event: '*', 
+                        schema: 'public', 
+                        table: 'shipments' 
+                    }, 
+                    (payload) => {
+                        console.log('📦 Shipment update received:', payload);
+                        this.handleShipmentUpdate(payload);
+                    }
+                )
+                .subscribe();
+                
+            console.log('🔔 Real-time subscriptions active');
+            
+        } catch (error) {
+            console.warn('Could not set up real-time subscriptions:', error);
+        }
+    }
+
+    handleShipmentUpdate(payload) {
+        // Handle real-time shipment updates
+        if (payload.eventType === 'UPDATE' && payload.new.rack) {
+            console.log(`📍 New rack assignment: ${payload.new.barcode} → ${payload.new.rack}`);
+            
+            // Show notification
+            this.showNotification(`🎉 Package ${payload.new.barcode} assigned to ${payload.new.rack}`, 'success');
+            
+            // Refresh the map to show the new assignment
+            setTimeout(() => {
+                this.loadWarehouseData();
+            }, 1000);
+        }
+    }
+
+    showNotification(message, type = 'info') {
+        // Create notification element if it doesn't exist
+        let notificationContainer = document.getElementById('warehouseNotifications');
+        if (!notificationContainer) {
+            notificationContainer = document.createElement('div');
+            notificationContainer.id = 'warehouseNotifications';
+            notificationContainer.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 1000;
+                max-width: 300px;
+            `;
+            document.body.appendChild(notificationContainer);
+        }
+        
+        // Create notification
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.3s ease-out;
+            cursor: pointer;
+        `;
+        notification.innerHTML = `
+            <div style="font-weight: 500; margin-bottom: 4px;">Warehouse Update</div>
+            <div style="font-size: 14px; opacity: 0.9;">${message}</div>
+        `;
+        
+        // Add animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Add to container
+        notificationContainer.appendChild(notification);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.style.animation = 'slideIn 0.3s ease-out reverse';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }
+        }, 5000);
+        
+        // Remove on click
+        notification.addEventListener('click', () => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        });
     }
 
     async loadWarehouseData() {
