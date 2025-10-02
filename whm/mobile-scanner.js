@@ -313,8 +313,11 @@ class MobileWarehouseScanner {
                     this.handleScanSuccess(decodedText, decodedResult);
                 },
                 (error) => {
-                    // Silent error handling for continuous scanning
-                    console.log(`Scan error: ${error}`);
+                    // Improved error handling - only log significant errors
+                    if (error && !error.includes('No MultiFormat Readers') && !error.includes('NotFoundException')) {
+                        console.warn('Scan error:', error);
+                    }
+                    // Don't show error messages for normal scanning failures
                 }
             );
 
@@ -346,7 +349,15 @@ class MobileWarehouseScanner {
     async handleScanSuccess(decodedText, decodedResult) {
         try {
             const qrData = decodedText.trim();
-            console.log('QR scanned:', qrData);
+            
+            // Enhanced QR code validation
+            if (qrData.length < 5) {
+                console.warn('QR code too short:', qrData);
+                this.showMessage('❌ Invalid QR code - too short', 'error');
+                return;
+            }
+
+            console.log('✅ QR scanned:', qrData);
 
             // Vibrate if available
             if (navigator.vibrate) {
@@ -354,10 +365,28 @@ class MobileWarehouseScanner {
             }
 
             if (this.scanningStep === 1) {
-                // Step 1: Scan package QR
-                await this.handlePackageScan(qrData);
+                // Step 1: Scan package QR - Accept multiple formats
+                if (qrData.startsWith('PIECE_')) {
+                    // Full piece QR format: PIECE_WH2510029740_001
+                    await this.handlePackageScan(qrData);
+                } else if (qrData.match(/^WH\d{10}$/)) {
+                    // Just barcode format: WH2510029740 - convert to piece format
+                    const pieceQR = `PIECE_${qrData}_001`; // Assume piece 1
+                    console.log('📦 Converting barcode to piece QR:', pieceQR);
+                    await this.handlePackageScan(pieceQR);
+                } else if (qrData.startsWith('RACK_')) {
+                    this.showMessage('❌ Please scan a PACKAGE QR code first, not a rack QR code', 'error');
+                    return;
+                } else {
+                    this.showMessage('❌ Invalid package QR code. Please scan a shipment barcode or PIECE QR code.', 'error');
+                    return;
+                }
             } else if (this.scanningStep === 2) {
                 // Step 2: Scan rack QR
+                if (!qrData.startsWith('RACK_')) {
+                    this.showMessage('❌ Please scan a RACK QR code now (starts with RACK_)', 'error');
+                    return;
+                }
                 await this.handleRackScan(qrData);
             }
 
@@ -533,50 +562,72 @@ class MobileWarehouseScanner {
         try {
             const { shipment, allPieces, scannedPieceNumber, totalPieces } = shipmentData;
 
-            // Get current piece locations
-            const { data: existingData, error: fetchError } = await this.supabase
+            // Get current piece locations - with fallback for missing column
+            let { data: existingData, error: fetchError } = await this.supabase
                 .from('shipments')
                 .select('rack, piece_locations')
                 .eq('id', shipment.id)
                 .single();
 
-            if (fetchError) throw fetchError;
+            // If piece_locations column doesn't exist, fall back to simpler approach
+            if (fetchError && fetchError.code === '42703') {
+                console.warn('piece_locations column not found, using fallback approach');
+                
+                // Simple fallback: just update the main rack field
+                const { error: updateError } = await this.supabase
+                    .from('shipments')
+                    .update({
+                        rack: rackId,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', shipment.id);
 
-            // Parse existing piece locations
-            let pieceLocations = {};
-            try {
-                if (existingData.piece_locations) {
-                    pieceLocations = JSON.parse(existingData.piece_locations);
+                if (updateError) throw updateError;
+
+                console.log('✅ Fallback: Updated main rack field only');
+                
+            } else {
+                // Full approach with piece_locations
+                if (fetchError) throw fetchError;
+
+                // Parse existing piece locations
+                let pieceLocations = {};
+                try {
+                    if (existingData.piece_locations) {
+                        pieceLocations = JSON.parse(existingData.piece_locations);
+                    }
+                } catch (e) {
+                    pieceLocations = {};
                 }
-            } catch (e) {
-                pieceLocations = {};
+
+                // Assign ALL pieces to the same rack
+                allPieces.forEach(piece => {
+                    pieceLocations[`piece_${piece.pieceNumber}`] = {
+                        rackId: rackId,
+                        assignedAt: new Date().toISOString(),
+                        pieceQR: piece.pieceQR,
+                        assignedBy: this.currentUser.email,
+                        assignedVia: piece.isCurrentlyScanned ? 'direct_scan' : 'bulk_assign'
+                    };
+                });
+
+                // Set main rack for the shipment
+                const mainRack = rackId;
+
+                // Update database with ALL pieces assigned
+                const { error: updateError } = await this.supabase
+                    .from('shipments')
+                    .update({
+                        rack: mainRack,
+                        piece_locations: JSON.stringify(pieceLocations),
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', shipment.id);
+
+                if (updateError) throw updateError;
+
+                console.log('✅ Full approach: Updated with piece locations');
             }
-
-            // Assign ALL pieces to the same rack
-            allPieces.forEach(piece => {
-                pieceLocations[`piece_${piece.pieceNumber}`] = {
-                    rackId: rackId,
-                    assignedAt: new Date().toISOString(),
-                    pieceQR: piece.pieceQR,
-                    assignedBy: this.currentUser.email,
-                    assignedVia: piece.isCurrentlyScanned ? 'direct_scan' : 'bulk_assign'
-                };
-            });
-
-            // Set main rack for the shipment
-            const mainRack = rackId;
-
-            // Update database with ALL pieces assigned
-            const { error: updateError } = await this.supabase
-                .from('shipments')
-                .update({
-                    rack: mainRack,
-                    piece_locations: JSON.stringify(pieceLocations),
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', shipment.id);
-
-            if (updateError) throw updateError;
 
             // Success! (ALL PIECES PASTED) - STOP SCANNING
             this.stopScanning();
@@ -856,13 +907,13 @@ class MobileWarehouseScanner {
     // Test with sample QR codes
     testSampleQR() {
         const sampleQRs = [
-            'PIECE_WH2410021234_001',
-            'PIECE_WH2410021234_002',
+            'PIECE_WH2510029740_001',
+            'WH2510029740',
             'RACK_A_01_01',
             'RACK_B_05_03'
         ];
         
-        const choice = prompt(`Test QR codes:\n\n${sampleQRs.map((qr, i) => `${i+1}. ${qr}`).join('\n')}\n\nEnter number (1-4) or type your own QR code:`);
+        const choice = prompt(`Test QR codes:\n\n1. ${sampleQRs[0]} (Full piece QR)\n2. ${sampleQRs[1]} (Just barcode)\n3. ${sampleQRs[2]} (Rack QR)\n4. ${sampleQRs[3]} (Rack QR)\n\nEnter number (1-4) or type your own QR code:`);
         
         if (!choice) return;
         
@@ -875,7 +926,7 @@ class MobileWarehouseScanner {
         }
         
         console.log('🧪 Testing QR code:', testQR);
-        this.handleQRCodeScan(testQR);
+        this.handleScanSuccess(testQR, {});
     }
 
     // Test beep sounds
@@ -895,13 +946,13 @@ class MobileWarehouseScanner {
     showQRFormats() {
         const formats = `📋 QR Code Formats:
 
-📦 PACKAGE QR CODES:
-Format: PIECE_BARCODE_XXX
-Example: PIECE_WH2410021234_001
-- Must start with "PIECE_"
-- Followed by barcode (letters/numbers)
-- Underscore separator
-- 3-digit piece number (001, 002, etc.)
+📦 PACKAGE QR CODES (Any of these formats):
+Format 1: PIECE_BARCODE_XXX
+Example: PIECE_WH2510029740_001
+
+Format 2: Just the barcode
+Example: WH2510029740
+(System will auto-convert to piece format)
 
 🏢 RACK QR CODES:
 Format: RACK_Z_XX_XX
@@ -913,9 +964,11 @@ Example: RACK_A_01_01
 
 📱 SCANNING WORKFLOW:
 1. Login to mobile scanner
-2. Scan package QR first
+2. Scan package QR or barcode first
 3. Then scan rack QR
-4. Location will be assigned automatically`;
+4. All pieces will be assigned automatically
+
+💡 TIP: You can scan either the full PIECE QR code or just the shipment barcode!`;
 
         alert(formats);
     }
