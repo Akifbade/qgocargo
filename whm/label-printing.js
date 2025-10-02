@@ -15,71 +15,123 @@ class LabelPrintingManager {
         this.renderedBarcodes = new Map(); // labelId -> dataURL
     }
 
-    // Ensure QRCode library is available; dynamically load if missing
+    // Ensure QRCode library is available; check already loaded library first
     async ensureQRCodeLib(targetWindow = window) {
         try {
-            const QR = targetWindow.QRCode || targetWindow.qrcode;
-            if (QR && (typeof QR.toCanvas === 'function' || typeof QR === 'function' || (typeof QR === 'object' && 'CorrectLevel' in QR))) {
+            // Check all possible QR library references
+            const QR = targetWindow.QRCode || targetWindow.qrcode || targetWindow.QR;
+            
+            // Check if the library is functional
+            if (QR && (typeof QR.toCanvas === 'function' || typeof QR.toDataURL === 'function')) {
+                console.log('QR Code library found and functional');
                 return true;
             }
 
-            // Avoid duplicate loads; create a loader that tries multiple CDNs sequentially
-            if (!this._qrLibLoading) {
-                const sources = [
-                    'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js',
-                    'https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js',
-                    'https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js'
-                ];
-
-                this._qrLibLoading = new Promise((resolve, reject) => {
-                    const doc = targetWindow.document;
-
-                    // If a tag already exists for qrcode, wait on it first
-                    const existing = Array.from(doc.querySelectorAll('script[src]')).find(s => /qrcode(.*)\.min\.js/i.test(s.src));
-                    if (existing) {
-                        existing.addEventListener('load', () => resolve(true));
-                        existing.addEventListener('error', () => {
-                            // fall through to our own loader sequence
-                            loadNext(0);
-                        });
-                        // also start a timeout fallback in case neither fires (cached but no event)
-                        setTimeout(() => {
-                            const Q = targetWindow.QRCode || targetWindow.qrcode;
-                            if (Q) resolve(true); else loadNext(0);
-                        }, 300);
-                        return;
-                    }
-
-                    function loadNext(idx) {
-                        if (idx >= sources.length) {
-                            reject(new Error('Failed to load QRCode library'));
-                            return;
-                        }
-                        const src = sources[idx];
-                        const script = doc.createElement('script');
-                        script.src = src;
-                        script.async = true;
-                        script.defer = true;
-                        script.setAttribute('data-autoload', 'qrcode-lib');
-                        script.onload = () => resolve(true);
-                        script.onerror = () => {
-                            // try next source
-                            loadNext(idx + 1);
-                        };
-                        doc.head.appendChild(script);
-                    }
-
-                    loadNext(0);
-                });
+            // Wait a moment and check again (library might still be loading)
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const QR2 = targetWindow.QRCode || targetWindow.qrcode || targetWindow.QR;
+            if (QR2 && (typeof QR2.toCanvas === 'function' || typeof QR2.toDataURL === 'function')) {
+                console.log('QR Code library loaded after wait');
+                return true;
             }
+
+            console.log('QR Code library not found, attempting to load...');
+            
+            // Only try to load if not already loading
+            if (!this._qrLibLoading) {
+                this._qrLibLoading = this.loadQRCodeLibrary(targetWindow);
+            }
+            
             await this._qrLibLoading;
             return true;
         } catch (e) {
             console.error('Failed to ensure QRCode library:', e);
             // reset so future attempts can retry
             this._qrLibLoading = null;
+            
+            // Check one more time if library is available despite the error
+            const QR = targetWindow.QRCode || targetWindow.qrcode || targetWindow.QR;
+            if (QR && (typeof QR.toCanvas === 'function' || typeof QR.toDataURL === 'function')) {
+                console.log('QR Code library found despite error');
+                return true;
+            }
+            
             return false;
         }
+    }
+
+    // Separate method to load QR library
+    async loadQRCodeLibrary(targetWindow = window) {
+        return new Promise((resolve, reject) => {
+            const doc = targetWindow.document;
+            
+            // Check if script tag already exists
+            const existing = Array.from(doc.querySelectorAll('script[src*="qrcode"]')).find(s => 
+                s.src.includes('qrcode') && !s.hasAttribute('data-failed')
+            );
+            
+            if (existing) {
+                // Script already exists, wait for it to load
+                console.log('QR script tag found, waiting for load...');
+                setTimeout(() => {
+                    const QR = targetWindow.QRCode || targetWindow.qrcode || targetWindow.QR;
+                    if (QR) {
+                        resolve(true);
+                    } else {
+                        reject(new Error('QR library script loaded but QRCode not available'));
+                    }
+                }, 1000);
+                return;
+            }
+
+            // Try different CDN sources
+            const sources = [
+                'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js',
+                'https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'
+            ];
+
+            let currentIndex = 0;
+
+            function tryNext() {
+                if (currentIndex >= sources.length) {
+                    reject(new Error('All QR library sources failed to load'));
+                    return;
+                }
+
+                const src = sources[currentIndex];
+                const script = doc.createElement('script');
+                script.src = src;
+                script.async = true;
+                script.defer = true;
+                
+                script.onload = () => {
+                    console.log('QR library loaded from:', src);
+                    // Wait a moment for library to initialize
+                    setTimeout(() => {
+                        const QR = targetWindow.QRCode || targetWindow.qrcode || targetWindow.QR;
+                        if (QR) {
+                            resolve(true);
+                        } else {
+                            console.warn('QR script loaded but library not available');
+                            currentIndex++;
+                            tryNext();
+                        }
+                    }, 200);
+                };
+                
+                script.onerror = () => {
+                    console.warn('Failed to load QR library from:', src);
+                    script.setAttribute('data-failed', 'true');
+                    currentIndex++;
+                    tryNext();
+                };
+                
+                doc.head.appendChild(script);
+            }
+
+            tryNext();
+        });
     }
 
     // Ensure JsBarcode library is available; dynamically load if missing
@@ -165,6 +217,38 @@ class LabelPrintingManager {
         }
     }
 
+    // Generate piece QR code labels for new dual QR system
+    async generatePieceQRLabels(shipment, pieceQRCodes) {
+        try {
+            const labels = [];
+
+            for (let i = 0; i < pieceQRCodes.length; i++) {
+                const pieceQR = pieceQRCodes[i];
+                
+                const label = {
+                    id: `qrlabel-${shipment.id}-${pieceQR.pieceNumber}`,
+                    shipmentId: shipment.id,
+                    barcode: shipment.barcode,
+                    pieceQR: pieceQR.qrCode,
+                    pieceNumber: pieceQR.pieceNumber,
+                    totalPieces: shipment.pieces,
+                    shipper: shipment.shipper,
+                    consignee: shipment.consignee,
+                    weight: shipment.weight,
+                    type: 'piece_qr',
+                    createdAt: new Date().toISOString()
+                };
+
+                labels.push(label);
+            }
+
+            return labels;
+        } catch (error) {
+            console.error('Error generating piece QR labels:', error);
+            throw error;
+        }
+    }
+
     // Show label preview modal
     showLabelPreview(labels, shipment) {
         this.currentLabels = labels;
@@ -181,6 +265,26 @@ class LabelPrintingManager {
         
         // Generate barcodes for preview
         this.generatePreviewBarcodes(labels);
+        
+        modal.style.display = 'block';
+    }
+
+    // Show piece QR code preview modal
+    showPieceQRPreview(labels, shipment) {
+        this.currentLabels = labels;
+        
+        const modal = document.getElementById('labelPreviewModal');
+        const content = document.getElementById('labelPreviewContent');
+        
+        // Update modal title
+        document.getElementById('labelModalTitle').textContent = 
+            `Piece QR Codes - ${labels.length} QR codes for ${shipment.barcode}`;
+        
+        // Generate piece QR preview HTML
+        content.innerHTML = this.generatePieceQRPreviewHTML(labels);
+        
+        // Generate QR codes for preview
+        this.generatePieceQRCodes(labels);
         
         modal.style.display = 'block';
     }
@@ -266,6 +370,108 @@ class LabelPrintingManager {
             return this.generateBarcode(canvas, label);
         });
         await Promise.all(tasks);
+    }
+
+    // Generate piece QR preview HTML
+    generatePieceQRPreviewHTML(labels) {
+        let html = `
+            <div class="print-options">
+                <div class="print-option-group">
+                    <label>Print Format:</label>
+                    <select id="printFormat" onchange="labelManager.updatePrintFormat(this.value)">
+                        <option value="sticker" ${this.printFormat === 'sticker' ? 'selected' : ''}>A4 Sticker Sheet (3×3)</option>
+                        <option value="thermal" ${this.printFormat === 'thermal' ? 'selected' : ''}>Thermal Printer (100×150mm)</option>
+                    </select>
+                </div>
+                <div class="print-info">
+                    <strong>📱 Piece QR Codes for Location Assignment</strong><br>
+                    <small>These QR codes will be scanned along with rack QR codes to assign piece locations</small>
+                </div>
+            </div>
+            <div class="qr-labels-container ${this.printFormat === 'thermal' ? 'thermal-preview' : 'sticker-preview'}">
+        `;
+
+        labels.forEach(label => {
+            html += this.generatePieceQRLabelHTML(label);
+        });
+
+        html += `</div>`;
+        return html;
+    }
+
+    // Generate individual piece QR label HTML
+    generatePieceQRLabelHTML(label) {
+        const qrSize = this.printFormat === 'thermal' ? 120 : 80;
+        return `
+            <div class="qr-label ${this.printFormat}">
+                <div class="qr-header">
+                    <div class="barcode-main">${label.barcode}</div>
+                    <div class="piece-info">Piece ${label.pieceNumber}/${label.totalPieces}</div>
+                </div>
+                <div class="qr-code-container">
+                    <canvas id="qr-${label.id}" width="${qrSize}" height="${qrSize}" class="qr-canvas"></canvas>
+                </div>
+                <div class="qr-footer">
+                    <div class="qr-data">${label.pieceQR}</div>
+                    <div class="shipper-consignee">
+                        <div><strong>From:</strong> ${label.shipper}</div>
+                        <div><strong>To:</strong> ${label.consignee}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Generate QR codes for piece labels
+    async generatePieceQRCodes(labels) {
+        await this.ensureQRCodeLib(window);
+        
+        const tasks = labels.map(label => {
+            const canvas = document.getElementById(`qr-${label.id}`);
+            if (!canvas) return Promise.resolve();
+            return this.generatePieceQRCode(canvas, label);
+        });
+        await Promise.all(tasks);
+    }
+
+    // Generate individual piece QR code
+    generatePieceQRCode(canvas, label) {
+        return new Promise((resolve) => {
+            try {
+                const QR = window.QRCode || window.qrcode;
+                if (QR && typeof QR.toCanvas === 'function') {
+                    const opts = {
+                        width: this.printFormat === 'thermal' ? 120 : 80,
+                        margin: 1,
+                        color: { dark: '#000000', light: '#FFFFFF' }
+                    };
+                    
+                    QR.toCanvas(canvas, label.pieceQR, opts, (err) => {
+                        if (err) console.error('QR generation error:', err);
+                        try { 
+                            this.renderedBarcodes.set(label.id, canvas.toDataURL('image/png')); 
+                        } catch (e) {
+                            console.error('Error caching QR code:', e);
+                        }
+                        resolve();
+                    });
+                } else {
+                    // Fallback: draw text
+                    const ctx = canvas.getContext('2d');
+                    ctx.font = '10px Arial';
+                    ctx.fillText(label.pieceQR, 10, 20);
+                    try { 
+                        this.renderedBarcodes.set(label.id, canvas.toDataURL('image/png')); 
+                    } catch (e) {
+                        console.error('Error with fallback QR:', e);
+                    }
+                    resolve();
+                }
+            } catch (error) {
+                console.error('Error generating piece QR code:', error);
+                resolve();
+            }
+        });
     }
 
     // Generate barcode on canvas; returns a Promise that resolves when drawn and cached

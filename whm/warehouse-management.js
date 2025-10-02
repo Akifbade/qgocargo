@@ -1,4 +1,4 @@
-// Warehouse Management - Advanced Features
+// Warehouse Management - Dual QR System
 class WarehouseManager {
     constructor() {
         this.currentReleasedPage = 1;
@@ -8,10 +8,16 @@ class WarehouseManager {
         this.currentReleasedFilter = 'all';
         this.warehouseRacks = [];
         this.totalRacks = 200; // 20x10 grid (A-T zones, 1-10 rows)
+        
+        // New dual QR system
+        this.pendingShipmentAssignment = null; // Stores scanned shipment for location assignment
+        this.scanningMode = null; // 'shipment' or 'rack'
+        this.shipmentPieces = []; // Track individual piece QR codes
+        
         this.initializeWarehouse();
     }
 
-    // Initialize warehouse rack system
+    // Initialize warehouse rack system with permanent QR codes
     initializeWarehouse() {
         this.warehouseRacks = [];
         const zones = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 
@@ -21,20 +27,600 @@ class WarehouseManager {
             const zone = zones[zoneIndex];
             for (let row = 1; row <= 10; row++) {
                 const rackId = `${zone}-${row.toString().padStart(2, '0')}-01`;
+                const rackQR = this.generateRackQR(rackId);
+                
                 this.warehouseRacks.push({
                     id: rackId,
                     zone: zone,
                     row: row,
+                    qrCode: rackQR, // Permanent QR code for this rack
                     status: 'free', // 'occupied', 'free', 'warning', 'overdue'
                     shipmentId: null,
                     shipmentDetails: null,
+                    assignedPieces: [], // Track individual pieces in this rack
                     lastUpdated: new Date()
                 });
             }
         }
     }
 
-    // Released Shipments Management
+    // Generate permanent QR code for rack
+    generateRackQR(rackId) {
+        return `RACK_${rackId.replace(/-/g, '_')}`;
+    }
+
+    // Generate QR code for shipment piece
+    generatePieceQR(barcode, pieceNumber) {
+        return `PIECE_${barcode}_${String(pieceNumber).padStart(3, '0')}`;
+    }
+
+    // New QR Scanning Workflow Methods
+    async startLocationAssignmentMode() {
+        this.scanningMode = 'shipment';
+        this.pendingShipmentAssignment = null;
+        
+        // Show scanning interface
+        this.showLocationAssignmentUI();
+        
+        // Initialize scanner for shipment pieces
+        if (window.barcodeScanner) {
+            await window.barcodeScanner.initializeLocationScanner();
+        }
+    }
+
+    async processShipmentQRScan(qrData) {
+        try {
+            // Parse QR code for shipment piece
+            if (!qrData.startsWith('PIECE_')) {
+                this.showMessage('❌ Invalid shipment QR code format', 'error');
+                return false;
+            }
+
+            const pieceInfo = this.parseShipmentQR(qrData);
+            if (!pieceInfo) {
+                this.showMessage('❌ Could not parse shipment QR code', 'error');
+                return false;
+            }
+
+            // Find shipment in database
+            const shipment = await this.findShipmentByBarcode(pieceInfo.barcode);
+            if (!shipment) {
+                this.showMessage('❌ Shipment not found in system', 'error');
+                return false;
+            }
+
+            if (shipment.status !== 'confirmed') {
+                this.showMessage('❌ Shipment must be confirmed before location assignment', 'error');
+                return false;
+            }
+
+            // Store pending assignment
+            this.pendingShipmentAssignment = {
+                shipment: shipment,
+                pieceQR: qrData,
+                pieceInfo: pieceInfo
+            };
+
+            this.scanningMode = 'rack';
+            this.updateLocationAssignmentUI('shipment_scanned');
+            this.showMessage(`✅ Shipment piece scanned: ${pieceInfo.barcode}-${pieceInfo.pieceNumber}. Now scan rack QR code.`, 'success');
+            
+            return true;
+        } catch (error) {
+            console.error('Error processing shipment QR:', error);
+            this.showMessage('❌ Error processing shipment QR: ' + error.message, 'error');
+            return false;
+        }
+    }
+
+    async processRackQRScan(qrData) {
+        try {
+            if (!this.pendingShipmentAssignment) {
+                this.showMessage('❌ Please scan shipment QR code first', 'error');
+                return false;
+            }
+
+            // Parse rack QR code
+            if (!qrData.startsWith('RACK_')) {
+                this.showMessage('❌ Invalid rack QR code format', 'error');
+                return false;
+            }
+
+            const rackId = this.parseRackQR(qrData);
+            if (!rackId) {
+                this.showMessage('❌ Could not parse rack QR code', 'error');
+                return false;
+            }
+
+            // Find rack
+            const rack = this.warehouseRacks.find(r => r.id === rackId);
+            if (!rack) {
+                this.showMessage('❌ Rack not found in system', 'error');
+                return false;
+            }
+
+            // Assign piece to rack
+            await this.assignPieceToRack(this.pendingShipmentAssignment, rack);
+            
+            return true;
+        } catch (error) {
+            console.error('Error processing rack QR:', error);
+            this.showMessage('❌ Error processing rack QR: ' + error.message, 'error');
+            return false;
+        }
+    }
+
+    parseShipmentQR(qrData) {
+        // Parse "PIECE_WH2410021234_001" format
+        const match = qrData.match(/^PIECE_([A-Z0-9]+)_(\d{3})$/);
+        if (!match) return null;
+        
+        return {
+            barcode: match[1],
+            pieceNumber: parseInt(match[2])
+        };
+    }
+
+    parseRackQR(qrData) {
+        // Parse "RACK_A_01_01" format back to "A-01-01"
+        const rackId = qrData.replace('RACK_', '').replace(/_/g, '-');
+        return rackId;
+    }
+
+    async findShipmentByBarcode(barcode) {
+        try {
+            const { data, error } = await supabase
+                .from('shipments')
+                .select('*')
+                .eq('barcode', barcode)
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error finding shipment:', error);
+            return null;
+        }
+    }
+
+    async assignPieceToRack(assignmentData, rack) {
+        try {
+            const { shipment, pieceQR, pieceInfo } = assignmentData;
+            
+            // Check if rack can accommodate this piece
+            const existingShipment = rack.shipmentDetails;
+            if (existingShipment && existingShipment.barcode !== shipment.barcode) {
+                // Different shipment already in rack
+                this.showMessage('❌ Rack already contains a different shipment', 'error');
+                return false;
+            }
+
+            // Update rack with piece assignment
+            const rackIndex = this.warehouseRacks.findIndex(r => r.id === rack.id);
+            if (rackIndex === -1) return false;
+
+            // Add piece to rack
+            if (!this.warehouseRacks[rackIndex].assignedPieces) {
+                this.warehouseRacks[rackIndex].assignedPieces = [];
+            }
+
+            // Check if piece already assigned
+            const existingPiece = this.warehouseRacks[rackIndex].assignedPieces.find(
+                p => p.pieceQR === pieceQR
+            );
+            
+            if (existingPiece) {
+                this.showMessage('❌ This piece is already assigned to this rack', 'warning');
+                return false;
+            }
+
+            // Add piece to rack
+            this.warehouseRacks[rackIndex].assignedPieces.push({
+                pieceQR: pieceQR,
+                pieceNumber: pieceInfo.pieceNumber,
+                assignedAt: new Date().toISOString()
+            });
+
+            // Update rack status and shipment details
+            this.warehouseRacks[rackIndex].status = 'occupied';
+            this.warehouseRacks[rackIndex].shipmentId = shipment.id;
+            this.warehouseRacks[rackIndex].shipmentDetails = shipment;
+            this.warehouseRacks[rackIndex].lastUpdated = new Date();
+
+            // Update shipment rack location in database
+            await this.updateShipmentLocation(shipment.id, rack.id, pieceQR);
+
+            // Update warehouse display
+            this.generateWarehouseGrid();
+            this.updateWarehouseStats();
+
+            // Reset assignment state
+            this.pendingShipmentAssignment = null;
+            this.scanningMode = 'shipment';
+            this.updateLocationAssignmentUI('assignment_complete');
+
+            this.showMessage(`✅ Piece ${pieceInfo.pieceNumber} assigned to rack ${rack.id}`, 'success');
+            
+            // Play success sound
+            if (window.barcodeScanner) {
+                window.barcodeScanner.playSuccessSound();
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error assigning piece to rack:', error);
+            this.showMessage('❌ Error assigning piece to rack: ' + error.message, 'error');
+            return false;
+        }
+    }
+
+    async updateShipmentLocation(shipmentId, rackId, pieceQR) {
+        try {
+            // Get current rack assignments for this shipment
+            const { data: existingData, error: fetchError } = await supabase
+                .from('shipments')
+                .select('rack, piece_locations')
+                .eq('id', shipmentId)
+                .single();
+
+            if (fetchError) throw fetchError;
+
+            // Parse existing piece locations
+            let pieceLocations = {};
+            try {
+                if (existingData.piece_locations) {
+                    pieceLocations = JSON.parse(existingData.piece_locations);
+                }
+            } catch (e) {
+                pieceLocations = {};
+            }
+
+            // Add new piece location
+            const pieceInfo = this.parseShipmentQR(pieceQR);
+            pieceLocations[`piece_${pieceInfo.pieceNumber}`] = {
+                rackId: rackId,
+                assignedAt: new Date().toISOString(),
+                pieceQR: pieceQR
+            };
+
+            // Update main rack if this is the first piece or consolidate location
+            let mainRack = existingData.rack;
+            if (!mainRack || mainRack === 'UNASSIGNED') {
+                mainRack = rackId;
+            }
+
+            // Update database
+            const { error: updateError } = await supabase
+                .from('shipments')
+                .update({
+                    rack: mainRack,
+                    piece_locations: JSON.stringify(pieceLocations),
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', shipmentId);
+
+            if (updateError) throw updateError;
+
+            return true;
+        } catch (error) {
+            console.error('Error updating shipment location:', error);
+            throw error;
+        }
+    }
+
+    // Location Assignment UI Methods
+    showLocationAssignmentUI() {
+        const section = document.getElementById('warehouse-map');
+        if (!section) return;
+
+        // Add scanning interface to warehouse map section
+        const existingScanner = document.getElementById('locationAssignmentScanner');
+        if (existingScanner) {
+            existingScanner.remove();
+        }
+
+        const scannerContainer = document.createElement('div');
+        scannerContainer.id = 'locationAssignmentScanner';
+        scannerContainer.className = 'location-scanner-container';
+        scannerContainer.innerHTML = `
+            <div class="scanner-header">
+                <h3>📱 Location Assignment Scanner</h3>
+                <button onclick="warehouseManager.stopLocationAssignment()" class="btn-secondary">❌ Stop Scanning</button>
+            </div>
+            <div class="scanner-workflow">
+                <div class="workflow-step" id="step1" data-active="true">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Scan Shipment Piece QR Code</h4>
+                        <p>Scan the QR code on the package/pallet</p>
+                    </div>
+                </div>
+                <div class="workflow-step" id="step2">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Scan Rack QR Code</h4>
+                        <p>Scan the permanent QR code on the rack</p>
+                    </div>
+                </div>
+                <div class="workflow-step" id="step3">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Assignment Complete</h4>
+                        <p>Piece location recorded in system</p>
+                    </div>
+                </div>
+            </div>
+            <div class="scanner-status" id="scannerStatus">
+                <div class="status-message">Ready to scan shipment piece QR code...</div>
+            </div>
+            <div id="locationReader" class="qr-reader"></div>
+        `;
+
+        section.insertBefore(scannerContainer, section.firstChild);
+        this.updateLocationAssignmentUI('ready');
+    }
+
+    updateLocationAssignmentUI(state) {
+        const statusDiv = document.getElementById('scannerStatus');
+        const steps = document.querySelectorAll('.workflow-step');
+        
+        if (!statusDiv) return;
+
+        // Reset all steps
+        steps.forEach(step => {
+            step.removeAttribute('data-active');
+            step.removeAttribute('data-completed');
+        });
+
+        switch (state) {
+            case 'ready':
+                document.getElementById('step1').setAttribute('data-active', 'true');
+                statusDiv.innerHTML = '<div class="status-message">📱 Ready to scan shipment piece QR code...</div>';
+                break;
+                
+            case 'shipment_scanned':
+                document.getElementById('step1').setAttribute('data-completed', 'true');
+                document.getElementById('step2').setAttribute('data-active', 'true');
+                statusDiv.innerHTML = `
+                    <div class="status-message success">✅ Shipment piece scanned successfully!</div>
+                    <div class="scanned-info">
+                        <strong>Barcode:</strong> ${this.pendingShipmentAssignment.shipment.barcode}<br>
+                        <strong>Piece:</strong> ${this.pendingShipmentAssignment.pieceInfo.pieceNumber}<br>
+                        <strong>Shipper:</strong> ${this.pendingShipmentAssignment.shipment.shipper}
+                    </div>
+                    <div class="next-step">📱 Now scan the rack QR code...</div>
+                `;
+                break;
+                
+            case 'assignment_complete':
+                document.getElementById('step1').setAttribute('data-completed', 'true');
+                document.getElementById('step2').setAttribute('data-completed', 'true');
+                document.getElementById('step3').setAttribute('data-active', 'true');
+                statusDiv.innerHTML = `
+                    <div class="status-message success">✅ Location assignment completed!</div>
+                    <div class="completion-message">Ready for next shipment piece...</div>
+                `;
+                
+                // Auto-reset to step 1 after 3 seconds
+                setTimeout(() => {
+                    this.updateLocationAssignmentUI('ready');
+                }, 3000);
+                break;
+        }
+    }
+
+    stopLocationAssignment() {
+        // Stop scanner
+        if (window.barcodeScanner) {
+            window.barcodeScanner.stopLocationScanner();
+        }
+
+        // Remove scanner UI
+        const scannerContainer = document.getElementById('locationAssignmentScanner');
+        if (scannerContainer) {
+            scannerContainer.remove();
+        }
+
+        // Reset state
+        this.pendingShipmentAssignment = null;
+        this.scanningMode = null;
+
+        this.showMessage('Location assignment scanning stopped', 'info');
+    }
+
+    // Print permanent rack QR codes
+    async printRackQRCodes(selectedRacks = null) {
+        try {
+            const racksToProcess = selectedRacks || this.warehouseRacks;
+            
+            // Check if jsPDF is available
+            if (!window.jspdf) {
+                this.showMessage('❌ PDF library not loaded. Please refresh the page and try again.', 'error');
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+            
+            let pageCount = 0;
+            const itemsPerPage = 12; // 3x4 grid per page
+            
+            this.showMessage('Generating rack QR codes...', 'info');
+            
+            // Simple check for QR library - it should already be loaded from HTML
+            console.log('Checking QR library availability...');
+            console.log('window.QRCode:', typeof window.QRCode);
+            console.log('window.qrcode:', typeof window.qrcode);
+            
+            // Wait a moment for libraries to be ready
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Use the simplest approach - the library is loaded in HTML
+            let qrLibrary = null;
+            if (window.QRCode && typeof window.QRCode.toCanvas === 'function') {
+                qrLibrary = window.QRCode;
+                console.log('Using window.QRCode');
+            } else if (window.qrcode && typeof window.qrcode.toCanvas === 'function') {
+                qrLibrary = window.qrcode;
+                console.log('Using window.qrcode');
+            } else {
+                // Force use text-based approach
+                console.log('QR library not detected, using text-based approach');
+                qrLibrary = null;
+            }
+            
+            for (let i = 0; i < racksToProcess.length; i++) {
+                const rack = racksToProcess[i];
+                
+                if (i % itemsPerPage === 0 && i > 0) {
+                    pdf.addPage();
+                    pageCount++;
+                }
+                
+                const x = 20 + (i % 3) * 60;
+                const y = 20 + Math.floor((i % itemsPerPage) / 3) * 60;
+                
+                if (qrLibrary) {
+                    // Try to generate actual QR code
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 150;
+                        canvas.height = 150;
+                        
+                        await new Promise((resolve, reject) => {
+                            qrLibrary.toCanvas(canvas, rack.qrCode, { 
+                                width: 150,
+                                margin: 2,
+                                color: {
+                                    dark: '#000000',
+                                    light: '#FFFFFF'
+                                }
+                            }, (error) => {
+                                if (error) {
+                                    console.error('QR generation error:', error);
+                                    reject(error);
+                                } else {
+                                    resolve();
+                                }
+                            });
+                        });
+                        
+                        const qrDataUrl = canvas.toDataURL();
+                        pdf.addImage(qrDataUrl, 'PNG', x, y, 40, 40);
+                        
+                    } catch (qrError) {
+                        console.error('QR generation failed for rack:', rack.id, qrError);
+                        // Fall back to text representation
+                        this.addTextBasedQRToPDF(pdf, x, y, rack);
+                    }
+                } else {
+                    // Use text-based representation
+                    this.addTextBasedQRToPDF(pdf, x, y, rack);
+                }
+                
+                // Add rack ID label
+                pdf.setFontSize(12);
+                pdf.setFont(undefined, 'bold');
+                pdf.text(rack.id, x + 20, y + 45, { align: 'center' });
+                
+                // Add QR code data
+                pdf.setFontSize(8);
+                pdf.setFont(undefined, 'normal');
+                pdf.text(rack.qrCode, x + 20, y + 50, { align: 'center' });
+                
+                // Add zone info
+                pdf.setFontSize(10);
+                pdf.text(`Zone ${rack.zone}`, x + 20, y + 55, { align: 'center' });
+            }
+            
+            // Add header to first page
+            pdf.setPage(1);
+            pdf.setFontSize(16);
+            pdf.setFont(undefined, 'bold');
+            pdf.text('Warehouse Rack QR Codes', 105, 10, { align: 'center' });
+            pdf.setFontSize(10);
+            pdf.setFont(undefined, 'normal');
+            pdf.text(`Generated: ${new Date().toLocaleString()}`, 105, 15, { align: 'center' });
+            
+            const filename = `warehouse-rack-qr-codes-${new Date().toISOString().split('T')[0]}.pdf`;
+            pdf.save(filename);
+            
+            this.showMessage(`✅ ${racksToProcess.length} rack QR codes generated successfully!`, 'success');
+            
+        } catch (error) {
+            console.error('Error generating rack QR codes:', error);
+            this.showMessage('❌ Error generating rack QR codes: ' + error.message, 'error');
+        }
+    }
+
+    // Add text-based QR representation to PDF
+    addTextBasedQRToPDF(pdf, x, y, rack) {
+        // Draw border for QR placeholder
+        pdf.setDrawColor(0);
+        pdf.setLineWidth(0.5);
+        pdf.rect(x, y, 40, 40);
+        
+        // Add "QR" text
+        pdf.setFontSize(16);
+        pdf.setFont(undefined, 'bold');
+        pdf.text('QR', x + 20, y + 15, { align: 'center' });
+        
+        // Add rack code
+        pdf.setFontSize(8);
+        pdf.setFont(undefined, 'normal');
+        const codeLines = this.splitText(rack.qrCode, 12);
+        codeLines.forEach((line, index) => {
+            pdf.text(line, x + 20, y + 22 + (index * 3), { align: 'center' });
+        });
+    }
+
+    // Helper to split text into lines
+    splitText(text, maxLength) {
+        const lines = [];
+        for (let i = 0; i < text.length; i += maxLength) {
+            lines.push(text.substring(i, i + maxLength));
+        }
+        return lines;
+    }
+
+    // Test QR library availability - for debugging
+    testQRLibrary() {
+        console.log('=== QR Library Test ===');
+        console.log('window.QRCode:', typeof window.QRCode, window.QRCode);
+        console.log('window.qrcode:', typeof window.qrcode, window.qrcode);
+        console.log('window.QR:', typeof window.QR, window.QR);
+        
+        if (window.QRCode) {
+            console.log('QRCode.toCanvas:', typeof window.QRCode.toCanvas);
+            console.log('QRCode.toDataURL:', typeof window.QRCode.toDataURL);
+        }
+        
+        // Test with simple QR generation
+        if (window.QRCode && typeof window.QRCode.toCanvas === 'function') {
+            try {
+                const testCanvas = document.createElement('canvas');
+                testCanvas.width = 100;
+                testCanvas.height = 100;
+                
+                window.QRCode.toCanvas(testCanvas, 'TEST_QR_CODE', (error) => {
+                    if (error) {
+                        console.error('QR test failed:', error);
+                        this.showMessage('❌ QR library test failed: ' + error.message, 'error');
+                    } else {
+                        console.log('✅ QR library test successful!');
+                        this.showMessage('✅ QR library is working correctly!', 'success');
+                    }
+                });
+            } catch (error) {
+                console.error('QR test exception:', error);
+                this.showMessage('❌ QR library test exception: ' + error.message, 'error');
+            }
+        } else {
+            console.log('❌ QR library not available or toCanvas method missing');
+            this.showMessage('❌ QR library not properly loaded', 'error');
+        }
+    }
+
     async loadReleasedShipments() {
         try {
             console.log('📤 Loading released shipments...');

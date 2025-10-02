@@ -301,7 +301,7 @@ class WarehouseApp {
         }
     }
 
-    // Handle shipment intake form submission
+    // Handle shipment intake form submission with new QR piece system
     async handleShipmentIntake(event) {
         event.preventDefault();
         
@@ -309,19 +309,39 @@ class WarehouseApp {
             showLoading(true);
             
             const formData = new FormData(event.target);
+            const pieces = parseInt(formData.get('pieces')) || 1;
+            
+            // Generate main barcode
+            const barcode = await dbManager.generateUniqueBarcode();
+            
+            // Generate piece QR codes for each piece
+            const pieceQRCodes = [];
+            for (let i = 1; i <= pieces; i++) {
+                const pieceQR = window.warehouseManager.generatePieceQR(barcode, i);
+                pieceQRCodes.push({
+                    pieceNumber: i,
+                    qrCode: pieceQR,
+                    rackId: null, // Will be assigned later via QR scanning
+                    assignedAt: null
+                });
+            }
+
             const shipmentData = {
-                barcode: '', // Will be auto-generated
+                barcode: barcode,
                 shipper: formData.get('shipper').trim(),
                 consignee: formData.get('consignee').trim(),
                 weight: formData.get('weight'),
-                pieces: formData.get('pieces'),
-                rack: formData.get('rack').trim().toUpperCase(),
-                notes: formData.get('notes').trim()
+                pieces: pieces,
+                rack: 'UNASSIGNED', // Will be updated when pieces are scanned to racks
+                notes: formData.get('notes').trim(),
+                piece_qr_codes: JSON.stringify(pieceQRCodes), // Store piece QR codes
+                piece_locations: JSON.stringify({}), // Will track individual piece locations
+                status: 'confirmed'
             };
 
-            // Validate required fields (barcode not required as it's auto-generated)
+            // Validate required fields
             if (!shipmentData.shipper || !shipmentData.consignee || 
-                !shipmentData.weight || !shipmentData.pieces || !shipmentData.rack) {
+                !shipmentData.weight || !shipmentData.pieces) {
                 throw new Error('Please fill in all required fields');
             }
 
@@ -337,9 +357,10 @@ class WarehouseApp {
             // Store shipment data for label printing and show print button
             window.lastCreatedShipment = newShipment;
             document.getElementById('printLabelsBtn').style.display = 'inline-flex';
+            document.getElementById('printPieceQRBtn').style.display = 'inline-flex'; // New piece QR button
             
-            // Auto-generate labels for the new shipment
-            await this.autoGenerateLabels(newShipment);
+            // Auto-generate piece QR labels
+            await this.autoGeneratePieceQRLabels(newShipment, pieceQRCodes);
             
             // Refresh dashboard if it's the current section
             if (this.currentSection === 'dashboard') {
@@ -483,10 +504,31 @@ class WarehouseApp {
         }
     }
 
+    // Auto-generate piece QR labels for new dual QR system
+    async autoGeneratePieceQRLabels(shipment, pieceQRCodes) {
+        try {
+            // Generate piece QR labels
+            const qrLabels = await labelManager.generatePieceQRLabels(shipment, pieceQRCodes);
+            
+            // Show preview with auto-print option
+            setTimeout(() => {
+                const shouldPrint = confirm(`Piece QR codes generated! Would you like to print ${qrLabels.length} QR labels for pieces now?`);
+                if (shouldPrint) {
+                    labelManager.showPieceQRPreview(qrLabels, shipment);
+                }
+            }, 1500);
+            
+        } catch (error) {
+            console.error('Error auto-generating piece QR labels:', error);
+            // Don't show error to user as this is a secondary function
+        }
+    }
+
     // Handle form reset
     handleFormReset() {
-        // Hide the print labels button
+        // Hide the print labels buttons
         document.getElementById('printLabelsBtn').style.display = 'none';
+        document.getElementById('printPieceQRBtn').style.display = 'none';
         // Clear stored shipment data
         window.lastCreatedShipment = null;
         // Clear the barcode field
@@ -867,80 +909,9 @@ function showMessage(message, type = 'info') {
     });
 }
 
-// ===== Intake Rack Picker Integration =====
-let rackPickerState = { selected: null };
-
-function openRackPicker() {
-    const modal = document.getElementById('rackPickerModal');
-    if (!modal) return;
-    rackPickerState.selected = null;
-    renderRackPickerGrid();
-    modal.style.display = 'block';
-}
-
-function closeRackPicker() {
-    const modal = document.getElementById('rackPickerModal');
-    if (modal) modal.style.display = 'none';
-}
-
-function renderRackPickerGrid() {
-    const grid = document.getElementById('rackPickerGrid');
-    if (!grid) return;
-    grid.innerHTML = '';
-    const zoneFilter = (document.getElementById('rackPickerZone')?.value || 'all');
-    const statusFilter = (document.getElementById('rackPickerStatus')?.value || 'free');
-    const text = (document.getElementById('rackPickerSearch')?.value || '').toLowerCase();
-
-    const racks = (window.warehouseManager?.warehouseRacks || []);
-    racks.forEach(rack => {
-        // filters
-        if (zoneFilter !== 'all' && rack.zone !== zoneFilter) return;
-        if (statusFilter === 'free' && rack.status !== 'free') return;
-        if (text && !rack.id.toLowerCase().includes(text)) return;
-
-        const cell = document.createElement('div');
-        cell.className = `rack-cell ${rack.status}`;
-        cell.dataset.rackId = rack.id;
-        cell.textContent = rack.zone + rack.row;
-        cell.title = `${rack.id} - ${rack.status.toUpperCase()}`;
-        cell.onclick = () => selectRackFromPicker(rack.id, rack.status);
-        grid.appendChild(cell);
-    });
-}
-
-function selectRackFromPicker(rackId, status) {
-    if (status !== 'free') {
-        showMessage('Please select a free rack', 'warning');
-        return;
-    }
-    rackPickerState.selected = rackId;
-    // highlight selection
-    document.querySelectorAll('#rackPickerGrid .rack-cell').forEach(cell => {
-        if (cell.dataset.rackId === rackId) {
-            cell.classList.add('selected');
-        } else {
-            cell.classList.remove('selected');
-        }
-    });
-}
-
-function confirmRackSelection() {
-    if (!rackPickerState.selected) {
-        showMessage('Select a rack first', 'warning');
-        return;
-    }
-    const rackInput = document.getElementById('rack');
-    if (rackInput) rackInput.value = rackPickerState.selected;
-    closeRackPicker();
-}
-
-function applyRackPickerFilters() {
-    renderRackPickerGrid();
-}
-
-function filterRackPickerText() {
-    renderRackPickerGrid();
-}
+// ===== REMOVED OLD RACK PICKER SYSTEM =====
+// The old manual rack picker has been replaced with the new dual QR scanning system
+// Staff now scan shipment piece QR codes and then rack QR codes to assign locations
 
 // Initialize app when DOM is loaded and Supabase is ready
 function initializeApp() {
@@ -1218,6 +1189,41 @@ function signup() {
         return;
     }
     warehouseApp.signup(email, password);
+}
+
+// Print piece QR codes from intake
+function printPieceQRFromIntake() {
+    const shipment = window.lastCreatedShipment;
+    if (!shipment) {
+        showMessage('No shipment data found to print QR codes', 'error');
+        return;
+    }
+    
+    try {
+        let pieceQRCodes = [];
+        if (shipment.piece_qr_codes) {
+            pieceQRCodes = JSON.parse(shipment.piece_qr_codes);
+        }
+        
+        if (pieceQRCodes.length === 0) {
+            showMessage('No piece QR codes found for this shipment', 'error');
+            return;
+        }
+        
+        // Use label manager to generate piece QR labels
+        labelManager.generatePieceQRLabels(shipment, pieceQRCodes)
+            .then(labels => {
+                labelManager.showPieceQRPreview(labels, shipment);
+            })
+            .catch(error => {
+                console.error('Error generating piece QR labels:', error);
+                showMessage('Error generating piece QR labels: ' + error.message, 'error');
+            });
+            
+    } catch (error) {
+        console.error('Error printing piece QR codes:', error);
+        showMessage('Error printing piece QR codes: ' + error.message, 'error');
+    }
 }
 
 // ===================
@@ -2015,3 +2021,382 @@ function refreshCurrentView() {
 }
 
 function logout() { warehouseApp.logout(); }
+
+// =======================
+// RACK MANAGEMENT FUNCTIONS
+// =======================
+
+// Update rack management statistics
+function updateRackManagementStats() {
+    if (!window.customRackManager) return;
+    
+    const racks = window.customRackManager.getAllRacks();
+    const sections = [...new Set(racks.map(rack => rack.section))];
+    
+    document.getElementById('totalRacksCount').textContent = racks.length;
+    document.getElementById('sectionsCount').textContent = sections.length;
+    document.getElementById('qrCodesGenerated').textContent = racks.length;
+    
+    const lastGenerated = localStorage.getItem('lastRackQRGenerated');
+    document.getElementById('lastGenerated').textContent = lastGenerated ? 
+        new Date(lastGenerated).toLocaleDateString() : 'Never';
+}
+
+// Display current rack configuration
+function displayCurrentRackConfiguration() {
+    if (!window.customRackManager) return;
+    
+    const container = document.getElementById('rackConfigurationContent');
+    const racks = window.customRackManager.getAllRacks();
+    
+    if (racks.length === 0) {
+        container.innerHTML = `
+            <div class="no-racks-message">
+                <p>No racks configured yet.</p>
+                <button onclick="editRackConfiguration()" class="btn-primary">⚙️ Configure Racks</button>
+            </div>
+        `;
+        return;
+    }
+    
+    // Group racks by section
+    const sections = {};
+    racks.forEach(rack => {
+        if (!sections[rack.section]) sections[rack.section] = [];
+        sections[rack.section].push(rack);
+    });
+    
+    let html = '';
+    Object.keys(sections).sort().forEach(sectionKey => {
+        const sectionRacks = sections[sectionKey];
+        html += `
+            <div class="rack-section">
+                <h4>Section ${sectionKey} (${sectionRacks.length} racks)</h4>
+                <div class="rack-list">
+        `;
+        
+        sectionRacks.forEach(rack => {
+            html += `
+                <div class="rack-item-config">
+                    <span class="rack-id">${rack.id}</span>
+                    <span class="rack-qr-text">${rack.qrCode}</span>
+                    <span class="rack-location-text">${rack.location}</span>
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Open rack configuration modal
+function editRackConfiguration() {
+    const modal = document.getElementById('rackConfigModal');
+    const textarea = document.getElementById('rackConfigTextarea');
+    
+    // Load current configuration
+    if (window.customRackManager) {
+        const racks = window.customRackManager.getAllRacks();
+        const rackList = racks.map(rack => rack.id).join('\n');
+        textarea.value = rackList;
+    }
+    
+    modal.style.display = 'flex';
+}
+
+// Close rack configuration modal
+function closeRackConfigModal() {
+    document.getElementById('rackConfigModal').style.display = 'none';
+}
+
+// Load sample rack configuration
+function loadSampleConfiguration() {
+    const sampleConfig = `A-001
+A-002
+A-003
+A-004
+A-005
+B-001
+B-002
+B-003
+B-004
+B-005
+C-001
+C-002
+C-003
+C-004
+C-005`;
+    
+    document.getElementById('rackConfigTextarea').value = sampleConfig;
+}
+
+// Save rack configuration
+function saveRackConfiguration() {
+    const textarea = document.getElementById('rackConfigTextarea');
+    const rackLines = textarea.value.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+    
+    if (rackLines.length === 0) {
+        showMessage('Please enter at least one rack configuration', 'warning');
+        return;
+    }
+    
+    // Validate rack format
+    const invalidRacks = rackLines.filter(rack => !rack.match(/^[A-Z]-\d{3}$/));
+    if (invalidRacks.length > 0) {
+        showMessage(`Invalid rack format: ${invalidRacks.join(', ')}. Use format: A-001`, 'error');
+        return;
+    }
+    
+    try {
+        // Update custom rack manager
+        if (!window.customRackManager) {
+            window.customRackManager = new CustomRackManager();
+        }
+        
+        // Clear existing racks and add new ones
+        window.customRackManager.customRacks = rackLines.map(rackId => ({
+            id: rackId,
+            qrCode: window.customRackManager.generateRackQR(rackId),
+            status: 'available',
+            section: rackId.split('-')[0],
+            number: rackId.split('-')[1],
+            location: window.customRackManager.getRackLocation(rackId)
+        }));
+        
+        // Save to localStorage
+        localStorage.setItem('customRackConfiguration', JSON.stringify(rackLines));
+        
+        showMessage(`✅ ${rackLines.length} racks configured successfully!`, 'success');
+        
+        // Update UI
+        updateRackManagementStats();
+        displayCurrentRackConfiguration();
+        closeRackConfigModal();
+        
+    } catch (error) {
+        console.error('Error saving rack configuration:', error);
+        showMessage('Error saving rack configuration: ' + error.message, 'error');
+    }
+}
+
+// Generate all rack QR codes
+async function generateAllRackQRCodes() {
+    if (!window.customRackManager) {
+        showMessage('No rack configuration found. Please configure racks first.', 'error');
+        return;
+    }
+    
+    const racks = window.customRackManager.getAllRacks();
+    if (racks.length === 0) {
+        showMessage('No racks configured. Please add racks first.', 'error');
+        return;
+    }
+    
+    try {
+        showLoading(true);
+        showMessage('Generating QR codes PDF...', 'info');
+        
+        await window.customRackManager.generateRackQRCodesPDF();
+        
+        // Update last generated timestamp
+        localStorage.setItem('lastRackQRGenerated', new Date().toISOString());
+        updateRackManagementStats();
+        
+        showMessage(`✅ QR codes PDF generated for ${racks.length} racks!`, 'success');
+        
+    } catch (error) {
+        console.error('Error generating QR codes:', error);
+        showMessage('Error generating QR codes: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Preview rack configuration
+function previewRackConfiguration() {
+    if (!window.customRackManager) {
+        showMessage('No rack configuration found. Please configure racks first.', 'error');
+        return;
+    }
+    
+    const previewDiv = document.getElementById('rackQRPreview');
+    const contentDiv = document.getElementById('rackQRPreviewContent');
+    
+    const previewHTML = window.customRackManager.generateRackPreviewHTML();
+    contentDiv.innerHTML = previewHTML;
+    
+    previewDiv.style.display = 'block';
+}
+
+// Hide rack QR preview
+function hideRackQRPreview() {
+    document.getElementById('rackQRPreview').style.display = 'none';
+}
+
+// Export rack list
+function exportRackList() {
+    if (!window.customRackManager) {
+        showMessage('No rack configuration found. Please configure racks first.', 'error');
+        return;
+    }
+    
+    const racks = window.customRackManager.getAllRacks();
+    if (racks.length === 0) {
+        showMessage('No racks configured. Please add racks first.', 'error');
+        return;
+    }
+    
+    const csvData = racks.map(rack => ({
+        'Rack ID': rack.id,
+        'Section': rack.section,
+        'Number': rack.number,
+        'QR Code': rack.qrCode,
+        'Location': rack.location,
+        'Status': rack.status
+    }));
+    
+    downloadCSV(csvData, 'warehouse_racks.csv');
+    showMessage(`✅ Rack list exported (${racks.length} racks)`, 'success');
+}
+
+// Add new rack section
+function addNewRackSection() {
+    const section = prompt('Enter section letter (A-Z):');
+    if (!section || !section.match(/^[A-Z]$/)) {
+        showMessage('Please enter a valid section letter (A-Z)', 'error');
+        return;
+    }
+    
+    const startNumber = prompt('Starting rack number (001-999):', '001');
+    if (!startNumber || !startNumber.match(/^\d{3}$/)) {
+        showMessage('Please enter a valid 3-digit number (001-999)', 'error');
+        return;
+    }
+    
+    const count = prompt('How many racks in this section?', '10');
+    if (!count || isNaN(count) || count < 1 || count > 100) {
+        showMessage('Please enter a valid count (1-100)', 'error');
+        return;
+    }
+    
+    const textarea = document.getElementById('rackConfigTextarea');
+    const currentConfig = textarea.value;
+    const newRacks = [];
+    
+    for (let i = 0; i < parseInt(count); i++) {
+        const rackNumber = String(parseInt(startNumber) + i).padStart(3, '0');
+        newRacks.push(`${section}-${rackNumber}`);
+    }
+    
+    const updatedConfig = currentConfig ? 
+        currentConfig + '\n' + newRacks.join('\n') : 
+        newRacks.join('\n');
+    
+    textarea.value = updatedConfig;
+    
+    showMessage(`✅ Added ${count} racks to section ${section}`, 'success');
+}
+
+// Test QR libraries to debug rendering issues
+function testQRLibraries() {
+    console.log('🧪 Testing QR Libraries...');
+    
+    let testResults = '🧪 QR Library Test Results:\n\n';
+    
+    // Test 1: Check if libraries are loaded
+    testResults += '📚 Library Availability:\n';
+    testResults += `• window.QRCode: ${typeof window.QRCode}\n`;
+    testResults += `• window.QRious: ${typeof window.QRious}\n`;
+    testResults += `• window.qrcode: ${typeof window.qrcode}\n`;
+    testResults += `• Html5Qrcode: ${typeof window.Html5Qrcode}\n\n`;
+    
+    // Test 2: Check specific methods
+    testResults += '🔧 Method Availability:\n';
+    testResults += `• QRCode.toCanvas: ${window.QRCode && typeof window.QRCode.toCanvas === 'function' ? '✅' : '❌'}\n`;
+    testResults += `• QRious constructor: ${window.QRious && typeof window.QRious === 'function' ? '✅' : '❌'}\n`;
+    testResults += `• qrcode function: ${window.qrcode && typeof window.qrcode === 'function' ? '✅' : '❌'}\n\n`;
+    
+    // Test 3: Try generating a test QR code
+    testResults += '🎯 QR Generation Test:\n';
+    
+    const testData = 'RACK_TEST_001';
+    const canvas = document.createElement('canvas');
+    canvas.width = 200;
+    canvas.height = 200;
+    
+    // Try QRCode library
+    if (window.QRCode && typeof window.QRCode.toCanvas === 'function') {
+        try {
+            window.QRCode.toCanvas(canvas, testData, {
+                width: 200,
+                margin: 1,
+                errorCorrectionLevel: 'M'
+            }, (error) => {
+                if (error) {
+                    testResults += '• QRCode.toCanvas: ❌ ' + error.message + '\n';
+                } else {
+                    testResults += '• QRCode.toCanvas: ✅ Success\n';
+                }
+                showTestResults();
+            });
+        } catch (e) {
+            testResults += '• QRCode.toCanvas: ❌ ' + e.message + '\n';
+            showTestResults();
+        }
+    } else {
+        testResults += '• QRCode.toCanvas: ❌ Not available\n';
+        showTestResults();
+    }
+    
+    function showTestResults() {
+        alert(testResults);
+        console.log(testResults);
+    }
+}
+
+// Simple QR code test generation function
+async function generateTestQR() {
+    try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 200;
+        document.body.appendChild(canvas);
+        
+        if (window.QRCode) {
+            await new Promise((resolve, reject) => {
+                window.QRCode.toCanvas(canvas, 'RACK_TEST_001', {
+                    width: 200,
+                    margin: 1,
+                    errorCorrectionLevel: 'M'
+                }, (error) => {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve();
+                    }
+                });
+            });
+            
+            showMessage('✅ Test QR code generated successfully!', 'success');
+        } else {
+            showMessage('❌ QR library not available', 'error');
+        }
+        
+        // Remove test canvas after 3 seconds
+        setTimeout(() => {
+            if (canvas.parentNode) {
+                canvas.parentNode.removeChild(canvas);
+            }
+        }, 3000);
+        
+    } catch (error) {
+        showMessage('❌ QR generation failed: ' + error.message, 'error');
+    }
+}

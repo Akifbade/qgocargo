@@ -7,9 +7,11 @@ class BarcodeScanner {
         this.scanner = null;
         this.releaseScanner = null;
         this.directReleaseScanner = null;
+        this.locationScanner = null; // New location assignment scanner
         this.isScanning = false;
         this.isReleaseScanning = false;
         this.isDirectReleaseScanning = false;
+        this.isLocationScanning = false; // New location scanning state
         
         // Audio feedback
         this.audioContext = null;
@@ -379,6 +381,111 @@ class BarcodeScanner {
         this.stopIntakeScanner();
         this.stopReleaseScanner();
         this.stopDirectReleaseScanner();
+        this.stopLocationScanner(); // Add location scanner
+    }
+
+    // Initialize location assignment scanner
+    async initializeLocationScanner() {
+        if (this.isLocationScanning) {
+            this.stopLocationScanner();
+            return;
+        }
+
+        try {
+            // Check camera permission first
+            const hasPermission = await this.checkCameraPermission();
+            if (!hasPermission) return;
+
+            const config = {
+                fps: APP_CONFIG.SCANNER.fps,
+                qrbox: APP_CONFIG.SCANNER.qrbox,
+                aspectRatio: APP_CONFIG.SCANNER.aspectRatio,
+                facingMode: "environment"
+            };
+
+            this.locationScanner = new Html5QrcodeScanner(
+                "locationReader",
+                config,
+                /* verbose= */ false
+            );
+
+            this.locationScanner.render(
+                (decodedText, decodedResult) => {
+                    this.onLocationScanSuccess(decodedText, decodedResult);
+                },
+                (error) => {
+                    console.log(`Location QR scan error: ${error}`);
+                }
+            );
+
+            this.isLocationScanning = true;
+            
+            console.log('Location assignment scanner initialized');
+            
+        } catch (error) {
+            console.error('Error initializing location scanner:', error);
+            if (typeof showMessage === 'function') {
+                showMessage('Error initializing location scanner: ' + error.message, 'error');
+            }
+            this.playErrorSound();
+        }
+    }
+
+    // Handle location scan success
+    async onLocationScanSuccess(decodedText, decodedResult) {
+        try {
+            const qrData = decodedText.trim();
+            console.log('Location QR scanned:', qrData);
+            
+            // Determine if this is a shipment piece QR or rack QR
+            if (qrData.startsWith('PIECE_')) {
+                // This is a shipment piece QR
+                const success = await window.warehouseManager.processShipmentQRScan(qrData);
+                if (success) {
+                    this.playSuccessSound();
+                }
+            } else if (qrData.startsWith('RACK_')) {
+                // This is a rack QR
+                const success = await window.warehouseManager.processRackQRScan(qrData);
+                if (success) {
+                    this.playSuccessSound();
+                    // Brief pause before ready for next scan
+                    setTimeout(() => {
+                        console.log('Ready for next shipment piece scan');
+                    }, 1000);
+                }
+            } else {
+                // Unknown QR format
+                console.warn('Unknown QR format:', qrData);
+                if (typeof showMessage === 'function') {
+                    showMessage('❌ Unknown QR code format. Please scan a valid shipment piece or rack QR code.', 'error');
+                }
+                this.playErrorSound();
+            }
+            
+        } catch (error) {
+            console.error('Error processing location scan:', error);
+            if (typeof showMessage === 'function') {
+                showMessage('Error processing scan: ' + error.message, 'error');
+            }
+            this.playErrorSound();
+        }
+    }
+
+    // Stop location scanner
+    stopLocationScanner() {
+        if (this.locationScanner) {
+            try {
+                this.locationScanner.clear();
+            } catch (error) {
+                console.warn('Error clearing location scanner:', error);
+            }
+            this.locationScanner = null;
+        }
+        
+        this.isLocationScanning = false;
+        
+        console.log('Location assignment scanner stopped');
     }
 
     // Check if camera permission is available

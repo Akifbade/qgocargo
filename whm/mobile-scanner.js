@@ -9,7 +9,122 @@ class MobileWarehouseScanner {
         this.pendingShipment = null;
         this.recentScans = [];
         
+        // Audio context for beep sounds
+        this.audioContext = null;
+        this.initializeAudio();
+        
         this.initializeApp();
+    }
+
+    // Initialize audio context for beep sounds
+    initializeAudio() {
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            console.log('Audio context initialized for beep sounds');
+        } catch (error) {
+            console.warn('Audio context not supported:', error);
+            this.audioContext = null;
+        }
+    }
+
+    // Play beep sound(s)
+    playBeep(count = 1, frequency = 800, duration = 200) {
+        if (!this.audioContext) {
+            console.warn('Audio context not available for beeps');
+            return;
+        }
+
+        // Resume audio context if suspended (required by some browsers)
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
+
+        for (let i = 0; i < count; i++) {
+            setTimeout(() => {
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+
+                oscillator.frequency.value = frequency;
+                oscillator.type = 'square'; // Square wave for sharp beep
+
+                gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration / 1000);
+
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + duration / 1000);
+            }, i * (duration + 100)); // 100ms gap between beeps
+        }
+    }
+
+    // Show popup success notification
+    showSuccessPopup(title, message) {
+        // Create popup overlay
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+
+        // Create popup content
+        const popup = document.createElement('div');
+        popup.style.cssText = `
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 90%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: popupBounce 0.3s ease-out;
+        `;
+
+        popup.innerHTML = `
+            <style>
+                @keyframes popupBounce {
+                    0% { transform: scale(0.7); opacity: 0; }
+                    100% { transform: scale(1); opacity: 1; }
+                }
+            </style>
+            <div style="font-size: 48px; margin-bottom: 15px;">✅</div>
+            <h2 style="color: #059669; margin: 0 0 15px 0; font-size: 24px;">${title}</h2>
+            <p style="color: #374151; margin: 0; font-size: 18px; line-height: 1.4;">${message}</p>
+            <button id="popupClose" style="
+                margin-top: 20px;
+                padding: 12px 24px;
+                background: #059669;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+            ">OK</button>
+        `;
+
+        overlay.appendChild(popup);
+        document.body.appendChild(overlay);
+
+        // Auto close after 3 seconds or on button click
+        const closePopup = () => {
+            if (overlay.parentNode) {
+                overlay.parentNode.removeChild(overlay);
+            }
+        };
+
+        document.getElementById('popupClose').addEventListener('click', closePopup);
+        setTimeout(closePopup, 3000);
+
+        return overlay;
     }
 
     async initializeApp() {
@@ -83,6 +198,16 @@ class MobileWarehouseScanner {
             if (!email || !password) {
                 this.showMessage('Please enter email and password', 'error');
                 return;
+            }
+
+            // Enable audio context on user interaction
+            if (this.audioContext && this.audioContext.state === 'suspended') {
+                try {
+                    await this.audioContext.resume();
+                    console.log('Audio context resumed for beeps');
+                } catch (error) {
+                    console.warn('Could not resume audio context:', error);
+                }
             }
 
             if (!this.supabase) {
@@ -352,6 +477,18 @@ class MobileWarehouseScanner {
 
             this.showMessage(`📋 ALL PIECES COPIED TO MEMORY!\n\n📦 ${shipment.sender_name}\n🔢 ALL ${shipment.pieces} pieces (scanned piece ${pieceNumber})\n💼 ${barcode}\n\n🎯 Next: Scan rack QR to PASTE ALL pieces`, 'success');
 
+            // 🔊 COPY SUCCESS: 1 LOUD BEEP + POPUP
+            this.playBeep(1, 800, 300); // 1 beep, 800Hz, 300ms duration
+            this.showSuccessPopup(
+                'PACKAGE COPIED!', 
+                `📋 ${shipment.pieces} pieces copied to memory\n\n📦 ${shipment.sender_name}\n\n🎯 Now scan rack QR to paste all pieces`
+            );
+
+            // Vibrate for additional feedback
+            if (navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]);
+            }
+
         } catch (error) {
             console.error('Error handling package scan:', error);
             this.showMessage('Error processing package scan: ' + error.message, 'error');
@@ -374,8 +511,11 @@ class MobileWarehouseScanner {
             // Parse rack QR
             const rackId = qrData.replace('RACK_', '').replace(/_/g, '-');
             
-            // Show PASTE ALL PIECES operation feedback
+            // Show PASTE operation feedback
             this.showMessage(`📋➡️📍 PASTING ALL ${this.pendingShipment.totalPieces} PIECES to rack ${rackId}...`, 'info');
+
+            // Stop scanning immediately to prevent multiple scans
+            this.stopScanning();
 
             // Assign ALL pieces to rack (PASTE ALL OPERATION)
             await this.assignAllPiecesToRack(this.pendingShipment, rackId, qrData);
@@ -383,6 +523,9 @@ class MobileWarehouseScanner {
         } catch (error) {
             console.error('Error handling rack scan:', error);
             this.showMessage('Error processing rack scan: ' + error.message, 'error');
+            
+            // Stop scanning on error too
+            this.stopScanning();
         }
     }
 
@@ -435,7 +578,8 @@ class MobileWarehouseScanner {
 
             if (updateError) throw updateError;
 
-            // Success! (ALL PIECES PASTED)
+            // Success! (ALL PIECES PASTED) - STOP SCANNING
+            this.stopScanning();
             this.updateSteps(2, 'completed');
             this.updateSteps(3, 'active');
 
@@ -454,9 +598,16 @@ class MobileWarehouseScanner {
 
             this.showMessage(`✅ ALL PIECES PASTED SUCCESSFULLY!\n\n📦 ${shipment.sender_name}\n🔢 ALL ${totalPieces} pieces assigned\n📍 Rack ${rackId}\n\n🎯 Ready to COPY next shipment!`, 'success');
 
-            // Vibrate for success
+            // 🔊 PASTE SUCCESS: 3 LOUD BEEPS + POPUP
+            this.playBeep(3, 1000, 400); // 3 beeps, 1000Hz, 400ms duration each
+            this.showSuccessPopup(
+                'ALL PIECES PASTED!',
+                `✅ ${totalPieces} pieces successfully assigned\n\n📦 ${shipment.sender_name}\n📍 Rack ${rackId}\n\n🎯 Ready for next COPY operation!`
+            );
+
+            // Enhanced vibrate for success
             if (navigator.vibrate) {
-                navigator.vibrate([100, 50, 100, 50, 100]);
+                navigator.vibrate([200, 100, 200, 100, 200, 100, 200]);
             }
 
             // Reset for next scan after 3 seconds
@@ -467,7 +618,40 @@ class MobileWarehouseScanner {
         } catch (error) {
             console.error('Error assigning all pieces to rack:', error);
             this.showMessage('Error assigning all pieces: ' + error.message, 'error');
+            
+            // Stop scanning on error too
+            this.stopScanning();
         }
+    }
+
+    // Stop the QR scanner
+    stopScanning() {
+        if (this.scanner && this.isScanning) {
+            try {
+                this.scanner.stop();
+                console.log('📱 Scanner stopped successfully');
+            } catch (error) {
+                console.warn('Error stopping scanner:', error);
+            }
+            this.isScanning = false;
+        }
+    }
+
+    // Reset for next scanning session
+    resetForNextScan() {
+        // Clear pending shipment data
+        this.pendingShipment = null;
+        this.scanningStep = 1;
+        
+        // Reset UI
+        this.updateSteps(1, 'active');
+        this.updateSteps(2, '');
+        this.updateSteps(3, '');
+        
+        // Reset scanner status
+        this.updateScannerStatus('Ready to scan package QR code...');
+        
+        console.log('🔄 Reset for next scan');
     }
 
     // Keep the old method for backward compatibility (but not used anymore)
@@ -552,21 +736,6 @@ class MobileWarehouseScanner {
             console.error('Error assigning package to rack:', error);
             this.showMessage('Error assigning package: ' + error.message, 'error');
         }
-    }
-
-    resetForNextScan() {
-        this.pendingShipment = null;
-        this.scanningStep = 1;
-        
-        // Reset steps
-        this.updateSteps(1, 'active');
-        this.updateSteps(2, '');
-        this.updateSteps(3, '');
-        
-        // Hide shipment info
-        document.getElementById('shipmentInfo').classList.add('hidden');
-        
-        this.updateScannerStatus('📷 Ready to scan next package QR code');
     }
 
     updateSteps(stepNumber, status) {
@@ -709,6 +878,19 @@ class MobileWarehouseScanner {
         this.handleQRCodeScan(testQR);
     }
 
+    // Test beep sounds
+    testBeepSounds() {
+        const choice = prompt('Test beep sounds:\n\n1. COPY beep (1 beep)\n2. PASTE beep (3 beeps)\n\nEnter number (1-2):');
+        
+        if (choice === '1') {
+            this.playBeep(1, 800, 300);
+            this.showSuccessPopup('COPY BEEP TEST', 'Testing 1 beep for COPY operation');
+        } else if (choice === '2') {
+            this.playBeep(3, 1000, 400);
+            this.showSuccessPopup('PASTE BEEP TEST', 'Testing 3 beeps for PASTE operation');
+        }
+    }
+
     // Show QR code format requirements
     showQRFormats() {
         const formats = `📋 QR Code Formats:
@@ -760,6 +942,18 @@ function stopScanning() {
 
 function debugSystem() {
     mobileScanner.debugSystem();
+}
+
+function testBeepSounds() {
+    mobileScanner.testBeepSounds();
+}
+
+function testSampleQR() {
+    mobileScanner.testSampleQR();
+}
+
+function showQRFormats() {
+    mobileScanner.showQRFormats();
 }
 
 // Initialize app when DOM is loaded
