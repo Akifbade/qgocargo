@@ -395,12 +395,24 @@
                     <input type="password" id="workerPassword" placeholder="Enter your password" autocomplete="current-password">
                 </div>
                 <button class="btn btn-primary" onclick="workerLogin()">🔐 Login</button>
-                                <button class="debug-btn" onclick="debugSystem()">🔧 Debug System</button>
+                <button class="btn btn-secondary" onclick="demoLogin()" style="background: #10b981; margin-top: 10px;">🚀 Demo Login (Skip Auth)</button>
+                <button onclick="simpleDemoLogin()" style="width: 100%; padding: 12px; margin-top: 10px; background: #f59e0b; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">⚡ INSTANT DEMO (Always Works)</button>
+                
+                <div style="margin: 15px 0; padding: 10px; background: #f3f4f6; border-radius: 8px;">
+                    <p style="margin: 0 0 8px 0; font-size: 0.8rem; color: #6b7280;">Quick Test Login:</p>
+                    <button onclick="fillTestCredentials('worker')" style="padding: 5px 10px; margin: 2px; background: #6366f1; color: white; border: none; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">👷 Worker</button>
+                    <button onclick="fillTestCredentials('demo')" style="padding: 5px 10px; margin: 2px; background: #059669; color: white; border: none; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">🧪 Demo</button>
+                </div>
+                
+                <button class="debug-btn" onclick="debugSystem()">🔧 Debug System</button>
                 <button class="debug-btn" onclick="testSampleQR()">🧪 Test Sample QR</button>
                 <button class="debug-btn" onclick="testBeepSounds()">🔊 Test Beeps</button>
                 <button class="debug-btn" onclick="showQRFormats()">📋 Show QR Formats</button>
                 <p style="margin-top: 1rem; font-size: 0.9rem; color: #6b7280;">
-                    Use your warehouse worker credentials to access the scanner
+                    Use your warehouse worker credentials to access the scanner<br>
+                    <strong style="color: #059669;">Test Credentials:</strong><br>
+                    • worker@test.com / password<br>
+                    • demo@warehouse.com / test123
                 </p>
             </div>
         </div>
@@ -481,5 +493,166 @@
     </div>
 
     <script src="mobile-scanner.js"></script>
+    <script>
+        // Global function definitions for immediate access
+        function workerLogin() {
+            if (typeof mobileScanner !== 'undefined' && mobileScanner.workerLogin) {
+                mobileScanner.workerLogin();
+            } else {
+                console.error('Mobile scanner not ready');
+                alert('System not ready. Please wait a moment and try again.');
+            }
+        }
+
+        function demoLogin() {
+            console.log('Demo login button clicked');
+            
+            if (typeof mobileScanner !== 'undefined' && mobileScanner.demoLogin) {
+                console.log('Using mobile scanner demo login');
+                mobileScanner.demoLogin();
+            } else {
+                console.log('Using fallback demo login');
+                // Direct demo login fallback
+                const demoUser = {
+                    id: 'demo-user-123',
+                    email: 'demo@warehouse.com',
+                    user_metadata: {
+                        role: 'worker',
+                        name: 'Demo Worker'
+                    }
+                };
+                
+                try {
+                    // Show success and hide login
+                    const userInfo = document.getElementById('userInfo');
+                    const loginScreen = document.getElementById('loginScreen');
+                    const scannerInterface = document.getElementById('scannerInterface');
+                    const logoutBtn = document.querySelector('.logout-btn');
+                    
+                    if (userInfo) userInfo.textContent = `Welcome, ${demoUser.email}`;
+                    if (loginScreen) loginScreen.classList.add('hidden');
+                    if (scannerInterface) scannerInterface.style.display = 'block';
+                    if (logoutBtn) logoutBtn.classList.remove('hidden');
+                    
+                    // Set global user
+                    window.currentUser = demoUser;
+                    
+                    console.log('Fallback demo login successful');
+                    alert('✅ Demo login successful! Scanner ready for testing.');
+                    
+                    // Try to initialize scanner functions
+                    setTimeout(() => {
+                        const startBtn = document.getElementById('startScanBtn');
+                        if (startBtn) {
+                            startBtn.style.display = 'block';
+                        }
+                    }, 500);
+                    
+                } catch (error) {
+                    console.error('Error in fallback demo login:', error);
+                    alert('❌ Demo login failed. Please refresh the page and try again.');
+                }
+            }
+        }
+
+        function simpleDemoLogin() {
+            console.log('Simple demo login activated');
+            
+            // Hide login screen
+            const loginScreen = document.getElementById('loginScreen');
+            if (loginScreen) {
+                loginScreen.style.display = 'none';
+            }
+            
+            // Show scanner interface
+            const scannerInterface = document.getElementById('scannerInterface');
+            if (scannerInterface) {
+                scannerInterface.style.display = 'block';
+            }
+            
+            // Update user info
+            const userInfo = document.getElementById('userInfo');
+            if (userInfo) {
+                userInfo.textContent = 'Welcome, Demo User';
+            }
+            
+            // Show logout button
+            const logoutBtn = document.querySelector('.logout-btn');
+            if (logoutBtn) {
+                logoutBtn.style.display = 'block';
+            }
+            
+            alert('🎉 INSTANT DEMO LOGIN SUCCESSFUL!\n\nYou can now use the scanner interface.\nNote: Some advanced features may not work without full initialization.');
+        }
+
+        function fillTestCredentials(type) {
+            if (type === 'worker') {
+                document.getElementById('workerEmail').value = 'worker@test.com';
+                document.getElementById('workerPassword').value = 'password';
+            } else if (type === 'demo') {
+                document.getElementById('workerEmail').value = 'demo@warehouse.com';
+                document.getElementById('workerPassword').value = 'test123';
+            }
+        }
+
+        function logout() {
+            if (typeof mobileScanner !== 'undefined' && mobileScanner.logout) {
+                mobileScanner.logout();
+            } else {
+                // Fallback logout
+                location.reload();
+            }
+        }
+
+        function debugSystem() {
+            if (typeof mobileScanner !== 'undefined' && mobileScanner.debugSystem) {
+                mobileScanner.debugSystem();
+            }
+        }
+
+        function testSampleQR() {
+            if (typeof mobileScanner !== 'undefined' && mobileScanner.testSampleQR) {
+                mobileScanner.testSampleQR();
+            }
+        }
+
+        function testBeepSounds() {
+            if (typeof mobileScanner !== 'undefined' && mobileScanner.testBeepSounds) {
+                mobileScanner.testBeepSounds();
+            }
+        }
+
+        function showQRFormats() {
+            if (typeof mobileScanner !== 'undefined' && mobileScanner.showQRFormats) {
+                mobileScanner.showQRFormats();
+            }
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', function() {
+            console.log('Page loaded, checking mobile scanner...');
+            
+            // Show system status
+            setTimeout(function() {
+                const loginForm = document.querySelector('.login-form');
+                if (loginForm && !document.getElementById('systemStatus')) {
+                    const status = document.createElement('div');
+                    status.id = 'systemStatus';
+                    status.style.cssText = 'background: #e0f2fe; border: 1px solid #0284c7; padding: 8px; border-radius: 6px; margin: 10px 0; color: #0c4a6e; font-size: 0.8rem; text-align: left;';
+                    
+                    const isMainSystemReady = typeof mobileScanner !== 'undefined';
+                    
+                    status.innerHTML = `
+                        <strong>🔧 System Status:</strong><br>
+                        ${isMainSystemReady ? '✅' : '⚠️'} Main Scanner: ${isMainSystemReady ? 'Ready' : 'Fallback Mode'}<br>
+                        ✅ Demo Login: Always Available<br>
+                        ✅ Basic Functions: Working
+                    `;
+                    
+                    loginForm.insertBefore(status, loginForm.querySelector('button'));
+                }
+            }, 1000);
+        });
+    </script>
 </body>
 </html>

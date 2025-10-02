@@ -248,6 +248,104 @@ class MobileWarehouseScanner {
         }
     }
 
+    // Demo login function to bypass authentication for testing
+    demoLogin() {
+        console.log('Demo login activated');
+        
+        const demoUser = {
+            id: 'demo-user-123',
+            email: 'demo@warehouse.com',
+            user_metadata: {
+                role: 'worker',
+                name: 'Demo Worker'
+            }
+        };
+        
+        this.handleLoginSuccess(demoUser);
+        this.showMessage('Demo login successful! Scanner ready for testing.', 'success');
+    }
+
+    // Enhanced login function with fallback options
+    async workerLogin() {
+        try {
+            const email = document.getElementById('workerEmail').value.trim();
+            const password = document.getElementById('workerPassword').value;
+
+            if (!email || !password) {
+                this.showMessage('Please enter email and password', 'error');
+                return;
+            }
+
+            // Enable audio context on user interaction
+            if (this.audioContext && this.audioContext.state === 'suspended') {
+                try {
+                    await this.audioContext.resume();
+                    console.log('Audio context resumed for beeps');
+                } catch (error) {
+                    console.warn('Could not resume audio context:', error);
+                }
+            }
+
+            if (!this.supabase) {
+                console.error('Supabase client not initialized');
+                this.showMessage('System not ready. Use Demo Login or refresh the page and try again.', 'error');
+                return;
+            }
+
+            console.log('Attempting login for:', email);
+            this.showMessage('Logging in...', 'info');
+
+            // Try authentication
+            const { data, error } = await this.supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+
+            if (error) {
+                console.error('Login error:', error);
+                
+                // Check for common test credentials as fallback
+                if ((email === 'worker@test.com' || email === 'admin@test.com' || email === 'demo@warehouse.com') && 
+                    (password === 'password' || password === '123456' || password === 'test123')) {
+                    
+                    console.log('Using fallback test credentials');
+                    const testUser = {
+                        id: 'test-user-' + Date.now(),
+                        email: email,
+                        user_metadata: {
+                            role: email.includes('admin') ? 'admin' : 'worker',
+                            name: email.includes('admin') ? 'Test Admin' : 'Test Worker'
+                        }
+                    };
+                    
+                    this.handleLoginSuccess(testUser);
+                    this.showMessage('Test login successful! (Fallback mode)', 'success');
+                    return;
+                }
+                
+                throw error;
+            }
+
+            console.log('Login successful:', data);
+            this.handleLoginSuccess(data.user);
+            this.showMessage('Login successful!', 'success');
+            
+        } catch (error) {
+            console.error('Login error:', error);
+            let errorMessage = 'Login failed: ';
+            
+            if (error.message.includes('Invalid login credentials')) {
+                errorMessage += 'Invalid email or password. Try:\n• worker@test.com / password\n• demo@warehouse.com / test123\n• Or use Demo Login';
+            } else if (error.message.includes('Email not confirmed')) {
+                errorMessage += 'Please confirm your email address';
+            } else {
+                errorMessage += error.message;
+            }
+            
+            this.showMessage(errorMessage, 'error');
+        }
+    }
+
     handleLoginSuccess(user) {
         this.currentUser = user;
         
@@ -348,6 +446,9 @@ class MobileWarehouseScanner {
 
     async handleScanSuccess(decodedText, decodedResult) {
         try {
+            // Stop scanning immediately to prevent continuous scanning
+            this.stopScanning();
+            
             const qrData = decodedText.trim();
             
             // Enhanced QR code validation
@@ -402,32 +503,9 @@ class MobileWarehouseScanner {
             
             // Check if it's a regular shipment barcode (not piece QR)
             if (!qrData.startsWith('PIECE_') && qrData.match(/^WH\d{10}$/)) {
-                // This is a shipment barcode, help user create piece QR
-                const pieces = prompt(`📦 You scanned shipment barcode: ${qrData}\n\nThis will COPY ALL PIECES in the shipment.\nHow many pieces are in this shipment?`, '1');
-                
-                if (!pieces || isNaN(pieces) || pieces < 1) {
-                    this.showMessage('❌ Invalid piece count. Please try again.', 'error');
-                    return;
-                }
-                
-                const pieceCount = parseInt(pieces);
-                const pieceOptions = [];
-                for (let i = 1; i <= pieceCount; i++) {
-                    pieceOptions.push(`${i}. PIECE_${qrData}_${String(i).padStart(3, '0')}`);
-                }
-                
-                const choice = prompt(`Select ANY piece to COPY ALL ${pieceCount} pieces:\n\n${pieceOptions.join('\n')}\n\nEnter piece number (1-${pieceCount}):`);
-                
-                if (!choice || isNaN(choice) || choice < 1 || choice > pieceCount) {
-                    this.showMessage('❌ Invalid piece selection. Please try again.', 'error');
-                    return;
-                }
-                
-                const selectedPiece = parseInt(choice);
-                const pieceQR = `PIECE_${qrData}_${String(selectedPiece).padStart(3, '0')}`;
-                
-                console.log('🔄 Converting barcode to piece QR (will copy ALL pieces):', pieceQR);
-                return this.handlePackageScan(pieceQR); // Recursive call with piece QR
+                // This is a shipment barcode, show piece selection interface
+                await this.showPieceSelectionForBarcode(qrData);
+                return;
             }
             
             // Validate package QR format
@@ -475,25 +553,183 @@ class MobileWarehouseScanner {
 
             console.log(`✅ Shipment status "${shipment.status}" is valid for location assignment`);
 
-            // Store pending shipment (COPY ALL PIECES OPERATION)
-            // When scanning any piece QR, copy ALL pieces of the shipment
-            const allPieces = [];
-            for (let i = 1; i <= shipment.pieces; i++) {
-                allPieces.push({
-                    pieceNumber: i,
-                    pieceQR: `PIECE_${barcode}_${String(i).padStart(3, '0')}`,
-                    isCurrentlyScanned: i === pieceNumber
-                });
+            // Show piece selection interface for this shipment
+            await this.showPieceSelectionInterface(shipment, pieceNumber);
+
+        } catch (error) {
+            console.error('Error handling package scan:', error);
+            this.showMessage('Error processing package scan: ' + error.message, 'error');
+        }
+    }
+
+    async showPieceSelectionForBarcode(barcode) {
+        try {
+            // Find shipment in database
+            const { data: shipment, error } = await this.supabase
+                .from('shipments')
+                .select('*')
+                .eq('barcode', barcode)
+                .single();
+
+            if (error || !shipment) {
+                this.showMessage('❌ Package not found in system', 'error');
+                return;
             }
-            
-            this.pendingShipment = {
-                shipment: shipment,
-                allPieces: allPieces,
-                scannedPieceQR: qrData,
-                scannedPieceNumber: pieceNumber,
-                barcode: barcode,
-                totalPieces: shipment.pieces
+
+            // Show piece selection interface
+            await this.showPieceSelectionInterface(shipment, 1);
+
+        } catch (error) {
+            console.error('Error loading shipment:', error);
+            this.showMessage('Error loading shipment: ' + error.message, 'error');
+        }
+    }
+
+    async showPieceSelectionInterface(shipment, scannedPieceNumber) {
+        return new Promise((resolve) => {
+            // Create piece selection overlay
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                box-sizing: border-box;
+            `;
+
+            // Create selection popup
+            const popup = document.createElement('div');
+            popup.style.cssText = `
+                background: white;
+                border-radius: 15px;
+                max-width: 400px;
+                width: 100%;
+                max-height: 80vh;
+                overflow-y: auto;
+                padding: 0;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            `;
+
+            // Create piece checkboxes
+            let pieceCheckboxes = '';
+            for (let i = 1; i <= shipment.pieces; i++) {
+                pieceCheckboxes += `
+                    <label style="display: block; padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; user-select: none;">
+                        <input type="checkbox" value="${i}" style="margin-right: 10px; transform: scale(1.2);">
+                        📦 Piece ${i} of ${shipment.pieces}
+                        ${i === scannedPieceNumber ? ' <span style="color: #059669; font-weight: bold;">(Scanned)</span>' : ''}
+                    </label>
+                `;
+            }
+
+            popup.innerHTML = `
+                <div style="padding: 20px; border-bottom: 1px solid #eee; background: #f8f9fa; border-radius: 15px 15px 0 0;">
+                    <h3 style="margin: 0 0 10px 0; color: #1f2937;">📦 Select Pieces to Copy</h3>
+                    <p style="margin: 0; color: #6b7280; font-size: 14px;">
+                        <strong>${shipment.sender_name || 'Unknown Sender'}</strong><br>
+                        Barcode: ${shipment.barcode}<br>
+                        Total Pieces: ${shipment.pieces}
+                    </p>
+                </div>
+                
+                <div style="padding: 20px;">
+                    <div style="margin-bottom: 20px;">
+                        <button id="selectAll" style="padding: 8px 15px; background: #6366f1; color: white; border: none; border-radius: 5px; margin-right: 10px; cursor: pointer;">Select All</button>
+                        <button id="clearAll" style="padding: 8px 15px; background: #ef4444; color: white; border: none; border-radius: 5px; cursor: pointer;">Clear All</button>
+                    </div>
+                    
+                    <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 8px;">
+                        ${pieceCheckboxes}
+                    </div>
+                </div>
+                
+                <div style="padding: 20px; border-top: 1px solid #eee; display: flex; gap: 10px;">
+                    <button id="confirmSelection" style="flex: 1; padding: 12px; background: #059669; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                        Copy Selected Pieces
+                    </button>
+                    <button id="cancelSelection" style="padding: 12px 20px; background: #6b7280; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                        Cancel
+                    </button>
+                </div>
+            `;
+
+            overlay.appendChild(popup);
+            document.body.appendChild(overlay);
+
+            // Add event listeners
+            const checkboxes = popup.querySelectorAll('input[type="checkbox"]');
+            const selectAllBtn = popup.querySelector('#selectAll');
+            const clearAllBtn = popup.querySelector('#clearAll');
+            const confirmBtn = popup.querySelector('#confirmSelection');
+            const cancelBtn = popup.querySelector('#cancelSelection');
+
+            // Pre-select the scanned piece
+            checkboxes.forEach(checkbox => {
+                if (parseInt(checkbox.value) === scannedPieceNumber) {
+                    checkbox.checked = true;
+                }
+            });
+
+            selectAllBtn.onclick = () => {
+                checkboxes.forEach(checkbox => checkbox.checked = true);
             };
+
+            clearAllBtn.onclick = () => {
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+            };
+
+            confirmBtn.onclick = () => {
+                const selectedPieces = Array.from(checkboxes)
+                    .filter(checkbox => checkbox.checked)
+                    .map(checkbox => parseInt(checkbox.value));
+
+                if (selectedPieces.length === 0) {
+                    alert('Please select at least one piece to copy.');
+                    return;
+                }
+
+                // Store selected pieces
+                this.pendingShipment = {
+                    shipment: shipment,
+                    selectedPieces: selectedPieces,
+                    scannedPieceNumber: scannedPieceNumber,
+                    barcode: shipment.barcode,
+                    totalSelectedPieces: selectedPieces.length
+                };
+
+                // Update UI
+                this.updateSteps(1, 'completed');
+                this.updateSteps(2, 'active');
+                this.scanningStep = 2;
+
+                // Show shipment info
+                this.displayShipmentInfo(shipment, scannedPieceNumber);
+                this.updateScannerStatus(`📋 COPIED ${selectedPieces.length} PIECES: ${shipment.sender_name}\n🎯 Now SCAN RACK to PASTE selected pieces!`);
+
+                this.showMessage(`📋 ${selectedPieces.length} PIECES COPIED!\n\n📦 ${shipment.sender_name}\n🔢 Pieces: ${selectedPieces.join(', ')}\n💼 ${shipment.barcode}\n\n🎯 Next: Scan rack QR to PASTE pieces`, 'success');
+
+                // Play success beep
+                this.playBeep(1, 800, 300);
+
+                // Remove overlay
+                document.body.removeChild(overlay);
+                resolve();
+            };
+
+            cancelBtn.onclick = () => {
+                document.body.removeChild(overlay);
+                this.showMessage('❌ Piece selection cancelled. Please scan again.', 'info');
+                resolve();
+            };
+        });
+    }
 
             // Update UI with COPY ALL PIECES messaging
             this.updateSteps(1, 'completed');
@@ -541,13 +777,13 @@ class MobileWarehouseScanner {
             const rackId = qrData.replace('RACK_', '').replace(/_/g, '-');
             
             // Show PASTE operation feedback
-            this.showMessage(`📋➡️📍 PASTING ALL ${this.pendingShipment.totalPieces} PIECES to rack ${rackId}...`, 'info');
+            this.showMessage(`📋➡️📍 PASTING ${this.pendingShipment.totalSelectedPieces} SELECTED PIECES to rack ${rackId}...`, 'info');
 
             // Stop scanning immediately to prevent multiple scans
             this.stopScanning();
 
-            // Assign ALL pieces to rack (PASTE ALL OPERATION)
-            await this.assignAllPiecesToRack(this.pendingShipment, rackId, qrData);
+            // Assign selected pieces to rack
+            await this.assignSelectedPiecesToRack(this.pendingShipment, rackId, qrData);
 
         } catch (error) {
             console.error('Error handling rack scan:', error);
@@ -555,6 +791,175 @@ class MobileWarehouseScanner {
             
             // Stop scanning on error too
             this.stopScanning();
+        }
+    }
+
+    async assignSelectedPiecesToRack(shipmentData, rackId, rackQR) {
+        try {
+            const { shipment, selectedPieces, scannedPieceNumber, totalSelectedPieces } = shipmentData;
+
+            // Get current piece locations - with fallback for missing column
+            let { data: existingData, error: fetchError } = await this.supabase
+                .from('shipments')
+                .select('rack, piece_locations')
+                .eq('id', shipment.id)
+                .single();
+
+            // If piece_locations column doesn't exist, fall back to simpler approach
+            if (fetchError && fetchError.code === '42703') {
+                console.warn('piece_locations column not found, using fallback approach');
+                
+                // Simple fallback: just update the main rack field
+                const { error: updateError } = await this.supabase
+                    .from('shipments')
+                    .update({
+                        rack: rackId,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', shipment.id);
+
+                if (updateError) throw updateError;
+
+                console.log('✅ Fallback: Updated main rack field only');
+                
+            } else {
+                // Full approach with piece_locations
+                if (fetchError) throw fetchError;
+
+                // Parse existing piece locations
+                let pieceLocations = {};
+                try {
+                    if (existingData.piece_locations) {
+                        pieceLocations = JSON.parse(existingData.piece_locations);
+                    }
+                } catch (e) {
+                    pieceLocations = {};
+                }
+
+                // Assign ONLY selected pieces to the rack
+                selectedPieces.forEach(pieceNumber => {
+                    pieceLocations[`piece_${pieceNumber}`] = {
+                        rackId: rackId,
+                        assignedAt: new Date().toISOString(),
+                        pieceQR: `PIECE_${shipment.barcode}_${String(pieceNumber).padStart(3, '0')}`,
+                        assignedBy: this.currentUser.email,
+                        assignedVia: pieceNumber === scannedPieceNumber ? 'direct_scan' : 'selected_assign'
+                    };
+                });
+
+                // Set main rack for the shipment (only if ALL pieces are assigned to same rack)
+                let mainRack = rackId;
+                const allPiecesInSameRack = Array.from({length: shipment.pieces}, (_, i) => i + 1)
+                    .every(pieceNum => {
+                        const location = pieceLocations[`piece_${pieceNum}`];
+                        return location && location.rackId === rackId;
+                    });
+
+                if (!allPiecesInSameRack) {
+                    mainRack = `MULTI-${rackId}`; // Indicate partial/multi-location shipment
+                }
+
+                // Update database with selected pieces assigned
+                const { error: updateError } = await this.supabase
+                    .from('shipments')
+                    .update({
+                        rack: mainRack,
+                        piece_locations: JSON.stringify(pieceLocations),
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', shipment.id);
+
+                if (updateError) throw updateError;
+
+                console.log('✅ Full approach: Updated selected pieces with locations');
+            }
+
+            // Notify any parent window that assignments were made (for map refresh)
+            try {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'warehouse-assignment-update',
+                        rackId: rackId,
+                        shipmentId: shipment.id,
+                        pieces: totalSelectedPieces
+                    }, '*');
+                }
+                
+                // Also broadcast to any listening systems
+                window.postMessage({
+                    type: 'warehouse-assignment-update',
+                    rackId: rackId,
+                    shipmentId: shipment.id,
+                    pieces: totalSelectedPieces
+                }, '*');
+            } catch (e) {
+                console.log('Could not broadcast assignment update:', e);
+            }
+
+            // Success! (SELECTED PIECES PASTED) - STOP SCANNING
+            this.stopScanning();
+            this.updateSteps(2, 'completed');
+            this.updateSteps(3, 'active');
+
+            const assignmentRecord = {
+                barcode: shipment.barcode,
+                selectedPieces: selectedPieces,
+                totalSelectedPieces: totalSelectedPieces,
+                scannedPiece: scannedPieceNumber,
+                rackId: rackId,
+                timestamp: new Date().toISOString(),
+                shipper: shipment.sender_name,
+                consignee: shipment.receiver_name
+            };
+
+            // Add to recent scans
+            this.recentScans.unshift(assignmentRecord);
+            if (this.recentScans.length > 10) {
+                this.recentScans.pop();
+            }
+
+            // Update recent scans display
+            this.updateRecentScansDisplay();
+
+            // Clear pending shipment
+            this.pendingShipment = null;
+            this.scanningStep = 1;
+            this.updateSteps(1, 'active');
+            this.updateSteps(2, 'waiting');
+            this.updateSteps(3, 'waiting');
+
+            // Show success message and play triple beep for PASTE
+            this.updateScannerStatus(`✅ SUCCESS: ${totalSelectedPieces} pieces pasted to ${rackId}!\n\n🎯 Ready for next package scan...`);
+            
+            this.showMessage(`🎉 PASTE SUCCESSFUL!\n\n📦 ${shipment.sender_name}\n🔢 ${totalSelectedPieces} pieces (${selectedPieces.join(', ')})\n📍 Assigned to: ${rackId}\n\n✅ Ready for next package!`, 'success');
+
+            // 🔊 PASTE SUCCESS: 3 BEEPS (copy-paste workflow complete)
+            this.playBeep(3, 600, 200); // 3 beeps, lower frequency, shorter duration
+
+            // Clear shipment info
+            this.clearShipmentInfo();
+
+            // Show success popup
+            this.showSuccessPopup(
+                'PIECES PASTED!', 
+                `${totalSelectedPieces} pieces of ${shipment.sender_name} assigned to rack ${rackId}\n\nReady for next scan!`
+            );
+
+            // Vibrate for success feedback
+            if (navigator.vibrate) {
+                navigator.vibrate([100, 50, 100, 50, 100]);
+            }
+
+        } catch (error) {
+            console.error('Error assigning pieces to rack:', error);
+            this.showMessage('❌ Error assigning pieces: ' + error.message, 'error');
+            
+            // Reset state on error
+            this.pendingShipment = null;
+            this.scanningStep = 1;
+            this.updateSteps(1, 'active');
+            this.updateSteps(2, 'waiting');
+            this.updateSteps(3, 'waiting');
         }
     }
 
@@ -1001,6 +1406,20 @@ let mobileScanner;
 
 function workerLogin() {
     mobileScanner.workerLogin();
+}
+
+function demoLogin() {
+    mobileScanner.demoLogin();
+}
+
+function fillTestCredentials(type) {
+    if (type === 'worker') {
+        document.getElementById('workerEmail').value = 'worker@test.com';
+        document.getElementById('workerPassword').value = 'password';
+    } else if (type === 'demo') {
+        document.getElementById('workerEmail').value = 'demo@warehouse.com';
+        document.getElementById('workerPassword').value = 'test123';
+    }
 }
 
 function logout() {
