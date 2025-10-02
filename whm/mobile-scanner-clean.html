@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Warehouse Mobile Scanner - Clean Version</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .login-screen {
+            padding: 2rem 1rem;
+            text-align: center;
+        }
+
+        .scanner-interface {
+            display: none;
+            padding: 1rem;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .scanner-controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+
+        #mobileReader {
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .workflow-steps {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            padding: 0 10px;
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 0 5px;
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .step.active {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .step.completed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 Warehouse Scanner</h1>
+            <div id="userInfo"></div>
+        </div>
+
+        <!-- Login Screen -->
+        <div class="login-screen" id="loginScreen">
+            <h2 style="margin-bottom: 2rem; color: #4a5568;">Worker Login</h2>
+            
+            <div class="form-group">
+                <label for="workerEmail">Email:</label>
+                <input type="email" id="workerEmail" placeholder="Enter your email">
+            </div>
+            
+            <div class="form-group">
+                <label for="workerPassword">Password:</label>
+                <input type="password" id="workerPassword" placeholder="Enter your password">
+            </div>
+            
+            <button class="btn-primary" onclick="regularLogin()">🔐 Login</button>
+            <button class="btn-success" onclick="demoLogin()">🚀 Demo Login</button>
+            <button class="btn-warning" onclick="instantLogin()">⚡ INSTANT ACCESS</button>
+            
+            <div style="margin: 15px 0; padding: 10px; background: #f3f4f6; border-radius: 8px; font-size: 0.9rem;">
+                <strong>Test Credentials:</strong><br>
+                worker@test.com / password
+            </div>
+        </div>
+
+        <!-- Scanner Interface -->
+        <div class="scanner-interface" id="scannerInterface">
+            <div class="workflow-steps">
+                <div class="step active" id="step1">📦 Scan Package</div>
+                <div class="step" id="step2">📍 Scan Rack</div>
+                <div class="step" id="step3">✅ Complete</div>
+            </div>
+
+            <div class="scanner-controls">
+                <button class="btn-success" id="startScanBtn" onclick="startScanning()">📷 Start Scanning</button>
+                <button class="btn-primary hidden" id="stopScanBtn" onclick="stopScanning()">⏹️ Stop Scanning</button>
+            </div>
+
+            <div id="mobileReader"></div>
+
+            <div id="statusMessage" class="status info">
+                Ready to scan. Click "Start Scanning" to begin.
+            </div>
+
+            <div id="shipmentInfo" style="margin: 20px 0; padding: 15px; background: #f9fafb; border-radius: 8px; display: none;">
+                <h3>📦 Shipment Info</h3>
+                <div id="shipmentDetails"></div>
+            </div>
+
+            <button class="btn-primary" onclick="logout()" style="background: #6b7280; margin-top: 20px;">🚪 Logout</button>
+        </div>
+    </div>
+
+    <script>
+        // Simple, working scanner implementation
+        let currentUser = null;
+        let scanner = null;
+        let isScanning = false;
+        let scanStep = 1; // 1 = package, 2 = rack
+        let pendingShipment = null;
+
+        // Login functions
+        function regularLogin() {
+            const email = document.getElementById('workerEmail').value;
+            const password = document.getElementById('workerPassword').value;
+            
+            if (!email || !password) {
+                showStatus('Please enter email and password', 'error');
+                return;
+            }
+            
+            // Simple credential check
+            if ((email === 'worker@test.com' && password === 'password') ||
+                (email === 'demo@warehouse.com' && password === 'test123')) {
+                loginSuccess(email);
+            } else {
+                showStatus('Invalid credentials. Try: worker@test.com / password', 'error');
+            }
+        }
+
+        function demoLogin() {
+            loginSuccess('demo@warehouse.com');
+        }
+
+        function instantLogin() {
+            loginSuccess('instant@demo.com');
+        }
+
+        function loginSuccess(email) {
+            currentUser = { email: email };
+            document.getElementById('userInfo').textContent = `Welcome, ${email}`;
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('scannerInterface').style.display = 'block';
+            showStatus('Login successful! Ready to scan packages.', 'success');
+        }
+
+        function logout() {
+            currentUser = null;
+            stopScanning();
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('scannerInterface').style.display = 'none';
+            document.getElementById('userInfo').textContent = '';
+        }
+
+        // Scanner functions
+        function startScanning() {
+            if (isScanning) {
+                stopScanning();
+                return;
+            }
+
+            try {
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0,
+                    facingMode: "environment"
+                };
+
+                scanner = new Html5QrcodeScanner("mobileReader", config, false);
+                
+                scanner.render(
+                    (decodedText, decodedResult) => {
+                        handleScanSuccess(decodedText);
+                    },
+                    (error) => {
+                        // Ignore common scanning errors
+                        if (!error.includes('No MultiFormat Readers') && !error.includes('NotFoundException')) {
+                            console.warn('Scan error:', error);
+                        }
+                    }
+                );
+
+                isScanning = true;
+                document.getElementById('startScanBtn').classList.add('hidden');
+                document.getElementById('stopScanBtn').classList.remove('hidden');
+                showStatus('📷 Camera active - Point at QR code', 'info');
+
+            } catch (error) {
+                console.error('Error starting scanner:', error);
+                showStatus('Camera access denied or not available. Please check permissions.', 'error');
+                
+                // Fallback to manual input
+                setTimeout(() => {
+                    const manualQR = prompt('Camera not available. Enter QR code manually:');
+                    if (manualQR) {
+                        handleScanSuccess(manualQR);
+                    }
+                }, 1000);
+            }
+        }
+
+        function stopScanning() {
+            if (scanner && isScanning) {
+                try {
+                    scanner.clear();
+                    scanner = null;
+                } catch (error) {
+                    console.warn('Error stopping scanner:', error);
+                }
+                isScanning = false;
+                document.getElementById('startScanBtn').classList.remove('hidden');
+                document.getElementById('stopScanBtn').classList.add('hidden');
+                showStatus('Scanner stopped. Click "Start Scanning" to resume.', 'info');
+            }
+        }
+
+        function handleScanSuccess(qrCode) {
+            console.log('QR Code scanned:', qrCode);
+            
+            // Stop scanning immediately
+            stopScanning();
+            
+            // Vibrate if available
+            if (navigator.vibrate) {
+                navigator.vibrate(200);
+            }
+
+            if (scanStep === 1) {
+                // Step 1: Package scan
+                handlePackageScan(qrCode);
+            } else if (scanStep === 2) {
+                // Step 2: Rack scan
+                handleRackScan(qrCode);
+            }
+        }
+
+        function handlePackageScan(qrCode) {
+            if (qrCode.startsWith('PIECE_') || qrCode.match(/^WH\d+/)) {
+                // Valid package QR
+                pendingShipment = {
+                    qr: qrCode,
+                    timestamp: new Date()
+                };
+                
+                updateStep(1, 'completed');
+                updateStep(2, 'active');
+                scanStep = 2;
+                
+                showShipmentInfo(qrCode);
+                showStatus(`📦 Package scanned: ${qrCode}\n🎯 Now scan RACK QR code`, 'success');
+                
+                // Auto-start scanning for rack
+                setTimeout(startScanning, 1000);
+                
+            } else if (qrCode.startsWith('RACK_')) {
+                showStatus('❌ Please scan a PACKAGE QR code first, not a rack QR code', 'error');
+            } else {
+                showStatus('❌ Invalid package QR code format', 'error');
+            }
+        }
+
+        function handleRackScan(qrCode) {
+            if (!pendingShipment) {
+                showStatus('❌ Please scan a package first', 'error');
+                return;
+            }
+
+            if (qrCode.startsWith('RACK_')) {
+                const rackId = qrCode.replace('RACK_', '').replace(/_/g, '-');
+                
+                // Success!
+                updateStep(2, 'completed');
+                updateStep(3, 'active');
+                
+                showStatus(`🎉 SUCCESS!\n📦 Package: ${pendingShipment.qr}\n📍 Assigned to: ${rackId}\n\n✅ Ready for next package`, 'success');
+                
+                // Reset for next scan
+                setTimeout(() => {
+                    resetScan();
+                }, 3000);
+                
+            } else {
+                showStatus('❌ Please scan a RACK QR code (should start with RACK_)', 'error');
+            }
+        }
+
+        function resetScan() {
+            pendingShipment = null;
+            scanStep = 1;
+            updateStep(1, 'active');
+            updateStep(2, '');
+            updateStep(3, '');
+            hideShipmentInfo();
+            showStatus('Ready for next package scan', 'info');
+        }
+
+        // UI Helper functions
+        function updateStep(stepNum, status) {
+            const step = document.getElementById(`step${stepNum}`);
+            if (step) {
+                step.className = `step ${status}`;
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            if (statusEl) {
+                statusEl.textContent = message;
+                statusEl.className = `status ${type}`;
+            }
+        }
+
+        function showShipmentInfo(qrCode) {
+            const infoEl = document.getElementById('shipmentInfo');
+            const detailsEl = document.getElementById('shipmentDetails');
+            
+            if (infoEl && detailsEl) {
+                detailsEl.innerHTML = `
+                    <p><strong>QR Code:</strong> ${qrCode}</p>
+                    <p><strong>Scanned:</strong> ${new Date().toLocaleTimeString()}</p>
+                    <p><strong>Status:</strong> Ready for rack assignment</p>
+                `;
+                infoEl.style.display = 'block';
+            }
+        }
+
+        function hideShipmentInfo() {
+            const infoEl = document.getElementById('shipmentInfo');
+            if (infoEl) {
+                infoEl.style.display = 'none';
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Clean mobile scanner loaded successfully');
+            showStatus('System ready. Please login to continue.', 'info');
+        });
+    </script>
+</body>
+</html>

@@ -628,6 +628,125 @@
             }
         }
 
+        // Scanner control functions with fallbacks
+        function startScanning() {
+            if (typeof mobileScanner !== 'undefined' && mobileScanner.startScanning) {
+                mobileScanner.startScanning();
+            } else {
+                console.log('Using fallback scanner');
+                startFallbackScanner();
+            }
+        }
+
+        function stopScanning() {
+            if (typeof mobileScanner !== 'undefined' && mobileScanner.stopScanning) {
+                mobileScanner.stopScanning();
+            } else {
+                console.log('Stop scanning fallback');
+                stopFallbackScanner();
+            }
+        }
+
+        // Fallback scanner implementation
+        let fallbackScanner = null;
+        let fallbackIsScanning = false;
+
+        function startFallbackScanner() {
+            if (fallbackIsScanning) {
+                stopFallbackScanner();
+                return;
+            }
+
+            try {
+                if (typeof Html5QrcodeScanner === 'undefined') {
+                    throw new Error('QR scanner library not loaded');
+                }
+
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0,
+                    facingMode: "environment"
+                };
+
+                fallbackScanner = new Html5QrcodeScanner("mobileReader", config, false);
+                
+                fallbackScanner.render(
+                    (decodedText) => {
+                        handleFallbackScan(decodedText);
+                    },
+                    (error) => {
+                        // Ignore common scanning errors
+                        if (!error.includes('No MultiFormat Readers') && !error.includes('NotFoundException')) {
+                            console.warn('Scan error:', error);
+                        }
+                    }
+                );
+
+                fallbackIsScanning = true;
+                updateScannerButtons(false);
+                updateScannerStatus('📷 Fallback scanner active - Point at QR code');
+
+            } catch (error) {
+                console.error('Error starting fallback scanner:', error);
+                alert('❌ Scanner not available. Try:\n1. Refresh the page\n2. Allow camera permissions\n3. Use manual QR input');
+                
+                const manualQR = prompt('Enter QR code manually:');
+                if (manualQR) {
+                    handleFallbackScan(manualQR);
+                }
+            }
+        }
+
+        function stopFallbackScanner() {
+            if (fallbackScanner && fallbackIsScanning) {
+                try {
+                    fallbackScanner.clear();
+                    fallbackScanner = null;
+                } catch (error) {
+                    console.warn('Error stopping fallback scanner:', error);
+                }
+                fallbackIsScanning = false;
+                updateScannerButtons(true);
+                updateScannerStatus('Scanner stopped. Click "Start Scanning" to resume.');
+            }
+        }
+
+        function handleFallbackScan(qrCode) {
+            console.log('Fallback scan:', qrCode);
+            stopFallbackScanner();
+            
+            if (navigator.vibrate) {
+                navigator.vibrate(200);
+            }
+            
+            alert(`✅ QR Code Scanned: ${qrCode}\n\nThis is fallback mode. In full mode, this would process the shipment assignment.`);
+        }
+
+        function updateScannerButtons(showStart) {
+            const startBtn = document.getElementById('startScanBtn');
+            const stopBtn = document.getElementById('stopScanBtn');
+            
+            if (startBtn && stopBtn) {
+                if (showStart) {
+                    startBtn.classList.remove('hidden');
+                    stopBtn.classList.add('hidden');
+                } else {
+                    startBtn.classList.add('hidden');
+                    stopBtn.classList.remove('hidden');
+                }
+            }
+        }
+
+        function updateScannerStatus(message) {
+            const statusEl = document.querySelector('.scanner-status');
+            if (statusEl) {
+                statusEl.textContent = message;
+            } else {
+                console.log('Scanner status:', message);
+            }
+        }
+
         // Initialize when page loads
         window.addEventListener('load', function() {
             console.log('Page loaded, checking mobile scanner...');
