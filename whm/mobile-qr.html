@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Scanner QR Code</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 400px;
+            margin: 0 auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        #qrcode {
+            margin: 2rem 0;
+        }
+        .instructions {
+            background: #f0f4ff;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border-left: 4px solid #667eea;
+        }
+        .url {
+            background: #f8f9fa;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 1rem 0;
+        }
+        .print-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Mobile Scanner Access</h1>
+        
+        <div class="instructions">
+            <strong>For Warehouse Workers:</strong><br>
+            Scan this QR code with your phone to access the mobile warehouse scanner
+        </div>
+        
+        <div id="qrcode"></div>
+        
+        <div class="url" id="mobileUrl"></div>
+        
+        <div class="instructions">
+            <strong>Instructions:</strong><br>
+            1. Scan QR code or visit URL on mobile device<br>
+            2. Login with your warehouse credentials<br>
+            3. Use camera to scan package and rack QR codes<br>
+            4. Location assignments are recorded automatically
+        </div>
+        
+        <button class="print-btn" onclick="window.print()">🖨️ Print This QR Code</button>
+        <button class="print-btn" onclick="copyUrl()">📋 Copy URL</button>
+    </div>
+
+    <script>
+        // Generate QR code for mobile scanner URL
+        const currentUrl = window.location.href;
+        const mobileUrl = currentUrl.replace('mobile-qr.html', 'mobile-scanner.html');
+        
+        // Display URL
+        document.getElementById('mobileUrl').textContent = mobileUrl;
+        
+        // Generate QR code
+        QRCode.toCanvas(document.getElementById('qrcode'), mobileUrl, {
+            width: 256,
+            margin: 2,
+            color: {
+                dark: '#000000',
+                light: '#FFFFFF'
+            }
+        }, function (error) {
+            if (error) {
+                console.error('Error generating QR code:', error);
+                document.getElementById('qrcode').innerHTML = '<p>Error generating QR code</p>';
+            }
+        });
+        
+        function copyUrl() {
+            navigator.clipboard.writeText(mobileUrl).then(() => {
+                alert('URL copied to clipboard!');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = mobileUrl;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('URL copied to clipboard!');
+            });
+        }
+    </script>
+</body>
+</html>
