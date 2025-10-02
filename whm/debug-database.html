@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Database Debug - Check Rack Assignments</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f9fafb;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 8px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .success-btn {
+            background: #10b981;
+        }
+        .success-btn:hover {
+            background: #059669;
+        }
+        .danger-btn {
+            background: #ef4444;
+        }
+        .danger-btn:hover {
+            background: #dc2626;
+        }
+        .results {
+            background: #f3f4f6;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        .shipment-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .shipment-card.assigned {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+        .shipment-card.unassigned {
+            border-color: #f59e0b;
+            background: #fffbeb;
+        }
+    </style>
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Database Debug Tool</h1>
+        <p>This tool helps debug rack assignment issues by showing exactly what's in your Supabase database.</p>
+        
+        <button onclick="checkConnection()">🔗 Test Connection</button>
+        <button onclick="listAllShipments()">📦 List All Shipments</button>
+        <button onclick="listAssignedShipments()" class="success-btn">📍 List Assigned Only</button>
+        <button onclick="addTestShipment()">➕ Add Test Shipment</button>
+        <button onclick="assignTestRack()" class="success-btn">🎯 Test Assignment</button>
+        <button onclick="clearTestData()" class="danger-btn">🗑️ Clear Test Data</button>
+        
+        <div id="status"></div>
+        <div id="results" class="results"></div>
+    </div>
+
+    <div class="container">
+        <h3>🎯 Quick Test Workflow</h3>
+        <p>Use these buttons to simulate the mobile scanner workflow:</p>
+        
+        <button onclick="simulateCompleteWorkflow()" class="success-btn">🚀 Simulate Complete Workflow</button>
+        <button onclick="checkWarehouseMapData()">🗺️ Check Map Data</button>
+        
+        <div id="workflowStatus"></div>
+        <div id="workflowResults" class="results"></div>
+    </div>
+
+    <script>
+        let supabase = null;
+
+        // Initialize Supabase
+        function initSupabase() {
+            try {
+                supabase = window.supabase.createClient(
+                    'https://exovuqedyedhqzorajca.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3Z1cWVkeWVkaHF6b3JhamNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkwNzQyMTYsImV4cCI6MjA3NDY1MDIxNn0.zWyoLDRid9BmR9Ouw-zGGiQZevvXJ_P7ZTIo-VbrAso'
+                );
+                return true;
+            } catch (error) {
+                console.error('Failed to initialize Supabase:', error);
+                return false;
+            }
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function updateResults(content) {
+            document.getElementById('results').textContent = content;
+        }
+
+        function updateWorkflowStatus(message, type = 'info') {
+            const statusEl = document.getElementById('workflowStatus');
+            statusEl.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function updateWorkflowResults(content) {
+            document.getElementById('workflowResults').textContent = content;
+        }
+
+        async function checkConnection() {
+            updateStatus('🔄 Testing Supabase connection...', 'info');
+            updateResults('');
+            
+            try {
+                if (!supabase) {
+                    const initialized = initSupabase();
+                    if (!initialized) {
+                        throw new Error('Failed to initialize Supabase client');
+                    }
+                }
+                
+                // First, let's check the actual schema
+                updateResults('Checking database schema...\n');
+                
+                // Test connection and get schema info
+                const { data, error } = await supabase
+                    .from('shipments')
+                    .select('*')
+                    .limit(1);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                // If we got data, show the column structure
+                if (data.length > 0) {
+                    updateResults('✅ Connection successful!\n\nActual database columns:\n' + Object.keys(data[0]).join(', ') + '\n\nSample data:\n' + JSON.stringify(data[0], null, 2));
+                } else {
+                    // No data, let's try to insert a minimal record to see the schema
+                    updateResults('✅ Connection successful but no data found.\nTrying minimal insert to discover schema...\n');
+                    
+                    try {
+                        const { error: insertError } = await supabase
+                            .from('shipments')
+                            .insert({ barcode: 'SCHEMA_TEST' });
+                        
+                        if (insertError) {
+                            updateResults(updateResults() + '\nSchema discovery via insert error:\n' + insertError.message);
+                        }
+                    } catch (e) {
+                        updateResults(updateResults() + '\nSchema discovery error:\n' + e.message);
+                    }
+                }
+                
+                updateStatus('✅ Connection successful!', 'success');
+                
+            } catch (error) {
+                updateStatus(`❌ Connection failed: ${error.message}`, 'error');
+                updateResults(`Error details:\n${error.message}\n\nFull error:\n${JSON.stringify(error, null, 2)}`);
+                console.error('Connection test failed:', error);
+            }
+        }
+
+        async function listAllShipments() {
+            updateStatus('📦 Loading all shipments...', 'info');
+            
+            try {
+                if (!supabase) {
+                    initSupabase();
+                }
+                
+                const { data, error } = await supabase
+                    .from('shipments')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    throw error;
+                }
+                
+                updateStatus(`✅ Found ${data.length} shipments`, 'success');
+                
+                let results = `TOTAL SHIPMENTS: ${data.length}\n\n`;
+                data.forEach((shipment, index) => {
+                    const rackStatus = shipment.rack && 
+                                     shipment.rack !== 'UNASSIGNED' && 
+                                     shipment.rack !== '' ? 
+                                     `📍 ${shipment.rack}` : '⚠️ UNASSIGNED';
+                    results += `${index + 1}. 📦 ${shipment.barcode}\n`;
+                    results += `   Rack: ${rackStatus}\n`;
+                    results += `   Status: ${shipment.status}\n`;
+                    results += `   Pieces: ${shipment.pieces}\n`;
+                    results += `   Sender: ${shipment.sender_name}\n`;
+                    results += `   Created: ${new Date(shipment.created_at).toLocaleString()}\n`;
+                    if (shipment.updated_at && shipment.updated_at !== shipment.created_at) {
+                        results += `   Updated: ${new Date(shipment.updated_at).toLocaleString()}\n`;
+                    }
+                    results += `\n`;
+                });
+                
+                updateResults(results);
+                
+            } catch (error) {
+                updateStatus(`❌ Error loading shipments: ${error.message}`, 'error');
+                updateResults(`Error: ${error.message}`);
+                console.error('List shipments error:', error);
+            }
+        }
+
+        async function listAssignedShipments() {
+            updateStatus('📍 Loading assigned shipments only...', 'info');
+            
+            try {
+                if (!supabase) {
+                    initSupabase();
+                }
+                
+                const { data, error } = await supabase
+                    .from('shipments')
+                    .select('*')
+                    .neq('rack', 'UNASSIGNED')
+                    .neq('rack', '')
+                    .not('rack', 'is', null)
+                    .order('updated_at', { ascending: false });
+                
+                if (error) {
+                    throw error;
+                }
+                
+                updateStatus(`✅ Found ${data.length} assigned shipments`, 'success');
+                
+                let results = `ASSIGNED SHIPMENTS: ${data.length}\n\n`;
+                if (data.length === 0) {
+                    results += '❌ NO RACK ASSIGNMENTS FOUND!\n';
+                    results += 'This explains why the warehouse map shows no data.\n\n';
+                    results += 'Possible issues:\n';
+                    results += '1. Mobile scanner is not saving to database\n';
+                    results += '2. Rack assignments are being saved as null/empty\n';
+                    results += '3. Database permissions issue\n';
+                } else {
+                    data.forEach((shipment, index) => {
+                        results += `${index + 1}. 📦 ${shipment.barcode} → 📍 ${shipment.rack}\n`;
+                        results += `   Status: ${shipment.status}\n`;
+                        results += `   Pieces: ${shipment.pieces}\n`;
+                        results += `   Updated: ${new Date(shipment.updated_at).toLocaleString()}\n\n`;
+                    });
+                }
+                
+                updateResults(results);
+                
+            } catch (error) {
+                updateStatus(`❌ Error loading assigned shipments: ${error.message}`, 'error');
+                updateResults(`Error: ${error.message}`);
+                console.error('List assigned shipments error:', error);
+            }
+        }
+
+        async function addTestShipment() {
+            updateStatus('➕ Adding test shipment...', 'info');
+            
+            try {
+                if (!supabase) {
+                    initSupabase();
+                }
+                
+                const testShipment = {
+                    barcode: `TEST_${Date.now()}`,
+                    shipper: 'Debug Test Sender',
+                    consignee: 'Debug Test Receiver',
+                    weight: 10.5,
+                    pieces: 3,
+                    rack: 'UNASSIGNED',
+                    status: 'in'
+                };
+                
+                const { data, error } = await supabase
+                    .from('shipments')
+                    .insert([testShipment])
+                    .select();
+                
+                if (error) {
+                    throw error;
+                }
+                
+                updateStatus('✅ Test shipment added successfully!', 'success');
+                updateResults(`Added test shipment:\n${JSON.stringify(data[0], null, 2)}`);
+                
+            } catch (error) {
+                updateStatus(`❌ Error adding test shipment: ${error.message}`, 'error');
+                updateResults(`Error: ${error.message}`);
+                console.error('Add test shipment error:', error);
+            }
+        }
+
+        async function assignTestRack() {
+            updateStatus('🎯 Testing rack assignment...', 'info');
+            
+            try {
+                if (!supabase) {
+                    initSupabase();
+                }
+                
+                // Find a shipment without rack assignment
+                const { data: shipments, error: findError } = await supabase
+                    .from('shipments')
+                    .select('*')
+                    .eq('rack', 'UNASSIGNED')
+                    .limit(1);
+                
+                if (findError) {
+                    throw findError;
+                }
+                
+                if (shipments.length === 0) {
+                    throw new Error('No unassigned shipments found. Add a test shipment first.');
+                }
+                
+                const shipment = shipments[0];
+                const testRack = `TEST-RACK-${Date.now().toString().slice(-4)}`;
+                
+                // Assign rack
+                const { data, error } = await supabase
+                    .from('shipments')
+                    .update({
+                        rack: testRack,
+                        status: 'in',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', shipment.id)
+                    .select();
+                
+                if (error) {
+                    throw error;
+                }
+                
+                updateStatus('✅ Rack assignment test successful!', 'success');
+                updateResults(`Successfully assigned rack!\n\nBefore:\n${JSON.stringify(shipment, null, 2)}\n\nAfter:\n${JSON.stringify(data[0], null, 2)}`);
+                
+            } catch (error) {
+                updateStatus(`❌ Rack assignment test failed: ${error.message}`, 'error');
+                updateResults(`Error: ${error.message}`);
+                console.error('Rack assignment test error:', error);
+            }
+        }
+
+        async function clearTestData() {
+            if (!confirm('⚠️ This will delete all shipments with barcodes starting with "TEST_". Continue?')) {
+                return;
+            }
+            
+            updateStatus('🗑️ Clearing test data...', 'info');
+            
+            try {
+                if (!supabase) {
+                    initSupabase();
+                }
+                
+                const { data, error } = await supabase
+                    .from('shipments')
+                    .delete()
+                    .like('barcode', 'TEST_%')
+                    .select();
+                
+                if (error) {
+                    throw error;
+                }
+                
+                updateStatus(`✅ Cleared ${data.length} test shipments`, 'success');
+                updateResults(`Deleted test shipments:\n${JSON.stringify(data, null, 2)}`);
+                
+            } catch (error) {
+                updateStatus(`❌ Error clearing test data: ${error.message}`, 'error');
+                updateResults(`Error: ${error.message}`);
+                console.error('Clear test data error:', error);
+            }
+        }
+
+        async function simulateCompleteWorkflow() {
+            updateWorkflowStatus('🚀 Running complete workflow simulation...', 'info');
+            let results = 'COMPLETE WORKFLOW SIMULATION\n\n';
+            
+            try {
+                if (!supabase) {
+                    initSupabase();
+                }
+                
+                // Step 1: Create a test shipment
+                results += 'Step 1: Creating test shipment...\n';
+                const barcode = `WORKFLOW_${Date.now()}`;
+                const testShipment = {
+                    barcode: barcode,
+                    shipper: 'Workflow Test Sender',
+                    consignee: 'Workflow Test Receiver',
+                    weight: 12.3,
+                    pieces: 5,
+                    rack: 'UNASSIGNED',
+                    status: 'in'
+                };
+                
+                const { data: created, error: createError } = await supabase
+                    .from('shipments')
+                    .insert([testShipment])
+                    .select();
+                
+                if (createError) throw createError;
+                results += `✅ Created shipment: ${barcode}\n\n`;
+                
+                // Step 2: Simulate mobile scanner assignment
+                results += 'Step 2: Simulating mobile scanner rack assignment...\n';
+                const rackId = 'R1-A-001';
+                
+                const { data: updated, error: updateError } = await supabase
+                    .from('shipments')
+                    .update({
+                        rack: rackId,
+                        status: 'in',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', created[0].id)
+                    .select();
+                
+                if (updateError) throw updateError;
+                results += `✅ Assigned to rack: ${rackId}\n\n`;
+                
+                // Step 3: Verify warehouse map query
+                results += 'Step 3: Testing warehouse map query...\n';
+                const { data: mapData, error: mapError } = await supabase
+                    .from('shipments')
+                    .select('*')
+                    .neq('rack', 'UNASSIGNED')
+                    .neq('rack', '')
+                    .not('rack', 'is', null);
+                
+                if (mapError) throw mapError;
+                
+                const ourShipment = mapData.find(s => s.barcode === barcode);
+                if (ourShipment) {
+                    results += `✅ Shipment appears in warehouse map query!\n`;
+                    results += `   Barcode: ${ourShipment.barcode}\n`;
+                    results += `   Rack: ${ourShipment.rack}\n`;
+                    results += `   Status: ${ourShipment.status}\n\n`;
+                } else {
+                    results += `❌ Shipment NOT found in warehouse map query!\n\n`;
+                }
+                
+                results += `Total assigned shipments: ${mapData.length}\n\n`;
+                
+                // Step 4: Summary
+                results += 'SUMMARY:\n';
+                results += '✅ Shipment creation: SUCCESS\n';
+                results += '✅ Rack assignment: SUCCESS\n';
+                results += `${ourShipment ? '✅' : '❌'} Warehouse map visibility: ${ourShipment ? 'SUCCESS' : 'FAILED'}\n\n`;
+                
+                if (ourShipment) {
+                    updateWorkflowStatus('🎉 Complete workflow test PASSED!', 'success');
+                    results += 'The mobile scanner → database → warehouse map workflow is working correctly!\n';
+                } else {
+                    updateWorkflowStatus('❌ Workflow test FAILED at warehouse map step', 'error');
+                    results += 'Issue: Rack assignment saved but not visible in warehouse map query.\n';
+                }
+                
+                updateWorkflowResults(results);
+                
+            } catch (error) {
+                updateWorkflowStatus(`❌ Workflow test failed: ${error.message}`, 'error');
+                results += `\nERROR: ${error.message}\n${error.stack}`;
+                updateWorkflowResults(results);
+                console.error('Workflow simulation error:', error);
+            }
+        }
+
+        async function checkWarehouseMapData() {
+            updateWorkflowStatus('🗺️ Checking warehouse map data...', 'info');
+            
+            try {
+                if (!supabase) {
+                    initSupabase();
+                }
+                
+                // This is the exact query the warehouse map uses
+                const { data, error } = await supabase
+                    .from('shipments')
+                    .select('*')
+                    .neq('rack', 'UNASSIGNED')
+                    .neq('rack', '')
+                    .not('rack', 'is', null);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                let results = 'WAREHOUSE MAP DATA QUERY RESULTS\n\n';
+                results += `Query: SELECT * FROM shipments WHERE rack IS NOT NULL AND rack != 'UNASSIGNED' AND rack != ''\n\n`;
+                results += `Results: ${data.length} shipments\n\n`;
+                
+                if (data.length === 0) {
+                    results += '❌ NO DATA FOUND!\n';
+                    results += 'This is why the warehouse map appears empty.\n\n';
+                    results += 'Possible causes:\n';
+                    results += '1. No rack assignments have been made yet\n';
+                    results += '2. Rack assignments are being saved as null or "UNASSIGNED"\n';
+                    results += '3. Different table or column names being used\n';
+                    updateWorkflowStatus('❌ No warehouse map data found', 'error');
+                } else {
+                    results += 'FOUND SHIPMENTS:\n';
+                    data.forEach((shipment, index) => {
+                        results += `${index + 1}. ${shipment.barcode} → ${shipment.rack}\n`;
+                    });
+                    updateWorkflowStatus(`✅ Found ${data.length} assigned shipments`, 'success');
+                }
+                
+                updateWorkflowResults(results);
+                
+            } catch (error) {
+                updateWorkflowStatus(`❌ Error checking map data: ${error.message}`, 'error');
+                updateWorkflowResults(`Error: ${error.message}`);
+                console.error('Check map data error:', error);
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔍 Database debug tool loaded');
+            initSupabase();
+        });
+    </script>
+</body>
+</html>

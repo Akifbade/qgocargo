@@ -513,6 +513,7 @@
                 let shipmentDetails = null;
                 if (supabase) {
                     try {
+                        console.log('🔍 Looking up shipment in database:', shipmentBarcode);
                         const { data, error } = await supabase
                             .from('shipments')
                             .select('*')
@@ -522,22 +523,27 @@
                         if (!error && data) {
                             shipmentDetails = data;
                             console.log('✅ Found shipment in database:', data);
+                        } else {
+                            console.log('ℹ️ Shipment not found in database, will create new record');
                         }
                     } catch (error) {
-                        console.warn('Could not fetch shipment details:', error);
+                        console.log('ℹ️ Could not fetch shipment details, using demo data:', error.message);
                     }
                 }
                 
+                // Create shipment object (use database data if available, otherwise demo data)
                 pendingShipment = {
                     originalQR: qrCode,
                     barcode: shipmentBarcode,
                     pieceInfo: pieceInfo,
                     pieces: shipmentDetails ? shipmentDetails.pieces : 5,
                     timestamp: new Date(),
-                    sender: shipmentDetails ? shipmentDetails.sender_name : 'Demo Sender Ltd.',
-                    receiver: shipmentDetails ? shipmentDetails.receiver_name : 'Demo Receiver Co.',
+                    sender: shipmentDetails ? shipmentDetails.shipper : 'Demo Sender Ltd.',
+                    receiver: shipmentDetails ? shipmentDetails.consignee : 'Demo Receiver Co.',
                     shipmentData: shipmentDetails
                 };
+                
+                console.log('📦 Created pending shipment:', pendingShipment);
                 
                 // Update UI
                 updateStep(1, 'completed');
@@ -545,14 +551,16 @@
                 scanStep = 2;
                 
                 showShipmentInfo();
-                showStatus(`📋 PACKAGE COPIED! ${shipmentBarcode}${pieceInfo}\n🎯 Now scan RACK QR code to PASTE`, 'success');
+                
+                const dbStatus = shipmentDetails ? '(Found in database)' : '(Will create new record)';
+                showStatus(`📋 PACKAGE COPIED! ${shipmentBarcode}${pieceInfo} ${dbStatus}\n🎯 Now scan RACK QR code to PASTE`, 'success');
                 
                 // 🔊 COPY SUCCESS: 1 BEEP
                 playBeep(1, 800, 300);
                 
                 // Show success popup
                 setTimeout(() => {
-                    alert(`📋 PACKAGE COPIED TO MEMORY!\n\n📦 Barcode: ${shipmentBarcode}\n🔢 Pieces: ${pendingShipment.pieces}${pieceInfo}\n👤 Sender: ${pendingShipment.sender}\n\n🎯 Next: Scan RACK QR to paste`);
+                    alert(`📋 PACKAGE COPIED TO MEMORY!\n\n📦 Barcode: ${shipmentBarcode}\n🔢 Pieces: ${pendingShipment.pieces}${pieceInfo}\n👤 Sender: ${pendingShipment.sender}\n💾 Database: ${dbStatus}\n\n🎯 Next: Scan RACK QR to paste`);
                 }, 100);
                 
                 // Auto-start scanning for rack after a moment
@@ -573,6 +581,7 @@
 
         async function handleRackScan(qrCode) {
             console.log('📍 Processing rack scan:', qrCode);
+            console.log('Current pending shipment:', pendingShipment);
             
             if (!pendingShipment) {
                 showStatus('❌ Please scan a package first', 'error');
@@ -582,19 +591,25 @@
 
             if (qrCode.startsWith('RACK_')) {
                 const rackId = qrCode.replace('RACK_', '').replace(/_/g, '-');
+                console.log('📍 Extracted rack ID:', rackId);
                 
                 // Save to database if Supabase is available
+                console.log('💾 Attempting to save to database...');
+                console.log('Supabase available:', !!supabase);
+                console.log('Pending shipment data:', pendingShipment);
+                
                 const assignmentResult = await saveAssignmentToDatabase(rackId);
+                console.log('💾 Assignment result:', assignmentResult);
                 
                 // Success! Assignment complete
                 updateStep(2, 'completed');
                 updateStep(3, 'active');
                 
                 const statusMessage = assignmentResult ? 
-                    `🎉 SAVED TO DATABASE!\n📦 ${pendingShipment.barcode}${pendingShipment.pieceInfo}\n📍 Location: ${rackId}\n💾 Database: Updated\n\n✅ Ready for next package` :
-                    `🎉 ASSIGNMENT COMPLETE!\n📦 ${pendingShipment.barcode}${pendingShipment.pieceInfo}\n📍 Location: ${rackId}\n⚠️ Database: Offline mode\n\n✅ Ready for next package`;
+                    `🎉 SAVED TO DATABASE!\n📦 ${pendingShipment.barcode}${pendingShipment.pieceInfo}\n📍 Location: ${rackId}\n💾 Database: ✅ UPDATED\n\n✅ Ready for next package` :
+                    `🎉 ASSIGNMENT COMPLETE!\n📦 ${pendingShipment.barcode}${pendingShipment.pieceInfo}\n📍 Location: ${rackId}\n⚠️ Database: ❌ FAILED TO SAVE\n\n✅ Ready for next package`;
                     
-                showStatus(statusMessage, 'success');
+                showStatus(statusMessage, assignmentResult ? 'success' : 'error');
                 
                 // 🔊 PASTE SUCCESS: 3 BEEPS (copy-paste workflow complete)
                 playBeep(3, 600, 200);
@@ -604,10 +619,11 @@
                     navigator.vibrate([200, 100, 200, 100, 200]);
                 }
                 
-                // Show success popup
+                // Show success popup with detailed info
                 setTimeout(() => {
-                    const dbStatus = assignmentResult ? '💾 Saved to database' : '⚠️ Offline mode (not saved)';
-                    alert(`🎉 ASSIGNMENT COMPLETE!\n\n📦 Package: ${pendingShipment.barcode}\n🔢 Pieces: ${pendingShipment.pieces}${pendingShipment.pieceInfo}\n📍 Location: ${rackId}\n👤 Sender: ${pendingShipment.sender}\n⏰ Time: ${pendingShipment.timestamp.toLocaleTimeString()}\n${dbStatus}\n\n✅ Ready for next package!`);
+                    const dbStatus = assignmentResult ? '💾 ✅ SAVED TO DATABASE' : '💾 ❌ DATABASE SAVE FAILED';
+                    const alertMessage = `🎉 ASSIGNMENT COMPLETE!\n\n📦 Package: ${pendingShipment.barcode}\n🔢 Pieces: ${pendingShipment.pieces}${pendingShipment.pieceInfo}\n📍 Location: ${rackId}\n👤 Sender: ${pendingShipment.sender}\n⏰ Time: ${pendingShipment.timestamp.toLocaleTimeString()}\n${dbStatus}\n\n${assignmentResult ? '✅ Check warehouse map to see the assignment!' : '⚠️ Check console for database errors.'}`;
+                    alert(alertMessage);
                 }, 100);
                 
                 // Reset for next scan after showing success
@@ -622,34 +638,105 @@
         }
 
         async function saveAssignmentToDatabase(rackId) {
-            if (!supabase || !pendingShipment.shipmentData) {
+            if (!supabase || !pendingShipment) {
                 console.warn('Database not available or no shipment data');
                 return false;
             }
 
             try {
                 console.log('💾 Saving assignment to database...');
+                console.log('Shipment data:', pendingShipment);
+                console.log('Rack ID:', rackId);
                 
-                // Update the shipment with rack assignment
-                const { data, error } = await supabase
+                let result;
+                
+                // Check if shipment exists in database
+                const { data: existingShipment, error: checkError } = await supabase
                     .from('shipments')
-                    .update({
-                        rack: rackId,
-                        status: 'stored',
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', pendingShipment.shipmentData.id);
+                    .select('*')
+                    .eq('barcode', pendingShipment.barcode)
+                    .single();
 
-                if (error) {
-                    throw error;
+                if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+                    console.warn('Error checking existing shipment:', checkError);
                 }
 
-                console.log('✅ Assignment saved to database:', data);
+                if (existingShipment) {
+                    // Update existing shipment
+                    console.log('Updating existing shipment:', existingShipment.id);
+                    const { data, error } = await supabase
+                        .from('shipments')
+                        .update({
+                            rack: rackId,
+                            status: 'in',
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', existingShipment.id)
+                        .select();
+
+                    if (error) throw error;
+                    result = data;
+                    console.log('✅ Updated existing shipment:', data);
+                    
+                } else {
+                    // Create new shipment record - using correct schema
+                    console.log('Creating new shipment record');
+                    const newShipment = {
+                        barcode: pendingShipment.barcode,
+                        shipper: pendingShipment.sender || 'Mobile Scanner Entry',
+                        consignee: pendingShipment.receiver || 'Warehouse Storage',
+                        weight: 10.0, // Default weight
+                        pieces: pendingShipment.pieces || 1,
+                        status: 'in',
+                        rack: rackId,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    };
+
+                    const { data, error } = await supabase
+                        .from('shipments')
+                        .insert([newShipment])
+                        .select();
+
+                    if (error) throw error;
+                    result = data;
+                    console.log('✅ Created new shipment:', data);
+                }
+
+                console.log('✅ Assignment saved to database successfully');
                 return true;
                 
             } catch (error) {
                 console.error('❌ Error saving to database:', error);
-                return false;
+                console.error('Error details:', error);
+                
+                // Try alternative save method for demo mode
+                try {
+                    console.log('🔄 Attempting alternative save method...');
+                    const { data, error } = await supabase
+                        .from('shipments')
+                        .upsert({
+                            barcode: pendingShipment.barcode,
+                            shipper: pendingShipment.sender || 'Mobile Scanner',
+                            consignee: pendingShipment.receiver || 'Warehouse',
+                            weight: 10.0,
+                            pieces: pendingShipment.pieces || 1,
+                            status: 'in',
+                            rack: rackId,
+                            updated_at: new Date().toISOString()
+                        }, {
+                            onConflict: 'barcode'
+                        })
+                        .select();
+
+                    if (error) throw error;
+                    console.log('✅ Alternative save successful:', data);
+                    return true;
+                    
+                } catch (altError) {
+                    console.error('❌ Alternative save also failed:', altError);
+                    return false;
+                }
             }
         }
 
@@ -727,6 +814,84 @@
             setTimeout(() => playBeep(3, 600, 200), 2000); // Paste beep
         }
 
+        async function testDatabaseSave() {
+            alert('💾 Testing direct database save...');
+            console.log('🧪 Testing database save function');
+            
+            if (!supabase) {
+                alert('❌ Supabase not initialized');
+                return;
+            }
+            
+            try {
+                // Create test data
+                const testBarcode = `TEST_DIRECT_${Date.now()}`;
+                const testRack = 'R1-A-TEST';
+                
+                console.log('Creating test shipment...');
+                const { data, error } = await supabase
+                    .from('shipments')
+                    .upsert({
+                        barcode: testBarcode,
+                        shipper: 'Direct Test Sender',
+                        consignee: 'Direct Test Receiver',
+                        weight: 5.5,
+                        pieces: 1,
+                        status: 'in',
+                        rack: testRack,
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'barcode'
+                    })
+                    .select();
+                
+                if (error) {
+                    throw error;
+                }
+                
+                console.log('✅ Direct database save successful:', data);
+                alert(`✅ Database save test SUCCESSFUL!\n\nCreated: ${testBarcode} → ${testRack}\n\nCheck the debug page to verify!`);
+                
+            } catch (error) {
+                console.error('❌ Database save test failed:', error);
+                alert(`❌ Database save test FAILED!\n\nError: ${error.message}\n\nCheck console for details.`);
+            }
+        }
+
+        async function checkDatabaseStatus() {
+            console.log('🔍 Checking database status...');
+            
+            if (!supabase) {
+                alert('❌ Supabase not initialized!');
+                return;
+            }
+            
+            try {
+                console.log('Testing database connection...');
+                const { data, error } = await supabase
+                    .from('shipments')
+                    .select('barcode, rack, status')
+                    .limit(5);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                let message = `✅ Database connection OK!\n\nRecent shipments:\n`;
+                data.forEach(shipment => {
+                    const rackInfo = shipment.rack || 'UNASSIGNED';
+                    message += `• ${shipment.barcode} → ${rackInfo}\n`;
+                });
+                
+                console.log('✅ Database status check successful:', data);
+                alert(message);
+                
+            } catch (error) {
+                console.error('❌ Database status check failed:', error);
+                alert(`❌ Database check FAILED!\n\nError: ${error.message}\n\nPossible issues:\n• Supabase credentials wrong\n• Network connectivity\n• Table permissions`);
+            }
+        }
+
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Enhanced mobile scanner loading...');
@@ -751,6 +916,8 @@
                         <button onclick="testPackageQR()" style="margin: 5px; padding: 8px 12px; background: #6366f1; color: white; border: none; border-radius: 4px; cursor: pointer;">📦 Test Package QR</button>
                         <button onclick="testRackQR()" style="margin: 5px; padding: 8px 12px; background: #059669; color: white; border: none; border-radius: 4px; cursor: pointer;">📍 Test Rack QR</button>
                         <button onclick="testBeeps()" style="margin: 5px; padding: 8px 12px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer;">🔊 Test Beeps</button>
+                        <button onclick="testDatabaseSave()" style="margin: 5px; padding: 8px 12px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;">💾 Test DB Save</button>
+                        <button onclick="checkDatabaseStatus()" style="margin: 5px; padding: 8px 12px; background: #7c3aed; color: white; border: none; border-radius: 4px; cursor: pointer;">🔍 Check DB</button>
                     `;
                     scannerControls.appendChild(testDiv);
                 }
