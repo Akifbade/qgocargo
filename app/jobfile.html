@@ -501,7 +501,10 @@
     <div id="analytics-container" class="hidden">
         <div class="container">
             <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-2 no-print">
-                <h3 class="text-2xl font-bold">Analytics Dashboard</h3>
+                <div>
+                    <h3 class="text-2xl font-bold">Analytics Dashboard</h3>
+                    <p class="text-sm text-gray-600 mt-1">Switch between Billing Date and Opening Date analysis using the buttons above.</p>
+                </div>
                 <div>
                     <button onclick="printAnalytics()" title="Print Analytics" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded mr-4">🖨️ Print</button>
                     <button onclick="closeAnalyticsDashboard()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-3 rounded">Back to Job File</button>
@@ -948,6 +951,7 @@
         let customLinks = [];
         let analyticsDataCache = null;
         let currentFilteredJobs = [];
+        let currentAnalyticsTimeframe = 'all'; // Track the current analytics timeframe
         let fileIdToReject = null; 
         let profitChartInstance = null;
 
@@ -1832,11 +1836,43 @@
 
         // --- Analytics Dashboard Logic ---
         function openAnalyticsDashboard() {
-            const dateType = document.getElementById('analytics-date-type')?.value || 'bd';
-            filterAnalyticsByTimeframe('all', dateType);
+            // First open the analytics container
             document.getElementById('app-container').style.display = 'none';
             document.getElementById('analytics-container').style.display = 'block';
             window.scrollTo(0, 0);
+            
+            // Show all data by default when opening analytics (billing date)
+            filterAnalyticsByTimeframe('all', 'bd');
+        }
+
+        // New function to filter analytics by current date
+        function filterAnalyticsByCurrentDate(dateType = 'bd') {
+            currentFilteredJobs = jobFilesCache;
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+
+            // Filter jobs by today's date based on selected date type
+            currentFilteredJobs = jobFilesCache.filter(job => {
+                const dateField = dateType === 'bd' ? job.bd : job.d; // bd = billing date, d = opening date
+                return dateField === todayStr;
+            });
+            
+            calculateAndDisplayAnalytics(currentFilteredJobs);
+        }
+
+        // New function to filter analytics by specific date (works with both billing and opening dates)
+        function filterAnalyticsBySpecificDate(selectedDate, dateType = 'bd') {
+            currentFilteredJobs = jobFilesCache;
+            
+            if (selectedDate) {
+                // Filter jobs by selected date based on selected date type
+                currentFilteredJobs = jobFilesCache.filter(job => {
+                    const dateField = dateType === 'bd' ? job.bd : job.d; // bd = billing date, d = opening date
+                    return dateField === selectedDate;
+                });
+            }
+            
+            calculateAndDisplayAnalytics(currentFilteredJobs);
         }
 
         function filterAnalyticsByTimeframe(timeframe, dateType = 'bd') {
@@ -1869,16 +1905,24 @@
 
         function calculateAndDisplayAnalytics(jobs) {
             const body = document.getElementById('analytics-body');
+            const today = new Date().toISOString().split('T')[0];
+            const isCurrentDateView = jobs.length > 0 && jobs.every(job => {
+                const dateField = job.bd || job.d;
+                return dateField === today;
+            });
+            
              if (jobs.length === 0) {
+                 const noDataMessage = isCurrentDateView ? 
+                     `No data available for today (${today}). Try viewing all time data or a different date.` :
+                     `No data available for the selected period.`;
+                     
                  body.innerHTML = `
                 <!-- Timeframe Filters -->
                 <div class="space-y-3">
                      <div class="flex items-center justify-center gap-4">
-                         <label for="analytics-date-type" class="text-sm font-medium">Report Date Type:</label>
-                         <select id="analytics-date-type" class="input-field w-auto">
-                             <option value="bd">Billing Date</option>
-                             <option value="d">Opening Date</option>
-                         </select>
+                         <label class="text-sm font-medium">Report Date Type:</label>
+                         <button id="billing-date-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Billing Date</button>
+                         <button id="opening-date-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">Opening Date</button>
                      </div>
                     <div class="flex justify-center flex-wrap gap-2">
                         <button data-timeframe="all" class="timeframe-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">All Time</button>
@@ -1886,18 +1930,36 @@
                         <button data-timeframe="lastYear" class="timeframe-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">Last Year</button>
                     </div>
                 </div>
-                 <p class="text-center text-gray-500 mt-8">No data available for the selected period.</p>`;
+                 <p class="text-center text-gray-500 mt-8">${noDataMessage}</p>`;
                 
                  document.querySelectorAll('.timeframe-btn').forEach(btn => {
                      btn.addEventListener('click', (e) => {
                          const timeframe = e.target.dataset.timeframe;
-                         const dateType = document.getElementById('analytics-date-type').value;
+                         currentAnalyticsTimeframe = timeframe; // Store current timeframe
+                         const dateType = document.getElementById('billing-date-btn').classList.contains('bg-blue-700') ? 'bd' : 'd';
                          filterAnalyticsByTimeframe(timeframe, dateType);
                      });
                  });
-                 document.getElementById('analytics-date-type').addEventListener('change', (e) => {
-                     const activeTimeframeButton = document.querySelector('.timeframe-btn.bg-indigo-700') || document.querySelector('[data-timeframe="all"]');
-                     filterAnalyticsByTimeframe(activeTimeframeButton.dataset.timeframe, e.target.value);
+                 
+                 // Add event listeners for billing/opening date buttons
+                 document.getElementById('billing-date-btn').addEventListener('click', () => {
+                     document.getElementById('billing-date-btn').classList.remove('bg-blue-600');
+                     document.getElementById('billing-date-btn').classList.add('bg-blue-700');
+                     document.getElementById('opening-date-btn').classList.remove('bg-gray-700');
+                     document.getElementById('opening-date-btn').classList.add('bg-gray-500');
+                     
+                     // Use stored current timeframe
+                     filterAnalyticsByTimeframe(currentAnalyticsTimeframe, 'bd');
+                 });
+                 
+                 document.getElementById('opening-date-btn').addEventListener('click', () => {
+                     document.getElementById('opening-date-btn').classList.remove('bg-gray-500');
+                     document.getElementById('opening-date-btn').classList.add('bg-gray-700');
+                     document.getElementById('billing-date-btn').classList.remove('bg-blue-700');
+                     document.getElementById('billing-date-btn').classList.add('bg-blue-600');
+                     
+                     // Use stored current timeframe
+                     filterAnalyticsByTimeframe(currentAnalyticsTimeframe, 'd');
                  });
                  return;
             }
@@ -2119,11 +2181,9 @@
                 <!-- Timeframe Filters -->
                 <div class="space-y-3">
                      <div class="flex items-center justify-center gap-4">
-                         <label for="analytics-date-type" class="text-sm font-medium">Report Date Type:</label>
-                         <select id="analytics-date-type" class="input-field w-auto">
-                             <option value="bd" ${monthlyReportType === 'bd' ? 'selected' : ''}>Billing Date</option>
-                             <option value="d" ${monthlyReportType === 'd' ? 'selected' : ''}>Opening Date</option>
-                         </select>
+                         <label class="text-sm font-medium">Report Date Type:</label>
+                         <button id="billing-date-btn" class="bg-blue-700 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Billing Date</button>
+                         <button id="opening-date-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">Opening Date</button>
                      </div>
                     <div class="flex justify-center flex-wrap gap-2">
                         <button data-timeframe="all" class="timeframe-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded">All Time</button>
@@ -2231,11 +2291,6 @@
             document.getElementById('sort-analytics').addEventListener('change', (e) => {
                  displayAnalytics(analyticsDataCache, e.target.value, document.getElementById('analytics-search-bar').value, document.getElementById('analytics-date-type').value);
             });
-             document.getElementById('analytics-date-type').addEventListener('change', (e) => {
-                 const activeTimeframeButton = document.querySelector('.timeframe-btn.bg-indigo-700') || document.querySelector('[data-timeframe="all"]');
-                 filterAnalyticsByTimeframe(activeTimeframeButton.dataset.timeframe, e.target.value);
-            });
-
             document.querySelectorAll('.timeframe-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                      document.querySelectorAll('.timeframe-btn').forEach(b => {
@@ -2247,9 +2302,31 @@
                      e.target.classList.remove('bg-indigo-500', 'bg-gray-200');
                      e.target.classList.add('bg-indigo-700', 'text-white');
                     const timeframe = e.target.dataset.timeframe;
-                    const dateType = document.getElementById('analytics-date-type').value;
+                    currentAnalyticsTimeframe = timeframe; // Store current timeframe
+                    const dateType = document.getElementById('billing-date-btn').classList.contains('bg-blue-700') ? 'bd' : 'd';
                     filterAnalyticsByTimeframe(timeframe, dateType);
                 });
+            });
+            
+            // Add event listeners for billing/opening date buttons
+            document.getElementById('billing-date-btn').addEventListener('click', () => {
+                document.getElementById('billing-date-btn').classList.remove('bg-blue-600');
+                document.getElementById('billing-date-btn').classList.add('bg-blue-700');
+                document.getElementById('opening-date-btn').classList.remove('bg-gray-700');
+                document.getElementById('opening-date-btn').classList.add('bg-gray-500');
+                
+                // Use stored current timeframe
+                filterAnalyticsByTimeframe(currentAnalyticsTimeframe, 'bd');
+            });
+            
+            document.getElementById('opening-date-btn').addEventListener('click', () => {
+                document.getElementById('opening-date-btn').classList.remove('bg-gray-500');
+                document.getElementById('opening-date-btn').classList.add('bg-gray-700');
+                document.getElementById('billing-date-btn').classList.remove('bg-blue-700');
+                document.getElementById('billing-date-btn').classList.add('bg-blue-600');
+                
+                // Use stored current timeframe
+                filterAnalyticsByTimeframe(currentAnalyticsTimeframe, 'd');
             });
 
             document.getElementById('analytics-tables').addEventListener('click', (e) => {
@@ -2270,7 +2347,8 @@
         
         function sortAnalyticsTable(sortBy) {
             const searchTerm = document.getElementById('analytics-search-bar').value;
-            displayAnalytics(analyticsDataCache, sortBy, searchTerm, document.getElementById('analytics-date-type').value);
+            const dateType = document.getElementById('billing-date-btn').classList.contains('bg-blue-700') ? 'billing' : 'opening';
+            displayAnalytics(analyticsDataCache, sortBy, searchTerm, dateType);
         }
         
         function downloadAnalyticsCsv() {
@@ -4011,6 +4089,23 @@
             setupAutocomplete('shipper-name', 'shipper-suggestions', 'Shipper');
             setupAutocomplete('consignee-name', 'consignee-suggestions', 'Consignee');
 
+            // Add event listener for billing date to update analytics
+            document.getElementById('billing-date').addEventListener('change', (e) => {
+                const selectedDate = e.target.value;
+                if (selectedDate && document.getElementById('analytics-container').style.display === 'block') {
+                    // If analytics is open, update it with selected date data based on current button setting
+                    const dateType = document.getElementById('billing-date-btn').classList.contains('bg-blue-700') ? 'bd' : 'd';
+                    filterAnalyticsBySpecificDate(selectedDate, dateType);
+                    // Update button highlights to show custom date selection
+                    document.querySelectorAll('.timeframe-btn').forEach(btn => {
+                        btn.classList.remove('bg-indigo-700', 'text-white');
+                        if(!btn.classList.contains('bg-gray-200')) {
+                            btn.classList.add('bg-indigo-500');
+                        }
+                    });
+                }
+            });
+
 
             window.addEventListener('afterprint', () => {
                 document.getElementById('main-container').style.display = 'block';
@@ -4019,6 +4114,7 @@
             
             window.openAnalyticsDashboard = openAnalyticsDashboard;
             window.closeAnalyticsDashboard = closeAnalyticsDashboard;
+            window.filterAnalyticsBySpecificDate = filterAnalyticsBySpecificDate;
             window.openFileManager = () => openModal('file-manager-modal');
             window.openClientManager = openClientManager;
             window.saveJobFile = saveJobFile;
